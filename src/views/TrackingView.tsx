@@ -182,7 +182,7 @@ export const TrackingView: React.FC<TrackingViewProps> = ({ saleId, onBack }) =>
         }
 
         // 2. Verificar se já é cliente ou lead existente
-        const qUsers = query(collection(db, 'users'), where('telefone', '==', cleanPhone));
+        const qUsers = query(collection(db, 'usuarios'), where('telefone', '==', cleanPhone));
         const qLeads = query(collection(db, 'leads'), where('telefone', '==', cleanPhone));
         const qRefs = query(collection(db, 'referrals'), where('telefone_indicado', '==', cleanPhone));
         
@@ -239,7 +239,7 @@ export const TrackingView: React.FC<TrackingViewProps> = ({ saleId, onBack }) =>
       
       if (docs.length > 0 && docs[0].cliente_id) {
         // Fetch client points
-        const clientRef = doc(db, 'users', docs[0].cliente_id);
+        const clientRef = doc(db, 'usuarios', docs[0].cliente_id);
         const clientSnap = await getDoc(clientRef);
         if (clientSnap.exists()) {
           setClientProfile(clientSnap.data() as UserProfile);

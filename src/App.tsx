@@ -7,9 +7,10 @@ import PortalCliente from "./components/PortalCliente"; // Tela Cliente
 import { PublicPortal } from "./views/PublicPortal";
 import { VitrinePublicaView } from "./views/VitrinePublicaView";
 import { ProposalLandingPage } from "./views/ProposalLandingPage";
+import { PendingApproval, AccountRefused, AccountSuspended, CompleteProfile } from "./components/Auth";
 
 const AppContent: React.FC = () => {
-  const { user, profile, loading } = useAuth();
+  const { user, profile, loading, logout } = useAuth();
 
   if (loading) {
     return (
@@ -22,6 +23,24 @@ const AppContent: React.FC = () => {
 
   // LÓGICA DE ROTEAMENTO POR NIVEL
   if (!user) return <LoginView />;
+
+  // Se o perfil não existe ou está incompleto (sem CPF), força completar perfil
+  if (profile && !profile.cpf) {
+    return <CompleteProfile profile={profile} />;
+  }
+
+  // Verificação de Status da Conta
+  if (profile?.status_conta === 'PENDENTE') {
+    return <PendingApproval profile={profile} onLogout={logout} />;
+  }
+
+  if (profile?.status_conta === 'RECUSADO') {
+    return <AccountRefused onLogout={logout} />;
+  }
+
+  if (profile?.status_conta === 'SUSPENSO') {
+    return <AccountSuspended status="SUSPENSO" onLogout={logout} />;
+  }
 
   const nivel = profile?.nivel;
 

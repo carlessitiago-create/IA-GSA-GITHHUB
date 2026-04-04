@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "./AuthContext";
 import Swal from "sweetalert2";
 import { ConsultaPublicaView } from "../views/ConsultaPublicaView";
@@ -62,22 +62,49 @@ const LoginView: React.FC = () => {
     }
   };
 
+  const loadingRef = useRef(false);
+  useEffect(() => {
+    loadingRef.current = loading;
+  }, [loading]);
+
   // Lógica para Login com Google
   const handleGoogleLogin = async () => {
+    console.log("LoginView: handleGoogleLogin starting...");
     try {
       setLoading(true);
+      
+      // Safety timeout for Google Login
+      const loginTimeout = setTimeout(() => {
+        if (loadingRef.current) {
+          console.warn("LoginView: Google Login timed out.");
+          setLoading(false);
+          Swal.fire({
+            icon: 'warning',
+            title: 'Tempo Esgotado',
+            text: 'O login com Google está demorando mais que o esperado. Verifique se o popup não foi bloqueado.',
+            confirmButtonColor: '#0a0a2e'
+          });
+        }
+      }, 15000);
+
       await login();
+      console.log("LoginView: login() finished.");
+      clearTimeout(loginTimeout);
     } catch (error: any) {
-      console.error(error);
+      console.error("LoginView: Google Login error:", error);
       if (error.code !== "auth/cancelled-popup-request" && error.code !== "auth/popup-closed-by-user") {
+        const isUnauthorized = error.code === "auth/unauthorized-domain";
         Swal.fire({
           icon: "error",
           title: "Erro no Google Login",
-          text: "Não foi possível conectar com sua conta Google.",
+          text: isUnauthorized 
+            ? `O domínio ${window.location.hostname} não está autorizado no Firebase Console. Adicione-o em Authentication > Settings > Authorized domains.`
+            : `Erro (${error.code}): Não foi possível conectar com sua conta Google.`,
           confirmButtonColor: "#0a0a2e"
         });
       }
     } finally {
+      console.log("LoginView: Setting loading to false.");
       setLoading(false);
     }
   };

@@ -40,7 +40,15 @@ const COLLECTION_NAME = 'services';
 
 export async function criarServico(data: ServiceData) {
   try {
-    const docRef = await addDoc(collection(db, COLLECTION_NAME), data);
+    const serviceWithDefaults = {
+      ...data,
+      pontos_cliente: data.pontos_cliente ?? 10,
+      pontos_vendedor: data.pontos_vendedor ?? 50,
+      pontos_gestor: data.pontos_gestor ?? 20,
+      ativo: data.ativo ?? true,
+      ciclo_status: data.ciclo_status ?? 'LIBERADO'
+    };
+    const docRef = await addDoc(collection(db, COLLECTION_NAME), serviceWithDefaults);
     return docRef.id;
   } catch (error) {
     handleFirestoreError(error, OperationType.CREATE, COLLECTION_NAME);

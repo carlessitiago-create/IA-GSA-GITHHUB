@@ -90,7 +90,7 @@ export const addPontos = async (userId: string, quantidade: number, motivo: stri
   if (!userId || quantidade <= 0) return;
   
   try {
-    const userRef = doc(db, 'users', userId);
+    const userRef = doc(db, 'usuarios', userId);
     await updateDoc(userRef, { saldo_pontos: increment(quantidade) });
 
     await addDoc(collection(db, 'points_history'), {
@@ -127,7 +127,7 @@ export const processarPontosDeVenda = async (vendedorId: string, gestorId: strin
 // 4. Resgate de Prêmios
 export const redeemReward = async (userId: string, reward: any) => {
   try {
-    const userRef = doc(db, 'users', userId);
+    const userRef = doc(db, 'usuarios', userId);
     const userSnap = await getDoc(userRef);
     
     if (!userSnap.exists()) throw new Error('Usuário não encontrado');
@@ -229,7 +229,7 @@ export const adicionarPontosPendentes = async (userId: string, quantidade: numbe
   if (!userId || quantidade <= 0) return;
   
   try {
-    const userRef = doc(db, 'users', userId);
+    const userRef = doc(db, 'usuarios', userId);
     const batch = writeBatch(db);
 
     // Incrementa o saldo pendente (bloqueado)
@@ -250,7 +250,7 @@ export const adicionarPontosPendentes = async (userId: string, quantidade: numbe
 
     await batch.commit();
   } catch (error) {
-    handleFirestoreError(error, OperationType.UPDATE, 'users');
+    handleFirestoreError(error, OperationType.UPDATE, 'usuarios');
   }
 };
 
@@ -259,7 +259,7 @@ export const libertarPontosPendentes = async (userId: string, quantidade: number
   if (!userId || quantidade <= 0) return;
 
   try {
-    const userRef = doc(db, 'users', userId);
+    const userRef = doc(db, 'usuarios', userId);
     const batch = writeBatch(db);
 
     // Tira do pendente e coloca no saldo real
@@ -281,7 +281,7 @@ export const libertarPontosPendentes = async (userId: string, quantidade: number
 
     await batch.commit();
   } catch (error) {
-    handleFirestoreError(error, OperationType.UPDATE, 'users');
+    handleFirestoreError(error, OperationType.UPDATE, 'usuarios');
   }
 };
 

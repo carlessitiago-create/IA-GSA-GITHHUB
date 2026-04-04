@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { 
   onAuthStateChanged, 
   signInWithPopup, 
@@ -26,7 +26,7 @@ export interface UserProfile {
   tem_empresa: boolean;
   nome_empresa?: string;
   cnpj?: string;
-  status_conta: 'APROVADO' | 'PENDENTE' | 'BLOQUEADO';
+  status_conta: 'APROVADO' | 'PENDENTE' | 'RECUSADO' | 'SUSPENSO' | 'BLOQUEADO';
   data_cadastro?: any;
   saldo_pontos?: number; // Keep for legacy or points system
 }
@@ -56,82 +56,113 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isSimulating, setIsSimulating] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  const loadingRef = useRef(true);
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setUser(user);
-      if (user) {
-        const docRef = doc(db, 'usuarios', user.uid);
-        let docSnap;
-        try {
-          docSnap = await getDoc(docRef);
-        } catch (error) {
-          handleFirestoreError(error, OperationType.GET, 'usuarios/' + user.uid);
-        }
-        
-        if (docSnap && docSnap.exists()) {
-          const data = docSnap.data() as UserProfile;
-          const isAdminEmail = (user.email === 'carlessitiago@gmail.com' || user.email === 'nomelimpo.gsa@gmail.com' || user.email === 'atende.gsa@gmail.com');
-          
-          if (isAdminEmail && data.nivel !== 'ADM_MASTER') {
-            data.nivel = 'ADM_MASTER';
-            data.status_conta = 'APROVADO';
-            try {
-              await updateDoc(docRef, { nivel: 'ADM_MASTER', status_conta: 'APROVADO' });
-            } catch (error) {
-              handleFirestoreError(error, OperationType.UPDATE, 'usuarios/' + user.uid);
-            }
-          }
-          setProfile(data);
-          setRealProfile(data);
-        } else {
-          // Create default profile if not exists (usually for first login)
-          const isAdmin = (user.email === 'carlessitiago@gmail.com' || user.email === 'nomelimpo.gsa@gmail.com' || user.email === 'atende.gsa@gmail.com');
-          const newProfile: UserProfile = {
-            uid: user.uid,
-            nome_completo: user.displayName || 'Usuário',
-            email: user.email || '',
-            cpf: '',
-            data_nascimento: '',
-            nivel: isAdmin ? 'ADM_MASTER' : 'CLIENTE',
-            status_conta: isAdmin ? 'APROVADO' : 'PENDENTE',
-            tem_empresa: false
-          };
-          try {
-            await setDoc(docRef, newProfile);
-          } catch (error) {
-            handleFirestoreError(error, OperationType.WRITE, 'usuarios/' + user.uid);
-          }
+    loadingRef.current = loading;
+  }, [loading]);
 
-          // Notifica o ADM Master
-          try {
-            const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
-            await addDoc(collection(db, 'notifications'), {
-              usuario_id: 'ADM_MASTER',
-              targetRole: 'ADM_MASTER',
-              title: '👤 Novo Cliente na Base',
-              message: `${newProfile.nome_completo} acabou de se cadastrar no sistema via Google e está pendente de aprovação.`,
-              tipo: 'info',
-              lida: false,
-              read: false,
-              timestamp: serverTimestamp(),
-              createdAt: serverTimestamp()
-            });
-          } catch (e) {
-            handleFirestoreError(e, OperationType.CREATE, 'notifications');
-          }
-
-          setProfile(newProfile);
-          setRealProfile(newProfile);
-        }
-      } else {
-        setProfile(null);
-        setRealProfile(null);
-        setIsSimulating(false);
+  useEffect(() => {
+    console.log("AuthContext: Initializing onAuthStateChanged...");
+    
+    // Safety timeout to prevent infinite loading
+    const safetyTimeout = setTimeout(() => {
+      if (loadingRef.current) {
+        console.warn("AuthContext: Loading timed out after 10s. Forcing loading to false.");
+        setLoading(false);
       }
-      setLoading(false);
+    }, 10000);
+
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      console.log("AuthContext: onAuthStateChanged triggered. User:", user?.email || "null");
+      try {
+        setUser(user);
+        if (user) {
+          const docRef = doc(db, 'usuarios', user.uid);
+          let docSnap;
+          try {
+            console.log("AuthContext: Fetching profile for UID:", user.uid);
+            docSnap = await getDoc(docRef);
+          } catch (error) {
+            console.error("AuthContext: Error fetching profile:", error);
+            handleFirestoreError(error, OperationType.GET, 'usuarios/' + user.uid);
+          }
+          
+          if (docSnap && docSnap.exists()) {
+            const data = docSnap.data() as UserProfile;
+            console.log("AuthContext: Profile found:", data.nivel);
+            const isAdminEmail = (user.email === 'carlessitiago@gmail.com' || user.email === 'nomelimpo.gsa@gmail.com' || user.email === 'atende.gsa@gmail.com');
+            
+            if (isAdminEmail && data.nivel !== 'ADM_MASTER') {
+              data.nivel = 'ADM_MASTER';
+              data.status_conta = 'APROVADO';
+              try {
+                await updateDoc(docRef, { nivel: 'ADM_MASTER', status_conta: 'APROVADO' });
+              } catch (error) {
+                handleFirestoreError(error, OperationType.UPDATE, 'usuarios/' + user.uid);
+              }
+            }
+            setProfile(data);
+            setRealProfile(data);
+          } else {
+            console.log("AuthContext: Profile not found. Creating default profile...");
+            // Create default profile if not exists (usually for first login)
+            const isAdmin = (user.email === 'carlessitiago@gmail.com' || user.email === 'nomelimpo.gsa@gmail.com' || user.email === 'atende.gsa@gmail.com');
+            const newProfile: UserProfile = {
+              uid: user.uid,
+              nome_completo: user.displayName || 'Usuário',
+              email: user.email || '',
+              cpf: '',
+              data_nascimento: '',
+              nivel: isAdmin ? 'ADM_MASTER' : 'CLIENTE',
+              status_conta: isAdmin ? 'APROVADO' : 'PENDENTE',
+              tem_empresa: false
+            };
+            try {
+              await setDoc(docRef, newProfile);
+            } catch (error) {
+              handleFirestoreError(error, OperationType.WRITE, 'usuarios/' + user.uid);
+            }
+
+            // Notifica o ADM Master
+            try {
+              const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
+              await addDoc(collection(db, 'notifications'), {
+                usuario_id: 'ADM_MASTER',
+                targetRole: 'ADM_MASTER',
+                title: '👤 Novo Cliente na Base',
+                message: `${newProfile.nome_completo} acabou de se cadastrar no sistema via Google e está pendente de aprovação.`,
+                tipo: 'info',
+                lida: false,
+                read: false,
+                timestamp: serverTimestamp(),
+                createdAt: serverTimestamp()
+              });
+            } catch (e) {
+              handleFirestoreError(e, OperationType.CREATE, 'notifications');
+            }
+
+            setProfile(newProfile);
+            setRealProfile(newProfile);
+          }
+        } else {
+          console.log("AuthContext: No user authenticated.");
+          setProfile(null);
+          setRealProfile(null);
+          setIsSimulating(false);
+        }
+      } catch (error) {
+        console.error("Auth initialization error:", error);
+      } finally {
+        console.log("AuthContext: Setting loading to false.");
+        setLoading(false);
+        clearTimeout(safetyTimeout);
+      }
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      clearTimeout(safetyTimeout);
+    };
   }, []);
 
   const login = async () => {

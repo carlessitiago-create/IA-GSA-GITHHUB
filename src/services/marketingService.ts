@@ -128,7 +128,7 @@ export async function criarIndicacao(data: Omit<Referral, 'id' | 'timestamp' | '
     }
 
     // 3. Notificar ADMs
-    const adminsSnapshot = await getDocs(query(collection(db, 'usuarios'), where('role', 'in', ['ADM_MASTER', 'ADM_GERENTE'])));
+    const adminsSnapshot = await getDocs(query(collection(db, 'usuarios'), where('nivel', 'in', ['ADM_MASTER', 'ADM_GERENTE'])));
     for (const adminDoc of adminsSnapshot.docs) {
       await sendNotification({
         usuario_id: adminDoc.id,
@@ -392,7 +392,7 @@ export async function solicitarOrcamentoVitrine(
     }
 
     // Notificar ADMs (Inteligência do Sistema)
-    const usersSnapshot = await getDocs(query(collection(db, 'usuarios'), where('role', 'in', ['ADM_MASTER', 'ADM_GERENTE'])));
+    const usersSnapshot = await getDocs(query(collection(db, 'usuarios'), where('nivel', 'in', ['ADM_MASTER', 'ADM_GERENTE'])));
     for (const adminDoc of usersSnapshot.docs) {
       await sendNotification({
         usuario_id: adminDoc.id,
@@ -495,7 +495,7 @@ export async function atualizarStatusLeadVitrine(
       });
 
       // Notificar Analistas (Notificação Crítica)
-      const analistasSnap = await getDocs(query(collection(db, 'usuarios'), where('role', '==', 'ADM_ANALISTA')));
+      const analistasSnap = await getDocs(query(collection(db, 'usuarios'), where('nivel', '==', 'ADM_ANALISTA')));
       for (const analistaDoc of analistasSnap.docs) {
         await sendNotification({
           usuario_id: analistaDoc.id,
@@ -531,7 +531,7 @@ export async function atualizarStatusLeadVitrine(
     }
 
     // 3. Notificar ADMs (Inteligência do Sistema)
-    const adminsSnapshot = await getDocs(query(collection(db, 'usuarios'), where('role', 'in', ['ADM_MASTER', 'ADM_GERENTE'])));
+    const adminsSnapshot = await getDocs(query(collection(db, 'usuarios'), where('nivel', 'in', ['ADM_MASTER', 'ADM_GERENTE'])));
     for (const adminDoc of adminsSnapshot.docs) {
       if (adminDoc.id !== autorId && adminDoc.id !== (vendedorSnap.exists() ? vendedorSnap.data().id_superior : null)) {
         const vendedorNome = vendedorSnap.exists() ? vendedorSnap.data().nome : 'Desconhecido';

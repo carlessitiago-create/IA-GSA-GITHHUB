@@ -124,18 +124,18 @@ export function NewSalePage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-slate-500 uppercase">Documento (CPF/CNPJ)</label>
-                    <input type="text" value={documento} onChange={e => setDocumento(formatDocument(e.target.value))} className="w-full p-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl focus:ring-2 focus:ring-blue-500" placeholder="000.000.000-00" />
+                    <input type="text" value={documento} onChange={e => setDocumento(formatDocument(e.target.value))} className="w-full p-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500" placeholder="000.000.000-00" />
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-slate-500 uppercase">WhatsApp</label>
-                    <input type="text" value={telefone} onChange={e => setTelefone(formatPhone(e.target.value))} className="w-full p-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl focus:ring-2 focus:ring-blue-500" placeholder="(00) 00000-0000" />
+                    <input type="text" value={telefone} onChange={e => setTelefone(formatPhone(e.target.value))} className="w-full p-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500" placeholder="(00) 00000-0000" />
                   </div>
                   <button onClick={handleCheckLead} className="md:col-span-2 py-4 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-blue-700 shadow-xl shadow-blue-600/20">Verificar Carteira</button>
                 </div>
               ) : (
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-500 uppercase">Selecione o Cliente</label>
-                  <select onChange={e => {setSelectedClientId(e.target.value); setCheckResult({status: 'DONO_PROPRIO'});}} className="w-full p-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl focus:ring-2 focus:ring-blue-500">
+                  <select onChange={e => {setSelectedClientId(e.target.value); setCheckResult({status: 'DONO_PROPRIO'});}} className="w-full p-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500">
                     <option value="">Selecione...</option>
                     {clients.map((c: any) => <option key={c.id} value={c.id}>{c.nome} - {c.documento}</option>)}
                   </select>

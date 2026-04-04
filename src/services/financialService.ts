@@ -202,7 +202,7 @@ export async function confirmarTransacao(transactionId: string, confirmadoPor: s
         if (pontosGestor > 0) {
           // Busca o gestor do vendedor
           const getGestor = async () => {
-            const vSnap = await getDoc(doc(db, 'users', pData.vendedor_id));
+            const vSnap = await getDoc(doc(db, 'usuarios', pData.vendedor_id));
             if (vSnap.exists()) {
               const gId = (vSnap.data() as any).id_superior || (vSnap.data() as any).gestor_id;
               if (gId) {
@@ -246,7 +246,7 @@ export async function confirmarTransacao(transactionId: string, confirmadoPor: s
           const vendedorId = saleData.vendedor_id;
           
           // Busca o gestor do vendedor
-          const vendedorSnap = await getDoc(doc(db, 'users', vendedorId));
+          const vendedorSnap = await getDoc(doc(db, 'usuarios', vendedorId));
           const gestorId = vendedorSnap.exists() ? (vendedorSnap.data() as any).gestor_id || vendedorSnap.data().id_superior : null;
           
           await processarPontosDeVenda(vendedorId, gestorId);
@@ -256,7 +256,7 @@ export async function confirmarTransacao(transactionId: string, confirmadoPor: s
       // NOVO: Bônus de Indicação (Passo 4)
       // Só paga se for uma VENDA e se o cliente tiver um padrinho e o bônus ainda não foi pago
       if (transData.venda_id && transData.origem === 'VENDA') {
-        const userSnap = await getDoc(doc(db, 'users', transData.cliente_id));
+        const userSnap = await getDoc(doc(db, 'usuarios', transData.cliente_id));
         if (userSnap.exists()) {
           const userData = userSnap.data();
           if (userData.indicado_por_uid && !userData.bonus_indicacao_pago) {
@@ -271,7 +271,7 @@ export async function confirmarTransacao(transactionId: string, confirmadoPor: s
             );
             
             // Marca como pago para não pagar de novo
-            await updateDoc(doc(db, 'users', transData.cliente_id), {
+            await updateDoc(doc(db, 'usuarios', transData.cliente_id), {
               bonus_indicacao_pago: true
             });
 

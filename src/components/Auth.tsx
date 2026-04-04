@@ -223,11 +223,11 @@ export function CompleteProfile({ profile }: { profile: any }) {
 
     setIsLoading(true);
     try {
-      await updateDoc(doc(db, 'users', profile.uid), {
+      await updateDoc(doc(db, 'usuarios', profile.uid), {
         cpf: cleanCpf,
         data_nascimento: dataNascimento,
         telefone: cleanTelefone,
-        status: 'PENDENTE'
+        status_conta: 'PENDENTE'
       });
       window.location.reload();
     } catch (error: any) {

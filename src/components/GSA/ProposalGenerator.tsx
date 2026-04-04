@@ -177,7 +177,7 @@ export const ProposalGenerator: React.FC<ProposalGeneratorProps> = ({ onClose, i
                       value={formData.lead_nome}
                       onChange={e => setFormData({...formData, lead_nome: e.target.value})}
                       placeholder="Ex: João da Silva"
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl p-4 text-sm font-medium focus:ring-4 focus:ring-blue-500/10 outline-none transition-all"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl p-4 text-sm font-medium text-slate-900 dark:text-white focus:ring-4 focus:ring-blue-500/10 outline-none transition-all"
                     />
                   </div>
                   <div className="space-y-2">
@@ -187,7 +187,7 @@ export const ProposalGenerator: React.FC<ProposalGeneratorProps> = ({ onClose, i
                       value={formData.lead_telefone}
                       onChange={e => setFormData({...formData, lead_telefone: e.target.value})}
                       placeholder="(00) 00000-0000"
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl p-4 text-sm font-medium focus:ring-4 focus:ring-blue-500/10 outline-none transition-all"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl p-4 text-sm font-medium text-slate-900 dark:text-white focus:ring-4 focus:ring-blue-500/10 outline-none transition-all"
                     />
                   </div>
                 </div>
@@ -204,7 +204,7 @@ export const ProposalGenerator: React.FC<ProposalGeneratorProps> = ({ onClose, i
                     required
                     value={formData.servico_id}
                     onChange={e => handleServiceChange(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl p-4 text-sm font-black uppercase tracking-widest outline-none focus:ring-4 focus:ring-blue-500/10 transition-all"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl p-4 text-sm font-black uppercase tracking-widest text-slate-900 dark:text-white outline-none focus:ring-4 focus:ring-blue-500/10 transition-all"
                   >
                     <option value="">Selecione um serviço...</option>
                     {services.map(s => (
@@ -230,7 +230,7 @@ export const ProposalGenerator: React.FC<ProposalGeneratorProps> = ({ onClose, i
                           type="number" 
                           value={formData.opcao_vista.valor}
                           onChange={e => setFormData({...formData, opcao_vista: {...formData.opcao_vista, valor: Number(e.target.value)}})}
-                          className="w-full bg-white dark:bg-slate-900 border border-emerald-100 dark:border-emerald-800 rounded-xl p-3 pl-10 text-sm font-black text-emerald-700 outline-none"
+                          className="w-full bg-white dark:bg-slate-900 border border-emerald-100 dark:border-emerald-800 rounded-xl p-3 pl-10 text-sm font-black text-emerald-700 dark:text-emerald-400 outline-none"
                         />
                       </div>
                     </div>
@@ -239,7 +239,7 @@ export const ProposalGenerator: React.FC<ProposalGeneratorProps> = ({ onClose, i
                       <textarea 
                         value={formData.opcao_vista.condicoes}
                         onChange={e => setFormData({...formData, opcao_vista: {...formData.opcao_vista, condicoes: e.target.value}})}
-                        className="w-full bg-white dark:bg-slate-900 border border-emerald-100 dark:border-emerald-800 rounded-xl p-3 text-xs font-medium outline-none min-h-[100px] resize-none"
+                        className="w-full bg-white dark:bg-slate-900 border border-emerald-100 dark:border-emerald-800 rounded-xl p-3 text-xs font-medium text-slate-900 dark:text-slate-200 outline-none min-h-[100px] resize-none"
                         placeholder="Ex: 5% de desconto no PIX&#10;Ativação imediata&#10;Suporte VIP"
                       />
                     </div>
@@ -260,7 +260,7 @@ export const ProposalGenerator: React.FC<ProposalGeneratorProps> = ({ onClose, i
                           type="number" 
                           value={formData.opcao_parcelado.valor}
                           onChange={e => setFormData({...formData, opcao_parcelado: {...formData.opcao_parcelado, valor: Number(e.target.value)}})}
-                          className="w-full bg-white dark:bg-slate-900 border border-blue-100 dark:border-blue-800 rounded-xl p-3 pl-10 text-sm font-black text-blue-700 outline-none"
+                          className="w-full bg-white dark:bg-slate-900 border border-blue-100 dark:border-blue-800 rounded-xl p-3 pl-10 text-sm font-black text-blue-700 dark:text-blue-400 outline-none"
                         />
                       </div>
                     </div>
@@ -269,7 +269,7 @@ export const ProposalGenerator: React.FC<ProposalGeneratorProps> = ({ onClose, i
                       <textarea 
                         value={formData.opcao_parcelado.condicoes}
                         onChange={e => setFormData({...formData, opcao_parcelado: {...formData.opcao_parcelado, condicoes: e.target.value}})}
-                        className="w-full bg-white dark:bg-slate-900 border border-blue-100 dark:border-blue-800 rounded-xl p-3 text-xs font-medium outline-none min-h-[100px] resize-none"
+                        className="w-full bg-white dark:bg-slate-900 border border-blue-100 dark:border-blue-800 rounded-xl p-3 text-xs font-medium text-slate-900 dark:text-slate-200 outline-none min-h-[100px] resize-none"
                         placeholder="Ex: Entrada + 10x no boleto&#10;Sem juros&#10;Início após 1ª parcela"
                       />
                     </div>
