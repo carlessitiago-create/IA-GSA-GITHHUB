@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, CheckCircle, Clock, Search, Filter, ChevronRight, User, Calendar, FileText, AlertCircle, X, ExternalLink, ShieldCheck, UserCheck, FileDown, Loader2, FolderOpen, AlertTriangle, XCircle } from 'lucide-react';
+import { Activity, CheckCircle, Clock, Search, Filter, ChevronRight, User, Calendar, FileText, AlertCircle, X, ExternalLink, ShieldCheck, UserCheck, FileDown, Loader2, FolderOpen, AlertTriangle, XCircle, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
-import { listarTodosProcessos, OrderProcess, atualizarStatusProcesso, abrirPendenciaCascata } from '../../services/orderService';
+import { listarTodosProcessos, OrderProcess, atualizarStatusProcesso, abrirPendenciaCascata, excluirProcesso } from '../../services/orderService';
 import { auth } from '../../firebase';
 import { motion, AnimatePresence } from 'motion/react';
 import { gerarDocumentoProcesso } from '../../services/pdfGeneratorService';
@@ -68,6 +68,37 @@ export const OperationalView: React.FC = () => {
       Swal.fire('Erro', error.message || 'Falha ao gerar documento.', 'error');
     } finally {
       setGeneratingPdf(false);
+    }
+  };
+
+  const handleDeleteProcess = async (processo: OrderProcess) => {
+    const result = await Swal.fire({
+      title: 'Excluir Processo?',
+      text: `Tem certeza que deseja excluir o processo #${processo.protocolo} de ${processo.cliente_nome}? Esta ação removerá permanentemente o processo, histórico e pendências.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Sim, excluir permanentemente!',
+      cancelButtonText: 'Cancelar'
+    });
+
+    if (result.isConfirmed) {
+      setLoading(true);
+      try {
+        await excluirProcesso(processo.id!);
+        Swal.fire('Excluído!', 'O processo foi removido com sucesso.', 'success');
+        setSelectedProcess(null);
+        
+        // Refresh list
+        const data = await listarTodosProcessos();
+        setProcessos(data);
+      } catch (error) {
+        console.error("Erro ao excluir processo:", error);
+        Swal.fire('Erro', 'Falha ao excluir o processo.', 'error');
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -527,14 +558,27 @@ export const OperationalView: React.FC = () => {
                 <X size={24} />
               </button>
 
-              <div className="p-10 border-b border-slate-50 flex items-center gap-6 bg-slate-50/50">
-                <div className="size-16 bg-blue-600 rounded-[1.5rem] flex items-center justify-center text-white shadow-2xl shadow-blue-500/20">
-                  <ShieldCheck size={32} />
+              <div className="p-10 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
+                <div className="flex items-center gap-6">
+                  <div className="size-16 bg-blue-600 rounded-[1.5rem] flex items-center justify-center text-white shadow-2xl shadow-blue-500/20">
+                    <ShieldCheck size={32} />
+                  </div>
+                  <div>
+                    <h3 className="text-3xl font-black text-[#0a0a2e] uppercase tracking-tighter italic">Auditoria do Processo</h3>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Protocolo: #{selectedProcess.protocolo || selectedProcess.id?.slice(-6).toUpperCase()}</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-3xl font-black text-[#0a0a2e] uppercase tracking-tighter italic">Auditoria do Processo</h3>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Protocolo: #{selectedProcess.protocolo || selectedProcess.id?.slice(-6).toUpperCase()}</p>
-                </div>
+
+                {/* Botão de Excluir para ADM_MASTER */}
+                {auth.currentUser?.uid && (
+                  <button 
+                    onClick={() => handleDeleteProcess(selectedProcess)}
+                    className="mr-16 px-6 py-3 bg-red-50 text-red-600 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all flex items-center gap-2 shadow-sm"
+                  >
+                    <Trash2 size={14} />
+                    Excluir Processo
+                  </button>
+                )}
               </div>
 
               <div className="flex-1 overflow-y-auto p-10 space-y-10 custom-scrollbar">

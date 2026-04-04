@@ -16,6 +16,12 @@ export function ConsultaPublicaView() {
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
 
+  const isAdminView = profile?.nivel === 'ADM_MASTER' || 
+                    profile?.nivel === 'ADM_GERENTE' || 
+                    profile?.nivel === 'ADM_ANALISTA' || 
+                    profile?.nivel === 'GESTOR' || 
+                    profile?.nivel === 'VENDEDOR';
+
   const handleSimulateClient = async (clienteUid: string) => {
     if (!clienteUid) return;
     try {
@@ -80,27 +86,31 @@ export function ConsultaPublicaView() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="flex items-center gap-3">
-          <Search className="text-blue-600 size-6 sm:size-7" />
-          <h2 className="text-2xl sm:text-3xl font-black text-slate-800 dark:text-white uppercase italic tracking-tighter">Consulta Administrativa</h2>
-        </div>
-        
-        <button 
-          onClick={() => window.open('/consulta', '_blank')}
-          className="w-full md:w-auto flex items-center justify-center gap-2 px-6 py-4 bg-blue-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 active:scale-95"
-        >
-          <ExternalLink size={14} /> Abrir Portal Externo (Link Público)
-        </button>
-      </div>
+      {isAdminView && (
+        <>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="flex items-center gap-3">
+              <Search className="text-blue-600 size-6 sm:size-7" />
+              <h2 className="text-2xl sm:text-3xl font-black text-slate-800 dark:text-white uppercase italic tracking-tighter">Consulta Administrativa</h2>
+            </div>
+            
+            <button 
+              onClick={() => window.open('/consulta', '_blank')}
+              className="w-full md:w-auto flex items-center justify-center gap-2 px-6 py-4 bg-blue-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 active:scale-95"
+            >
+              <ExternalLink size={14} /> Abrir Portal Externo (Link Público)
+            </button>
+          </div>
 
-      <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-2xl border border-blue-100 dark:border-blue-800 flex items-start gap-3">
-        <Info className="text-blue-600 mt-0.5" size={18} />
-        <p className="text-xs text-blue-800 dark:text-blue-200 leading-relaxed">
-          Este painel é para consulta administrativa rápida. O cliente final acessa através do link público: 
-          <span className="font-black underline ml-1">{getPublicOrigin()}/consulta</span>
-        </p>
-      </div>
+          <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-2xl border border-blue-100 dark:border-blue-800 flex items-start gap-3">
+            <Info className="text-blue-600 mt-0.5" size={18} />
+            <p className="text-xs text-blue-800 dark:text-blue-200 leading-relaxed">
+              Este painel é para consulta administrativa rápida. O cliente final acessa através do link público: 
+              <span className="font-black underline ml-1">{getPublicOrigin()}/consulta</span>
+            </p>
+          </div>
+        </>
+      )}
 
       <div className="text-center space-y-4">
         <div className="size-16 sm:size-20 bg-blue-600 rounded-2xl sm:rounded-[2rem] flex items-center justify-center mx-auto text-white shadow-xl shadow-blue-500/20">

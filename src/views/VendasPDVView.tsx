@@ -129,6 +129,43 @@ export function VendasPDVView({ preSelectedService, setPreSelectedService }: { p
 
       const docRef = await addDoc(collection(db, 'usuarios'), clientData);
       
+      // Notifica o ADM Master e a Hierarquia
+      try {
+        const { addDoc, collection, serverTimestamp } = await import('firebase/firestore');
+        
+        // Notifica ADM
+        await addDoc(collection(db, 'notifications'), {
+          usuario_id: 'ADM_MASTER',
+          targetRole: 'ADM_MASTER',
+          title: '👤 Novo Cadastro Hierárquico',
+          message: `${clientData.nome_completo} foi cadastrado por ${profile?.nome_completo} (${profile?.nivel}).`,
+          tipo: 'info',
+          lida: false,
+          read: false,
+          timestamp: serverTimestamp(),
+          createdAt: serverTimestamp(),
+          origem: 'hierarquia',
+          criador_id: profile?.uid,
+          criador_nome: profile?.nome_completo
+        });
+
+        // Notifica o Superior Direto (se houver e não for o próprio ADM)
+        if (profile?.id_superior && profile.id_superior !== 'ADM_MASTER') {
+          await addDoc(collection(db, 'notifications'), {
+            usuario_id: profile.id_superior,
+            title: '👥 Novo Cliente na sua Equipe',
+            message: `Seu liderado ${profile.nome_completo} cadastrou um novo cliente: ${clientData.nome_completo}.`,
+            tipo: 'info',
+            lida: false,
+            read: false,
+            timestamp: serverTimestamp(),
+            createdAt: serverTimestamp()
+          });
+        }
+      } catch (e) {
+        console.error("Erro ao enviar notificações de cadastro:", e);
+      }
+      
       Swal.fire('Sucesso', 'Cliente cadastrado com sucesso!', 'success');
       setIsRegisteringClient(false);
       setNewClient({ nome_completo: '', cpf: '', email: '', telefone: '', data_nascimento: '' });

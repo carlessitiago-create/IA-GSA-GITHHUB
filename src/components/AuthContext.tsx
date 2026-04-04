@@ -114,8 +114,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               cpf: '',
               data_nascimento: '',
               nivel: isAdmin ? 'ADM_MASTER' : 'CLIENTE',
-              status_conta: isAdmin ? 'APROVADO' : 'PENDENTE',
-              tem_empresa: false
+              status_conta: 'APROVADO',
+              tem_empresa: false,
+              data_cadastro: new Date()
             };
             try {
               await setDoc(docRef, newProfile);
@@ -123,19 +124,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               handleFirestoreError(error, OperationType.WRITE, 'usuarios/' + user.uid);
             }
 
-            // Notifica o ADM Master
+            // Notifica o ADM Master - Cadastro Público via Google
             try {
               const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
               await addDoc(collection(db, 'notifications'), {
                 usuario_id: 'ADM_MASTER',
                 targetRole: 'ADM_MASTER',
-                title: '👤 Novo Cliente na Base',
-                message: `${newProfile.nome_completo} acabou de se cadastrar no sistema via Google e está pendente de aprovação.`,
+                title: '👤 Novo Cadastro Público (Google)',
+                message: `${newProfile.nome_completo} acabou de se cadastrar no sistema via Google.`,
                 tipo: 'info',
                 lida: false,
                 read: false,
                 timestamp: serverTimestamp(),
-                createdAt: serverTimestamp()
+                createdAt: serverTimestamp(),
+                origem: 'publico'
               });
             } catch (e) {
               handleFirestoreError(e, OperationType.CREATE, 'notifications');
@@ -191,13 +193,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         data_nascimento: dataNascimento,
         telefone: telefone,
         nivel: isAdmin ? 'ADM_MASTER' : 'CLIENTE',
-        status_conta: isAdmin ? 'APROVADO' : 'PENDENTE',
+        status_conta: 'APROVADO',
         tem_empresa: false,
-        saldo_pontos: 0
+        saldo_pontos: 0,
+        data_cadastro: new Date()
       };
       
       try {
         await setDoc(doc(db, 'usuarios', newUser.uid), newProfile);
+        
+        // Notifica o ADM Master - Cadastro Público via E-mail
+        const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
+        await addDoc(collection(db, 'notifications'), {
+          usuario_id: 'ADM_MASTER',
+          targetRole: 'ADM_MASTER',
+          title: '👤 Novo Cadastro Público (E-mail)',
+          message: `${newProfile.nome_completo} acabou de se cadastrar no sistema via e-mail/senha.`,
+          tipo: 'info',
+          lida: false,
+          read: false,
+          timestamp: serverTimestamp(),
+          createdAt: serverTimestamp(),
+          origem: 'publico'
+        });
       } catch (error) {
         handleFirestoreError(error, OperationType.WRITE, 'usuarios/' + newUser.uid);
       }

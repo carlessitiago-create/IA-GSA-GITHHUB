@@ -17,6 +17,9 @@ interface GerenciarUsuariosProps {
 const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuccess }) => {
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
+  const [cpf, setCpf] = useState("");
+  const [telefone, setTelefone] = useState("");
+  const [dataNascimento, setDataNascimento] = useState("");
   const [password, setPassword] = useState("");
   const [tempPassword, setTempPassword] = useState("");
   const [role, setRole] = useState("VENDEDOR");
@@ -46,12 +49,18 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
     if (userToEdit) {
       setNome(userToEdit.nome_completo || "");
       setEmail(userToEdit.email || "");
+      setCpf(userToEdit.cpf || "");
+      setTelefone(userToEdit.telefone || "");
+      setDataNascimento(userToEdit.data_nascimento || "");
       setRole(userToEdit.nivel || "VENDEDOR");
       setStatus(userToEdit.status_conta || "APROVADO");
       setManagerId(userToEdit.id_superior || "");
     } else {
       setNome("");
       setEmail("");
+      setCpf("");
+      setTelefone("");
+      setDataNascimento("");
       // Nível padrão baseado em quem está criando
       if (currentAdminProfile?.nivel === 'GESTOR') {
         setRole("VENDEDOR");
@@ -67,6 +76,37 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
     }
   }, [userToEdit, currentAdminProfile]);
 
+  const handleDeleteUser = async () => {
+    if (!userToEdit) return;
+
+    const result = await Swal.fire({
+      title: 'Tem certeza?',
+      text: `Você está prestes a excluir o perfil de ${userToEdit.nome_completo}. Esta ação não pode ser desfeita no Firestore.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Sim, excluir!',
+      cancelButtonText: 'Cancelar'
+    });
+
+    if (result.isConfirmed) {
+      setLoading(true);
+      try {
+        const { deleteDoc, doc } = await import('firebase/firestore');
+        await deleteDoc(doc(db, "usuarios", userToEdit.uid));
+        
+        Swal.fire('Excluído!', 'O perfil do usuário foi removido do sistema.', 'success');
+        if (onSuccess) onSuccess();
+      } catch (error) {
+        console.error("Erro ao excluir usuário:", error);
+        Swal.fire('Erro', 'Não foi possível excluir o usuário.', 'error');
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
   const handleSaveUser = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -78,6 +118,9 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
           nome_completo: nome,
           nivel: role,
           status_conta: status,
+          cpf: cpf,
+          telefone: telefone,
+          data_nascimento: dataNascimento
         };
 
         // Preservar ou atualizar id_superior logicamente
@@ -127,6 +170,9 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
           nome_completo: nome,
           email: email,
           nivel: role,
+          cpf: cpf,
+          telefone: telefone,
+          data_nascimento: dataNascimento,
           data_cadastro: new Date(),
           status_conta: "APROVADO"
         };
@@ -137,6 +183,41 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
         }
 
         await setDoc(doc(db, "usuarios", newUser.uid), userData);
+
+        // Notifica o ADM Master e a Hierarquia
+        try {
+          const { addDoc, collection, serverTimestamp } = await import('firebase/firestore');
+          
+          // Notifica ADM Master (outros ADMs se houver)
+          await addDoc(collection(db, 'notifications'), {
+            usuario_id: 'ADM_MASTER',
+            targetRole: 'ADM_MASTER',
+            title: '👤 Novo Cadastro Hierárquico (Painel ADM)',
+            message: `${userData.nome_completo} foi cadastrado por um administrador.`,
+            tipo: 'info',
+            lida: false,
+            read: false,
+            timestamp: serverTimestamp(),
+            createdAt: serverTimestamp(),
+            origem: 'hierarquia'
+          });
+
+          // Notifica o Gestor se for um vendedor
+          if (role === "VENDEDOR" && managerId) {
+            await addDoc(collection(db, 'notifications'), {
+              usuario_id: managerId,
+              title: '👥 Novo Vendedor na sua Equipe',
+              message: `Um novo vendedor (${userData.nome_completo}) foi atribuído a você.`,
+              tipo: 'info',
+              lida: false,
+              read: false,
+              timestamp: serverTimestamp(),
+              createdAt: serverTimestamp()
+            });
+          }
+        } catch (e) {
+          console.error("Erro ao enviar notificações de cadastro:", e);
+        }
 
         // 3. Desloga do app secundário para limpar a memória
         await signOut(secondaryAuth);
@@ -270,18 +351,30 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
 
   return (
     <div className="max-w-4xl mx-auto">
-      <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 mb-6 sm:mb-10 text-center sm:text-left">
-        <div className="size-12 sm:size-16 bg-[#0a0a2e] rounded-2xl sm:rounded-[1.5rem] flex items-center justify-center text-white shadow-2xl shadow-blue-900/20 shrink-0">
-          {userToEdit ? <Edit3 size={24} className="sm:size-8" /> : <UserPlus size={24} className="sm:size-8" />}
+      <div className="flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-6 mb-6 sm:mb-10 text-center sm:text-left">
+        <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
+          <div className="size-12 sm:size-16 bg-[#0a0a2e] rounded-2xl sm:rounded-[1.5rem] flex items-center justify-center text-white shadow-2xl shadow-blue-900/20 shrink-0">
+            {userToEdit ? <Edit3 size={24} className="sm:size-8" /> : <UserPlus size={24} className="sm:size-8" />}
+          </div>
+          <div>
+            <h2 className="text-xl sm:text-3xl font-black text-[#0a0a2e] uppercase italic tracking-tighter leading-none">
+              {userToEdit ? 'Editar Especialista' : 'Expandir Equipe'}
+            </h2>
+            <p className="text-[8px] sm:text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-1 sm:mt-2">
+              {userToEdit ? `Configurações de ${userToEdit.nome_completo}` : 'Cadastro de Especialistas GSA IA v4.0'}
+            </p>
+          </div>
         </div>
-        <div>
-          <h2 className="text-xl sm:text-3xl font-black text-[#0a0a2e] uppercase italic tracking-tighter leading-none">
-            {userToEdit ? 'Editar Especialista' : 'Expandir Equipe'}
-          </h2>
-          <p className="text-[8px] sm:text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-1 sm:mt-2">
-            {userToEdit ? `Configurações de ${userToEdit.nome_completo}` : 'Cadastro de Especialistas GSA IA v4.0'}
-          </p>
-        </div>
+
+        {userToEdit && currentAdminProfile?.nivel === 'ADM_MASTER' && (
+          <button
+            type="button"
+            onClick={handleDeleteUser}
+            className="px-4 py-2 bg-red-50 text-red-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all flex items-center gap-2"
+          >
+            Excluir Usuário
+          </button>
+        )}
       </div>
 
       <form onSubmit={handleSaveUser} className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8">
@@ -312,6 +405,47 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
             onChange={(e) => setEmail(e.target.value)}
             className="w-full bg-slate-50 border border-slate-100 rounded-xl sm:rounded-[1.5rem] p-3.5 sm:p-5 text-xs sm:text-sm font-medium focus:ring-4 focus:ring-blue-500/10 outline-none transition-all placeholder:text-slate-300 disabled:opacity-50" 
             placeholder="email@gsa.com"
+          />
+        </div>
+
+        <div className="space-y-1.5 sm:space-y-2">
+          <label className="text-[8px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 sm:ml-4 flex items-center gap-2">
+            <Shield size={10} className="sm:size-3" />
+            CPF
+          </label>
+          <input 
+            type="text" 
+            value={cpf} 
+            onChange={(e) => setCpf(e.target.value)}
+            className="w-full bg-slate-50 border border-slate-100 rounded-xl sm:rounded-[1.5rem] p-3.5 sm:p-5 text-xs sm:text-sm font-medium focus:ring-4 focus:ring-blue-500/10 outline-none transition-all placeholder:text-slate-300" 
+            placeholder="000.000.000-00"
+          />
+        </div>
+
+        <div className="space-y-1.5 sm:space-y-2">
+          <label className="text-[8px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 sm:ml-4 flex items-center gap-2">
+            <Users size={10} className="sm:size-3" />
+            Telefone
+          </label>
+          <input 
+            type="text" 
+            value={telefone} 
+            onChange={(e) => setTelefone(e.target.value)}
+            className="w-full bg-slate-50 border border-slate-100 rounded-xl sm:rounded-[1.5rem] p-3.5 sm:p-5 text-xs sm:text-sm font-medium focus:ring-4 focus:ring-blue-500/10 outline-none transition-all placeholder:text-slate-300" 
+            placeholder="(00) 00000-0000"
+          />
+        </div>
+
+        <div className="space-y-1.5 sm:space-y-2">
+          <label className="text-[8px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 sm:ml-4 flex items-center gap-2">
+            <Users size={10} className="sm:size-3" />
+            Data de Nascimento
+          </label>
+          <input 
+            type="date" 
+            value={dataNascimento} 
+            onChange={(e) => setDataNascimento(e.target.value)}
+            className="w-full bg-slate-50 border border-slate-100 rounded-xl sm:rounded-[1.5rem] p-3.5 sm:p-5 text-xs sm:text-sm font-medium focus:ring-4 focus:ring-blue-500/10 outline-none transition-all placeholder:text-slate-300" 
           />
         </div>
 

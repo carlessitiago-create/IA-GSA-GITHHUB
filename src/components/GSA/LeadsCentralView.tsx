@@ -14,7 +14,9 @@ import {
   AlertCircle,
   Loader2,
   ShoppingBag,
-  Target
+  Target,
+  Trash2,
+  Send
 } from 'lucide-react';
 import { 
   listarLeadsVitrine, 
@@ -25,7 +27,9 @@ import {
   listarTodasIndicacoes,
   atualizarStatusIndicacao,
   Referral,
-  PropostaDetalhes
+  PropostaDetalhes,
+  excluirLeadVitrine,
+  excluirIndicacao
 } from '../../services/marketingService';
 import { listarEspecialistas, UserProfile, createSecondaryUser } from '../../services/userService';
 import { adicionarABlacklist, verificarBlacklist } from '../../services/blacklistService';
@@ -107,6 +111,42 @@ export const LeadsCentralView: React.FC = () => {
     } catch (error) {
       console.error("Erro ao atribuir lead:", error);
       Swal.fire('Erro', 'Falha ao atribuir lead.', 'error');
+    }
+  };
+
+  const handleDeleteItem = async (item: any) => {
+    const isLead = activeTab === 'leads';
+    const title = isLead ? 'Excluir Lead' : 'Excluir Indicação';
+    const text = `Tem certeza que deseja excluir ${isLead ? 'o lead de' : 'a indicação de'} ${isLead ? item.cliente_nome : item.nome_indicado}? Esta ação é irreversível.`;
+
+    const result = await Swal.fire({
+      title,
+      text,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Sim, excluir!',
+      cancelButtonText: 'Cancelar'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        if (isLead) {
+          await excluirLeadVitrine(item.id!);
+        } else {
+          await excluirIndicacao(item.id!);
+        }
+        Swal.fire('Excluído!', 'O registro foi removido com sucesso.', 'success');
+        
+        // Refresh lists
+        const [l, r] = await Promise.all([listarLeadsVitrine(), listarTodasIndicacoes()]);
+        setLeads(l);
+        setReferrals(r);
+      } catch (error) {
+        console.error("Erro ao excluir:", error);
+        Swal.fire('Erro', 'Falha ao excluir o registro.', 'error');
+      }
     }
   };
 
@@ -461,6 +501,15 @@ export const LeadsCentralView: React.FC = () => {
                     className="px-3 py-2 bg-indigo-500 text-white rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-sm"
                   >
                     Enviar Proposta
+                  </button>
+                )}
+                {profile?.nivel === 'ADM_MASTER' && (
+                  <button 
+                    onClick={() => handleDeleteItem(item)}
+                    className="px-3 py-2 bg-red-50 text-red-600 rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all shadow-sm flex items-center gap-1.5"
+                  >
+                    <Trash2 size={10} />
+                    Excluir
                   </button>
                 )}
               </div>
