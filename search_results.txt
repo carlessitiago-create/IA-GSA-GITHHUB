@@ -1,0 +1,48 @@
+src/components/GSA/ProcessModelEditor.tsx:            <input 
+src/components/GSA/ProcessModelEditor.tsx:            <input 
+src/components/GSA/PortalSettingsView.tsx:              <input 
+src/components/GSA/PortalSettingsView.tsx:                <input 
+src/components/GSA/PortalSettingsView.tsx:              <input 
+src/components/GSA/PortalSettingsView.tsx:              <input 
+src/components/GSA/PortalSettingsView.tsx:              <input 
+src/components/GSA/PortalSettingsView.tsx:              <input 
+src/components/GSA/PortalSettingsView.tsx:            <input 
+src/components/GSA/DynamicCaptureForm.tsx:                  <input 
+src/components/GSA/DynamicCaptureForm.tsx:                    <input 
+src/components/GSA/SmartFicha.tsx:              <input 
+src/components/GSA/ProcessModelsManager.tsx:                <input 
+src/components/GSA/FileUploader.tsx:          <input type="file" className="hidden" onChange={handleFileChange} accept="image/*,.pdf" />
+src/components/GSA/LeadsView.tsx:        '<input id="swal-input1" class="swal2-input w-full" placeholder="Nome Completo">' +
+src/components/GSA/LeadsView.tsx:        '<input id="swal-input2" class="swal2-input w-full" placeholder="E-mail">' +
+src/components/GSA/LeadsView.tsx:        '<input id="swal-input3" class="swal2-input w-full" placeholder="CPF (Apenas números)">' +
+src/components/GSA/LeadsView.tsx:          (document.getElementById('swal-input1') as HTMLInputElement).value,
+src/components/GSA/LeadsView.tsx:          (document.getElementById('swal-input2') as HTMLInputElement).value,
+src/components/GSA/LeadsView.tsx:          (document.getElementById('swal-input3') as HTMLInputElement).value
+src/components/GSA/PointsSettingsView.tsx:        <input id="swal-input1" class="swal2-input" placeholder="Nome do Produto">
+src/components/GSA/PointsSettingsView.tsx:        <input id="swal-input2" class="swal2-input" type="number" placeholder="Pontos necessários">
+src/components/GSA/PointsSettingsView.tsx:        <input id="swal-input3" class="swal2-input" placeholder="URL da Foto">
+src/components/GSA/PointsSettingsView.tsx:        const nome = (document.getElementById('swal-input1') as HTMLInputElement).value;
+src/components/GSA/PointsSettingsView.tsx:        const pontos = (document.getElementById('swal-input2') as HTMLInputElement).value;
+src/components/GSA/PointsSettingsView.tsx:        const foto = (document.getElementById('swal-input3') as HTMLInputElement).value;
+src/components/GSA/PointsSettingsView.tsx:              <input 
+src/components/GSA/PointsSettingsView.tsx:              <input 
+src/components/GSA/PointsSettingsView.tsx:              <input 
+src/components/GSA/PointsSettingsView.tsx:              <input 
+src/components/GSA/PointsSettingsView.tsx:              <input 
+src/components/GSA/PointsSettingsView.tsx:              <input 
+src/components/GSA/OperationalView.tsx:            <input 
+src/components/GSA/LeadModal.tsx:                    <input
+src/components/GSA/LeadModal.tsx:                        <input
+src/components/GSA/LeadModal.tsx:                        <input
+src/components/GSA/LeadModal.tsx:                        <input
+src/components/GSA/LeadModal.tsx:                        <input
+src/components/GSA/LeadModal.tsx:                        <input
+src/components/GSA/LeadModal.tsx:                        <input
+src/components/GSA/LeadModal.tsx:                      <input
+src/components/GSA/AuditoriaProcesso.tsx:                      <input 
+src/components/ProcessCard.tsx:                          input: 'number',
+src/components/ProcessCard.tsx:                          inputLabel: 'Informe os dias de atraso',
+src/components/ProcessCard.tsx:                          inputValue: 11,
+src/components/dashboard/OpenInvoices.tsx:                            input: 'number',
+src/components/dashboard/OpenInvoices.tsx:                            inputLabel: 'Dias de Atraso',
+src/components/dashboard/OpenInvoices.tsx:                            inputValue: 1,

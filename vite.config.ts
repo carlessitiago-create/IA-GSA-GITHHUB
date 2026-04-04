@@ -1,0 +1,29 @@
+// Arquivo: vite.config.ts
+import tailwindcss from '@tailwindcss/vite';
+import react from '@vitejs/plugin-react';
+import path from 'path';
+import { defineConfig, loadEnv } from 'vite';
+
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, '.', '');
+  
+  return {
+    plugins: [react(), tailwindcss()],
+    define: {
+      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
+    },
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, '.'),
+      },
+    },
+    server: {
+      // Forçamos o HMR (Atualização a Quente) a ficar ativado
+      hmr: true, 
+      // O Polling força o Vite a checar os arquivos ativamente (corrige bugs de preview que não atualiza)
+      watch: {
+        usePolling: true,
+      },
+    },
+  };
+});

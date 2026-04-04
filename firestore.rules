@@ -1,0 +1,183 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data;
+    }
+
+    function getRole() {
+      return getUserData().nivel;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        (request.auth.token.email in ["carlessitiago@gmail.com", "nomelimpo.gsa@gmail.com", "atende.gsa@gmail.com"] && request.auth.token.email_verified == true) ||
+        getRole() in ['ADM_MASTER', 'ADM_GERENTE', 'ADM_ANALISTA']
+      );
+    }
+
+    function isMaster() {
+      return isAuthenticated() && (
+        (request.auth.token.email == "carlessitiago@gmail.com" && request.auth.token.email_verified == true) ||
+        getRole() == 'ADM_MASTER'
+      );
+    }
+
+    function isGerente() {
+      return isAuthenticated() && getRole() == 'ADM_GERENTE';
+    }
+
+    function isAnalista() {
+      return isAuthenticated() && getRole() == 'ADM_ANALISTA';
+    }
+
+    function isGestor() {
+      return isAuthenticated() && getRole() == 'GESTOR';
+    }
+
+    function isVendedor() {
+      return isAuthenticated() && getRole() == 'VENDEDOR';
+    }
+
+    function isCliente() {
+      return isAuthenticated() && getRole() == 'CLIENTE';
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    // Usuarios
+    match /usuarios/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && (isAdmin() || isOwner(userId));
+      allow update: if isAuthenticated() && (isAdmin() || isOwner(userId));
+      allow delete: if isMaster();
+    }
+
+    // Servicos (Fábrica de Serviços)
+    match /services/{serviceId} {
+      allow read: if true; // Público para vitrine e propostas
+      allow write: if isAdmin();
+    }
+
+    // Clients (Clientes e Trava de Carteira)
+    match /clients/{clientId} {
+      allow read: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor() || isOwner(resource.data.especialista_id));
+      allow create: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor());
+      allow update: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor() || isOwner(resource.data.especialista_id));
+      allow delete: if isMaster();
+    }
+
+    // Documento Locks (Trava de CPF/CNPJ)
+    match /documento_locks/{docId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor());
+      allow update, delete: if isMaster();
+    }
+
+    // Processos (Workflow de Processos)
+    match /order_processes/{processId} {
+      allow read: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor() || isOwner(resource.data.vendedor_id) || isOwner(resource.data.cliente_id));
+      allow create: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor());
+      allow update: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor() || isOwner(resource.data.vendedor_id));
+      allow delete: if isMaster();
+    }
+
+    // Pendencias (Workflow de Pendências)
+    match /pendencies/{pendId} {
+      allow read: if isAuthenticated() && (
+        isAdmin() || isGestor() || isVendedor() || isOwner(resource.data.vendedorId) || (isCliente() && resource.data.status_pendencia == 'ENVIADO_CLIENTE')
+      );
+      allow create: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor());
+      allow update: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor() || isCliente());
+      allow delete: if isMaster();
+    }
+
+    // Wallets (Financeiro)
+    match /wallets/{walletId} {
+      allow read: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor() || isOwner(resource.data.userId));
+      allow write: if isAdmin();
+    }
+
+    // Financial Transactions
+    match /financial_transactions/{transId} {
+      allow read: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor() || isOwner(resource.data.vendedor_id));
+      allow create: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor());
+      allow update, delete: if isMaster();
+    }
+
+    // Sales
+    match /sales/{saleId} {
+      allow read: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor() || isOwner(resource.data.vendedor_id) || isOwner(resource.data.cliente_id));
+      allow create: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor());
+      allow update: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor());
+      allow delete: if isMaster();
+    }
+
+    // Notifications
+    match /notifications/{notifId} {
+      allow read: if isAuthenticated() && (isOwner(resource.data.usuario_id) || (resource.data.targetRole != null && getRole() == resource.data.targetRole));
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && isOwner(resource.data.usuario_id);
+      allow delete: if isAuthenticated() && isOwner(resource.data.usuario_id);
+    }
+
+    // Referrals (Indicações)
+    match /referrals/{refId} {
+      allow read: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor() || isOwner(resource.data.cliente_origem_id) || isOwner(resource.data.vendedor_id));
+      allow create: if true; // Permitir criação pública (necessário para indicações via vitrine)
+      allow update: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor());
+      allow delete: if isMaster();
+    }
+
+    // Showcase Services (Vitrine)
+    match /showcase_services/{serviceId} {
+      allow read: if true; // Público para vitrine
+      allow write: if isAdmin();
+    }
+
+    // Showcase Leads (Pedidos de Orçamento da Vitrine)
+    match /showcase_leads/{leadId} {
+      allow read: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor() || isOwner(resource.data.cliente_id) || isOwner(resource.data.vendedor_id));
+      allow create: if true; // Permitir criação pública para leads da vitrine
+      allow update: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor() || isOwner(resource.data.cliente_id));
+      allow delete: if isMaster();
+    }
+
+    // Tickets & Messages
+    match /tickets/{ticketId} {
+      allow read: if isAuthenticated() && (isAdmin() || isGestor() || isOwner(resource.data.clientId) || isOwner(resource.data.sellerId));
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && (isAdmin() || isGestor() || isOwner(resource.data.clientId) || isOwner(resource.data.sellerId));
+      allow delete: if isMaster();
+
+      match /messages/{msgId} {
+        allow read: if isAuthenticated() && (isAdmin() || isGestor() || isOwner(get(/databases/$(database)/documents/tickets/$(ticketId)).data.clientId) || isOwner(get(/databases/$(database)/documents/tickets/$(ticketId)).data.sellerId));
+        allow create: if isAuthenticated();
+      }
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if isMaster();
+    }
+  }
+}

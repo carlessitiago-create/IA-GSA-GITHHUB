@@ -1,0 +1,476 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "System user with hierarchical role (Pro Version)",
+      "type": "object",
+      "properties": {
+        "nome_completo": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "cpf": { "type": "string", "description": "CPF (Sensitive - PII) - Unique Lock" },
+        "data_nascimento": { "type": "string", "format": "date", "description": "Date of birth" },
+        "telefone": { "type": "string" },
+        "whatsapp": { "type": "string" },
+        "nivel": { "type": "string", "enum": ["ADM_MASTER", "ADM_GERENTE", "ADM_ANALISTA", "GESTOR", "VENDEDOR", "CLIENTE"] },
+        "id_superior": { "type": "string", "description": "ID of the superior/manager" },
+        "tem_empresa": { "type": "boolean", "default": false },
+        "nome_empresa": { "type": "string", "description": "Company Name" },
+        "cnpj": { "type": "string", "description": "Company CNPJ" },
+        "status_conta": { "type": "string", "default": "APROVADO", "enum": ["APROVADO", "PENDENTE", "BLOQUEADO"] },
+        "data_cadastro": { "type": "string", "format": "date-time" },
+        "saldo_pontos": { "type": "integer", "description": "Points balance in the GSA Club" }
+      },
+      "required": ["nome_completo", "email", "nivel", "cpf", "data_nascimento"]
+    },
+    "Lead": {
+      "title": "Lead",
+      "description": "Referral lead for the sales team",
+      "type": "object",
+      "properties": {
+        "nome": { "type": "string" },
+        "telefone": { "type": "string" },
+        "indicado_por_uid": { "type": "string" },
+        "indicado_por_nome": { "type": "string" },
+        "status": { "type": "string", "enum": ["NOVO", "RETORNO_POSITIVO", "NUMERO_NAO_EXISTE"] },
+        "data_indicacao": { "type": "string", "format": "date-time" }
+      },
+      "required": ["nome", "telefone", "indicado_por_uid", "status", "data_indicacao"]
+    },
+    "BlockedNumber": {
+      "title": "Blocked Number",
+      "description": "Blacklisted phone numbers to prevent fraud",
+      "type": "object",
+      "properties": {
+        "telefone": { "type": "string" },
+        "bloqueado_em": { "type": "string", "format": "date-time" },
+        "motivo": { "type": "string" }
+      },
+      "required": ["telefone", "bloqueado_em"]
+    },
+    "Client": {
+      "title": "Client",
+      "description": "Client portfolio with Document Lock (Pro Version)",
+      "type": "object",
+      "properties": {
+        "nome": { "type": "string" },
+        "documento": { "type": "string", "description": "CPF/CNPJ (Unique Trava)" },
+        "telefone": { "type": "string" },
+        "data_nascimento": { "type": "string", "format": "date" },
+        "vendedor_id": { "type": "string", "$ref": "User" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["nome", "documento", "telefone", "vendedor_id"]
+    },
+    "ConflictLog": {
+      "title": "Conflict Log",
+      "description": "Records attempts to register an already owned client",
+      "type": "object",
+      "properties": {
+        "tentou_id": { "type": "string", "$ref": "User" },
+        "dono_id": { "type": "string", "$ref": "User" },
+        "cliente_documento": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["tentou_id", "dono_id", "cliente_documento", "timestamp"]
+    },
+    "Service": {
+      "title": "Service",
+      "description": "Service factory configurations (Pro Version)",
+      "type": "object",
+      "properties": {
+        "nome_servico": { "type": "string" },
+        "descricao": { "type": "string" },
+        "video_youtube_url": { "type": "string" },
+        "video_thumbnail_url": { "type": "string" },
+        "prazo_sla_dias": { "type": "integer" },
+        "preco_base_gestor": { "type": "number" },
+        "preco_base_vendedor": { "type": "number" },
+        "ciclo_status": { "type": "string", "enum": ["LIBERADO", "ENCERRADO"] },
+        "pontos_cliente": { "type": "integer", "default": 10 },
+        "pontos_vendedor": { "type": "integer", "default": 50 },
+        "pontos_gestor": { "type": "integer", "default": 20 },
+        "ativo": { "type": "boolean", "default": true },
+        "bloqueado_ate": { "type": "string", "format": "date-time" },
+        "data_cadastro": { "type": "string", "format": "date-time" }
+      },
+      "required": ["nome_servico", "prazo_sla_dias", "preco_base_gestor", "preco_base_vendedor", "ciclo_status"]
+    },
+    "Sale": {
+      "title": "Sale",
+      "description": "Group of services sold to a client",
+      "type": "object",
+      "properties": {
+        "protocolo": { "type": "string", "description": "Unique ID like #GSA-2024-1001" },
+        "cliente_id": { "type": "string", "$ref": "Client" },
+        "cliente_nome": { "type": "string", "description": "Desnormalized for performance" },
+        "vendedor_id": { "type": "string", "$ref": "User" },
+        "vendedor_nome": { "type": "string", "description": "Desnormalized for performance" },
+        "id_superior": { "type": "string", "description": "UID of the GESTOR responsible for the seller" },
+        "valor_total": { "type": "number" },
+        "margem_total": { "type": "number" },
+        "metodo_pagamento": { "type": "string", "enum": ["PIX", "CARTEIRA"] },
+        "status_pagamento": { "type": "string", "enum": ["Pendente", "Aguardando Confirmação", "Pago", "Débito em Carteira", "Vencida"] },
+        "comprovante_url": { "type": "string" },
+        "dias_atraso": { "type": "integer" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["protocolo", "cliente_id", "vendedor_id", "valor_total", "metodo_pagamento", "status_pagamento", "timestamp"]
+    },
+    "Wallet": {
+      "title": "Wallet",
+      "description": "Digital Wallet (Pro Version)",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "$ref": "User" },
+        "saldo_atual": { "type": "number", "default": 0 },
+        "saldo_bonus": { "type": "number", "default": 0 },
+        "ultima_movimentacao": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "saldo_atual"]
+    },
+    "FinancialTransaction": {
+      "title": "Financial Transaction",
+      "description": "Record of credit or debit in a wallet",
+      "type": "object",
+      "properties": {
+        "cliente_id": { "type": "string", "$ref": "Client" },
+        "valor": { "type": "number", "description": "Positive for credit, negative for debit" },
+        "tipo": { "type": "string", "enum": ["CREDITO", "DEBITO"] },
+        "origem": { "type": "string", "enum": ["VENDA", "BONUS_INDICACAO", "DEPOSITO_PIX", "AJUSTE_ADM"] },
+        "descricao": { "type": "string" },
+        "venda_id": { "type": "string", "$ref": "Sale" },
+        "comprovante_url": { "type": "string" },
+        "vendedor_id": { "type": "string", "$ref": "User" },
+        "id_superior": { "type": "string", "description": "UID of the GESTOR responsible for the seller" },
+        "confirmado_pelo_administrador": { "type": "boolean" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["cliente_id", "valor", "tipo", "origem", "descricao", "confirmado_pelo_administrador", "timestamp"]
+    },
+    "OrderProcess": {
+      "title": "Order Process",
+      "description": "Workflow process (Pro Version)",
+      "type": "object",
+      "properties": {
+        "protocolo": { "type": "string" },
+        "cliente_id": { "type": "string", "$ref": "Client" },
+        "cliente_nome": { "type": "string" },
+        "cliente_cpf_cnpj": { "type": "string" },
+        "vendedor_id": { "type": "string", "$ref": "User" },
+        "vendedor_nome": { "type": "string" },
+        "id_superior": { "type": "string" },
+        "gestor_nome": { "type": "string" },
+        "servico_id": { "type": "string", "$ref": "Service" },
+        "servico_nome": { "type": "string" },
+        "status_atual": { "type": "string", "default": "PENDENTE" },
+        "url_nada_consta": { "type": "string", "description": "Final document URL" },
+        "data_venda": { "type": "string", "format": "date-time" },
+        "data_conclusao": { "type": "string", "format": "date-time" },
+        "status_financeiro": { "type": "string", "enum": ["PENDENTE", "PAGO", "VENCIDO"] }
+      },
+      "required": ["protocolo", "cliente_id", "vendedor_id", "servico_id", "status_atual"]
+    },
+    "PendingIssue": {
+      "title": "Pending Issue",
+      "description": "Workflow pendency (Pro Version)",
+      "type": "object",
+      "properties": {
+        "processo_id": { "type": "string", "$ref": "OrderProcess" },
+        "criado_por_id": { "type": "string", "$ref": "User" },
+        "msg_interna": { "type": "string" },
+        "msg_publica": { "type": "string" },
+        "status_pendencia": { "type": "string", "enum": ["AGUARDANDO_GESTOR", "ENVIADO_CLIENTE", "RESOLVIDO"] },
+        "anexo_url": { "type": "string" },
+        "criadaEm": { "type": "string", "format": "date-time" }
+      },
+      "required": ["processo_id", "criado_por_id", "status_pendencia", "criadaEm"]
+    },
+    "PendencyAuditLog": {
+      "title": "Pendency Audit Log",
+      "description": "Audit trail for pendency interactions",
+      "type": "object",
+      "properties": {
+        "pendencia_id": { "type": "string", "$ref": "PendingIssue" },
+        "origem_usuario_id": { "type": "string", "$ref": "User" },
+        "destino_papel": { "type": "string", "enum": ["GESTOR", "VENDEDOR", "CLIENTE"] },
+        "msg_publica": { "type": "string" },
+        "msg_interna": { "type": "string" },
+        "anexo_url": { "type": "string" },
+        "data_log": { "type": "string", "format": "date-time" },
+        "tipo_bloco": { "type": "string", "enum": ["AZUL", "AMARELO", "VERDE"] }
+      },
+      "required": ["pendencia_id", "origem_usuario_id", "data_log"]
+    },
+    "StatusHistory": {
+      "title": "Status History",
+      "description": "Audit log for process status changes",
+      "type": "object",
+      "properties": {
+        "processo_id": { "type": "string", "$ref": "OrderProcess" },
+        "status_anterior": { "type": "string" },
+        "novo_status": { "type": "string" },
+        "usuario_id": { "type": "string", "$ref": "User" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["processo_id", "novo_status", "usuario_id", "timestamp"]
+    },
+    "Referral": {
+      "title": "Referral",
+      "description": "Customer referrals",
+      "type": "object",
+      "properties": {
+        "cliente_origem_id": { "type": "string", "$ref": "Client" },
+        "nome_indicado": { "type": "string" },
+        "telefone_indicado": { "type": "string" },
+        "url_da_midia": { "type": "string" },
+        "youtube_url": { "type": "string" },
+        "vendedor_id": { "type": "string", "$ref": "User" },
+        "status_indicacao": { "type": "string", "enum": ["Enviado", "Feito Contato", "Aguardando Retorno", "Retorno Positivo", "Sem Retorno"] },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["cliente_origem_id", "nome_indicado", "telefone_indicado", "vendedor_id", "status_indicacao", "timestamp"]
+    },
+    "ShowcaseService": {
+      "title": "ShowcaseService",
+      "description": "Services displayed in the client showcase",
+      "type": "object",
+      "properties": {
+        "titulo": { "type": "string" },
+        "descricao_curta": { "type": "string" },
+        "descricao_longa": { "type": "string" },
+        "imagem_capa_url": { "type": "string" },
+        "ativo": { "type": "boolean" }
+      },
+      "required": ["titulo", "descricao_curta", "descricao_longa", "imagem_capa_url", "ativo"]
+    },
+    "ShowcaseLead": {
+      "title": "ShowcaseLead",
+      "description": "Leads generated from the showcase",
+      "type": "object",
+      "properties": {
+        "cliente_id": { "type": "string", "$ref": "Client" },
+        "servico_id": { "type": "string", "$ref": "ShowcaseService" },
+        "vendedor_id": { "type": "string", "$ref": "User" },
+        "status": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["cliente_id", "servico_id", "vendedor_id", "status", "timestamp"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "User notification",
+      "type": "object",
+      "properties": {
+        "usuario_id": { "type": "string", "$ref": "User" },
+        "titulo": { "type": "string" },
+        "mensagem": { "type": "string" },
+        "lida": { "type": "boolean" },
+        "tipo": { "type": "string", "enum": ["STATUS_CHANGE", "BONUS", "NEW_LEAD", "SYSTEM", "SALE", "REFERRAL", "PROCESS", "FINANCIAL"] },
+        "visibilidade_uids": { "type": "array", "items": { "type": "string" } },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["usuario_id", "titulo", "mensagem", "lida", "tipo", "timestamp"]
+    },
+    "PlatformConfig": {
+      "title": "Platform Config",
+      "description": "Global platform settings",
+      "type": "object",
+      "properties": {
+        "referral_bonus": { "type": "number" }
+      },
+      "required": ["referral_bonus"]
+    },
+    "ProcessModel": {
+      "title": "Process Model",
+      "description": "Dynamic requirements for a service process",
+      "type": "object",
+      "properties": {
+        "nome": { "type": "string" },
+        "campos": { "type": "array", "items": { "type": "string" } },
+        "documentos": { "type": "array", "items": { "type": "string" } },
+        "data_atualizacao": { "type": "string", "format": "date-time" }
+      },
+      "required": ["nome", "campos", "documentos"]
+    },
+    "ClubRule": {
+      "title": "Club Rule",
+      "description": "Point accumulation rules",
+      "type": "object",
+      "properties": {
+        "tipo": { "type": "string", "enum": ["INDICACAO_CONVERTIDA", "PAGAMENTO_DIA", "PAGAMENTO_ANTECIPADO", "VENDA_PROPRIA", "VENDA_EQUIPE"] },
+        "pontos": { "type": "integer" },
+        "descricao": { "type": "string" }
+      },
+      "required": ["tipo", "pontos"]
+    },
+    "ClubReward": {
+      "title": "Club Reward",
+      "description": "Prizes available for redemption",
+      "type": "object",
+      "properties": {
+        "nome": { "type": "string" },
+        "descricao": { "type": "string" },
+        "pontos_necessarios": { "type": "integer" },
+        "foto_url": { "type": "string" },
+        "ativo": { "type": "boolean" }
+      },
+      "required": ["nome", "pontos_necessarios", "ativo"]
+    },
+    "PointTransaction": {
+      "title": "Point Transaction",
+      "description": "History of points earned or spent",
+      "type": "object",
+      "properties": {
+        "usuario_id": { "type": "string", "$ref": "User" },
+        "pontos": { "type": "integer", "description": "Positive for earn, negative for spend" },
+        "tipo": { "type": "string", "enum": ["GANHO", "RESGATE", "AJUSTE"] },
+        "descricao": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["usuario_id", "pontos", "tipo", "descricao", "timestamp"]
+    },
+    "Ticket": {
+      "title": "Support Ticket",
+      "description": "A support conversation between a client and a seller",
+      "type": "object",
+      "properties": {
+        "clientId": { "type": "string", "description": "UID of the client" },
+        "clientNome": { "type": "string" },
+        "sellerId": { "type": "string", "description": "UID of the seller" },
+        "sellerNome": { "type": "string" },
+        "id_superior": { "type": "string", "description": "UID of the manager" },
+        "status": { "type": "string", "enum": ["ABERTO", "AGUARDANDO_CLIENTE", "RESOLVIDO"] },
+        "lastMessage": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["clientId", "sellerId", "status", "createdAt", "updatedAt"]
+    },
+    "DocumentoLock": {
+      "title": "Documento Lock",
+      "description": "Unique lock for CPF/CNPJ (Pro Version)",
+      "type": "object",
+      "properties": {
+        "documento": { "type": "string" },
+        "dono_id": { "type": "string", "$ref": "User" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["documento", "dono_id", "timestamp"]
+    },
+    "Message": {
+      "title": "Ticket Message",
+      "description": "An individual message within a support ticket",
+      "type": "object",
+      "properties": {
+        "text": { "type": "string" },
+        "senderId": { "type": "string" },
+        "senderNome": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "attachments": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["text", "senderId", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/usuarios/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "/leads/{leadId}": {
+      "schema": "Lead",
+      "description": "Referral leads"
+    },
+    "/blocked_numbers/{numberId}": {
+      "schema": "BlockedNumber",
+      "description": "Blacklisted phone numbers"
+    },
+    "/clients/{clientId}": {
+      "schema": "Client",
+      "description": "Client portfolio"
+    },
+    "/conflict_logs/{logId}": {
+      "schema": "ConflictLog",
+      "description": "Conflict radar data"
+    },
+    "/services/{serviceId}": {
+      "schema": "Service",
+      "description": "Service factory configurations"
+    },
+    "/sales/{saleId}": {
+      "schema": "Sale",
+      "description": "Sales headers"
+    },
+    "/order_processes/{processId}": {
+      "schema": "OrderProcess",
+      "description": "Individual service processes"
+    },
+    "/pendencies/{pendencyId}": {
+      "schema": "PendingIssue",
+      "description": "Process pendencies"
+    },
+    "/pendency_audit_logs/{logId}": {
+      "schema": "PendencyAuditLog",
+      "description": "Audit logs for pendency interactions"
+    },
+    "/status_history/{historyId}": {
+      "schema": "StatusHistory",
+      "description": "Audit logs for status changes"
+    },
+    "/wallets/{walletId}": {
+      "schema": "Wallet",
+      "description": "Client wallet balances"
+    },
+    "/financial_transactions/{transactionId}": {
+      "schema": "FinancialTransaction",
+      "description": "Wallet transaction history"
+    },
+    "/referrals/{referralId}": {
+      "schema": "Referral",
+      "description": "Customer referrals"
+    },
+    "/showcase_services/{serviceId}": {
+      "schema": "ShowcaseService",
+      "description": "Showcase services"
+    },
+    "/showcase_leads/{leadId}": {
+      "schema": "ShowcaseLead",
+      "description": "Showcase leads"
+    },
+    "/notifications/{notificationId}": {
+      "schema": "Notification",
+      "description": "System notifications for users"
+    },
+    "/platform_config/{configId}": {
+      "schema": "PlatformConfig",
+      "description": "Global platform settings"
+    },
+    "/process_models/{modelId}": {
+      "schema": "ProcessModel",
+      "description": "Dynamic service requirements"
+    },
+    "/club_rules/{ruleId}": {
+      "schema": "ClubRule",
+      "description": "Points club rules"
+    },
+    "/club_rewards/{rewardId}": {
+      "schema": "ClubReward",
+      "description": "Points club rewards"
+    },
+    "/point_transactions/{transactionId}": {
+      "schema": "PointTransaction",
+      "description": "Points club transaction history"
+    },
+    "/documento_locks/{docId}": {
+      "schema": "DocumentoLock",
+      "description": "Unique locks for CPF/CNPJ"
+    },
+    "/tickets/{ticketId}": {
+      "schema": "Ticket",
+      "description": "Support tickets"
+    },
+    "/tickets/{ticketId}/messages/{messageId}": {
+      "schema": "Message",
+      "description": "Messages within a ticket"
+    }
+  }
+}

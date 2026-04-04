@@ -1,0 +1,101 @@
+import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { 
+  Shield, Users, PlusCircle, LayoutDashboard, History, Settings, 
+  Package, DollarSign, TrendingUp, Bell, ClipboardList, Gift, 
+  ShoppingBag, LogOut, ChevronRight, Activity, AlertTriangle, X
+} from 'lucide-react';
+
+
+export function Sidebar({ currentProfile, logout, onClose }: any) {
+  const location = useLocation();
+  const role = currentProfile?.role || 'CLIENTE';
+
+  const isActive = (path: string) => location.pathname === `/${path}`;
+
+  const MenuItem = ({ to, icon: Icon, label, color = "text-slate-400" }: any) => (
+    <Link
+      to={`/${to}`}
+      onClick={onClose}
+      className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${
+        isActive(to) 
+          ? 'bg-[#0a0a2e] text-white shadow-lg shadow-blue-900/20' 
+          : 'text-slate-400 hover:bg-slate-800/50 hover:text-white'
+      }`}
+    >
+      <Icon size={18} className={isActive(to) ? 'text-blue-400' : color} />
+      <span className="text-xs font-bold uppercase tracking-widest">{label}</span>
+      {isActive(to) && <ChevronRight size={14} className="ml-auto text-blue-400" />}
+    </Link>
+  );
+
+  return (
+    <aside className="w-72 bg-[#050517] h-screen flex flex-col border-r border-white/5 z-50">
+      <div className="p-8 flex items-center justify-between">
+        <div className="flex items-center gap-3 px-2">
+          <div className="bg-blue-600 p-2 rounded-xl shadow-lg shadow-blue-600/20">
+            <Shield className="text-white" size={24} />
+          </div>
+          <h1 className="text-2xl font-black text-white tracking-tighter italic">GSA IA</h1>
+        </div>
+        <button 
+          onClick={onClose}
+          className="lg:hidden p-2 text-slate-400 hover:text-white transition-colors"
+        >
+          <X size={24} />
+        </button>
+      </div>
+
+      <nav className="flex-1 overflow-y-auto px-4 space-y-8 custom-scrollbar">
+        {/* CATEGORIA: VENDAS */}
+        {(role !== 'CLIENTE') && (
+          <div className="space-y-2">
+            <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Vendas</p>
+            <MenuItem to="new_sale" icon={PlusCircle} label="Nova Venda" />
+            <MenuItem to="clients" icon={Users} label="Clientes" />
+          </div>
+        )}
+
+        {/* CATEGORIA: GESTÃO */}
+        <div className="space-y-2">
+          <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Gestão</p>
+          <MenuItem to="audit_center" icon={ClipboardList} label="Auditoria/Pendências" />
+          <MenuItem to="processes_history" icon={History} label="Histórico de Processos" />
+          <MenuItem to="pendencies_warning" icon={AlertTriangle} label="Aviso de Pendências" color="text-amber-500" />
+        </div>
+
+        {/* CATEGORIA: FINANCEIRO (ADM APENAS) */}
+        {(role.startsWith('ADM')) && (
+          <div className="space-y-2">
+            <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Financeiro</p>
+            <MenuItem to="financeiro" icon={DollarSign} label="Conciliação" color="text-emerald-500" />
+            <MenuItem to="intelligence" icon={Activity} label="Inteligência" />
+          </div>
+        )}
+
+        {/* CATEGORIA: ÁREA DO CLIENTE */}
+        <div className="space-y-2">
+          <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Minha Conta</p>
+          <MenuItem to="my_processes" icon={LayoutDashboard} label="Meus Processos" />
+          <MenuItem to="wallet" icon={DollarSign} label="Carteira Digital" color="text-emerald-500" />
+          <MenuItem to="showcase" icon={ShoppingBag} label="Vitrine" />
+        </div>
+      </nav>
+
+      <div className="p-6 border-t border-white/5 bg-white/5">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="size-10 rounded-full bg-blue-600 flex items-center justify-center font-black text-white">
+            {currentProfile?.nome?.charAt(0)}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-bold text-white truncate">{currentProfile?.nome}</p>
+            <p className="text-[10px] font-black text-blue-400 uppercase">{role.replace('_', ' ')}</p>
+          </div>
+        </div>
+        <button onClick={logout} className="w-full flex items-center justify-center gap-2 py-3 bg-red-500/10 text-red-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all">
+          <LogOut size={14} /> Sair do Sistema
+        </button>
+      </div>
+    </aside>
+  );
+}

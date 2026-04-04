@@ -1,0 +1,381 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  ClipboardList, 
+  Clock, 
+  CheckCircle2, 
+  AlertCircle, 
+  ArrowRight, 
+  FileText, 
+  MessageSquare,
+  Package,
+  ExternalLink,
+  ChevronRight,
+  Search,
+  Filter
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { aceitarPropostaLeadVitrine, atualizarStatusLeadVitrine, LeadStatus } from '../services/marketingService';
+import { useAuth } from '../components/AuthContext';
+import Swal from 'sweetalert2';
+
+interface ClientDashboardViewProps {
+  processes: any[];
+  pendencies: any[];
+  showcaseLeads: any[];
+}
+
+export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({ processes, pendencies, showcaseLeads }) => {
+  const { profile } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [activeFilter, setActiveFilter] = useState<'todos' | 'ativos' | 'concluidos'>('todos');
+
+  useEffect(() => {
+    // Simular um pequeno delay para um carregamento mais "profissional"
+    const timer = setTimeout(() => setLoading(false), 800);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const filteredProcesses = processes.filter(p => {
+    if (activeFilter === 'ativos') return p.status_atual !== 'Concluído' && p.status_atual !== 'Cancelado';
+    if (activeFilter === 'concluidos') return p.status_atual === 'Concluído';
+    return true;
+  });
+
+  const handleAcceptProposal = async (lead: any) => {
+    if (!profile) return;
+    
+    const { value: formValues } = await Swal.fire({
+      title: 'Formalização de Aceite',
+      html: `
+        <div class="space-y-4 text-left">
+          <p class="text-xs text-slate-400 font-bold uppercase tracking-widest mb-4">Confirme seus dados para prosseguir</p>
+          <div>
+            <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">CPF ou CNPJ</label>
+            <input id="swal-input1" class="swal2-input !m-0 !w-full !rounded-xl !text-sm" placeholder="000.000.000-00">
+          </div>
+          <div>
+            <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">WhatsApp para Contato</label>
+            <input id="swal-input2" class="swal2-input !m-0 !w-full !rounded-xl !text-sm" placeholder="(00) 00000-0000">
+          </div>
+        </div>
+      `,
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: 'Confirmar e Aceitar',
+      cancelButtonText: 'Voltar',
+      confirmButtonColor: '#10b981',
+      background: '#0a0a2e',
+      color: '#fff',
+      preConfirm: () => {
+        const doc = (document.getElementById('swal-input1') as HTMLInputElement).value;
+        const whatsapp = (document.getElementById('swal-input2') as HTMLInputElement).value;
+        if (!doc || !whatsapp) {
+          Swal.showValidationMessage('Por favor, preencha todos os campos');
+          return false;
+        }
+        return { doc, whatsapp };
+      }
+    });
+
+    if (formValues) {
+      try {
+        // Aqui poderíamos adicionar a lógica de "Motor de Segurança" (cruzar dados)
+        // Por enquanto, apenas prosseguimos com o aceite
+        await aceitarPropostaLeadVitrine(
+          lead.id, 
+          profile.uid, 
+          profile.nome_completo || 'Cliente',
+          `Aceite formalizado. Doc: ${formValues.doc}, WhatsApp: ${formValues.whatsapp}`
+        );
+        
+        Swal.fire({
+          title: 'Sucesso!',
+          text: 'Proposta aceita com sucesso. Nosso especialista entrará em contato em instantes.',
+          icon: 'success',
+          background: '#0a0a2e',
+          color: '#fff'
+        });
+      } catch (error) {
+        console.error(error);
+        Swal.fire('Erro', 'Não foi possível aceitar a proposta no momento.', 'error');
+      }
+    }
+  };
+
+  const handleRejectProposal = async (lead: any) => {
+    if (!profile) return;
+    
+    const result = await Swal.fire({
+      title: 'Recusar Proposta?',
+      text: 'Você deseja recusar esta proposta? Nosso especialista poderá entrar em contato para uma nova negociação.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sim, Recusar',
+      cancelButtonText: 'Voltar',
+      confirmButtonColor: '#ef4444',
+      background: '#0a0a2e',
+      color: '#fff'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await atualizarStatusLeadVitrine(
+          lead.id, 
+          'Rejeitado Cliente', 
+          profile.uid, 
+          profile.nome_completo || 'Cliente',
+          'O cliente recusou a proposta inicial.'
+        );
+        Swal.fire('Proposta Recusada', 'Sua decisão foi registrada. Entraremos em contato se houver uma nova oferta.', 'info');
+      } catch (error) {
+        console.error(error);
+        Swal.fire('Erro', 'Não foi possível registrar sua decisão.', 'error');
+      }
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[60vh] space-y-4">
+        <div className="relative">
+          <div className="size-16 border-4 border-slate-100 rounded-full"></div>
+          <div className="size-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin absolute top-0 left-0"></div>
+        </div>
+        <p className="text-slate-500 font-bold animate-pulse uppercase tracking-widest text-xs">Sincronizando seus processos...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-6xl mx-auto space-y-12 pb-20">
+      {/* HEADER & FILTERS */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+          <h2 className="text-3xl font-black text-slate-800 uppercase italic tracking-tighter flex items-center gap-3">
+            <ClipboardList className="text-blue-600" size={32} />
+            Meus Processos
+          </h2>
+          <p className="text-slate-500 font-medium mt-1">Acompanhe o andamento de todos os seus serviços contratados.</p>
+        </div>
+
+        <div className="flex bg-slate-100 p-1 rounded-2xl">
+          {(['todos', 'ativos', 'concluidos'] as const).map((f) => (
+            <button
+              key={f}
+              onClick={() => setActiveFilter(f)}
+              className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+                activeFilter === f ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              {f === 'todos' ? 'Todos' : f === 'ativos' ? 'Em Andamento' : 'Concluídos'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* PROCESSES LIST */}
+      <div className="space-y-6">
+        {filteredProcesses.length > 0 ? (
+          <div className="grid grid-cols-1 gap-6">
+            {filteredProcesses.map((process) => (
+              <ProcessCard key={process.id} process={process} />
+            ))}
+          </div>
+        ) : (
+          <div className="bg-white border-2 border-dashed border-slate-200 rounded-[2.5rem] p-12 text-center space-y-4">
+            <div className="size-20 bg-slate-50 rounded-3xl flex items-center justify-center mx-auto text-slate-300">
+              <Package size={40} />
+            </div>
+            <div className="max-w-xs mx-auto">
+              <h3 className="text-lg font-black text-slate-800 uppercase italic">Nenhum processo encontrado</h3>
+              <p className="text-slate-500 text-sm font-medium">
+                Você ainda não possui processos {activeFilter !== 'todos' ? 'nesta categoria' : 'ativos'}. 
+                Visite nossa vitrine para conhecer nossos serviços!
+              </p>
+            </div>
+            <button className="px-8 py-3 bg-blue-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20">
+              Explorar Vitrine
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* SHOWCASE LEADS (PEDIDOS DE ORÇAMENTO) */}
+      {showcaseLeads.length > 0 && (
+        <div className="space-y-8 pt-8 border-t border-slate-100">
+          <div>
+            <h2 className="text-2xl font-black text-slate-800 uppercase italic tracking-tighter flex items-center gap-3">
+              <Search className="text-indigo-600" size={28} />
+              Pedidos de Orçamento
+            </h2>
+            <p className="text-slate-500 font-medium mt-1">Serviços que você demonstrou interesse na vitrine.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {showcaseLeads.map((lead) => (
+              <LeadCard 
+                key={lead.id} 
+                lead={lead} 
+                onAccept={() => handleAcceptProposal(lead)}
+                onReject={() => handleRejectProposal(lead)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const ProcessCard = ({ process }: { process: any }) => {
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'Concluído': return 'bg-emerald-50 text-emerald-600 border-emerald-100';
+      case 'Cancelado': return 'bg-rose-50 text-rose-600 border-rose-100';
+      case 'Pendente': return 'bg-amber-50 text-amber-600 border-amber-100';
+      default: return 'bg-blue-50 text-blue-600 border-blue-100';
+    }
+  };
+
+  const getProgressWidth = (status: string) => {
+    switch (status) {
+      case 'Pendente': return '15%';
+      case 'Aguardando Documentação': return '30%';
+      case 'Em Análise': return '50%';
+      case 'Protocolado': return '70%';
+      case 'Em Andamento': return '85%';
+      case 'Concluído': return '100%';
+      default: return '15%';
+    }
+  };
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-white rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md transition-all overflow-hidden group"
+    >
+      <div className="p-6 sm:p-8 flex flex-col md:flex-row gap-6 items-start md:items-center">
+        <div className="size-16 bg-slate-50 rounded-2xl flex items-center justify-center text-blue-600 shrink-0 group-hover:scale-110 transition-transform">
+          <FileText size={32} />
+        </div>
+        
+        <div className="flex-1 space-y-1">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Protocolo: {process.protocolo}</span>
+            <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${getStatusColor(process.status_atual)}`}>
+              {process.status_atual}
+            </span>
+          </div>
+          <h3 className="text-xl font-black text-slate-800 uppercase italic tracking-tight">{process.servico_nome}</h3>
+          <div className="flex items-center gap-4 text-slate-500 text-xs font-bold">
+            <span className="flex items-center gap-1.5"><Clock size={14} /> Atualizado em {process.data_venda?.toDate().toLocaleDateString('pt-BR')}</span>
+            <span className="flex items-center gap-1.5"><User size={14} className="size-3.5" /> Especialista: {process.vendedor_nome}</span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 w-full md:w-auto">
+          <button className="flex-1 md:flex-none px-6 py-3 bg-slate-50 text-slate-700 rounded-xl font-bold text-xs hover:bg-slate-100 transition-all flex items-center justify-center gap-2">
+            Ver Detalhes
+          </button>
+          <button className="size-12 bg-blue-600 text-white rounded-xl flex items-center justify-center hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20">
+            <ChevronRight size={20} />
+          </button>
+        </div>
+      </div>
+      
+      {/* Progress Bar Dinâmica */}
+      <div className="h-1.5 w-full bg-slate-50 flex">
+        <div className="h-full bg-blue-600 transition-all duration-1000" style={{ width: getProgressWidth(process.status_atual) }}></div>
+      </div>
+    </motion.div>
+  );
+};
+
+const LeadCard = ({ lead, onAccept, onReject }: { lead: any, onAccept: () => void, onReject: () => void }) => {
+  const getStatusInfo = (status: LeadStatus) => {
+    switch (status) {
+      case 'Novo': return { color: 'bg-blue-50 text-blue-600', icon: Clock, label: 'Aguardando Análise' };
+      case 'Proposta Enviada': return { color: 'bg-indigo-50 text-indigo-600', icon: FileText, label: 'Proposta Disponível' };
+      case 'Negociação': return { color: 'bg-amber-50 text-amber-600', icon: MessageSquare, label: 'Em Negociação' };
+      case 'Venda Concluída': return { color: 'bg-emerald-50 text-emerald-600', icon: CheckCircle2, label: 'Venda Concluída' };
+      case 'Rejeitado Cliente': return { color: 'bg-rose-50 text-rose-600', icon: AlertCircle, label: 'Proposta Recusada' };
+      default: return { color: 'bg-slate-50 text-slate-600', icon: AlertCircle, label: status };
+    }
+  };
+
+  const statusInfo = getStatusInfo(lead.status);
+
+  return (
+    <div className="bg-white rounded-[2rem] border border-slate-100 p-6 space-y-6 shadow-sm hover:border-indigo-200 transition-all">
+      <div className="flex justify-between items-start">
+        <div className={`px-4 py-1.5 rounded-xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest ${statusInfo.color}`}>
+          <statusInfo.icon size={14} />
+          {statusInfo.label}
+        </div>
+        <span className="text-[10px] font-bold text-slate-400 uppercase">{lead.timestamp?.toDate().toLocaleDateString('pt-BR')}</span>
+      </div>
+
+      <div>
+        <h4 className="text-lg font-black text-slate-800 uppercase italic tracking-tight leading-tight">{lead.servico_nome}</h4>
+        <p className="text-slate-500 text-xs font-medium mt-1">Solicitado via Vitrine GSA</p>
+      </div>
+
+      {lead.status === 'Proposta Enviada' && lead.proposta && (
+        <div className="bg-indigo-50/50 rounded-2xl p-4 border border-indigo-100 space-y-3">
+          <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Oferta Exclusiva</p>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl font-black text-slate-800 tracking-tighter">{lead.proposta.valorAVistaPara}</span>
+            <span className="text-xs text-slate-400 line-through font-bold">{lead.proposta.valorAVistaDe}</span>
+          </div>
+          <p className="text-[10px] font-bold text-slate-500 italic">Ou {lead.proposta.parcelas}x de {lead.proposta.valorParcela}</p>
+          
+          <div className="flex gap-2 pt-2">
+            <button 
+              onClick={onAccept}
+              className="flex-1 bg-emerald-600 text-white py-3 rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20"
+            >
+              Aceitar Proposta
+            </button>
+            <button 
+              onClick={onReject}
+              className="px-4 py-3 bg-white text-rose-600 border border-rose-100 rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-rose-50 transition-all"
+            >
+              Recusar
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="flex items-center justify-between pt-2">
+        <div className="flex items-center gap-2">
+          <div className="size-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-[10px]">
+            {lead.vendedor_nome?.charAt(0)}
+          </div>
+          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">Especialista: {lead.vendedor_nome}</span>
+        </div>
+        <button className="text-indigo-600 font-black uppercase text-[10px] tracking-widest flex items-center gap-1 hover:gap-2 transition-all">
+          Detalhes <ArrowRight size={14} />
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const User = ({ className, size }: { className?: string, size?: number }) => (
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    width={size || 24} 
+    height={size || 24} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    className={className}
+  >
+    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+    <circle cx="12" cy="7" r="4" />
+  </svg>
+);

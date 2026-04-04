@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --color-primary: #0a0a2e;
+  --color-emerald: #10b981;
+  --breakpoint-xs: 480px;
+}
+
+@layer components {
+  .tab-active { 
+    @apply bg-primary text-white shadow-lg;
+  }
+  
+  .tab-item { 
+    @apply transition-all duration-300 ease-in-out;
+  }
+  
+  .card-stat {
+    @apply transition-transform duration-200 ease-in-out hover:scale-[1.02];
+  }
+
+  .responsive-card {
+    @apply bg-white p-6 sm:p-8 md:p-10 rounded-[2rem] sm:rounded-[2.5rem] md:rounded-[3rem] border border-slate-100 shadow-sm transition-all;
+  }
+
+  .responsive-container {
+    @apply p-4 sm:p-6 md:p-10 w-full mx-auto space-y-6 sm:space-y-8 md:space-y-10;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+body {
+  @apply bg-[#f8fafc] text-slate-900;
+  font-family: 'Inter', sans-serif;
+}

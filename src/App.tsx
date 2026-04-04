@@ -1,0 +1,51 @@
+import React from "react";
+import { Routes, Route } from "react-router-dom";
+import { useAuth } from "./components/AuthContext";
+import LoginView from "./components/LoginView";
+import { DashboardFinanceiro } from "./pages/DashboardFinanceiro"; // Tela ADM
+import PortalCliente from "./components/PortalCliente"; // Tela Cliente
+import { PublicPortal } from "./views/PublicPortal";
+import { VitrinePublicaView } from "./views/VitrinePublicaView";
+import { ProposalLandingPage } from "./views/ProposalLandingPage";
+
+const AppContent: React.FC = () => {
+  const { user, profile, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="h-screen flex flex-col items-center justify-center bg-[#0a0a2e]">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mb-4"></div>
+        <p className="text-white font-black uppercase text-[10px] tracking-widest opacity-50">Validando Acesso GSA IA...</p>
+      </div>
+    );
+  }
+
+  // LÓGICA DE ROTEAMENTO POR NIVEL
+  if (!user) return <LoginView />;
+
+  const nivel = profile?.nivel;
+
+  // Se for ADM (Master, Gerente ou Analista), GESTOR ou VENDEDOR, mostra o Financeiro/Gestão
+  if (nivel === "ADM_MASTER" || nivel === "ADM_GERENTE" || nivel === "ADM_ANALISTA" || nivel === "GESTOR" || nivel === "VENDEDOR") {
+    return <DashboardFinanceiro />;
+  }
+
+  // Se for qualquer outra coisa (ou Cliente), mostra o Portal do Cliente
+  return <PortalCliente />;
+};
+
+const App: React.FC = () => {
+  const { user } = useAuth();
+
+  return (
+    <Routes>
+      <Route path="/p/:slug" element={<ProposalLandingPage />} />
+      <Route path="/consulta" element={<PublicPortal />} />
+      {/* Se não estiver logado, /vitrine mostra a pública. Se estiver logado, segue para AppContent que mostrará a interna */}
+      <Route path="/vitrine" element={!user ? <VitrinePublicaView /> : <AppContent />} />
+      <Route path="/*" element={<AppContent />} />
+    </Routes>
+  );
+};
+
+export default App;

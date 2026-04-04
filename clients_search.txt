@@ -1,0 +1,30 @@
+184:  const view = location.pathname.substring(1) || (currentProfile?.nivel === 'CLIENTE' ? 'my_processes' : 'clients');
+193:      navigate(currentProfile?.nivel === 'CLIENTE' ? '/my_processes' : '/clients', { replace: true });
+194:    } else if (currentProfile?.nivel === 'CLIENTE' && ['clients', 'users', 'financeiro', 'intelligence', 'settings', 'club_management'].includes(view)) {
+197:      navigate('/clients', { replace: true });
+199:      navigate('/clients', { replace: true });
+201:      navigate('/clients', { replace: true });
+928:      clients.forEach(c => {
+948:  }, [profile, processes.length, clients.length]);
+1348:        const client = clients.find(c => c.id === clientId);
+1376:            const clientSnap = await getDoc(doc(db, 'clients', clientId));
+1511:      setView('clients');
+2043:          {view === 'clients' && (
+2045:              key="clients"
+2051:              {clients.map((client) => (
+2083:              {clients.length === 0 && (
+2116:                  const client = clients.find(c => c.id === pendency.cliente_id || c.id === proc?.cliente_id);
+2397:                            const client = clients.find(c => c.id === clientId);
+2410:                          {clients.map(client => (
+3233:                      <td className="px-6 py-4">{clients.find(c => c.id === log.tentou_id)?.nome || log.tentou_id}</td>
+3234:                      <td className="px-6 py-4">{clients.find(c => c.id === log.dono_id)?.nome || log.dono_id}</td>
+3300:                    clienteData={clients.find(c => c.uid === proc.cliente_id)}
+3351:                            {clients.find(c => c.id === trans.cliente_id)?.nome || 'Cliente'}
+3426:                          <td className="px-6 py-4 font-bold">{clients.find(c => c.id === debtor.cliente_id)?.nome || 'Cliente'}</td>
+3477:                setView(currentProfile?.nivel === 'CLIENTE' ? 'my_processes' : 'clients');
+4545:                          clienteData={clients.find(c => c.uid === proc.cliente_id) || (currentProfile?.uid === proc.cliente_id ? currentProfile : null)}
+5174:                              <p className="text-sm font-bold">{clients.find(c => c.id === ref.cliente_origem_id)?.nome || 'Desconhecido'}</p>
+5581:                            const clientData = clients.find(c => c.uid === selectedProcess.cliente_id) || (currentProfile?.uid === selectedProcess.cliente_id ? currentProfile : null);
+7081:                      {clients.map(c => (
+7507:                        mensagem: `A indicação de ${ref.nome_indicado} (por ${clients.find(c => c.id === ref.cliente_origem_id)?.nome}) foi concluída e um novo processo foi gerado.`,
+7830:                        Cliente: {clients.find(c => c.id === trans.cliente_id)?.nome}
