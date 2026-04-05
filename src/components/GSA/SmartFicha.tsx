@@ -216,7 +216,7 @@ export const SmartFicha: React.FC<SmartFichaProps> = ({ processos, clienteDados,
                 className="w-full bg-slate-50 border-none rounded-xl p-2.5 md:p-3 text-xs md:text-sm focus:ring-2 focus:ring-blue-900/10"
                 placeholder={`Preencher ${requirementsConfig.field_labels[campo] || campo}...`}
                 onChange={(e) => handleFieldChange(campo, e.target.value)}
-                defaultValue={clienteDados[campo]}
+                value={formData[campo] !== undefined ? formData[campo] : (clienteDados[campo] || '')}
               />
             </div>
           ))}

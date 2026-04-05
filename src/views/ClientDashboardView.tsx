@@ -16,6 +16,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { aceitarPropostaLeadVitrine, atualizarStatusLeadVitrine, LeadStatus } from '../services/marketingService';
 import { useAuth } from '../components/AuthContext';
+import { SmartFicha } from '../components/GSA/SmartFicha';
 import Swal from 'sweetalert2';
 
 interface ClientDashboardViewProps {
@@ -28,6 +29,7 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({ proces
   const { profile } = useAuth();
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<'todos' | 'ativos' | 'concluidos'>('todos');
+  const [showSmartFicha, setShowSmartFicha] = useState<string | null>(null);
 
   useEffect(() => {
     // Simular um pequeno delay para um carregamento mais "profissional"
@@ -178,7 +180,11 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({ proces
         {filteredProcesses.length > 0 ? (
           <div className="grid grid-cols-1 gap-6">
             {filteredProcesses.map((process) => (
-              <ProcessCard key={process.id} process={process} />
+              <ProcessCard 
+                key={process.id} 
+                process={process} 
+                onResolve={() => setShowSmartFicha(process.id)}
+              />
             ))}
           </div>
         ) : (
@@ -223,11 +229,53 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({ proces
           </div>
         </div>
       )}
+
+      {/* Modal SmartFicha */}
+      <AnimatePresence>
+        {showSmartFicha && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-white dark:bg-slate-900 w-full max-w-4xl max-h-[90vh] rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col relative border border-slate-100 dark:border-slate-800"
+            >
+              <button 
+                onClick={() => setShowSmartFicha(null)}
+                className="absolute top-6 right-6 z-50 size-10 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full flex items-center justify-center text-slate-500 transition-all"
+              >
+                <ChevronRight size={20} className="rotate-45" />
+              </button>
+
+              <div className="p-8 border-b border-slate-50 dark:border-slate-800 flex items-center gap-4">
+                <div className="size-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
+                  <ClipboardList size={24} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase italic tracking-tight">Resolver Pendências</h3>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Complete as informações para o seu processo</p>
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+                <SmartFicha 
+                  processos={processes.filter(p => p.id === showSmartFicha)} 
+                  clienteDados={profile} 
+                  onUpdate={() => {
+                    setShowSmartFicha(null);
+                    // O pai deve atualizar os processos se necessário
+                  }} 
+                />
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
 
-const ProcessCard = ({ process }: { process: any }) => {
+const ProcessCard = ({ process, onResolve }: { process: any, onResolve: () => void }) => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Concluído': return 'bg-emerald-50 text-emerald-600 border-emerald-100';
@@ -272,6 +320,17 @@ const ProcessCard = ({ process }: { process: any }) => {
             <span className="flex items-center gap-1.5"><Clock size={14} /> Atualizado em {process.data_venda?.toDate().toLocaleDateString('pt-BR')}</span>
             <span className="flex items-center gap-1.5"><User size={14} className="size-3.5" /> Especialista: {process.vendedor_nome}</span>
           </div>
+
+          {(process.status_atual === 'Pendente' || process.status_atual === 'Aguardando Documentação') && 
+           ((process.dados_faltantes && process.dados_faltantes.length > 0) || 
+            (process.pendencias_iniciais && process.pendencias_iniciais.length > 0)) && (
+            <button 
+              onClick={onResolve}
+              className="mt-2 w-full md:w-auto bg-blue-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2"
+            >
+              <ClipboardList size={14} /> Resolver Pendências
+            </button>
+          )}
         </div>
 
         <div className="flex items-center gap-2 w-full md:w-auto">

@@ -284,7 +284,7 @@ export function DashboardFinanceiro() {
     { id: 'clube', label: 'Clube', icon: Gift },
     { id: 'vitrine', label: 'Vitrine', icon: ShoppingCart },
     { id: 'fabrica', label: 'Fábrica', icon: Factory, roles: ['ADM_MASTER', 'ADM_GERENTE'] },
-    { id: 'consulta', label: 'Consulta', icon: Search },
+    { id: 'consulta', label: 'Consulta', icon: Search, roles: ['ADM_MASTER', 'ADM_GERENTE', 'ADM_ANALISTA', 'GESTOR', 'VENDEDOR'] },
     { id: 'suporte', label: 'Suporte', icon: LifeBuoy },
     { id: 'perfil', label: 'Perfil', icon: UserCircle },
   ];

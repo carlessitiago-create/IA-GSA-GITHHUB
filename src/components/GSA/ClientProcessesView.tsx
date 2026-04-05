@@ -133,6 +133,20 @@ export const ClientProcessesView: React.FC = () => {
                   className={`h-full ${proc.status_atual === 'Concluído' ? 'bg-emerald-500' : 'bg-blue-500'}`}
                 />
               </div>
+
+              {(proc.status_atual === 'Pendente' || proc.status_atual === 'Aguardando Documentação') && 
+               ((proc.dados_faltantes && proc.dados_faltantes.length > 0) || 
+                (proc.pendencias_iniciais && proc.pendencias_iniciais.length > 0)) && (
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedProcess(proc);
+                  }}
+                  className="mt-4 w-full bg-blue-600 text-white font-black py-3 rounded-xl text-[10px] flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/20"
+                >
+                  <FileText size={14} /> RESOLVER PENDÊNCIAS AGORA
+                </button>
+              )}
             </div>
           </motion.div>
         ))}

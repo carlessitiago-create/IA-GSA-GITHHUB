@@ -3,6 +3,7 @@ import { db } from '../../firebase';
 import { collection, doc, getDoc, addDoc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
 import { Trophy, Gift, Star, ArrowRight, Image as ImageIcon, Lock } from 'lucide-react';
 import Swal from 'sweetalert2';
+import { transformImageUrl } from '../../utils/imageUtils';
 
 interface RewardsStoreProps {
   currentProfile: any; // O perfil do usuário logado (Cliente ou Vendedor)
@@ -153,7 +154,7 @@ export const RewardsStoreView = ({ currentProfile }: RewardsStoreProps) => {
                   {/* Foto Quadrada do Produto */}
                   <div className="aspect-square bg-slate-50 rounded-2xl overflow-hidden mb-4 relative">
                     {premio.foto ? (
-                      <img src={premio.foto} alt={premio.nome} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" referrerPolicy="no-referrer" />
+                      <img src={transformImageUrl(premio.foto)} alt={premio.nome} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" referrerPolicy="no-referrer" />
                     ) : (
                       <ImageIcon className="m-auto mt-[40%] text-slate-300 size-10 sm:size-12" />
                     )}

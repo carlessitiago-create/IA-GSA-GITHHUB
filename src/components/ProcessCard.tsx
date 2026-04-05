@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { generateProcessPdf } from '../services/pdfService';
 import { ChevronDown, ChevronUp, AlertCircle, Download, Edit2, MessageCircle, RefreshCw, Plus, Search, Trash2, CheckCircle2, Clock, MessageSquare, ArrowRight, History, ShieldCheck, User, Briefcase, Calendar, FileText, ExternalLink, ChevronRight, DollarSign, Info, MoreVertical, Phone, Send, AlertTriangle, CheckCircle, Package, FileSearch, Activity, Zap, Clock3, Target, TrendingUp, BarChart3, Layers, HelpCircle, ClipboardCheck, UserCheck, Truck, Eye, Share2, Clock4, CalendarDays, FileCheck, FileWarning, AlertOctagon, Check, X, Edit3, Trash, Save, ArrowLeft, LayoutDashboard, Users, Settings, LogOut, Menu, Bell, Filter, FilePlus, FileMinus, FileEdit, FileSearch2, ClipboardList, ListChecks, Shield, Lock, Unlock, Key, Mail, MapPin, Globe, Link, Image, Video, Music, Mic, Camera, Monitor, Smartphone, Tablet, Laptop, Watch, Tv, Speaker, Headphones, Bluetooth, Wifi, Battery, Cpu, HardDrive, Database, Cloud, Server, Code, Terminal, Bug, GitBranch, GitCommit, GitMerge, GitPullRequest, Github, Twitter, Facebook, Instagram, Linkedin, Youtube, Slack, Trello, Figma, Chrome, Framer, Dribbble, Codepen, Twitch, Play, Pause, StopCircle, SkipBack, SkipForward, Volume2, VolumeX, Sun, Moon, CloudRain, CloudLightning, CloudSnow, Wind, Droplets, Thermometer, Compass, Navigation, Map, Flag, Anchor, LifeBuoy, ShoppingBag, ShoppingCart, CreditCard, Wallet, Gift, Award, Medal, Trophy, Star, Heart, ThumbsUp, ThumbsDown, Smile, Meh, Frown, Ghost, Skull, Flame, ZapOff, Lightbulb, Umbrella, Coffee, Beer, Wine, Pizza, Apple, Car, Bike, Plane, Rocket, Train, Bus, Footprints, TreePine, Mountain, Waves, Sunrise, Sunset, CameraOff, VideoOff, MicOff, EyeOff, LockKeyhole, ShieldAlert, ShieldQuestion, ShieldX, Fingerprint, Scan, QrCode, Barcode, Hash, AtSign, Paperclip } from 'lucide-react';
 import { OrderProcess } from '../services/orderService';
 import { UserProfile } from '../services/userService';
@@ -9,6 +10,7 @@ import { useRequirements } from '../hooks/useRequirements';
 
 import { AuditoriaProcesso } from './GSA/AuditoriaProcesso';
 import { ProcessDetailModal } from './GSA/ProcessDetailModal';
+import { SmartFicha } from './GSA/SmartFicha';
 
 interface ProcessCardProps {
   proc: OrderProcess;
@@ -27,6 +29,7 @@ interface ProcessCardProps {
 export const ProcessCard: React.FC<ProcessCardProps> = ({ proc, pendencies, history, allUsers, userRole, clienteData, models, onEdit, onSetWhatsApp, onStatusChange, onUpdate }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showSmartFicha, setShowSmartFicha] = useState(false);
   const { config: requirementsConfig } = useRequirements();
 
   const myHistory = history
@@ -142,6 +145,10 @@ export const ProcessCard: React.FC<ProcessCardProps> = ({ proc, pendencies, hist
     proc.status_atual === 'Em Andamento' ? 'border-blue-600' :
     proc.status_atual === 'Aguardando Documentação' ? 'border-orange-500' :
     'border-slate-400';
+
+  const canShowSmartFicha = (proc.status_atual === 'Pendente' || proc.status_atual === 'Aguardando Documentação') && 
+                            ((proc.dados_faltantes && proc.dados_faltantes.length > 0) || 
+                             (proc.pendencias_iniciais && proc.pendencias_iniciais.length > 0));
 
   const handleWhatsAppSupport = () => {
     if (!proc.whatsapp_suporte) {
@@ -332,6 +339,26 @@ export const ProcessCard: React.FC<ProcessCardProps> = ({ proc, pendencies, hist
             </button>
           </div>
         )}
+
+        {canShowSmartFicha && (
+          <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+            <button 
+              onClick={() => setShowSmartFicha(true)}
+              className="w-full bg-blue-600 text-white font-black py-3 rounded-xl text-xs flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/20"
+            >
+              <ClipboardList size={16} /> RESOLVER PENDÊNCIAS AGORA
+            </button>
+          </div>
+        )}
+
+        <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+          <button 
+            onClick={() => generateProcessPdf(proc)}
+            className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-black py-3 rounded-xl text-xs flex items-center justify-center gap-2 transition-all"
+          >
+            <Download size={16} /> GERAR PDF DO PROCESSO
+          </button>
+        </div>
       </div>
       
       <AnimatePresence>
@@ -526,6 +553,48 @@ export const ProcessCard: React.FC<ProcessCardProps> = ({ proc, pendencies, hist
         history={history}
         clienteData={clienteData}
       />
+
+      {/* Modal SmartFicha */}
+      <AnimatePresence>
+        {showSmartFicha && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-white dark:bg-slate-900 w-full max-w-4xl max-h-[90vh] rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col relative border border-slate-100 dark:border-slate-800"
+            >
+              <button 
+                onClick={() => setShowSmartFicha(false)}
+                className="absolute top-6 right-6 z-50 size-10 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full flex items-center justify-center text-slate-500 transition-all"
+              >
+                <X size={20} />
+              </button>
+
+              <div className="p-8 border-b border-slate-50 dark:border-slate-800 flex items-center gap-4">
+                <div className="size-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
+                  <ClipboardList size={24} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase italic tracking-tight">Resolver Pendências</h3>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Complete as informações para o processo {proc.servico_nome}</p>
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+                <SmartFicha 
+                  processos={[proc]} 
+                  clienteDados={clienteData} 
+                  onUpdate={() => {
+                    setShowSmartFicha(false);
+                    if (onUpdate) onUpdate();
+                  }} 
+                />
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };

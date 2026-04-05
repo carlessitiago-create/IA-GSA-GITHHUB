@@ -3,6 +3,7 @@ import { db } from '../../firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { Trophy, Save, Image as ImageIcon, Plus, Trash2, Edit2, ArrowUp, ArrowDown } from 'lucide-react';
 import Swal from 'sweetalert2';
+import { transformImageUrl } from '../../utils/imageUtils';
 
 export const PointsSettingsView = () => {
   const [rules, setRules] = useState<any>({
@@ -85,7 +86,7 @@ export const PointsSettingsView = () => {
         return { 
           nome, 
           pontos: Number(pontos), 
-          foto, 
+          foto: transformImageUrl(foto), 
           ordem: Number(ordem) || (premios.length + 1),
           status 
         };
@@ -130,7 +131,7 @@ export const PointsSettingsView = () => {
         return { 
           nome, 
           pontos: Number(pontos), 
-          foto, 
+          foto: transformImageUrl(foto), 
           ordem: Number(ordem),
           status 
         };

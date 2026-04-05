@@ -20,6 +20,7 @@ import { useNavigate } from 'react-router-dom';
 import { getPointsRules, getClubRewards, getPointHistory, redeemReward } from '../services/pointsService';
 import { motion, AnimatePresence } from 'motion/react';
 import Swal from 'sweetalert2';
+import { transformImageUrl } from '../utils/imageUtils';
 
 export function ClubePontosView() {
   const { profile } = useAuth();
@@ -171,7 +172,7 @@ export function ClubePontosView() {
                 >
                   <div className="relative aspect-square rounded-[2rem] overflow-hidden mb-6 shadow-inner bg-slate-50">
                     <img 
-                      src={reward.foto || 'https://picsum.photos/seed/gift/400/400'} 
+                      src={transformImageUrl(reward.foto || 'https://picsum.photos/seed/gift/400/400')} 
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                       alt={reward.nome}
                       referrerPolicy="no-referrer"

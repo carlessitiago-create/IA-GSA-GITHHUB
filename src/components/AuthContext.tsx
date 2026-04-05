@@ -73,7 +73,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }, 10000);
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      console.log("AuthContext: onAuthStateChanged triggered. User:", user?.email || "null");
+      console.log("AuthContext: onAuthStateChanged triggered. User:", user?.email || "null", "UID:", user?.uid);
       try {
         setUser(user);
         if (user) {
@@ -83,13 +83,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             console.log("AuthContext: Fetching profile for UID:", user.uid);
             docSnap = await getDoc(docRef);
           } catch (error) {
-            console.error("AuthContext: Error fetching profile:", error);
+            console.error("AuthContext: Error fetching profile for UID", user.uid, ":", error);
             handleFirestoreError(error, OperationType.GET, 'usuarios/' + user.uid);
           }
           
           if (docSnap && docSnap.exists()) {
             const data = docSnap.data() as UserProfile;
-            console.log("AuthContext: Profile found:", data.nivel);
+            console.log("AuthContext: Profile found for UID", user.uid, ":", data.nivel, "Status:", data.status_conta);
             const isAdminEmail = (user.email === 'carlessitiago@gmail.com' || user.email === 'nomelimpo.gsa@gmail.com' || user.email === 'atende.gsa@gmail.com');
             
             if (isAdminEmail && data.nivel !== 'ADM_MASTER') {

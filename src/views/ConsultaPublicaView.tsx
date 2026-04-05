@@ -6,6 +6,8 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useAuth } from '../components/AuthContext';
 import { getPublicOrigin } from '../lib/urlUtils';
+import { SmartFicha } from '../components/GSA/SmartFicha';
+import { motion, AnimatePresence } from 'motion/react';
 import Swal from 'sweetalert2';
 
 export function ConsultaPublicaView() {
@@ -15,6 +17,7 @@ export function ConsultaPublicaView() {
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
+  const [showSmartFicha, setShowSmartFicha] = useState<string | null>(null);
 
   const isAdminView = profile?.nivel === 'ADM_MASTER' || 
                     profile?.nivel === 'ADM_GERENTE' || 
@@ -189,6 +192,17 @@ export function ConsultaPublicaView() {
                 }`}>
                   {processo.status_atual}
                 </span>
+
+                {(processo.status_atual === 'Pendente' || processo.status_atual === 'Aguardando Documentação') && 
+                 ((processo.dados_faltantes && processo.dados_faltantes.length > 0) || 
+                  (processo.pendencias_iniciais && processo.pendencias_iniciais.length > 0)) && (
+                  <button 
+                    onClick={() => setShowSmartFicha(processo.id)}
+                    className="mt-4 w-full bg-blue-600 text-white font-black py-3 rounded-xl text-[10px] flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/20"
+                  >
+                    <FileText size={14} /> RESOLVER PENDÊNCIAS AGORA
+                  </button>
+                )}
               </div>
             </div>
 
@@ -235,6 +249,48 @@ export function ConsultaPublicaView() {
                 </div>
               </div>
             )}
+
+            {/* Modal SmartFicha */}
+            <AnimatePresence>
+              {showSmartFicha === processo.id && (
+                <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+                  <motion.div 
+                    initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                    className="bg-white dark:bg-slate-900 w-full max-w-4xl max-h-[90vh] rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col relative border border-slate-100 dark:border-slate-800"
+                  >
+                    <button 
+                      onClick={() => setShowSmartFicha(null)}
+                      className="absolute top-6 right-6 z-50 size-10 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full flex items-center justify-center text-slate-500 transition-all"
+                    >
+                      <Search size={20} className="rotate-45" />
+                    </button>
+
+                    <div className="p-8 border-b border-slate-50 dark:border-slate-800 flex items-center gap-4">
+                      <div className="size-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
+                        <FileText size={24} />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase italic tracking-tight">Resolver Pendências</h3>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Complete as informações para o processo {processo.servico_nome}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+                      <SmartFicha 
+                        processos={[processo]} 
+                        clienteDados={profile || { id: processo.cliente_id, nome_completo: processo.cliente_nome }} 
+                        onUpdate={() => {
+                          setShowSmartFicha(null);
+                          handleSearch({ preventDefault: () => {} } as any);
+                        }} 
+                      />
+                    </div>
+                  </motion.div>
+                </div>
+              )}
+            </AnimatePresence>
           </div>
         ))}
       </div>

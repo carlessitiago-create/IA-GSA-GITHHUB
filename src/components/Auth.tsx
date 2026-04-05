@@ -223,6 +223,10 @@ export function CompleteProfile({ profile }: { profile: any }) {
 
     setIsLoading(true);
     try {
+      if (!profile || !profile.uid) {
+        throw new Error('Perfil de usuário não encontrado. Tente fazer login novamente.');
+      }
+
       await updateDoc(doc(db, 'usuarios', profile.uid), {
         cpf: cleanCpf,
         data_nascimento: dataNascimento,
@@ -231,7 +235,8 @@ export function CompleteProfile({ profile }: { profile: any }) {
       });
       window.location.reload();
     } catch (error: any) {
-      Swal.fire({ icon: 'error', title: 'Erro', text: error.message });
+      console.error("Erro ao completar perfil:", error);
+      Swal.fire({ icon: 'error', title: 'Erro', text: error.message || 'Erro desconhecido ao salvar dados.' });
     } finally {
       setIsLoading(false);
     }
@@ -245,15 +250,15 @@ export function CompleteProfile({ profile }: { profile: any }) {
         <form onSubmit={handleComplete} className="space-y-4 text-left">
           <div>
             <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">CPF</label>
-            <input type="text" value={cpf} onChange={(e) => setCpf(formatDocument(e.target.value))} required className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm" />
+            <input type="text" value={cpf || ""} onChange={(e) => setCpf(formatDocument(e.target.value))} required className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm" />
           </div>
           <div>
             <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Data de Nascimento</label>
-            <input type="date" value={dataNascimento} onChange={(e) => setDataNascimento(e.target.value)} required className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm" />
+            <input type="date" value={dataNascimento || ""} onChange={(e) => setDataNascimento(e.target.value)} required className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm" />
           </div>
           <div>
             <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Contato (WhatsApp)</label>
-            <input type="tel" value={telefone} onChange={(e) => setTelefone(formatPhone(e.target.value))} required className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm" />
+            <input type="tel" value={telefone || ""} onChange={(e) => setTelefone(formatPhone(e.target.value))} required className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm" />
           </div>
           <button type="submit" disabled={isLoading} className="w-full py-4 bg-[#0a0a2e] text-white rounded-xl font-bold hover:bg-[#151542] transition-colors disabled:opacity-70">
             {isLoading ? 'Salvando...' : 'Finalizar Cadastro'}

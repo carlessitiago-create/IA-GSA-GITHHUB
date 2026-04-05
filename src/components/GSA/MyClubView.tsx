@@ -22,6 +22,7 @@ import {
 import { useAuth } from '../AuthContext';
 import Swal from 'sweetalert2';
 import { motion } from 'motion/react';
+import { transformImageUrl } from '../../utils/imageUtils';
 
 export const MyClubView: React.FC = () => {
   const { profile } = useAuth();
@@ -203,7 +204,7 @@ export const MyClubView: React.FC = () => {
             <div key={reward.id} className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden flex flex-col group hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
               <div className="h-40 sm:h-48 bg-gray-100 relative overflow-hidden">
                 {reward.foto ? (
-                  <img src={reward.foto} alt={reward.nome} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" referrerPolicy="no-referrer" />
+                  <img src={transformImageUrl(reward.foto)} alt={reward.nome} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" referrerPolicy="no-referrer" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-gray-300">
                     <Gift size={48} />

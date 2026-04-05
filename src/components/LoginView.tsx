@@ -296,16 +296,6 @@ const LoginView: React.FC = () => {
                 "Não tem conta? Criar agora."
               )}
             </button>
-            
-            <div className="h-px w-12 bg-slate-100 mx-auto"></div>
-
-            <button 
-              onClick={() => setShowPublicSearch(true)}
-              className="flex items-center gap-2 mx-auto text-[10px] font-black text-blue-600 uppercase tracking-widest hover:text-blue-800 transition-all"
-            >
-              <Search size={14} />
-              Consulta Pública de Processo
-            </button>
         </div>
       </motion.div>
 
