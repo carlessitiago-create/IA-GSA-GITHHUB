@@ -73,7 +73,7 @@ const LoginView: React.FC = () => {
     try {
       setLoading(true);
       
-      // Safety timeout for Google Login
+      // Safety timeout for Google Login - Increased to 30s for mobile
       const loginTimeout = setTimeout(() => {
         if (loadingRef.current) {
           console.warn("LoginView: Google Login timed out.");
@@ -81,11 +81,19 @@ const LoginView: React.FC = () => {
           Swal.fire({
             icon: 'warning',
             title: 'Tempo Esgotado',
-            text: 'O login com Google está demorando mais que o esperado. Verifique se o popup não foi bloqueado.',
-            confirmButtonColor: '#0a0a2e'
+            text: 'O login com Google está demorando muito. Se você estiver no celular, tente abrir o app em uma nova aba.',
+            confirmButtonColor: '#0a0a2e',
+            confirmButtonText: 'Tentar Novamente',
+            showDenyButton: true,
+            denyButtonText: 'Abrir em Nova Aba',
+            denyButtonColor: '#4285F4',
+          }).then((result) => {
+            if (result.isDenied) {
+              window.open(window.location.href, '_blank');
+            }
           });
         }
-      }, 15000);
+      }, 30000);
 
       await login();
       console.log("LoginView: login() finished.");
@@ -107,9 +115,21 @@ const LoginView: React.FC = () => {
         text = `O domínio ${window.location.hostname} não está autorizado no Firebase Console. Adicione-o em Authentication > Settings > Authorized domains.`;
       } else if (error.code === "auth/network-request-failed") {
         title = "Falha na Conexão";
-        text = "Não foi possível conectar aos servidores do Google. Isso pode ser causado por uma conexão instável ou por bloqueadores de anúncios/popups no seu navegador.";
+        text = "Não foi possível conectar aos servidores do Google. Se você estiver no celular dentro do AI Studio, tente abrir o app em uma nova aba.";
         icon = 'warning';
-        footer = '<div class="text-center space-y-2"><p class="text-[10px] text-slate-500">Dica: Tente recarregar a página ou usar uma conexão diferente.</p><button onclick="window.location.reload()" class="text-[10px] font-bold text-blue-600 underline">Recarregar Agora</button></div>';
+        footer = `
+          <div class="text-center space-y-3">
+            <p class="text-[10px] text-slate-500">Dica: O login via popup pode ser bloqueado dentro do preview.</p>
+            <div class="flex flex-col gap-2">
+              <button onclick="window.open(window.location.href, '_blank')" class="bg-blue-600 text-white text-[10px] py-2 px-4 rounded-lg font-bold shadow-sm">
+                ABRIR EM NOVA ABA
+              </button>
+              <button onclick="window.location.reload()" class="text-[10px] font-bold text-slate-400 underline">
+                Recarregar Página
+              </button>
+            </div>
+          </div>
+        `;
       } else if (error.code === "auth/popup-blocked") {
         title = "Popup Bloqueado";
         text = "O seu navegador bloqueou a janela de login do Google. Por favor, permita popups para este site e tente novamente.";

@@ -64,13 +64,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     console.log("AuthContext: Initializing onAuthStateChanged...");
     
-    // Safety timeout to prevent infinite loading
+    // Safety timeout to prevent infinite loading - Increased to 15s for mobile
     const safetyTimeout = setTimeout(() => {
       if (loadingRef.current) {
-        console.warn("AuthContext: Loading timed out after 7s. Forcing loading to false.");
+        console.warn("AuthContext: Loading timed out after 15s. Forcing loading to false.");
         setLoading(false);
       }
-    }, 7000);
+    }, 15000);
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       console.log("AuthContext: onAuthStateChanged triggered. User:", user?.email || "null", "UID:", user?.uid);

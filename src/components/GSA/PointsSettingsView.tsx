@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { Trophy, Save, Image as ImageIcon, Plus, Trash2, Edit2, ArrowUp, ArrowDown } from 'lucide-react';
+import { Trophy, Save, Image as ImageIcon, Plus, Trash2, Edit2, ArrowUp, ArrowDown, Upload } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { transformImageUrl } from '../../utils/imageUtils';
+import { storage } from '../../firebase';
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 
 export const PointsSettingsView = () => {
   const [rules, setRules] = useState<any>({
@@ -53,43 +55,157 @@ export const PointsSettingsView = () => {
     }
   };
 
+  const uploadImage = (file: File, onProgress?: (percent: number) => void): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      // Limite de 5MB para evitar travamentos
+      if (file.size > 5 * 1024 * 1024) {
+        reject(new Error('O arquivo é muito grande (máximo 5MB)'));
+        return;
+      }
+
+      const storageRef = ref(storage, `club_prizes/${Date.now()}_${file.name}`);
+      const uploadTask = uploadBytesResumable(storageRef, file);
+
+      // Timeout de 60 segundos para conexões lentas
+      const timeout = setTimeout(() => {
+        uploadTask.cancel();
+        reject(new Error('Tempo limite de upload excedido (60s). Verifique sua conexão ou tente um arquivo menor.'));
+      }, 60000);
+
+      uploadTask.on('state_changed', 
+        (snapshot) => {
+          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          if (onProgress) onProgress(progress);
+          console.log(`Upload do prêmio: ${progress.toFixed(0)}%`);
+        }, 
+        (error: any) => {
+          clearTimeout(timeout);
+          console.error("Erro no upload task:", error);
+          
+          if (error.code === 'storage/unauthorized') {
+            reject(new Error('Sem permissão para salvar no Storage. Verifique as regras de segurança.'));
+          } else if (error.code === 'storage/canceled') {
+            reject(new Error('Upload cancelado ou tempo limite atingido.'));
+          } else {
+            reject(new Error('Falha na comunicação com o servidor de imagens. Verifique sua rede.'));
+          }
+        }, 
+        async () => {
+          clearTimeout(timeout);
+          try {
+            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+            resolve(downloadURL);
+          } catch (err) {
+            reject(new Error('Erro ao obter link da imagem após upload.'));
+          }
+        }
+      );
+    });
+  };
+
   const adicionarPremio = () => {
     Swal.fire({
       title: 'Novo Prêmio',
       html: `
-        <input id="swal-input1" class="swal2-input" placeholder="Nome do Produto">
-        <input id="swal-input2" class="swal2-input" type="number" placeholder="Pontos necessários">
-        <input id="swal-input3" class="swal2-input" placeholder="URL da Foto">
-        <input id="swal-input4" class="swal2-input" type="number" placeholder="Ordem (ex: 1, 2, 3)">
-        <select id="swal-input5" class="swal2-input">
-          <option value="disponivel">Disponível</option>
-          <option value="ultimas_unidades">Últimas Unidades</option>
-          <option value="esgotado">Esgotado</option>
-        </select>
+        <div class="space-y-4 text-left">
+          <div class="space-y-1">
+            <label class="text-[10px] font-black uppercase text-slate-400 ml-2">Nome do Produto</label>
+            <input id="swal-input1" class="swal2-input !m-0 !w-full" placeholder="Ex: iPhone 15 Pro">
+          </div>
+          <div class="space-y-1">
+            <label class="text-[10px] font-black uppercase text-slate-400 ml-2">Pontos necessários</label>
+            <input id="swal-input2" class="swal2-input !m-0 !w-full" type="number" placeholder="Ex: 5000">
+          </div>
+          <div class="space-y-1">
+            <label class="text-[10px] font-black uppercase text-slate-400 ml-2">Imagem do Prêmio</label>
+            <div class="flex flex-col gap-2">
+              <input id="swal-input3" class="swal2-input !m-0 !w-full" placeholder="URL da Foto (opcional)">
+              <div class="flex items-center gap-2">
+                <span class="text-[10px] font-bold text-slate-400 uppercase">Ou</span>
+                <label for="swal-file" class="flex-1 cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-600 py-2 px-4 rounded-xl text-[10px] font-black uppercase flex items-center justify-center gap-2 transition-all">
+                  <Upload size={14} /> Anexar Arquivo
+                </label>
+                <input id="swal-file" type="file" accept="image/*" class="hidden">
+              </div>
+              <p id="file-name" class="text-[9px] text-blue-600 font-bold truncate"></p>
+            </div>
+          </div>
+          <div class="space-y-1">
+            <label class="text-[10px] font-black uppercase text-slate-400 ml-2">Ordem de Exibição</label>
+            <input id="swal-input4" class="swal2-input !m-0 !w-full" type="number" placeholder="Ex: 1">
+          </div>
+          <div class="space-y-1">
+            <label class="text-[10px] font-black uppercase text-slate-400 ml-2">Status</label>
+            <select id="swal-input5" class="swal2-input !m-0 !w-full">
+              <option value="disponivel">Disponível</option>
+              <option value="ultimas_unidades">Últimas Unidades</option>
+              <option value="esgotado">Esgotado</option>
+            </select>
+          </div>
+        </div>
       `,
+      didOpen: () => {
+        const fileInput = document.getElementById('swal-file') as HTMLInputElement;
+        const fileNameDisplay = document.getElementById('file-name');
+        fileInput?.addEventListener('change', (e) => {
+          const file = (e.target as HTMLInputElement).files?.[0];
+          if (file && fileNameDisplay) {
+            fileNameDisplay.textContent = `Selecionado: ${file.name}`;
+          }
+        });
+      },
       focusConfirm: false,
       showCancelButton: true,
       confirmButtonText: 'Adicionar',
       cancelButtonText: 'Cancelar',
-      preConfirm: () => {
+      confirmButtonColor: '#0a0a2e',
+      preConfirm: async () => {
         const nome = (document.getElementById('swal-input1') as HTMLInputElement).value;
         const pontos = (document.getElementById('swal-input2') as HTMLInputElement).value;
-        const foto = (document.getElementById('swal-input3') as HTMLInputElement).value;
+        let foto = (document.getElementById('swal-input3') as HTMLInputElement).value;
         const ordem = (document.getElementById('swal-input4') as HTMLInputElement).value;
         const status = (document.getElementById('swal-input5') as HTMLSelectElement).value;
+        const fileInput = document.getElementById('swal-file') as HTMLInputElement;
+        const file = fileInput.files?.[0];
         
-        if (!nome || !pontos || !foto) {
-          Swal.showValidationMessage('Preencha os campos obrigatórios');
+        if (!nome || !pontos) {
+          Swal.showValidationMessage('Nome e pontos são obrigatórios');
           return false;
         }
-        
-        return { 
-          nome, 
-          pontos: Number(pontos), 
-          foto: transformImageUrl(foto), 
-          ordem: Number(ordem) || (premios.length + 1),
-          status 
-        };
+
+        if (!foto && !file) {
+          Swal.showValidationMessage('Informe uma URL ou anexe uma imagem');
+          return false;
+        }
+
+        try {
+          if (file) {
+            Swal.showLoading();
+            foto = await uploadImage(file, (percent) => {
+              Swal.update({
+                title: 'Enviando Imagem...',
+                html: `
+                  <div class="w-full bg-slate-100 rounded-full h-2 mt-4 overflow-hidden">
+                    <div class="bg-blue-600 h-full transition-all duration-300" style="width: ${percent}%"></div>
+                  </div>
+                  <p class="text-[10px] font-bold text-slate-400 mt-2 uppercase tracking-widest">${percent.toFixed(0)}% CONCLUÍDO</p>
+                `
+              });
+            });
+          }
+          
+          return { 
+            nome, 
+            pontos: Number(pontos), 
+            foto: transformImageUrl(foto), 
+            ordem: Number(ordem) || (premios.length + 1),
+            status 
+          };
+        } catch (error: any) {
+          console.error("Erro no preConfirm (add):", error);
+          Swal.showValidationMessage(error.message || 'Erro ao fazer upload da imagem');
+          return false;
+        }
       }
     }).then((result) => {
       if (result.isConfirmed) {
@@ -102,39 +218,100 @@ export const PointsSettingsView = () => {
     Swal.fire({
       title: 'Editar Prêmio',
       html: `
-        <input id="swal-input1" class="swal2-input" placeholder="Nome do Produto" value="${premio.nome}">
-        <input id="swal-input2" class="swal2-input" type="number" placeholder="Pontos necessários" value="${premio.pontos}">
-        <input id="swal-input3" class="swal2-input" placeholder="URL da Foto" value="${premio.foto}">
-        <input id="swal-input4" class="swal2-input" type="number" placeholder="Ordem" value="${premio.ordem || 0}">
-        <select id="swal-input5" class="swal2-input">
-          <option value="disponivel" ${premio.status === 'disponivel' ? 'selected' : ''}>Disponível</option>
-          <option value="ultimas_unidades" ${premio.status === 'ultimas_unidades' ? 'selected' : ''}>Últimas Unidades</option>
-          <option value="esgotado" ${premio.status === 'esgotado' ? 'selected' : ''}>Esgotado</option>
-        </select>
+        <div class="space-y-4 text-left">
+          <div class="space-y-1">
+            <label class="text-[10px] font-black uppercase text-slate-400 ml-2">Nome do Produto</label>
+            <input id="swal-input1" class="swal2-input !m-0 !w-full" placeholder="Nome do Produto" value="${premio.nome}">
+          </div>
+          <div class="space-y-1">
+            <label class="text-[10px] font-black uppercase text-slate-400 ml-2">Pontos necessários</label>
+            <input id="swal-input2" class="swal2-input !m-0 !w-full" type="number" placeholder="Pontos necessários" value="${premio.pontos}">
+          </div>
+          <div class="space-y-1">
+            <label class="text-[10px] font-black uppercase text-slate-400 ml-2">Imagem do Prêmio</label>
+            <div class="flex flex-col gap-2">
+              <input id="swal-input3" class="swal2-input !m-0 !w-full" placeholder="URL da Foto" value="${premio.foto}">
+              <div class="flex items-center gap-2">
+                <span class="text-[10px] font-bold text-slate-400 uppercase">Ou</span>
+                <label for="swal-file" class="flex-1 cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-600 py-2 px-4 rounded-xl text-[10px] font-black uppercase flex items-center justify-center gap-2 transition-all">
+                  <Upload size={14} /> Alterar Arquivo
+                </label>
+                <input id="swal-file" type="file" accept="image/*" class="hidden">
+              </div>
+              <p id="file-name" class="text-[9px] text-blue-600 font-bold truncate"></p>
+            </div>
+          </div>
+          <div class="space-y-1">
+            <label class="text-[10px] font-black uppercase text-slate-400 ml-2">Ordem</label>
+            <input id="swal-input4" class="swal2-input !m-0 !w-full" type="number" placeholder="Ordem" value="${premio.ordem || 0}">
+          </div>
+          <div class="space-y-1">
+            <label class="text-[10px] font-black uppercase text-slate-400 ml-2">Status</label>
+            <select id="swal-input5" class="swal2-input !m-0 !w-full">
+              <option value="disponivel" ${premio.status === 'disponivel' ? 'selected' : ''}>Disponível</option>
+              <option value="ultimas_unidades" ${premio.status === 'ultimas_unidades' ? 'selected' : ''}>Últimas Unidades</option>
+              <option value="esgotado" ${premio.status === 'esgotado' ? 'selected' : ''}>Esgotado</option>
+            </select>
+          </div>
+        </div>
       `,
+      didOpen: () => {
+        const fileInput = document.getElementById('swal-file') as HTMLInputElement;
+        const fileNameDisplay = document.getElementById('file-name');
+        fileInput?.addEventListener('change', (e) => {
+          const file = (e.target as HTMLInputElement).files?.[0];
+          if (file && fileNameDisplay) {
+            fileNameDisplay.textContent = `Selecionado: ${file.name}`;
+          }
+        });
+      },
       focusConfirm: false,
       showCancelButton: true,
       confirmButtonText: 'Salvar Alterações',
       cancelButtonText: 'Cancelar',
-      preConfirm: () => {
+      confirmButtonColor: '#0a0a2e',
+      preConfirm: async () => {
         const nome = (document.getElementById('swal-input1') as HTMLInputElement).value;
         const pontos = (document.getElementById('swal-input2') as HTMLInputElement).value;
-        const foto = (document.getElementById('swal-input3') as HTMLInputElement).value;
+        let foto = (document.getElementById('swal-input3') as HTMLInputElement).value;
         const ordem = (document.getElementById('swal-input4') as HTMLInputElement).value;
         const status = (document.getElementById('swal-input5') as HTMLSelectElement).value;
+        const fileInput = document.getElementById('swal-file') as HTMLInputElement;
+        const file = fileInput.files?.[0];
         
-        if (!nome || !pontos || !foto) {
+        if (!nome || !pontos || (!foto && !file)) {
           Swal.showValidationMessage('Preencha os campos obrigatórios');
           return false;
         }
-        
-        return { 
-          nome, 
-          pontos: Number(pontos), 
-          foto: transformImageUrl(foto), 
-          ordem: Number(ordem),
-          status 
-        };
+
+        try {
+          if (file) {
+            Swal.showLoading();
+            foto = await uploadImage(file, (percent) => {
+              Swal.update({
+                title: 'Enviando Imagem...',
+                html: `
+                  <div class="w-full bg-slate-100 rounded-full h-2 mt-4 overflow-hidden">
+                    <div class="bg-blue-600 h-full transition-all duration-300" style="width: ${percent}%"></div>
+                  </div>
+                  <p class="text-[10px] font-bold text-slate-400 mt-2 uppercase tracking-widest">${percent.toFixed(0)}% CONCLUÍDO</p>
+                `
+              });
+            });
+          }
+          
+          return { 
+            nome, 
+            pontos: Number(pontos), 
+            foto: transformImageUrl(foto), 
+            ordem: Number(ordem),
+            status 
+          };
+        } catch (error: any) {
+          console.error("Erro no preConfirm (edit):", error);
+          Swal.showValidationMessage(error.message || 'Erro ao fazer upload da imagem');
+          return false;
+        }
       }
     }).then((result) => {
       if (result.isConfirmed) {
