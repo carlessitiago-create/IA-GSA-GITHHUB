@@ -8,17 +8,13 @@ import { PublicPortal } from "./views/PublicPortal";
 import { VitrinePublicaView } from "./views/VitrinePublicaView";
 import { ProposalLandingPage } from "./views/ProposalLandingPage";
 import { PendingApproval, AccountRefused, AccountSuspended, CompleteProfile } from "./components/Auth";
+import { LoadingScreen } from "./components/LoadingScreen";
 
 const AppContent: React.FC = () => {
   const { user, profile, loading, logout } = useAuth();
 
   if (loading) {
-    return (
-      <div className="h-screen flex flex-col items-center justify-center bg-[#0a0a2e]">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mb-4"></div>
-        <p className="text-white font-black uppercase text-[10px] tracking-widest opacity-50">Validando Acesso GSA IA...</p>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   // LÓGICA DE ROTEAMENTO POR NIVEL

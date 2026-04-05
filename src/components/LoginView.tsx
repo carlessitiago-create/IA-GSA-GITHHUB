@@ -92,17 +92,38 @@ const LoginView: React.FC = () => {
       clearTimeout(loginTimeout);
     } catch (error: any) {
       console.error("LoginView: Google Login error:", error);
-      if (error.code !== "auth/cancelled-popup-request" && error.code !== "auth/popup-closed-by-user") {
-        const isUnauthorized = error.code === "auth/unauthorized-domain";
-        Swal.fire({
-          icon: "error",
-          title: "Erro no Google Login",
-          text: isUnauthorized 
-            ? `O domínio ${window.location.hostname} não está autorizado no Firebase Console. Adicione-o em Authentication > Settings > Authorized domains.`
-            : `Erro (${error.code}): Não foi possível conectar com sua conta Google.`,
-          confirmButtonColor: "#0a0a2e"
-        });
+      
+      // Se o usuário fechou o popup, não mostra erro (comportamento padrão)
+      if (error.code === "auth/cancelled-popup-request" || error.code === "auth/popup-closed-by-user") {
+        return;
       }
+
+      let title = "Erro no Google Login";
+      let text = `Erro (${error.code}): Não foi possível conectar com sua conta Google.`;
+      let icon: 'error' | 'warning' = 'error';
+      let footer = null;
+
+      if (error.code === "auth/unauthorized-domain") {
+        text = `O domínio ${window.location.hostname} não está autorizado no Firebase Console. Adicione-o em Authentication > Settings > Authorized domains.`;
+      } else if (error.code === "auth/network-request-failed") {
+        title = "Falha na Conexão";
+        text = "Não foi possível conectar aos servidores do Google. Isso pode ser causado por uma conexão instável ou por bloqueadores de anúncios/popups no seu navegador.";
+        icon = 'warning';
+        footer = '<div class="text-center space-y-2"><p class="text-[10px] text-slate-500">Dica: Tente recarregar a página ou usar uma conexão diferente.</p><button onclick="window.location.reload()" class="text-[10px] font-bold text-blue-600 underline">Recarregar Agora</button></div>';
+      } else if (error.code === "auth/popup-blocked") {
+        title = "Popup Bloqueado";
+        text = "O seu navegador bloqueou a janela de login do Google. Por favor, permita popups para este site e tente novamente.";
+        icon = 'warning';
+      }
+
+      Swal.fire({
+        icon,
+        title,
+        text,
+        confirmButtonColor: "#0a0a2e",
+        confirmButtonText: "Tentar Novamente",
+        footer: footer
+      });
     } finally {
       console.log("LoginView: Setting loading to false.");
       setLoading(false);

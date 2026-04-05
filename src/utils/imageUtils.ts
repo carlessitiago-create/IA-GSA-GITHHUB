@@ -13,9 +13,17 @@ export const transformImageUrl = (url: string): string => {
     return `https://drive.google.com/uc?export=view&id=${driveMatch[1]}`;
   }
 
-  // Handle share.google links
-  // These often need to be resolved, but if they provide a direct path we can try to guess.
-  // For now, we'll just return as is unless we find a specific pattern.
+  // Handle share.google and photos.app.goo.gl links
+  // These are common shorteners for Google Photos or Drive.
+  if (url.includes('share.google/') || url.includes('photos.app.goo.gl/')) {
+    // Return as is, components should use referrerPolicy="no-referrer"
+    return url;
+  }
+
+  // Handle direct googleusercontent links (often used by Google Photos "Copy Image Address")
+  if (url.includes('googleusercontent.com')) {
+    return url;
+  }
 
   return url;
 };

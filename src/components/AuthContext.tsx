@@ -67,10 +67,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Safety timeout to prevent infinite loading
     const safetyTimeout = setTimeout(() => {
       if (loadingRef.current) {
-        console.warn("AuthContext: Loading timed out after 10s. Forcing loading to false.");
+        console.warn("AuthContext: Loading timed out after 7s. Forcing loading to false.");
         setLoading(false);
       }
-    }, 10000);
+    }, 7000);
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       console.log("AuthContext: onAuthStateChanged triggered. User:", user?.email || "null", "UID:", user?.uid);

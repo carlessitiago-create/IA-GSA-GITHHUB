@@ -6,6 +6,7 @@ import { useAuth, UserProfile } from '../components/AuthContext';
 import { criarIndicacao, Referral } from '../services/marketingService';
 import { sendNotification } from '../services/notificationService';
 import { getPublicOrigin } from '../lib/urlUtils';
+import { transformImageUrl } from '../utils/imageUtils';
 import Swal from 'sweetalert2';
 
 export function ClubeMarketingView() {
@@ -393,7 +394,7 @@ export function ClubeMarketingView() {
                 .map((p: any) => (
                 <div key={p.id} className={`p-3 sm:p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl sm:rounded-2xl border border-indigo-100 dark:border-indigo-900/30 flex items-center gap-3 relative ${p.status === 'esgotado' ? 'opacity-60 grayscale' : ''}`}>
                   <div className="size-10 sm:size-12 bg-white rounded-lg sm:rounded-xl overflow-hidden shrink-0 border border-indigo-100">
-                    <img src={p.foto} className="w-full h-full object-cover" alt={p.nome} referrerPolicy="no-referrer" />
+                    <img src={transformImageUrl(p.foto)} className="w-full h-full object-cover" alt={p.nome} referrerPolicy="no-referrer" />
                   </div>
                   <div className="overflow-hidden">
                     <p className="text-[8px] sm:text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase mb-0.5 sm:mb-1">{p.pontos} PONTOS</p>

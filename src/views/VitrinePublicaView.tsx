@@ -10,6 +10,7 @@ import {
   criarIndicacao
 } from '../services/marketingService';
 import { listarServicosAtivos, ServiceData } from '../services/serviceFactory';
+import { transformImageUrl } from '../utils/imageUtils';
 import { 
   ShoppingBag, 
   CheckCircle, 
@@ -276,7 +277,7 @@ export const VitrinePublicaView: React.FC = () => {
               >
                 <div className="aspect-video relative overflow-hidden">
                   <img 
-                    src={service.imagem_capa_url || 'https://picsum.photos/seed/tech/800/600'} 
+                    src={transformImageUrl(service.imagem_capa_url || 'https://picsum.photos/seed/tech/800/600')} 
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                     alt={service.titulo}
                     referrerPolicy="no-referrer"

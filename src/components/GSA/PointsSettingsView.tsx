@@ -299,7 +299,7 @@ export const PointsSettingsView = () => {
                 
                 <div className="aspect-square bg-slate-100 rounded-xl overflow-hidden mb-3 relative">
                   {p.foto ? (
-                    <img src={p.foto} className="w-full h-full object-cover" alt={p.nome} referrerPolicy="no-referrer" />
+                    <img src={transformImageUrl(p.foto)} className="w-full h-full object-cover" alt={p.nome} referrerPolicy="no-referrer" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
                       <ImageIcon className="text-slate-300" size={32} />
