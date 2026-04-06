@@ -14,12 +14,15 @@ export const useProcesses = (profile: any, realIsAdm: boolean, realIsGestor: boo
     let qProcesses;
     if (realIsAdm) {
       qProcesses = query(collection(db, 'order_processes'), orderBy('venda_id', 'desc'));
-    } else if (realIsGestor) {
-      qProcesses = query(collection(db, 'order_processes'), where('managerId', '==', profile?.uid), orderBy('venda_id', 'desc'));
-    } else if (profile?.nivel === 'VENDEDOR') {
-      qProcesses = query(collection(db, 'order_processes'), where('vendedor_id', '==', profile?.uid), orderBy('venda_id', 'desc'));
+    } else if (realIsGestor && profile?.uid) {
+      qProcesses = query(collection(db, 'order_processes'), where('managerId', '==', profile.uid), orderBy('venda_id', 'desc'));
+    } else if (profile?.nivel === 'VENDEDOR' && profile?.uid) {
+      qProcesses = query(collection(db, 'order_processes'), where('vendedor_id', '==', profile.uid), orderBy('venda_id', 'desc'));
+    } else if (profile?.uid) {
+      qProcesses = query(collection(db, 'order_processes'), where('cliente_id', '==', profile.uid), orderBy('venda_id', 'desc'));
     } else {
-      qProcesses = query(collection(db, 'order_processes'), where('cliente_id', '==', profile?.uid), orderBy('venda_id', 'desc'));
+      setLoading(false);
+      return;
     }
 
     const unsubscribe = onSnapshot(qProcesses, (snapshot) => {

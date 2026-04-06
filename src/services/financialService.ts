@@ -48,6 +48,7 @@ const TRANSACTIONS_COLLECTION = 'financial_transactions';
  * Obtém ou cria a carteira de um cliente
  */
 export async function getOrCreateWallet(clienteId: string): Promise<Wallet> {
+  if (!clienteId) throw new Error('ID do cliente é obrigatório para acessar a carteira.');
   try {
     const q = query(collection(db, WALLETS_COLLECTION), where('cliente_id', '==', clienteId));
     const snapshot = await getDocs(q);
@@ -171,6 +172,7 @@ export async function confirmarTransacao(transactionId: string, confirmadoPor: s
       batch.update(saleRef, { status_pagamento: 'Pago' });
 
       // Atualiza todos os processos vinculados a esta venda para 'Em Análise'
+      if (!transData.venda_id) throw new Error('ID da venda é obrigatório para atualizar processos.');
       const processesQuery = query(collection(db, 'order_processes'), where('venda_id', '==', transData.venda_id));
       const processesSnap = await getDocs(processesQuery);
       processesSnap.docs.forEach(pDoc => {
@@ -288,6 +290,7 @@ export async function confirmarTransacao(transactionId: string, confirmadoPor: s
 
       // NOVO: Bônus de Indicação via Coleção 'referrals'
       if (transData.venda_id && transData.origem === 'VENDA') {
+        if (!transData.venda_id) throw new Error('ID da venda é obrigatório para processar bônus de indicação.');
         const processesQuery = query(collection(db, 'order_processes'), where('venda_id', '==', transData.venda_id));
         const processesSnap = await getDocs(processesQuery);
         
@@ -529,6 +532,7 @@ export async function abaterSaldoNegativoComBonus(clienteId: string, valorParaAb
  * Lista histórico financeiro de um cliente
  */
 export async function listarHistorico(clienteId: string) {
+  if (!clienteId) return [];
   try {
     const q = query(
       collection(db, TRANSACTIONS_COLLECTION), 
@@ -632,6 +636,7 @@ export async function atualizarStatusFatura(processo: any, status: 'PAGO' | 'VEN
       
       await updateDoc(saleRef, { status_pagamento: 'Pago', dias_atraso: 0 });
       
+      if (!vendaId) throw new Error('ID da venda é obrigatório para atualizar status da fatura.');
       const q = query(collection(db, 'order_processes'), where('venda_id', '==', vendaId));
       const processesSnap = await getDocs(q);
       for (const pDoc of processesSnap.docs) {
@@ -684,6 +689,7 @@ export async function marcarFaturaVencida(vendaId: string, diasAtraso: number) {
     }
 
     // 4. Notifica o Analista (Para parar o trabalho)
+    if (!vendaId) throw new Error('ID da venda é obrigatório para marcar fatura vencida.');
     const q = query(collection(db, 'order_processes'), where('venda_id', '==', vendaId));
     const processesSnap = await getDocs(q);
     

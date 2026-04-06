@@ -160,6 +160,7 @@ export const redeemReward = async (userId: string, reward: any) => {
 
 // 5. Histórico de Pontos
 export const getPointHistory = async (userId: string) => {
+  if (!userId) return [];
   try {
     const q = query(
       collection(db, 'points_history'),

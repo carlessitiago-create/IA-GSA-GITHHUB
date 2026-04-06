@@ -168,6 +168,10 @@ export const TrackingView: React.FC<TrackingViewProps> = ({ saleId, onBack }) =>
         });
 
         const cleanPhone = telefone.replace(/\D/g, '');
+        if (!cleanPhone) {
+          Swal.fire('Erro', 'Telefone inválido.', 'error');
+          return;
+        }
         if (cleanPhone.length < 10) {
           Swal.fire('Erro', 'Telefone inválido.', 'error');
           return;

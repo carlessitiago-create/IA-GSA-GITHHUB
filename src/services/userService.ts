@@ -142,6 +142,7 @@ export async function enviarEmailResetSenha(email: string) {
 }
 
 export const vincularHistoricoPublico = async (uid: string, cpf: string) => {
+  if (!cpf) return;
   try {
     const q = query(
       collection(db, 'referrals'), 

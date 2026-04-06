@@ -14,10 +14,13 @@ export const useShowcaseLeads = (profile: any, realIsAdm: boolean, realIsGestor:
     let qLeads;
     if (realIsAdm || realIsGestor) {
       qLeads = query(collection(db, 'showcase_leads'), orderBy('timestamp', 'desc'));
-    } else if (profile?.nivel === 'VENDEDOR') {
-      qLeads = query(collection(db, 'showcase_leads'), where('vendedor_id', '==', profile?.uid), orderBy('timestamp', 'desc'));
+    } else if (profile?.nivel === 'VENDEDOR' && profile?.uid) {
+      qLeads = query(collection(db, 'showcase_leads'), where('vendedor_id', '==', profile.uid), orderBy('timestamp', 'desc'));
+    } else if (profile?.uid) {
+      qLeads = query(collection(db, 'showcase_leads'), where('cliente_id', '==', profile.uid), orderBy('timestamp', 'desc'));
     } else {
-      qLeads = query(collection(db, 'showcase_leads'), where('cliente_id', '==', profile?.uid), orderBy('timestamp', 'desc'));
+      setLoading(false);
+      return;
     }
 
     const unsubscribe = onSnapshot(qLeads, (snapshot) => {

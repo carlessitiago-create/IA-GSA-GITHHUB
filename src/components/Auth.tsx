@@ -205,7 +205,10 @@ export function AccountSuspended({ status, onLogout }: { status: string, onLogou
   );
 }
 
-export function CompleteProfile({ profile }: { profile: any }) {
+export function CompleteProfile({ profile: initialProfile }: { profile: any }) {
+  const { profile: authProfile, user } = useAuth();
+  const profile = authProfile || initialProfile;
+  
   const [cpf, setCpf] = useState('');
   const [dataNascimento, setDataNascimento] = useState('');
   const [telefone, setTelefone] = useState('');
@@ -221,19 +224,36 @@ export function CompleteProfile({ profile }: { profile: any }) {
       return;
     }
 
+    const uid = profile?.uid || user?.uid;
+
+    if (!uid) {
+      Swal.fire({ 
+        icon: 'error', 
+        title: 'Erro de Identificação', 
+        text: 'Não conseguimos identificar sua conta. Por favor, tente recarregar a página ou fazer login novamente.',
+        confirmButtonColor: '#0a0a2e'
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
-      if (!profile || !profile.uid) {
-        throw new Error('Perfil de usuário não encontrado. Tente fazer login novamente.');
-      }
-
-      await updateDoc(doc(db, 'usuarios', profile.uid), {
+      const { setDoc } = await import('firebase/firestore');
+      await setDoc(doc(db, 'usuarios', uid), {
         cpf: cleanCpf,
         data_nascimento: dataNascimento,
         telefone: cleanTelefone,
         status_conta: 'PENDENTE'
+      }, { merge: true });
+      
+      Swal.fire({
+        icon: 'success',
+        title: 'Perfil Atualizado!',
+        text: 'Seus dados foram salvos e agora estão em análise.',
+        confirmButtonColor: '#0a0a2e'
+      }).then(() => {
+        window.location.reload();
       });
-      window.location.reload();
     } catch (error: any) {
       console.error("Erro ao completar perfil:", error);
       Swal.fire({ icon: 'error', title: 'Erro', text: error.message || 'Erro desconhecido ao salvar dados.' });

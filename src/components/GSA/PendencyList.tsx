@@ -24,19 +24,22 @@ export const PendencyList: React.FC = () => {
 
     if (nivel === 'ADM_MASTER' || nivel === 'ADM_ANALISTA' || nivel === 'ADM_GERENTE') {
       q = query(pendenciesRef, orderBy('criadaEm', 'desc'));
-    } else if (nivel === 'GESTOR') {
+    } else if (nivel === 'GESTOR' && uid) {
       q = query(pendenciesRef, where('managerId', '==', uid), orderBy('criadaEm', 'desc'));
-    } else if (nivel === 'VENDEDOR') {
+    } else if (nivel === 'VENDEDOR' && uid) {
       q = query(pendenciesRef, where('vendedorId', '==', uid), orderBy('criadaEm', 'desc'));
-    } else if (nivel === 'CLIENTE') {
+    } else if (nivel === 'CLIENTE' && uid) {
       q = query(
         pendenciesRef, 
         where('status_pendencia', '==', 'ENVIADO_CLIENTE'),
         where('cliente_id', '==', uid),
         orderBy('criadaEm', 'desc')
       );
-    } else {
+    } else if (uid) {
       q = query(pendenciesRef, where('criado_por_id', '==', uid), orderBy('criadaEm', 'desc'));
+    } else {
+      setLoading(false);
+      return;
     }
 
     const unsubscribe = onSnapshot(q, (snapshot) => {

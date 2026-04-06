@@ -14,12 +14,15 @@ export const useTransactions = (profile: any, realIsAdm: boolean, realIsGestor: 
     let qTrans;
     if (realIsAdm) {
       qTrans = query(collection(db, 'financial_transactions'), orderBy('timestamp', 'desc'));
-    } else if (realIsGestor) {
-      qTrans = query(collection(db, 'financial_transactions'), where('managerId', '==', profile?.uid), orderBy('timestamp', 'desc'));
-    } else if (profile?.nivel === 'VENDEDOR') {
-      qTrans = query(collection(db, 'financial_transactions'), where('vendedor_id', '==', profile?.uid), orderBy('timestamp', 'desc'));
+    } else if (realIsGestor && profile?.uid) {
+      qTrans = query(collection(db, 'financial_transactions'), where('managerId', '==', profile.uid), orderBy('timestamp', 'desc'));
+    } else if (profile?.nivel === 'VENDEDOR' && profile?.uid) {
+      qTrans = query(collection(db, 'financial_transactions'), where('vendedor_id', '==', profile.uid), orderBy('timestamp', 'desc'));
+    } else if (profile?.uid) {
+      qTrans = query(collection(db, 'financial_transactions'), where('cliente_id', '==', profile.uid), orderBy('timestamp', 'desc'));
     } else {
-      qTrans = query(collection(db, 'financial_transactions'), where('cliente_id', '==', profile?.uid), orderBy('timestamp', 'desc'));
+      setLoading(false);
+      return;
     }
 
     const unsubscribe = onSnapshot(qTrans, (snapshot) => {

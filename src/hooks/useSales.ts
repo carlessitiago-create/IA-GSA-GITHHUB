@@ -14,12 +14,15 @@ export const useSales = (profile: any, realIsAdm: boolean, realIsGestor: boolean
     let qSales;
     if (realIsAdm) {
       qSales = query(collection(db, 'sales'), orderBy('timestamp', 'desc'));
-    } else if (realIsGestor) {
-      qSales = query(collection(db, 'sales'), where('managerId', '==', profile?.uid), orderBy('timestamp', 'desc'));
-    } else if (profile?.nivel === 'VENDEDOR') {
-      qSales = query(collection(db, 'sales'), where('vendedor_id', '==', profile?.uid), orderBy('timestamp', 'desc'));
+    } else if (realIsGestor && profile?.uid) {
+      qSales = query(collection(db, 'sales'), where('managerId', '==', profile.uid), orderBy('timestamp', 'desc'));
+    } else if (profile?.nivel === 'VENDEDOR' && profile?.uid) {
+      qSales = query(collection(db, 'sales'), where('vendedor_id', '==', profile.uid), orderBy('timestamp', 'desc'));
+    } else if (profile?.uid) {
+      qSales = query(collection(db, 'sales'), where('cliente_id', '==', profile.uid), orderBy('timestamp', 'desc'));
     } else {
-      qSales = query(collection(db, 'sales'), where('cliente_id', '==', profile?.uid), orderBy('timestamp', 'desc'));
+      setLoading(false);
+      return;
     }
 
     const unsubscribe = onSnapshot(qSales, (snapshot) => {

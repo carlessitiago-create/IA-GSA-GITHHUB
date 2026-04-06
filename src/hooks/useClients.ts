@@ -13,8 +13,11 @@ export const useClients = (profile: any, realIsAdm: boolean) => {
     let qClients;
     if (realIsAdm) {
       qClients = query(collection(db, 'clients'), orderBy('data_entrada', 'desc'));
+    } else if (profile?.uid) {
+      qClients = query(collection(db, 'clients'), where('visibilidade_uids', 'array-contains', profile.uid), orderBy('data_entrada', 'desc'));
     } else {
-      qClients = query(collection(db, 'clients'), where('visibilidade_uids', 'array-contains', profile?.uid), orderBy('data_entrada', 'desc'));
+      setLoading(false);
+      return;
     }
 
     const unsubscribe = onSnapshot(qClients, (snapshot) => {

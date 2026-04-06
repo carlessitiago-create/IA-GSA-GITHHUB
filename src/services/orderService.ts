@@ -441,6 +441,7 @@ export async function atualizarNotasADM(processoId: string, notas: string) {
  * Lista pendências de um processo
  */
 export async function listarPendenciasPorProcesso(processoId: string) {
+  if (!processoId) return [];
   try {
     const q = query(collection(db, PENDENCIES_COLLECTION), where('processo_id', '==', processoId), orderBy('timestamp', 'desc'));
     const snapshot = await getDocs(q);
@@ -650,6 +651,7 @@ export async function excluirProcesso(processoId: string) {
 }
 
 export async function listarProcessosPorVenda(vendaId: string) {
+  if (!vendaId) return [];
   try {
     const q = query(collection(db, PROCESSES_COLLECTION), where('venda_id', '==', vendaId));
     const snapshot = await getDocs(q);
@@ -685,6 +687,7 @@ export async function listarTodosProcessos() {
 }
 
 export async function listarProcessosCliente(clienteId: string) {
+  if (!clienteId) return [];
   try {
     const q = query(
       collection(db, PROCESSES_COLLECTION), 

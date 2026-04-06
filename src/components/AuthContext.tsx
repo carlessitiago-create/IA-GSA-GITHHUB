@@ -121,10 +121,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             try {
               await setDoc(docRef, newProfile);
             } catch (error) {
-              handleFirestoreError(error, OperationType.WRITE, 'usuarios/' + user.uid);
+              console.error("AuthContext: Error creating initial profile in Firestore:", error);
             }
 
-            // Notifica o ADM Master - Cadastro Público via Google
+            // Notifica o ADM Master - Cadastro Público via Google (fora do try/catch principal para não travar o login)
             try {
               const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
               await addDoc(collection(db, 'notifications'), {
@@ -140,7 +140,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 origem: 'publico'
               });
             } catch (e) {
-              handleFirestoreError(e, OperationType.CREATE, 'notifications');
+              console.warn("AuthContext: Could not send notification for new user:", e);
             }
 
             setProfile(newProfile);
@@ -169,7 +169,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async () => {
     const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider);
+    provider.setCustomParameters({ prompt: 'select_account' });
+    
+    try {
+      // Tenta primeiro com Popup (mais rápido)
+      await signInWithPopup(auth, provider);
+    } catch (error: any) {
+      console.error("AuthContext: Google Login Error:", error);
+      
+      // Se falhar por bloqueio de popup ou cancelamento, repassa o erro para a View tratar
+      if (error.code === 'auth/popup-blocked' || error.code === 'auth/cancelled-popup-request') {
+        throw error;
+      }
+      
+      // Para outros erros, tenta redirecionamento como fallback (opcional, mas arriscado em iframes)
+      throw error;
+    }
   };
 
   const loginWithEmail = async (email: string, pass: string) => {

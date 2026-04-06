@@ -119,30 +119,28 @@ export function DashboardFinanceiro() {
     }
 
     // Fetch pending transactions
-    let qTrans;
-    if (nivel === 'ADM_ANALISTA') {
-      qTrans = null;
-    } else if (nivel === 'ADM_MASTER' || nivel === 'ADM_GERENTE') {
+    let qTrans = null;
+    if (nivel === 'ADM_MASTER' || nivel === 'ADM_GERENTE') {
       qTrans = query(
         collection(db, 'financial_transactions'),
         where('confirmado_pelo_administrador', '==', false),
         orderBy('timestamp', 'desc')
       );
-    } else if (nivel === 'GESTOR') {
+    } else if (nivel === 'GESTOR' && uid) {
       qTrans = query(
         collection(db, 'financial_transactions'),
         where('confirmado_pelo_administrador', '==', false),
         where('managerId', '==', uid),
         orderBy('timestamp', 'desc')
       );
-    } else if (nivel === 'VENDEDOR') {
+    } else if (nivel === 'VENDEDOR' && uid) {
       qTrans = query(
         collection(db, 'financial_transactions'),
         where('confirmado_pelo_administrador', '==', false),
         where('vendedor_id', '==', uid),
         orderBy('timestamp', 'desc')
       );
-    } else {
+    } else if (uid) {
       qTrans = query(
         collection(db, 'financial_transactions'),
         where('confirmado_pelo_administrador', '==', false),
@@ -161,70 +159,82 @@ export function DashboardFinanceiro() {
     }
 
     // Fetch sales
-    let qSales;
+    let qSales = null;
     if (nivel === 'ADM_MASTER' || nivel === 'ADM_GERENTE' || nivel === 'ADM_ANALISTA') {
       qSales = query(collection(db, 'sales'), orderBy('timestamp', 'desc'));
-    } else if (nivel === 'GESTOR') {
+    } else if (nivel === 'GESTOR' && uid) {
       qSales = query(collection(db, 'sales'), where('id_superior', '==', uid), orderBy('timestamp', 'desc'));
-    } else if (nivel === 'VENDEDOR') {
+    } else if (nivel === 'VENDEDOR' && uid) {
       qSales = query(collection(db, 'sales'), where('vendedor_id', '==', uid), orderBy('timestamp', 'desc'));
-    } else {
+    } else if (uid) {
       qSales = query(collection(db, 'sales'), where('cliente_id', '==', uid), orderBy('timestamp', 'desc'));
     }
 
-    const unsubSales = onSnapshot(qSales, (snapshot) => {
-      setSales(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    }, (error) => {
-      console.error("Erro de permissão no Firestore (sales): ", error);
-    });
+    let unsubSales = () => {};
+    if (qSales) {
+      unsubSales = onSnapshot(qSales, (snapshot) => {
+        setSales(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      }, (error) => {
+        console.error("Erro de permissão no Firestore (sales): ", error);
+      });
+    }
 
     // Fetch processes
-    let qProc;
+    let qProc = null;
     if (nivel === 'ADM_MASTER' || nivel === 'ADM_GERENTE') {
       qProc = query(collection(db, 'order_processes'), orderBy('data_venda', 'desc'));
-    } else if (nivel === 'GESTOR') {
+    } else if (nivel === 'GESTOR' && uid) {
       qProc = query(collection(db, 'order_processes'), where('id_superior', '==', uid), orderBy('data_venda', 'desc'));
-    } else if (nivel === 'VENDEDOR') {
+    } else if (nivel === 'VENDEDOR' && uid) {
       qProc = query(collection(db, 'order_processes'), where('vendedor_id', '==', uid), orderBy('data_venda', 'desc'));
-    } else {
+    } else if (uid) {
       qProc = query(collection(db, 'order_processes'), where('cliente_id', '==', uid), orderBy('data_venda', 'desc'));
     }
     
-    const unsubProc = onSnapshot(qProc, (snapshot) => {
-      setProcesses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    });
+    let unsubProc = () => {};
+    if (qProc) {
+      unsubProc = onSnapshot(qProc, (snapshot) => {
+        setProcesses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      });
+    }
 
     // Fetch showcase leads
-    let qShowcase;
+    let qShowcase = null;
     if (nivel === 'ADM_MASTER' || nivel === 'ADM_GERENTE') {
       qShowcase = query(collection(db, 'showcase_leads'), orderBy('timestamp', 'desc'));
-    } else if (nivel === 'GESTOR') {
+    } else if (nivel === 'GESTOR' && uid) {
       qShowcase = query(collection(db, 'showcase_leads'), where('vendedor_id', '==', uid), orderBy('timestamp', 'desc'));
-    } else if (nivel === 'VENDEDOR') {
+    } else if (nivel === 'VENDEDOR' && uid) {
       qShowcase = query(collection(db, 'showcase_leads'), where('vendedor_id', '==', uid), orderBy('timestamp', 'desc'));
-    } else {
+    } else if (uid) {
       qShowcase = query(collection(db, 'showcase_leads'), where('cliente_id', '==', uid), orderBy('timestamp', 'desc'));
     }
 
-    const unsubShowcase = onSnapshot(qShowcase, (snapshot) => {
-      setShowcaseLeads(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    });
+    let unsubShowcase = () => {};
+    if (qShowcase) {
+      unsubShowcase = onSnapshot(qShowcase, (snapshot) => {
+        setShowcaseLeads(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      });
+    }
 
     // Fetch pendencies
-    let qPend;
+    let qPend = null;
     if (nivel === 'ADM_MASTER' || nivel === 'ADM_GERENTE') {
       qPend = query(collection(db, 'pendencies'), where('status_pendencia', '!=', 'RESOLVIDO'));
-    } else if (nivel === 'GESTOR') {
+    } else if (nivel === 'GESTOR' && uid) {
       qPend = query(collection(db, 'pendencies'), where('id_superior', '==', uid), where('status_pendencia', '!=', 'RESOLVIDO'));
-    } else if (nivel === 'VENDEDOR') {
+    } else if (nivel === 'VENDEDOR' && uid) {
       qPend = query(collection(db, 'pendencies'), where('vendedor_id', '==', uid), where('status_pendencia', '!=', 'RESOLVIDO'));
-    } else {
+    } else if (uid) {
       qPend = query(collection(db, 'pendencies'), where('cliente_id', '==', uid), where('status_pendencia', '!=', 'RESOLVIDO'));
     }
 
-    const unsubPend = onSnapshot(qPend, (snapshot) => {
-      setPendencies(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    });
+    let unsubPend = () => {};
+    if (qPend) {
+      unsubPend = onSnapshot(qPend, (snapshot) => {
+        setPendencies(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      });
+    }
 
     // Fetch status history for activities
     const qHistory = query(collection(db, 'status_history'), orderBy('data', 'desc'));

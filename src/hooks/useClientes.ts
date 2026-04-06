@@ -21,6 +21,10 @@ export const useClientes = (userId: string, role: string, searchTerm: string = '
       
       const constraints = [];
       if (!isAdm) {
+        if (!userId) {
+          setLoading(false);
+          return;
+        }
         if (role === 'CLIENTE') {
           constraints.push(where('uid', '==', userId));
         } else {

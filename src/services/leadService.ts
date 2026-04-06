@@ -57,6 +57,7 @@ export interface ClientData {
 }
 
 export async function verificarPropriedadeLead(documento: string, telefone: string, userId: string) {
+  if (!documento || !telefone) throw new Error('Documento e telefone são obrigatórios para verificar propriedade.');
   const path = 'clients';
   try {
     // Check by document
@@ -141,6 +142,7 @@ export async function cadastrarCliente(data: Omit<ClientData, 'data_entrada' | '
 }
 
 export async function listarClientes(userId: string, role: string) {
+  if (!userId) return [];
   const path = 'clients';
   try {
     let q;
@@ -164,6 +166,7 @@ export async function listarClientes(userId: string, role: string) {
 }
 
 export async function resolverConflito(conflitoId: string, acao: 'TRANSFERIR' | 'MANTER', clienteDocumento: string, novoEspecialistaId: string) {
+  if (!clienteDocumento) throw new Error('Documento do cliente é obrigatório para resolver conflito.');
   try {
     if (acao === 'TRANSFERIR') {
       // Find the client by document

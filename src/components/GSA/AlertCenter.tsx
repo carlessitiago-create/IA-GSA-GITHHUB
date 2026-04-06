@@ -22,24 +22,26 @@ const AlertCenter: React.FC<AlertCenterProps> = ({ onResolveClick }) => {
     if (nivel !== 'VENDEDOR' && nivel !== 'GESTOR' && nivel !== 'ADM_MASTER' && nivel !== 'ADM_ANALISTA') return;
 
     let q;
-    if (nivel === 'VENDEDOR') {
+    if (nivel === 'VENDEDOR' && uid) {
       q = query(
         collection(db, "pendencias"),
         where("status_pendencia", "in", ["AGUARDANDO_GESTOR", "ENVIADO_CLIENTE"]),
         where("vendedorId", "==", uid)
       );
-    } else if (nivel === 'GESTOR') {
+    } else if (nivel === 'GESTOR' && uid) {
       q = query(
         collection(db, "pendencias"),
         where("status_pendencia", "in", ["AGUARDANDO_GESTOR", "ENVIADO_CLIENTE"]),
         where("managerId", "==", uid)
       );
-    } else {
+    } else if (nivel === 'ADM_MASTER' || nivel === 'ADM_ANALISTA') {
       // ADM roles see all active pendencies
       q = query(
         collection(db, "pendencias"),
         where("status_pendencia", "in", ["AGUARDANDO_GESTOR", "ENVIADO_CLIENTE"])
       );
+    } else {
+      return;
     }
 
     const unsubscribe = onSnapshot(q, (snapshot) => {

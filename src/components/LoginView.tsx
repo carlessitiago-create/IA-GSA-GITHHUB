@@ -73,7 +73,7 @@ const LoginView: React.FC = () => {
     try {
       setLoading(true);
       
-      // Safety timeout for Google Login - Increased to 30s for mobile
+      // Safety timeout for Google Login - Increased to 60s for mobile/slow connections
       const loginTimeout = setTimeout(() => {
         if (loadingRef.current) {
           console.warn("LoginView: Google Login timed out.");
@@ -81,19 +81,20 @@ const LoginView: React.FC = () => {
           Swal.fire({
             icon: 'warning',
             title: 'Tempo Esgotado',
-            text: 'O login com Google está demorando muito. Se você estiver no celular, tente abrir o app em uma nova aba.',
+            text: 'O login com Google está demorando muito. Isso acontece geralmente devido a bloqueios de popup ou conexão lenta.',
             confirmButtonColor: '#0a0a2e',
             confirmButtonText: 'Tentar Novamente',
             showDenyButton: true,
             denyButtonText: 'Abrir em Nova Aba',
             denyButtonColor: '#4285F4',
+            footer: '<p class="text-[10px] text-slate-400 text-center">Dica: Abrir em uma nova aba resolve problemas de login no celular.</p>'
           }).then((result) => {
             if (result.isDenied) {
               window.open(window.location.href, '_blank');
             }
           });
         }
-      }, 30000);
+      }, 60000);
 
       await login();
       console.log("LoginView: login() finished.");
@@ -112,28 +113,29 @@ const LoginView: React.FC = () => {
       let footer = null;
 
       if (error.code === "auth/unauthorized-domain") {
-        text = `O domínio ${window.location.hostname} não está autorizado no Firebase Console. Adicione-o em Authentication > Settings > Authorized domains.`;
+        text = `O domínio ${window.location.hostname} não está autorizado no Firebase Console.`;
       } else if (error.code === "auth/network-request-failed") {
         title = "Falha na Conexão";
-        text = "Não foi possível conectar aos servidores do Google. Se você estiver no celular dentro do AI Studio, tente abrir o app em uma nova aba.";
+        text = "Não foi possível conectar aos servidores do Google. Verifique sua internet.";
         icon = 'warning';
         footer = `
           <div class="text-center space-y-3">
-            <p class="text-[10px] text-slate-500">Dica: O login via popup pode ser bloqueado dentro do preview.</p>
-            <div class="flex flex-col gap-2">
-              <button onclick="window.open(window.location.href, '_blank')" class="bg-blue-600 text-white text-[10px] py-2 px-4 rounded-lg font-bold shadow-sm">
-                ABRIR EM NOVA ABA
-              </button>
-              <button onclick="window.location.reload()" class="text-[10px] font-bold text-slate-400 underline">
-                Recarregar Página
-              </button>
-            </div>
+            <button onclick="window.open(window.location.href, '_blank')" class="bg-blue-600 text-white text-[10px] py-2 px-4 rounded-lg font-bold shadow-sm">
+              ABRIR EM NOVA ABA
+            </button>
           </div>
         `;
       } else if (error.code === "auth/popup-blocked") {
-        title = "Popup Bloqueado";
-        text = "O seu navegador bloqueou a janela de login do Google. Por favor, permita popups para este site e tente novamente.";
+        title = "Janela Bloqueada";
+        text = "O seu navegador bloqueou a janela de login. Clique no botão abaixo para abrir o app em uma aba separada onde o login funciona livremente.";
         icon = 'warning';
+        footer = `
+          <div class="text-center">
+            <button onclick="window.open(window.location.href, '_blank')" class="bg-blue-600 text-white text-[10px] py-2 px-4 rounded-lg font-bold shadow-sm">
+              ABRIR EM NOVA ABA
+            </button>
+          </div>
+        `;
       }
 
       Swal.fire({

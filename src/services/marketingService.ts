@@ -228,6 +228,7 @@ export async function reatribuirEspecialistaIndicacao(referralId: string, novoVe
  * Lista indicações de um cliente de origem
  */
 export async function listarMinhasIndicacoes(clienteOrigemId: string) {
+  if (!clienteOrigemId) return [];
   try {
     const q = query(
       collection(db, REFERRALS_COLLECTION), 
@@ -246,6 +247,7 @@ export async function listarMinhasIndicacoes(clienteOrigemId: string) {
  * Lista indicações recebidas por um vendedor
  */
 export async function listarIndicacoesRecebidas(vendedorId: string) {
+  if (!vendedorId) return [];
   try {
     const q = query(
       collection(db, REFERRALS_COLLECTION), 
