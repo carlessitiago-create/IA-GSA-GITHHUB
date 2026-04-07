@@ -14,9 +14,9 @@ export const useStatusHistory = () => {
       setStatusHistory(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StatusHistory)));
       setLoading(false);
     }, (error) => {
-      handleFirestoreError(error, OperationType.GET, 'status_history');
       setError('Erro ao carregar histórico de status.');
       setLoading(false);
+      handleFirestoreError(error, OperationType.GET, 'status_history');
     });
 
     return () => unsubscribe();

@@ -9,13 +9,16 @@ export const useSales = (profile: any, realIsAdm: boolean, realIsGestor: boolean
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!profile) return;
+    if (!profile) {
+      setLoading(false);
+      return;
+    }
 
     let qSales;
     if (realIsAdm) {
       qSales = query(collection(db, 'sales'), orderBy('timestamp', 'desc'));
     } else if (realIsGestor && profile?.uid) {
-      qSales = query(collection(db, 'sales'), where('managerId', '==', profile.uid), orderBy('timestamp', 'desc'));
+      qSales = query(collection(db, 'sales'), where('id_superior', '==', profile.uid), orderBy('timestamp', 'desc'));
     } else if (profile?.nivel === 'VENDEDOR' && profile?.uid) {
       qSales = query(collection(db, 'sales'), where('vendedor_id', '==', profile.uid), orderBy('timestamp', 'desc'));
     } else if (profile?.uid) {
@@ -29,9 +32,9 @@ export const useSales = (profile: any, realIsAdm: boolean, realIsGestor: boolean
       setSales(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SaleData)));
       setLoading(false);
     }, (error) => {
-      handleFirestoreError(error, OperationType.GET, 'sales');
       setError('Erro ao carregar vendas.');
       setLoading(false);
+      handleFirestoreError(error, OperationType.GET, 'sales');
     });
 
     return () => unsubscribe();

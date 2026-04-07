@@ -33,7 +33,10 @@ export function ClubePontosView() {
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!profile?.uid) return;
+      if (!profile?.uid) {
+        setLoading(false);
+        return;
+      }
       setLoading(true);
       try {
         const [rewardsData, rulesData, historyData] = await Promise.all([

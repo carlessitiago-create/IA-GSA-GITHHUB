@@ -30,11 +30,11 @@ const SupportModule: React.FC<SupportModuleProps> = ({ nivel }) => {
     if (nivel === "ADM_MASTER" || nivel === "ADM_ANALISTA") {
       q = query(ticketsRef, orderBy("updatedAt", "desc"));
     } else if (nivel === "GESTOR") {
-      q = query(ticketsRef, where("managerId", "==", auth.currentUser.uid), orderBy("updatedAt", "desc"));
+      q = query(ticketsRef, where("id_superior", "==", auth.currentUser.uid), orderBy("updatedAt", "desc"));
     } else if (nivel === "VENDEDOR") {
-      q = query(ticketsRef, where("sellerId", "==", auth.currentUser.uid), orderBy("updatedAt", "desc"));
+      q = query(ticketsRef, where("vendedor_id", "==", auth.currentUser.uid), orderBy("updatedAt", "desc"));
     } else {
-      q = query(ticketsRef, where("clientId", "==", auth.currentUser.uid), orderBy("updatedAt", "desc"));
+      q = query(ticketsRef, where("cliente_id", "==", auth.currentUser.uid), orderBy("updatedAt", "desc"));
     }
 
     const unsubscribe = onSnapshot(q, (snapshot) => {

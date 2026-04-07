@@ -95,11 +95,16 @@ export async function registrarTransacao(
     const wallet = await getOrCreateWallet(clienteId);
     
     const clientSnap = await getDoc(doc(db, 'clients', clienteId));
-    const visibilidade_uids = clientSnap.exists() ? (clientSnap.data().visibilidade_uids || []) : [];
+    const clientData = clientSnap.exists() ? clientSnap.data() : {};
+    const visibilidade_uids = clientData.visibilidade_uids || [];
+    const vendedor_id = clientData.vendedor_id || '';
+    const id_superior = clientData.id_superior || '';
 
     const transactionRef = doc(collection(db, TRANSACTIONS_COLLECTION));
     const transactionData: any = {
       cliente_id: clienteId,
+      vendedor_id,
+      id_superior,
       valor,
       tipo,
       origem,

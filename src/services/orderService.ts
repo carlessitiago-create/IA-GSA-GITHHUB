@@ -12,7 +12,7 @@ import {
   orderBy,
   writeBatch
 } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType } from '../firebase';
+import { db, handleFirestoreError, OperationType, cleanData } from '../firebase';
 import { 
   addPontos, 
   processarPontosDeVenda, 
@@ -43,6 +43,7 @@ export interface OrderProcess {
   protocolo: string;
   cliente_id: string;
   vendedor_id: string;
+  id_superior?: string;
   servico_id: string;
   servico_nome?: string;
   status_atual: 'Pendente' | 'Em Análise' | 'Protocolado' | 'Em Andamento' | 'Concluído' | 'Aguardando Documentação' | 'Aguardando Aprovação';
@@ -92,10 +93,11 @@ export interface StatusHistory {
 
 export interface PendingIssue {
   id?: string;
-  vendaId: string;
+  venda_id: string;
   processo_id: string;
-  vendedorId: string;
-  managerId: string;
+  vendedor_id: string;
+  id_superior: string;
+  cliente_id?: string;
   descricao: string;
   status_pendencia: 'AGUARDANDO_GESTOR' | 'ENVIADO_CLIENTE' | 'RESOLVIDO';
   criadaEm: Timestamp;
@@ -106,7 +108,6 @@ export interface PendingIssue {
   msg_interna?: string;
   msg_publica?: string;
   observacao_adm_privada?: string;
-  cliente_id?: string;
   titulo?: string;
   anexo_url?: string;
   observacao_adm?: string;
@@ -182,21 +183,25 @@ export async function abrirPendenciaCascata(data: {
     // mas a interface PendingIssue exige vendaId. Vamos usar 'STANDALONE' se realmente não houver.
     const finalVendaId = vendaId || 'STANDALONE';
 
-    let vendedorId = '';
-    let managerId = '';
+    let vendedor_id = '';
+    let id_superior = '';
+    let cliente_id = '';
 
-    if (vendaId) {
+    if (vendaId && vendaId !== 'STANDALONE') {
       const saleSnap = await getDoc(doc(db, SALES_COLLECTION, vendaId));
       if (saleSnap.exists()) {
         const saleData = saleSnap.data();
-        vendedorId = saleData.vendedor_id || '';
-        managerId = saleData.managerId || '';
+        vendedor_id = saleData.vendedor_id || '';
+        id_superior = saleData.id_superior || '';
+        cliente_id = saleData.cliente_id || '';
       }
     }
 
     // Fallback para dados do processo se não encontramos na venda
-    if (!vendedorId && processoData) {
-      vendedorId = processoData.vendedor_id || '';
+    if (!vendedor_id && processoData) {
+      vendedor_id = processoData.vendedor_id || '';
+      id_superior = processoData.id_superior || '';
+      cliente_id = processoData.cliente_id || '';
     }
     
     const batch = writeBatch(db);
@@ -204,10 +209,11 @@ export async function abrirPendenciaCascata(data: {
     const timestamp = Timestamp.now();
 
     const pendencyData: PendingIssue = {
-      vendaId: finalVendaId,
+      venda_id: finalVendaId,
       processo_id: data.processo_id || '',
-      vendedorId,
-      managerId,
+      vendedor_id,
+      id_superior,
+      cliente_id,
       descricao: data.descricao,
       status_pendencia: 'AGUARDANDO_GESTOR',
       criadaEm: timestamp,
@@ -481,18 +487,21 @@ export async function criarProcessoDeIndicacao(
     
     // Buscar visibilidade_uids baseada no cliente de origem (quem indicou)
     let visibilidade_uids = [vendedorId];
-    if (clienteOrigemId.length > 15) {
-      const clientSnap = await getDoc(doc(db, 'usuarios', clienteOrigemId));
-      if (clientSnap.exists()) {
-        visibilidade_uids = clientSnap.data().visibilidade_uids || [vendedorId];
+    let id_superior = '';
+    if (vendedorId !== 'ADM') {
+      const vendSnap = await getDoc(doc(db, 'usuarios', vendedorId));
+      if (vendSnap.exists()) {
+        id_superior = vendSnap.data().id_superior || '';
+        if (id_superior) visibilidade_uids.push(id_superior);
       }
     }
 
     const saleRef = doc(collection(db, SALES_COLLECTION));
     const saleData: any = {
       protocolo,
-      cliente_id: clienteOrigemId, // Por enquanto vinculamos ao cliente que indicou ou um placeholder
+      cliente_id: clienteOrigemId,
       vendedor_id: vendedorId,
+      id_superior,
       valor_total: 0,
       margem_total: 0,
       metodo_pagamento: 'PIX',
@@ -510,6 +519,7 @@ export async function criarProcessoDeIndicacao(
       protocolo: protocolo,
       cliente_id: clienteOrigemId,
       vendedor_id: vendedorId,
+      id_superior,
       servico_id: 'REFERRAL_PROCESS',
       servico_nome: `Processo de Indicação: ${nomeIndicado}`,
       status_atual: 'Pendente',
@@ -664,11 +674,11 @@ export async function listarProcessosPorVenda(vendaId: string) {
 
 export async function criarProcessoDireto(data: Partial<OrderProcess>) {
   try {
-    const processRef = await addDoc(collection(db, PROCESSES_COLLECTION), {
+    const processRef = await addDoc(collection(db, PROCESSES_COLLECTION), cleanData({
       ...data,
       status_atual: 'Pendente',
       data_venda: serverTimestamp()
-    });
+    }));
     return processRef.id;
   } catch (error) {
     handleFirestoreError(error, OperationType.CREATE, PROCESSES_COLLECTION);

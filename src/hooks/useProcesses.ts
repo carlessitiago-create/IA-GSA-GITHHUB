@@ -9,13 +9,16 @@ export const useProcesses = (profile: any, realIsAdm: boolean, realIsGestor: boo
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!profile) return;
+    if (!profile) {
+      setLoading(false);
+      return;
+    }
 
     let qProcesses;
     if (realIsAdm) {
       qProcesses = query(collection(db, 'order_processes'), orderBy('venda_id', 'desc'));
     } else if (realIsGestor && profile?.uid) {
-      qProcesses = query(collection(db, 'order_processes'), where('managerId', '==', profile.uid), orderBy('venda_id', 'desc'));
+      qProcesses = query(collection(db, 'order_processes'), where('id_superior', '==', profile.uid), orderBy('venda_id', 'desc'));
     } else if (profile?.nivel === 'VENDEDOR' && profile?.uid) {
       qProcesses = query(collection(db, 'order_processes'), where('vendedor_id', '==', profile.uid), orderBy('venda_id', 'desc'));
     } else if (profile?.uid) {
@@ -29,9 +32,9 @@ export const useProcesses = (profile: any, realIsAdm: boolean, realIsGestor: boo
       setProcesses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as OrderProcess)));
       setLoading(false);
     }, (error) => {
-      handleFirestoreError(error, OperationType.GET, 'order_processes');
       setError('Erro ao carregar processos.');
       setLoading(false);
+      handleFirestoreError(error, OperationType.GET, 'order_processes');
     });
 
     return () => unsubscribe();

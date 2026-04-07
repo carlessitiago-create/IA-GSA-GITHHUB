@@ -175,7 +175,7 @@ export function ConsultaPublicaView() {
                 <h3 className="text-xl sm:text-2xl font-black text-slate-800 dark:text-white uppercase italic">{processo.cliente_nome}</h3>
                 <p className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest">{processo.servico_nome}</p>
                 
-                {profile?.nivel?.startsWith('ADM') && processo.cliente_uid && (
+                {(profile?.nivel?.startsWith('ADM') || profile?.nivel === 'GESTOR' || profile?.nivel === 'VENDEDOR') && processo.cliente_uid && (
                   <button 
                     onClick={() => handleSimulateClient(processo.cliente_uid)}
                     className="mt-4 flex items-center gap-2 px-4 py-2 bg-amber-100 text-amber-700 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-amber-200 transition-all"

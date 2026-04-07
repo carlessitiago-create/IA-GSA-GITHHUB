@@ -15,7 +15,9 @@ service cloud.firestore {
     }
 
     function getRole() {
-      return getUserData().nivel;
+      return exists(/databases/$(database)/documents/usuarios/$(request.auth.uid)) 
+        ? get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.nivel 
+        : 'GUEST';
     }
 
     function isAdmin() {
@@ -52,6 +54,10 @@ service cloud.firestore {
       return isAuthenticated() && getRole() == 'CLIENTE';
     }
 
+    function isDocGestor(data) {
+      return isGestor() && (request.auth.uid == data.id_superior || request.auth.uid == data.gestor_id || request.auth.uid == data.managerId);
+    }
+
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
     }
@@ -70,6 +76,89 @@ service cloud.firestore {
       allow create: if isAuthenticated() && (isAdmin() || isOwner(userId));
       allow update: if isAuthenticated() && (isAdmin() || isOwner(userId));
       allow delete: if isMaster();
+    }
+
+    // Platform Config (Configurações Globais e Portal Público)
+    match /platform_config/{configId} {
+      allow read: if true; // Público para o portal de consulta
+      allow write: if isMaster();
+    }
+
+    // Status History (Histórico de Status de Processos)
+    match /status_history/{historyId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Leads (Indicações de Vendas)
+    match /leads/{leadId} {
+      allow read: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor());
+      allow create: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor());
+      allow update: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor());
+      allow delete: if isMaster();
+    }
+
+    // Blocked Numbers (Blacklist)
+    match /blocked_numbers/{numberId} {
+      allow read: if isAuthenticated() && isAdmin();
+      allow write: if isAdmin();
+    }
+
+    // Conflict Logs (Radar de Conflitos)
+    match /conflict_logs/{logId} {
+      allow read: if isAuthenticated() && isAdmin();
+      allow write: if isAuthenticated(); // Permitir escrita automática ao detectar conflito
+    }
+
+    // Pendency Audit Logs (Logs de Interação em Pendências)
+    match /pendency_audit_logs/{logId} {
+      allow read: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor() || isCliente());
+      allow write: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor() || isCliente());
+    }
+
+    // Proposals (Propostas Comerciais)
+    match /proposals/{proposalId} {
+      allow read: if true; // Público para visualização de propostas via link
+      allow create: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor());
+      allow update: if (isAuthenticated() && (isAdmin() || isGestor() || isVendedor())) || 
+                    (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['visualizacoes'])) ||
+                    (resource.data.status == 'ABERTA' && request.resource.data.status in ['ACEITA', 'PAGA'] && 
+                     request.resource.data.diff(resource.data).affectedKeys().hasAny(['status', 'lead_cpf', 'lead_whatsapp', 'updatedAt', 'lead_nome']));
+      allow delete: if isMaster();
+    }
+
+    // Reward Requests (Resgates do Clube)
+    match /reward_requests/{requestId} {
+      allow read: if isAuthenticated() && (isAdmin() || isOwner(resource.data.usuario_id));
+      allow create: if isAuthenticated();
+      allow update: if isAdmin();
+      allow delete: if isMaster();
+    }
+
+    // Points History / Transactions
+    match /points_history/{historyId} {
+      allow read: if isAuthenticated() && (isAdmin() || isOwner(resource.data.usuario_id));
+      allow write: if isAdmin();
+    }
+    match /point_transactions/{transId} {
+      allow read: if isAuthenticated() && (isAdmin() || isOwner(resource.data.usuario_id));
+      allow write: if isAdmin();
+    }
+
+    // Club Rules & Rewards
+    match /club_rules/{ruleId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /club_rewards/{rewardId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Process Models
+    match /process_models/{modelId} {
+      allow read: if isAuthenticated() && isAdmin();
+      allow write: if isAdmin();
     }
 
     // Servicos (Fábrica de Serviços)
@@ -95,19 +184,43 @@ service cloud.firestore {
 
     // Processos (Workflow de Processos)
     match /order_processes/{processId} {
-      allow read: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor() || isOwner(resource.data.vendedor_id) || isOwner(resource.data.cliente_id));
-      allow create: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor());
-      allow update: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor() || isOwner(resource.data.vendedor_id));
+      allow read: if isAuthenticated() && (
+        isAdmin() || 
+        isDocGestor(resource.data) || 
+        isOwner(resource.data.vendedor_id) || 
+        isOwner(resource.data.vendedorId) || 
+        isOwner(resource.data.cliente_id) ||
+        isOwner(resource.data.clienteId)
+      );
+      allow create: if (isAuthenticated() && (isAdmin() || isGestor() || isVendedor())) || 
+                    (request.resource.data.origem == 'PROPOSTA_PUBLICA');
+      allow update: if isAuthenticated() && (
+        isAdmin() || 
+        isDocGestor(resource.data) || 
+        isOwner(resource.data.vendedor_id) || 
+        isOwner(resource.data.vendedorId)
+      );
       allow delete: if isMaster();
     }
 
     // Pendencias (Workflow de Pendências)
     match /pendencies/{pendId} {
       allow read: if isAuthenticated() && (
-        isAdmin() || isGestor() || isVendedor() || isOwner(resource.data.vendedorId) || (isCliente() && resource.data.status_pendencia == 'ENVIADO_CLIENTE')
+        isAdmin() || 
+        isDocGestor(resource.data) || 
+        isOwner(resource.data.vendedor_id) || 
+        isOwner(resource.data.vendedorId) || 
+        isOwner(resource.data.cliente_id) ||
+        isOwner(resource.data.clienteId)
       );
       allow create: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor());
-      allow update: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor() || isCliente());
+      allow update: if isAuthenticated() && (
+        isAdmin() || 
+        isDocGestor(resource.data) || 
+        isOwner(resource.data.vendedor_id) || 
+        isOwner(resource.data.vendedorId) || 
+        isCliente()
+      );
       allow delete: if isMaster();
     }
 
@@ -119,32 +232,51 @@ service cloud.firestore {
 
     // Financial Transactions
     match /financial_transactions/{transId} {
-      allow read: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor() || isOwner(resource.data.vendedor_id));
+      allow read: if isAuthenticated() && (
+        isAdmin() || 
+        isDocGestor(resource.data) || 
+        isOwner(resource.data.vendedor_id) || 
+        isOwner(resource.data.vendedorId) || 
+        isOwner(resource.data.cliente_id) ||
+        isOwner(resource.data.clienteId)
+      );
       allow create: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor());
       allow update, delete: if isMaster();
     }
 
     // Sales
     match /sales/{saleId} {
-      allow read: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor() || isOwner(resource.data.vendedor_id) || isOwner(resource.data.cliente_id));
+      allow read: if isAuthenticated() && (
+        isAdmin() || 
+        isDocGestor(resource.data) || 
+        isOwner(resource.data.vendedor_id) || 
+        isOwner(resource.data.vendedorId) || 
+        isOwner(resource.data.cliente_id) ||
+        isOwner(resource.data.clienteId)
+      );
       allow create: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor());
-      allow update: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor());
+      allow update: if isAuthenticated() && (
+        isAdmin() || 
+        isDocGestor(resource.data) || 
+        isOwner(resource.data.vendedor_id) || 
+        isOwner(resource.data.vendedorId)
+      );
       allow delete: if isMaster();
     }
 
     // Notifications
     match /notifications/{notifId} {
       allow read: if isAuthenticated() && (isOwner(resource.data.usuario_id) || (resource.data.targetRole != null && getRole() == resource.data.targetRole));
-      allow create: if isAuthenticated();
+      allow create: if true; // Permitir criação pública para notificações de aceite de proposta
       allow update: if isAuthenticated() && isOwner(resource.data.usuario_id);
       allow delete: if isAuthenticated() && isOwner(resource.data.usuario_id);
     }
 
     // Referrals (Indicações)
     match /referrals/{refId} {
-      allow read: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor() || isOwner(resource.data.cliente_origem_id) || isOwner(resource.data.vendedor_id));
+      allow read: if isAuthenticated() && (isAdmin() || isDocGestor(resource.data) || isOwner(resource.data.cliente_origem_id) || isOwner(resource.data.vendedor_id));
       allow create: if true; // Permitir criação pública (necessário para indicações via vitrine)
-      allow update: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor());
+      allow update: if isAuthenticated() && (isAdmin() || isDocGestor(resource.data) || isOwner(resource.data.vendedor_id));
       allow delete: if isMaster();
     }
 
@@ -156,21 +288,21 @@ service cloud.firestore {
 
     // Showcase Leads (Pedidos de Orçamento da Vitrine)
     match /showcase_leads/{leadId} {
-      allow read: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor() || isOwner(resource.data.cliente_id) || isOwner(resource.data.vendedor_id));
+      allow read: if isAuthenticated() && (isAdmin() || isDocGestor(resource.data) || isOwner(resource.data.cliente_id) || isOwner(resource.data.vendedor_id));
       allow create: if true; // Permitir criação pública para leads da vitrine
-      allow update: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor() || isOwner(resource.data.cliente_id));
+      allow update: if isAuthenticated() && (isAdmin() || isDocGestor(resource.data) || isOwner(resource.data.vendedor_id) || isOwner(resource.data.cliente_id));
       allow delete: if isMaster();
     }
 
     // Tickets & Messages
     match /tickets/{ticketId} {
-      allow read: if isAuthenticated() && (isAdmin() || isGestor() || isOwner(resource.data.clientId) || isOwner(resource.data.sellerId));
+      allow read: if isAuthenticated() && (isAdmin() || isDocGestor(resource.data) || isOwner(resource.data.clientId) || isOwner(resource.data.sellerId));
       allow create: if isAuthenticated();
-      allow update: if isAuthenticated() && (isAdmin() || isGestor() || isOwner(resource.data.clientId) || isOwner(resource.data.sellerId));
+      allow update: if isAuthenticated() && (isAdmin() || isDocGestor(resource.data) || isOwner(resource.data.clientId) || isOwner(resource.data.sellerId));
       allow delete: if isMaster();
 
       match /messages/{msgId} {
-        allow read: if isAuthenticated() && (isAdmin() || isGestor() || isOwner(get(/databases/$(database)/documents/tickets/$(ticketId)).data.clientId) || isOwner(get(/databases/$(database)/documents/tickets/$(ticketId)).data.sellerId));
+        allow read: if isAuthenticated() && (isAdmin() || isDocGestor(get(/databases/$(database)/documents/tickets/$(ticketId)).data) || isOwner(get(/databases/$(database)/documents/tickets/$(ticketId)).data.clientId) || isOwner(get(/databases/$(database)/documents/tickets/$(ticketId)).data.sellerId));
         allow create: if isAuthenticated();
       }
     }

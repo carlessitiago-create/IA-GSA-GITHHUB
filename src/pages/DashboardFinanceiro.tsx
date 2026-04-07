@@ -130,7 +130,7 @@ export function DashboardFinanceiro() {
       qTrans = query(
         collection(db, 'financial_transactions'),
         where('confirmado_pelo_administrador', '==', false),
-        where('managerId', '==', uid),
+        where('id_superior', '==', uid),
         orderBy('timestamp', 'desc')
       );
     } else if (nivel === 'VENDEDOR' && uid) {
@@ -195,6 +195,8 @@ export function DashboardFinanceiro() {
     if (qProc) {
       unsubProc = onSnapshot(qProc, (snapshot) => {
         setProcesses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      }, (error) => {
+        console.error("Erro de permissão no Firestore (processes): ", error);
       });
     }
 
@@ -214,6 +216,8 @@ export function DashboardFinanceiro() {
     if (qShowcase) {
       unsubShowcase = onSnapshot(qShowcase, (snapshot) => {
         setShowcaseLeads(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      }, (error) => {
+        console.error("Erro de permissão no Firestore (showcase): ", error);
       });
     }
 
@@ -233,13 +237,17 @@ export function DashboardFinanceiro() {
     if (qPend) {
       unsubPend = onSnapshot(qPend, (snapshot) => {
         setPendencies(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      }, (error) => {
+        console.error("Erro de permissão no Firestore (pendencies): ", error);
       });
     }
 
     // Fetch status history for activities
-    const qHistory = query(collection(db, 'status_history'), orderBy('data', 'desc'));
+    const qHistory = query(collection(db, 'status_history'), orderBy('timestamp', 'desc'));
     const unsubHistory = onSnapshot(qHistory, (snapshot) => {
       setStatusHistory(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    }, (error) => {
+      console.error("Erro de permissão no Firestore (history): ", error);
     });
 
     listarTodosUsuarios().then(users => {
@@ -285,7 +293,7 @@ export function DashboardFinanceiro() {
     { id: 'vendas', label: 'Vendas (PDV)', icon: ShoppingCart, roles: ['ADM_MASTER', 'ADM_GERENTE', 'GESTOR', 'VENDEDOR'], color: 'border-emerald-100 text-emerald-600 bg-emerald-50 hover:bg-emerald-100' },
     { id: 'processos', label: 'Meus Processos', icon: ClipboardList, roles: ['CLIENTE'] },
     { id: 'equipe', label: profile?.nivel === 'VENDEDOR' ? 'Meus Clientes' : profile?.nivel === 'GESTOR' ? 'Minha Equipe' : 'Equipe', icon: Users, roles: ['ADM_MASTER', 'ADM_GERENTE', 'GESTOR', 'VENDEDOR'] },
-    { id: 'leads', label: 'Leads', icon: Target, roles: ['ADM_MASTER', 'ADM_GERENTE'] },
+    { id: 'leads', label: 'Leads', icon: Target, roles: ['ADM_MASTER', 'ADM_GERENTE', 'GESTOR', 'VENDEDOR'] },
     { id: 'operacional', label: 'Operacional', icon: Activity, roles: ['ADM_MASTER', 'ADM_GERENTE', 'ADM_ANALISTA'] },
     { id: 'pendencias', label: 'Pendências', icon: AlertTriangle, color: 'border-amber-100 text-amber-600 bg-amber-50 hover:bg-amber-100' },
     { id: 'inteligencia', label: 'Inteligência', icon: Brain, roles: ['ADM_MASTER', 'GESTOR'] },

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { formatDate } from '../lib/dateUtils';
 import { motion, AnimatePresence } from 'motion/react';
-import { Search, Gift, CheckCircle2, AlertCircle, ArrowRight, Shield, Play, User, Clock, Wallet, Bell, AlertTriangle, Trophy, Star, AlertOctagon, ShieldAlert, Zap, MessageCircle, FileText, Share2 } from 'lucide-react';
+import { Search, Gift, CheckCircle2, AlertCircle, ArrowRight, Shield, ShieldCheck, Play, User, Clock, Wallet, Bell, AlertTriangle, Trophy, Star, AlertOctagon, ShieldAlert, Zap, MessageCircle, FileText, Share2 } from 'lucide-react';
 import { ClubePromoBanner } from '../components/GSA/ClubePromoBanner';
 import { consultaPublicaProcesso, registrarIndicacaoPublica, listarMinhasIndicacoesPublicas, listarPendenciasPublicas, listarNotificacoesPublicas } from '../services/publicService';
 import { doc, onSnapshot } from 'firebase/firestore';
@@ -116,8 +116,27 @@ export const PublicPortal = ({ previewConfig }: { previewConfig?: PublicPortalCo
   const pendenciasResolvidas = pendencias.filter(p => p.status_pendencia === 'RESOLVIDO');
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex items-center justify-center p-4 font-sans">
-      <div className="max-w-2xl w-full">
+    <div className="min-h-[100dvh] bg-slate-50 text-slate-900 flex flex-col items-center justify-start font-sans overflow-y-auto">
+      {/* HEADER */}
+      <header className="w-full h-16 sm:h-20 bg-[#0a0a2e] text-white flex items-center justify-between px-4 sm:px-8 shrink-0 shadow-lg">
+        <div className="max-w-7xl mx-auto w-full flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="size-10 bg-yellow-400 rounded-xl flex items-center justify-center shadow-lg shadow-yellow-400/20">
+              <ShieldCheck className="text-[#0a0a2e]" size={24} />
+            </div>
+            <h1 className="text-xl sm:text-2xl font-black italic tracking-tighter uppercase">GSA IA</h1>
+          </div>
+          
+          <button 
+            onClick={() => window.location.href = '/'}
+            className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-white/10"
+          >
+            <User size={14} /> Área do Cliente
+          </button>
+        </div>
+      </header>
+
+      <div className="max-w-2xl w-full p-4 sm:p-6 md:p-8 pt-8 pb-64 sm:pb-48 md:pb-40">
         <AnimatePresence mode="wait">
           {step === 'SEARCH' ? (
             <motion.div 
@@ -625,8 +644,6 @@ export const PublicPortal = ({ previewConfig }: { previewConfig?: PublicPortalCo
           </div>
         </div>
         
-        {/* Espaçador para o banner sticky */}
-        <div className="h-48 sm:h-32"></div>
       </div>
     </div>
   );

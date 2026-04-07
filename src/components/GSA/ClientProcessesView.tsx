@@ -26,7 +26,10 @@ export const ClientProcessesView: React.FC = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!profile?.uid) return;
+      if (!profile?.uid) {
+        setLoading(false);
+        return;
+      }
       setLoading(true);
       try {
         const data = await listarProcessosCliente(profile.uid);

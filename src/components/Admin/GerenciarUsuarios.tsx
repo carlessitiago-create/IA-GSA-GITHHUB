@@ -25,6 +25,7 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
   const [role, setRole] = useState("VENDEDOR");
   const [status, setStatus] = useState("APROVADO");
   const [managerId, setManagerId] = useState("");
+  const [percentualEmpresa, setPercentualEmpresa] = useState<number>(0);
   const [listaGestores, setListaGestores] = useState<{id: string, nome: string}[]>([]);
   const [loading, setLoading] = useState(false);
   const { forgotPassword, profile: currentAdminProfile } = useAuth();
@@ -55,12 +56,14 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
       setRole(userToEdit.nivel || "VENDEDOR");
       setStatus(userToEdit.status_conta || "APROVADO");
       setManagerId(userToEdit.id_superior || "");
+      setPercentualEmpresa(userToEdit.percentual_empresa || 0);
     } else {
       setNome("");
       setEmail("");
       setCpf("");
       setTelefone("");
       setDataNascimento("");
+      setPercentualEmpresa(0);
       // Nível padrão baseado em quem está criando
       if (currentAdminProfile?.nivel === 'GESTOR') {
         setRole("VENDEDOR");
@@ -120,7 +123,8 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
           status_conta: status,
           cpf: cpf,
           telefone: telefone,
-          data_nascimento: dataNascimento
+          data_nascimento: dataNascimento,
+          percentual_empresa: Number(percentualEmpresa)
         };
 
         // Preservar ou atualizar id_superior logicamente
@@ -174,7 +178,8 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
           telefone: telefone,
           data_nascimento: dataNascimento,
           data_cadastro: new Date(),
-          status_conta: "APROVADO"
+          status_conta: "APROVADO",
+          percentual_empresa: Number(percentualEmpresa)
         };
 
         // Se for vendedor, vincula ao gestor
@@ -534,6 +539,32 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
             </div>
           </div>
         </div>
+
+        {/* Percentual Empresa (Comissão GSA) */}
+        {['ADM_MASTER', 'ADM_GERENTE', 'GESTOR'].includes(currentAdminProfile?.nivel || '') && 
+         ['GESTOR', 'VENDEDOR', 'ADM_GERENTE', 'ADM_ANALISTA'].includes(role) && (
+          <div className="space-y-1.5 sm:space-y-2">
+            <label className="text-[8px] sm:text-[10px] font-black text-blue-600 uppercase tracking-widest ml-2 sm:ml-4 flex items-center gap-2">
+              <Shield size={10} className="sm:size-3" />
+              Percentual p/ Empresa (%)
+            </label>
+            <div className="relative">
+              <input 
+                type="number" 
+                step="0.1"
+                min="0"
+                max="100"
+                value={percentualEmpresa} 
+                onChange={(e) => setPercentualEmpresa(Number(e.target.value))}
+                className="w-full bg-blue-50 border border-blue-100 rounded-xl sm:rounded-[1.5rem] p-3.5 sm:p-5 text-xs sm:text-sm font-black text-blue-600 outline-none focus:ring-4 focus:ring-blue-500/10 transition-all" 
+                placeholder="Ex: 10"
+              />
+              <div className="absolute right-4 sm:right-6 top-1/2 -translate-y-1/2 pointer-events-none text-blue-400 font-black text-xs">
+                %
+              </div>
+            </div>
+          </div>
+        )}
 
         {role === "VENDEDOR" && !['GESTOR', 'VENDEDOR'].includes(currentAdminProfile?.nivel || '') && (
           <motion.div 

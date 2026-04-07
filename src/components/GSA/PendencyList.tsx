@@ -25,9 +25,9 @@ export const PendencyList: React.FC = () => {
     if (nivel === 'ADM_MASTER' || nivel === 'ADM_ANALISTA' || nivel === 'ADM_GERENTE') {
       q = query(pendenciesRef, orderBy('criadaEm', 'desc'));
     } else if (nivel === 'GESTOR' && uid) {
-      q = query(pendenciesRef, where('managerId', '==', uid), orderBy('criadaEm', 'desc'));
+      q = query(pendenciesRef, where('id_superior', '==', uid), orderBy('criadaEm', 'desc'));
     } else if (nivel === 'VENDEDOR' && uid) {
-      q = query(pendenciesRef, where('vendedorId', '==', uid), orderBy('criadaEm', 'desc'));
+      q = query(pendenciesRef, where('vendedor_id', '==', uid), orderBy('criadaEm', 'desc'));
     } else if (nivel === 'CLIENTE' && uid) {
       q = query(
         pendenciesRef, 
@@ -208,7 +208,7 @@ export const PendencyList: React.FC = () => {
                   <div className="space-y-4">
                     <div className="flex flex-wrap items-center gap-4">
                       <div className="bg-slate-100 px-4 py-1.5 rounded-xl border border-slate-200">
-                        <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Venda: {p.vendaId.slice(-6).toUpperCase()}</span>
+                        <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Venda: {p.venda_id.slice(-6).toUpperCase()}</span>
                       </div>
                       <div className={`px-4 py-1.5 rounded-xl border ${
                         p.status_pendencia === 'AGUARDANDO_GESTOR' ? 'bg-amber-50 text-amber-600 border-amber-100' :
@@ -230,13 +230,13 @@ export const PendencyList: React.FC = () => {
                         <div className="size-8 bg-blue-50 rounded-lg flex items-center justify-center text-blue-500">
                           <User size={16} />
                         </div>
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Vendedor: <span className="text-slate-600">{p.vendedorId.slice(-6).toUpperCase()}</span></span>
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Vendedor: <span className="text-slate-600">{p.vendedor_id.slice(-6).toUpperCase()}</span></span>
                       </div>
                       <div className="flex items-center gap-3">
                         <div className="size-8 bg-indigo-50 rounded-lg flex items-center justify-center text-indigo-500">
                           <Shield size={16} />
                         </div>
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Gestor: <span className="text-slate-600">{p.managerId.slice(-6).toUpperCase()}</span></span>
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Gestor: <span className="text-slate-600">{p.id_superior.slice(-6).toUpperCase()}</span></span>
                       </div>
                     </div>
                   </div>
@@ -254,7 +254,7 @@ export const PendencyList: React.FC = () => {
                   
                   {p.status_pendencia === 'ENVIADO_CLIENTE' && (
                     <button 
-                      onClick={() => handleResolve(p.id!, p.vendaId, p.processo_id)}
+                      onClick={() => handleResolve(p.id!, p.venda_id, p.processo_id)}
                       className="flex-1 flex items-center justify-center gap-4 bg-[#0a0a2e] hover:bg-slate-800 text-white px-10 py-5 rounded-[1.8rem] font-black uppercase text-[11px] tracking-[0.2em] transition-all shadow-2xl shadow-blue-900/20 hover:scale-105 active:scale-95"
                     >
                       Resolver Agora <ArrowRight size={18} />

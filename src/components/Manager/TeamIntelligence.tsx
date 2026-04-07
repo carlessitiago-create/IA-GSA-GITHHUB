@@ -21,7 +21,7 @@ const TeamIntelligence: React.FC<{ user: User }> = ({ user }) => {
     // Usamos a coleção 'sales' que é a padrão do projeto
     const q = query(
       collection(db, "sales"),
-      where("managerId", "==", user.uid),
+      where("id_superior", "==", user.uid),
       orderBy("timestamp", "desc")
     );
 

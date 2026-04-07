@@ -14,9 +14,9 @@ export const useWallets = () => {
       setWallets(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Wallet)));
       setLoading(false);
     }, (error) => {
-      handleFirestoreError(error, OperationType.GET, 'wallets');
       setError('Erro ao carregar carteiras.');
       setLoading(false);
+      handleFirestoreError(error, OperationType.GET, 'wallets');
     });
 
     return () => unsubscribe();

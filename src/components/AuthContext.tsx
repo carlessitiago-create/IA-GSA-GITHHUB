@@ -29,6 +29,7 @@ export interface UserProfile {
   status_conta: 'APROVADO' | 'PENDENTE' | 'RECUSADO' | 'SUSPENSO' | 'BLOQUEADO';
   data_cadastro?: any;
   saldo_pontos?: number; // Keep for legacy or points system
+  percentual_empresa?: number;
 }
 
 interface AuthContextType {

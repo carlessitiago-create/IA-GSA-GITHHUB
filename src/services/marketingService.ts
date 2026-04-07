@@ -92,17 +92,11 @@ const SHOWCASE_LEADS_COLLECTION = 'showcase_leads';
  */
 export async function criarIndicacao(data: Omit<Referral, 'id' | 'timestamp' | 'status_indicacao'>) {
   try {
-    const newReferral = {
-      ...cleanData(data),
-      status_indicacao: 'Enviado',
-      timestamp: serverTimestamp(),
-      bloqueado: false
-    };
-    const docRef = await addDoc(collection(db, REFERRALS_COLLECTION), newReferral);
-    
     // Notificar Hierarquia
     const { sendNotification } = await import('./notificationService');
     
+    let idSuperior = null;
+
     // 1. Notificar o Vendedor Responsável
     if (data.vendedor_id && data.vendedor_id !== 'ADM') {
       await sendNotification({
@@ -117,6 +111,7 @@ export async function criarIndicacao(data: Omit<Referral, 'id' | 'timestamp' | '
       if (vendSnap.exists()) {
         const vendData = vendSnap.data();
         if (vendData.id_superior && vendData.id_superior !== 'ADM') {
+          idSuperior = vendData.id_superior;
           await sendNotification({
             usuario_id: vendData.id_superior,
             titulo: '📢 Nova Indicação na Equipe',
@@ -126,6 +121,15 @@ export async function criarIndicacao(data: Omit<Referral, 'id' | 'timestamp' | '
         }
       }
     }
+
+    const newReferral = {
+      ...cleanData(data),
+      status_indicacao: 'Enviado',
+      timestamp: serverTimestamp(),
+      bloqueado: false,
+      id_superior: idSuperior
+    };
+    const docRef = await addDoc(collection(db, REFERRALS_COLLECTION), newReferral);
 
     // 3. Notificar ADMs
     const adminsSnapshot = await getDocs(query(collection(db, 'usuarios'), where('nivel', 'in', ['ADM_MASTER', 'ADM_GERENTE'])));
@@ -217,7 +221,19 @@ export async function atualizarStatusIndicacao(referralId: string, novoStatus: R
 export async function reatribuirEspecialistaIndicacao(referralId: string, novoVendedorId: string) {
   try {
     const docRef = doc(db, REFERRALS_COLLECTION, referralId);
-    await updateDoc(docRef, { vendedor_id: novoVendedorId });
+    
+    let idSuperior = null;
+    if (novoVendedorId !== 'ADM') {
+      const vendSnap = await getDoc(doc(db, 'usuarios', novoVendedorId));
+      if (vendSnap.exists()) {
+        idSuperior = vendSnap.data().id_superior || null;
+      }
+    }
+
+    await updateDoc(docRef, { 
+      vendedor_id: novoVendedorId,
+      id_superior: idSuperior
+    });
   } catch (error) {
     handleFirestoreError(error, OperationType.UPDATE, REFERRALS_COLLECTION);
     throw error;
@@ -252,6 +268,25 @@ export async function listarIndicacoesRecebidas(vendedorId: string) {
     const q = query(
       collection(db, REFERRALS_COLLECTION), 
       where('vendedor_id', '==', vendedorId),
+      orderBy('timestamp', 'desc')
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Referral));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.LIST, REFERRALS_COLLECTION);
+    throw error;
+  }
+}
+
+/**
+ * Lista indicações de uma equipe (Gestor)
+ */
+export async function listarIndicacoesEquipe(gestorId: string) {
+  if (!gestorId) return [];
+  try {
+    const q = query(
+      collection(db, REFERRALS_COLLECTION), 
+      where('id_superior', '==', gestorId),
       orderBy('timestamp', 'desc')
     );
     const snapshot = await getDocs(q);
@@ -337,11 +372,13 @@ export async function solicitarOrcamentoVitrine(
     const clienteData = clienteSnap.data();
 
     let vendedorNome = 'ADM';
+    let idSuperior = null;
     if (vendedorId !== 'ADM') {
       const vendSnap = await getDoc(doc(db, 'usuarios', vendedorId));
       if (vendSnap.exists()) {
         const vendData = vendSnap.data();
         vendedorNome = vendData.nome_completo || vendData.nome || 'Especialista GSA';
+        idSuperior = vendData.id_superior || null;
       }
     }
 
@@ -354,6 +391,7 @@ export async function solicitarOrcamentoVitrine(
       servico_nome: servicoData?.titulo || servicoData?.nome_servico || 'Serviço GSA',
       vendedor_id: vendedorId,
       vendedor_nome: vendedorNome || 'ADM',
+      id_superior: idSuperior,
       status: 'Novo',
       timestamp: serverTimestamp() as Timestamp,
       indicado_por: indicadoPor,
@@ -417,6 +455,44 @@ export async function solicitarOrcamentoVitrine(
 export async function listarLeadsVitrine() {
   try {
     const q = query(collection(db, SHOWCASE_LEADS_COLLECTION), orderBy('timestamp', 'desc'));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ShowcaseLead));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.LIST, SHOWCASE_LEADS_COLLECTION);
+    throw error;
+  }
+}
+
+/**
+ * Lista leads recebidos por um vendedor
+ */
+export async function listarLeadsRecebidos(vendedorId: string) {
+  if (!vendedorId) return [];
+  try {
+    const q = query(
+      collection(db, SHOWCASE_LEADS_COLLECTION), 
+      where('vendedor_id', '==', vendedorId),
+      orderBy('timestamp', 'desc')
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ShowcaseLead));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.LIST, SHOWCASE_LEADS_COLLECTION);
+    throw error;
+  }
+}
+
+/**
+ * Lista leads de uma equipe (Gestor)
+ */
+export async function listarLeadsEquipe(gestorId: string) {
+  if (!gestorId) return [];
+  try {
+    const q = query(
+      collection(db, SHOWCASE_LEADS_COLLECTION), 
+      where('id_superior', '==', gestorId),
+      orderBy('timestamp', 'desc')
+    );
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ShowcaseLead));
   } catch (error) {
@@ -615,7 +691,19 @@ export async function aceitarPropostaLeadVitrine(
 export async function reatribuirEspecialistaLeadVitrine(leadId: string, novoVendedorId: string) {
   try {
     const docRef = doc(db, SHOWCASE_LEADS_COLLECTION, leadId);
-    await updateDoc(docRef, { vendedor_id: novoVendedorId });
+    
+    let idSuperior = null;
+    if (novoVendedorId !== 'ADM') {
+      const vendSnap = await getDoc(doc(db, 'usuarios', novoVendedorId));
+      if (vendSnap.exists()) {
+        idSuperior = vendSnap.data().id_superior || null;
+      }
+    }
+
+    await updateDoc(docRef, { 
+      vendedor_id: novoVendedorId,
+      id_superior: idSuperior
+    });
   } catch (error) {
     handleFirestoreError(error, OperationType.UPDATE, SHOWCASE_LEADS_COLLECTION);
     throw error;

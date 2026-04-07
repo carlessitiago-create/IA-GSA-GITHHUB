@@ -28,7 +28,11 @@ export const ClientWalletView: React.FC = () => {
 
   useEffect(() => {
     const fetchWalletData = async () => {
-      if (!profile) return;
+      if (!profile) {
+        setLoading(false);
+        return;
+      }
+      setLoading(true);
       try {
         const w = await getOrCreateWallet(profile.uid);
         setWallet(w);

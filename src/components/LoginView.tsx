@@ -49,13 +49,22 @@ const LoginView: React.FC = () => {
         mensagem = "Este e-mail já está em uso por outro usuário.";
       } else if (error.code === "auth/weak-password") {
         mensagem = "A senha deve ter pelo menos 6 caracteres.";
+      } else if (error.code === "auth/network-request-failed") {
+        mensagem = "Falha na conexão com os servidores. Verifique sua internet ou tente abrir o app em uma nova aba.";
       }
 
       Swal.fire({
         icon: "error",
         title: isRegistering ? "Erro no Cadastro" : "Erro no Acesso",
         text: mensagem,
-        confirmButtonColor: "#0a0a2e"
+        confirmButtonColor: "#0a0a2e",
+        footer: error.code === "auth/network-request-failed" ? `
+          <div class="text-center">
+            <button onclick="window.open(window.location.href, '_blank')" class="bg-blue-600 text-white text-[10px] py-2 px-4 rounded-lg font-bold shadow-sm">
+              ABRIR EM NOVA ABA
+            </button>
+          </div>
+        ` : null
       });
     } finally {
       setLoading(false);
@@ -184,7 +193,7 @@ const LoginView: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-[#0a0a2e] p-4 relative overflow-hidden">
+    <div className="min-h-[100dvh] w-full flex items-center justify-center bg-[#0a0a2e] p-4 relative overflow-hidden">
       {/* Detalhes de Background */}
       <div className="absolute top-[-10%] left-[-10%] w-80 h-80 bg-blue-600/10 rounded-full blur-3xl"></div>
       <div className="absolute bottom-[-10%] right-[-10%] w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl"></div>
@@ -192,7 +201,7 @@ const LoginView: React.FC = () => {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className={`w-full ${isRegistering ? 'max-w-2xl' : 'max-w-md'} bg-white rounded-[2.5rem] shadow-2xl p-8 md:p-10 z-10 transition-all duration-500`}
+        className={`w-full ${isRegistering ? 'max-w-2xl' : 'max-w-md'} bg-white rounded-[2.5rem] shadow-2xl p-6 sm:p-8 md:p-10 z-10 transition-all duration-500`}
       >
         <div className="flex flex-col items-center mb-8">
           <div className="size-16 bg-[#0a0a2e] rounded-2xl flex items-center justify-center shadow-xl mb-4">
@@ -326,6 +335,14 @@ const LoginView: React.FC = () => {
         </button>
 
         <div className="mt-8 text-center space-y-4">
+            <button 
+              type="button"
+              onClick={() => setShowPublicSearch(true)}
+              className="text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors flex items-center justify-center gap-2 mx-auto"
+            >
+              <Search size={14} /> CONSULTA PÚBLICA DE PROCESSO
+            </button>
+
             <button 
               type="button"
               onClick={() => setIsRegistering(!isRegistering)}

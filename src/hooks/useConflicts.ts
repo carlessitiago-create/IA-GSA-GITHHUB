@@ -8,16 +8,19 @@ export const useConflicts = (realIsAdm: boolean) => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!realIsAdm) return;
+    if (!realIsAdm) {
+      setLoading(false);
+      return;
+    }
 
     const q = query(collection(db, 'conflict_logs'), orderBy('timestamp', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setConflicts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setLoading(false);
     }, (error) => {
-      handleFirestoreError(error, OperationType.GET, 'conflict_logs');
       setError('Erro ao carregar conflitos.');
       setLoading(false);
+      handleFirestoreError(error, OperationType.GET, 'conflict_logs');
     });
 
     return () => unsubscribe();

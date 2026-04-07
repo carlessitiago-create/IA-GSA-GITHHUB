@@ -54,7 +54,9 @@ const App: React.FC = () => {
 
   return (
     <Routes>
+      <Route path="/vendas/p/:slug" element={<ProposalLandingPage />} />
       <Route path="/p/:slug" element={<ProposalLandingPage />} />
+      <Route path="/vendas" element={!user ? <VitrinePublicaView /> : <AppContent />} />
       <Route path="/consulta" element={<PublicPortal />} />
       {/* Se não estiver logado, /vitrine mostra a pública. Se estiver logado, segue para AppContent que mostrará a interna */}
       <Route path="/vitrine" element={!user ? <VitrinePublicaView /> : <AppContent />} />

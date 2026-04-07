@@ -12,9 +12,9 @@ export const useServices = () => {
       setServices(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setLoading(false);
     }, (error) => {
-      handleFirestoreError(error, OperationType.GET, 'services');
       setError('Erro ao carregar serviços.');
       setLoading(false);
+      handleFirestoreError(error, OperationType.GET, 'services');
     });
 
     return () => unsubscribe();

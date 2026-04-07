@@ -346,7 +346,7 @@ export const TrackingView: React.FC<TrackingViewProps> = ({ saleId, onBack }) =>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
             <Link 
-              to="/vitrine" 
+              to="/vendas" 
               className="px-8 py-4 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2"
             >
               Ver Nossos Serviços <ArrowRight size={16} />

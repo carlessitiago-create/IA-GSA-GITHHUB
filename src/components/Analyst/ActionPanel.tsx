@@ -31,16 +31,18 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({ venda, onUpdate }) => 
       try {
         // 1. Cria a pendência no banco (usando a coleção 'pendencies' padrão do projeto)
         await addDoc(collection(db, "pendencies"), {
-          vendaId: venda.id,
+          venda_id: venda.id,
+          cliente_id: venda.cliente_id || '',
           clienteNome: venda.cliente_nome || venda.nome_cliente || 'Cliente',
           descricao: texto,
-          vendedorId: venda.vendedor_id || venda.vendedorId,
+          vendedor_id: venda.vendedor_id || venda.vendedorId || '',
           vendedorNome: venda.vendedor_nome || venda.vendedorNome || 'Vendedor',
-          managerId: venda.managerId || '',
+          id_superior: venda.id_superior || venda.managerId || '',
           status_pendencia: 'AGUARDANDO_GESTOR',
           criadaPor: auth.currentUser?.email,
           criadaEm: Timestamp.now(),
-          criado_por_id: auth.currentUser?.uid
+          criado_por_id: auth.currentUser?.uid,
+          timestamp: Timestamp.now()
         });
 
         // 2. Trava o status da venda para 'PENDENCIA' (usando a coleção 'sales' padrão do projeto)

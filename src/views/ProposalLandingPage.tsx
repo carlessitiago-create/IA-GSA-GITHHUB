@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 import { getProposalBySlug, ProposalData, checkCpfOwnership, updateProposalStatus } from '../services/proposalService';
+import { ShowcaseService } from '../services/marketingService';
 import { 
   CheckCircle, 
   Zap, 
@@ -12,7 +15,17 @@ import {
   Star,
   ChevronRight,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Banknote,
+  CreditCard,
+  Gift,
+  Ticket,
+  FastForward,
+  UserPlus,
+  Percent,
+  Play,
+  Image as ImageIcon,
+  Layout
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import Swal from 'sweetalert2';
@@ -20,6 +33,7 @@ import Swal from 'sweetalert2';
 export const ProposalLandingPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const [proposal, setProposal] = useState<ProposalData | null>(null);
+  const [showcase, setShowcase] = useState<ShowcaseService | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -27,6 +41,16 @@ export const ProposalLandingPage: React.FC = () => {
       if (slug) {
         const data = await getProposalBySlug(slug);
         setProposal(data);
+        if (data?.showcase_service_id) {
+          try {
+            const snap = await getDoc(doc(db, 'showcase_services', data.showcase_service_id));
+            if (snap.exists()) {
+              setShowcase({ id: snap.id, ...snap.data() } as ShowcaseService);
+            }
+          } catch (error) {
+            console.error("Erro ao buscar vitrine:", error);
+          }
+        }
       }
       setLoading(false);
     };
@@ -41,6 +65,12 @@ export const ProposalLandingPage: React.FC = () => {
       text: `Para formalizar seu aceite da Opção ${option === 'VISTA' ? 'À Vista' : 'Parcelada'}, informe seus dados:`,
       html: `
         <div class="space-y-4 text-left">
+          ${proposal?.is_public ? `
+          <div>
+            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Seu Nome Completo</label>
+            <input id="swal-nome" class="swal2-input !mt-1 !w-full !mx-0" placeholder="Nome Completo">
+          </div>
+          ` : ''}
           <div>
             <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Seu CPF ou CNPJ</label>
             <input id="swal-cpf" class="swal2-input !mt-1 !w-full !mx-0" placeholder="000.000.000-00">
@@ -59,11 +89,13 @@ export const ProposalLandingPage: React.FC = () => {
       preConfirm: () => {
         const cpf = (document.getElementById('swal-cpf') as HTMLInputElement).value;
         const tel = (document.getElementById('swal-tel') as HTMLInputElement).value;
-        if (!cpf || !tel) {
+        const nome = proposal?.is_public ? (document.getElementById('swal-nome') as HTMLInputElement).value : undefined;
+        
+        if (!cpf || !tel || (proposal?.is_public && !nome)) {
           Swal.showValidationMessage('Por favor, preencha todos os campos');
           return false;
         }
-        return { cpf, tel };
+        return { cpf, tel, nome };
       }
     });
 
@@ -114,13 +146,13 @@ export const ProposalLandingPage: React.FC = () => {
             
             // Atualizar Proposta para PAGA e Criar OS
             if (slug) {
-              await updateProposalStatus(slug, 'PAGA', formValues.cpf, formValues.tel);
+              await updateProposalStatus(slug, 'PAGA', formValues.cpf, formValues.tel, formValues.nome);
               Swal.fire('Sucesso!', 'Pagamento identificado! Sua Ordem de Serviço foi criada e um analista já está cuidando do seu caso.', 'success');
             }
           } else {
             // Notificar Consultor
             if (slug) {
-              await updateProposalStatus(slug, 'ACEITA', formValues.cpf, formValues.tel);
+              await updateProposalStatus(slug, 'ACEITA', formValues.cpf, formValues.tel, formValues.nome);
               Swal.fire('Sucesso!', `O consultor ${proposal?.vendedor_nome} recebeu seu aceite e entrará em contato em instantes para finalizar os detalhes!`, 'success');
             }
           }
@@ -178,7 +210,9 @@ export const ProposalLandingPage: React.FC = () => {
               <Star size={14} className="text-yellow-400 fill-yellow-400" />
               <span className="text-[10px] font-black uppercase tracking-[0.2em]">Proposta de Solução Exclusiva</span>
             </div>
-            <p className="text-blue-400 text-[10px] font-bold uppercase tracking-widest mt-2">Para: {proposal.lead_nome}</p>
+            <p className="text-blue-400 text-[10px] font-bold uppercase tracking-widest mt-2">
+              {proposal.is_public ? 'Oportunidade Exclusiva' : `Para: ${proposal.lead_nome}`}
+            </p>
           </motion.div>
 
           <motion.h1 
@@ -196,13 +230,61 @@ export const ProposalLandingPage: React.FC = () => {
             transition={{ delay: 0.2 }}
             className="text-blue-200 text-lg md:text-xl font-medium max-w-2xl mx-auto"
           >
-            Olá {proposal.lead_nome.split(' ')[0]}, preparamos as melhores condições para você iniciar seu processo hoje mesmo com a GSA IA.
+            {proposal.is_public 
+              ? "Confira os detalhes desta oferta especial que preparamos para você iniciar seu processo hoje mesmo com a GSA IA."
+              : `Olá ${proposal.lead_nome.split(' ')[0]}, preparamos as melhores condições para você iniciar seu processo hoje mesmo com a GSA IA.`}
           </motion.p>
         </div>
       </header>
 
+      {/* Vitrine Section */}
+      {showcase && (
+        <section className="py-16 px-4 bg-slate-50 border-b border-slate-100">
+          <div className="max-w-4xl mx-auto space-y-12">
+            <div className="flex items-center gap-3">
+              <div className="size-8 bg-blue-600 rounded-lg flex items-center justify-center text-white">
+                <Layout size={16} />
+              </div>
+              <h2 className="text-xl font-black text-[#0a0a2e] uppercase italic tracking-tighter">Conheça o Serviço</h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
+              <div className="relative aspect-video rounded-3xl overflow-hidden shadow-2xl bg-slate-900 group border-4 border-white">
+                {showcase.videoId ? (
+                  <iframe
+                    src={`https://www.youtube.com/embed/${showcase.videoId}?autoplay=0&rel=0`}
+                    title={showcase.titulo}
+                    className="w-full h-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                ) : (
+                  <img 
+                    src={showcase.imagem_capa_url || "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80"} 
+                    alt={showcase.titulo}
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  />
+                )}
+              </div>
+              <div className="space-y-6">
+                <h3 className="text-3xl font-black text-[#0a0a2e] uppercase italic tracking-tighter leading-tight">{showcase.titulo}</h3>
+                <p className="text-slate-600 text-lg leading-relaxed font-medium">{showcase.descricao_longa}</p>
+                <div className="flex flex-wrap gap-3 pt-2">
+                  <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 text-blue-600 text-[10px] font-black uppercase tracking-widest border border-blue-100">
+                    <ImageIcon size={14} /> Fotos Reais
+                  </div>
+                  <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 text-blue-600 text-[10px] font-black uppercase tracking-widest border border-blue-100">
+                    <Play size={14} /> Vídeo Demonstrativo
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Vendedor Info */}
-      <section className="py-12 px-4 -mt-10 relative z-20">
+      <section className={`py-12 px-4 ${showcase ? 'mt-0' : '-mt-10'} relative z-20`}>
         <div className="max-w-4xl mx-auto">
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
@@ -277,6 +359,12 @@ export const ProposalLandingPage: React.FC = () => {
                   <div className="flex items-baseline gap-2">
                     <span className="text-5xl md:text-7xl font-black text-[#0a0a2e] italic">R$ {proposal.opcao_vista.valor.toLocaleString('pt-BR')}</span>
                   </div>
+                  <div className="pt-1">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-50 rounded-full border border-emerald-100">
+                      <Banknote size={12} className="text-emerald-600" />
+                      <span className="text-[9px] font-black uppercase tracking-widest text-emerald-600">{proposal.opcao_vista.forma_pagamento || 'PIX'}</span>
+                    </div>
+                  </div>
                   <div className="text-emerald-600 font-bold text-sm uppercase italic whitespace-pre-line leading-relaxed">
                     {proposal.opcao_vista.condicoes}
                   </div>
@@ -311,12 +399,24 @@ export const ProposalLandingPage: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <p className="text-white/40 text-sm font-medium">Investimento Total</p>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-5xl md:text-7xl font-black text-white italic">R$ {proposal.opcao_parcelado.valor.toLocaleString('pt-BR')}</span>
+                <div className="space-y-4">
+                  <div className="space-y-1">
+                    <p className="text-white/40 text-[10px] font-black uppercase tracking-widest">Entrada de</p>
+                    <p className="text-3xl font-black text-blue-400 italic">R$ {proposal.opcao_parcelado.valor_entrada?.toLocaleString('pt-BR') || '0,00'}</p>
                   </div>
-                  <div className="text-blue-400 font-bold text-sm uppercase italic whitespace-pre-line leading-relaxed">
+                  <div className="space-y-1">
+                    <p className="text-white/40 text-[10px] font-black uppercase tracking-widest">Mais {proposal.opcao_parcelado.num_parcelas}x de</p>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-5xl md:text-7xl font-black text-white italic">R$ {proposal.opcao_parcelado.valor_parcela?.toLocaleString('pt-BR') || '0,00'}</span>
+                    </div>
+                  </div>
+                  <div className="pt-2">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full border border-white/10">
+                      <CreditCard size={12} className="text-blue-400" />
+                      <span className="text-[9px] font-black uppercase tracking-widest text-blue-300">{proposal.opcao_parcelado.forma_pagamento || 'Boleto'}</span>
+                    </div>
+                  </div>
+                  <div className="text-white/60 font-bold text-xs uppercase italic whitespace-pre-line leading-relaxed">
                     {proposal.opcao_parcelado.condicoes}
                   </div>
                 </div>
@@ -330,6 +430,60 @@ export const ProposalLandingPage: React.FC = () => {
               </div>
             </motion.div>
           </div>
+
+          {/* Clube de Pontos Section */}
+          {proposal.clube_pontos_info && (
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="mt-16 p-8 md:p-12 bg-gradient-to-br from-blue-600 to-indigo-900 rounded-[3rem] text-white shadow-2xl relative overflow-hidden"
+            >
+              <div className="absolute top-0 right-0 p-12 opacity-10 pointer-events-none">
+                <Star size={120} className="fill-white" />
+              </div>
+              <div className="relative z-10 space-y-8">
+                <div className="flex flex-col md:flex-row items-center gap-8">
+                  <div className="size-20 bg-white/20 backdrop-blur-md rounded-3xl flex items-center justify-center shrink-0 shadow-xl border border-white/30">
+                    <Star size={40} className="text-yellow-400 fill-yellow-400" />
+                  </div>
+                  <div className="space-y-4 text-center md:text-left">
+                    <h3 className="text-2xl md:text-3xl font-black uppercase italic tracking-tighter">Clube de Pontos GSA</h3>
+                    <p className="text-blue-100 font-medium leading-relaxed max-w-3xl">
+                      {proposal.clube_pontos_info}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 pt-4">
+                  <div className="bg-white/10 backdrop-blur-sm p-4 rounded-2xl border border-white/10 flex flex-col items-center text-center gap-2">
+                    <Ticket size={24} className="text-yellow-400" />
+                    <span className="text-[9px] font-black uppercase tracking-widest">Vale-Compras</span>
+                  </div>
+                  <div className="bg-white/10 backdrop-blur-sm p-4 rounded-2xl border border-white/10 flex flex-col items-center text-center gap-2">
+                    <Gift size={24} className="text-pink-400" />
+                    <span className="text-[9px] font-black uppercase tracking-widest">Brindes</span>
+                  </div>
+                  <div className="bg-white/10 backdrop-blur-sm p-4 rounded-2xl border border-white/10 flex flex-col items-center text-center gap-2">
+                    <CheckCircle size={24} className="text-emerald-400" />
+                    <span className="text-[9px] font-black uppercase tracking-widest">Pagamento em Dia</span>
+                  </div>
+                  <div className="bg-white/10 backdrop-blur-sm p-4 rounded-2xl border border-white/10 flex flex-col items-center text-center gap-2">
+                    <FastForward size={24} className="text-blue-400" />
+                    <span className="text-[9px] font-black uppercase tracking-widest">Antecipação</span>
+                  </div>
+                  <div className="bg-white/10 backdrop-blur-sm p-4 rounded-2xl border border-white/10 flex flex-col items-center text-center gap-2">
+                    <UserPlus size={24} className="text-purple-400" />
+                    <span className="text-[9px] font-black uppercase tracking-widest">Indicações</span>
+                  </div>
+                  <div className="bg-white/10 backdrop-blur-sm p-4 rounded-2xl border border-white/10 flex flex-col items-center text-center gap-2">
+                    <Percent size={24} className="text-orange-400" />
+                    <span className="text-[9px] font-black uppercase tracking-widest">Descontos</span>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
         </div>
       </section>
 

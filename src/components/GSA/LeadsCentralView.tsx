@@ -25,6 +25,10 @@ import {
   LeadStatus,
   ShowcaseLead,
   listarTodasIndicacoes,
+  listarIndicacoesRecebidas,
+  listarIndicacoesEquipe,
+  listarLeadsRecebidos,
+  listarLeadsEquipe,
   atualizarStatusIndicacao,
   Referral,
   PropostaDetalhes,
@@ -60,26 +64,50 @@ export const LeadsCentralView: React.FC = () => {
     detalhesExtras: ''
   });
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const [leadsData, referralsData, usersData] = await Promise.all([
-          listarLeadsVitrine(),
-          listarTodasIndicacoes(),
-          listarEspecialistas()
-        ]);
-        setLeads(leadsData);
-        setReferrals(referralsData);
-        setEspecialistas(usersData);
-      } catch (error) {
-        console.error("Erro ao carregar Central de Leads:", error);
-      } finally {
-        setLoading(false);
+  const fetchData = async () => {
+    if (!profile) return;
+    setLoading(true);
+    try {
+      let leadsPromise;
+      let referralsPromise;
+
+      const isAdmin = profile.nivel === 'ADM_MASTER' || profile.nivel === 'ADM_GERENTE';
+      const isGestor = profile.nivel === 'GESTOR';
+      const isVendedor = profile.nivel === 'VENDEDOR';
+
+      if (isAdmin) {
+        leadsPromise = listarLeadsVitrine();
+        referralsPromise = listarTodasIndicacoes();
+      } else if (isGestor) {
+        leadsPromise = listarLeadsEquipe(profile.uid);
+        referralsPromise = listarIndicacoesEquipe(profile.uid);
+      } else if (isVendedor) {
+        leadsPromise = listarLeadsRecebidos(profile.uid);
+        referralsPromise = listarIndicacoesRecebidas(profile.uid);
+      } else {
+        // Fallback for other roles if any
+        leadsPromise = Promise.resolve([]);
+        referralsPromise = Promise.resolve([]);
       }
-    };
+
+      const [leadsData, referralsData, usersData] = await Promise.all([
+        leadsPromise,
+        referralsPromise,
+        listarEspecialistas()
+      ]);
+      setLeads(leadsData);
+      setReferrals(referralsData);
+      setEspecialistas(usersData);
+    } catch (error) {
+      console.error("Erro ao carregar Central de Leads:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchData();
-  }, []);
+  }, [profile]);
 
   const handleAssign = async (vendedor: UserProfile) => {
     if (!selectedItem) return;
@@ -105,9 +133,7 @@ export const LeadsCentralView: React.FC = () => {
       setSelectedItem(null);
       
       // Refresh lists
-      const [l, r] = await Promise.all([listarLeadsVitrine(), listarTodasIndicacoes()]);
-      setLeads(l);
-      setReferrals(r);
+      fetchData();
     } catch (error) {
       console.error("Erro ao atribuir lead:", error);
       Swal.fire('Erro', 'Falha ao atribuir lead.', 'error');
@@ -140,9 +166,7 @@ export const LeadsCentralView: React.FC = () => {
         Swal.fire('Excluído!', 'O registro foi removido com sucesso.', 'success');
         
         // Refresh lists
-        const [l, r] = await Promise.all([listarLeadsVitrine(), listarTodasIndicacoes()]);
-        setLeads(l);
-        setReferrals(r);
+        fetchData();
       } catch (error) {
         console.error("Erro ao excluir:", error);
         Swal.fire('Erro', 'Falha ao excluir o registro.', 'error');
@@ -168,9 +192,7 @@ export const LeadsCentralView: React.FC = () => {
       setSelectedItem(null);
       
       // Refresh lists
-      const [l, r] = await Promise.all([listarLeadsVitrine(), listarTodasIndicacoes()]);
-      setLeads(l);
-      setReferrals(r);
+      fetchData();
     } catch (error) {
       console.error("Erro ao enviar proposta:", error);
       Swal.fire('Erro', 'Falha ao enviar proposta.', 'error');
@@ -202,9 +224,7 @@ export const LeadsCentralView: React.FC = () => {
         Swal.fire('Atualizado!', 'Status atualizado com sucesso.', 'success');
         
         // Refresh lists
-        const [l, r] = await Promise.all([listarLeadsVitrine(), listarTodasIndicacoes()]);
-        setLeads(l);
-        setReferrals(r);
+        fetchData();
       } catch (error) {
         console.error("Erro ao atualizar status:", error);
         Swal.fire('Erro', 'Falha ao atualizar status.', 'error');

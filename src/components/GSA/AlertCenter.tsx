@@ -24,20 +24,20 @@ const AlertCenter: React.FC<AlertCenterProps> = ({ onResolveClick }) => {
     let q;
     if (nivel === 'VENDEDOR' && uid) {
       q = query(
-        collection(db, "pendencias"),
+        collection(db, "pendencies"),
         where("status_pendencia", "in", ["AGUARDANDO_GESTOR", "ENVIADO_CLIENTE"]),
-        where("vendedorId", "==", uid)
+        where("vendedor_id", "==", uid)
       );
     } else if (nivel === 'GESTOR' && uid) {
       q = query(
-        collection(db, "pendencias"),
+        collection(db, "pendencies"),
         where("status_pendencia", "in", ["AGUARDANDO_GESTOR", "ENVIADO_CLIENTE"]),
-        where("managerId", "==", uid)
+        where("id_superior", "==", uid)
       );
     } else if (nivel === 'ADM_MASTER' || nivel === 'ADM_ANALISTA') {
       // ADM roles see all active pendencies
       q = query(
-        collection(db, "pendencias"),
+        collection(db, "pendencies"),
         where("status_pendencia", "in", ["AGUARDANDO_GESTOR", "ENVIADO_CLIENTE"])
       );
     } else {

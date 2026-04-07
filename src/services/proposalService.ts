@@ -1,10 +1,14 @@
 import { collection, addDoc, serverTimestamp, doc, getDoc, query, where, getDocs, orderBy, updateDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, cleanData } from '../firebase';
 import { sendNotification } from './notificationService';
 
 export interface ProposalOption {
   valor: number;
   condicoes: string;
+  forma_pagamento?: string;
+  valor_entrada?: number;
+  num_parcelas?: number;
+  valor_parcela?: number;
 }
 
 export interface ProposalData {
@@ -15,6 +19,10 @@ export interface ProposalData {
   lead_whatsapp?: string;
   servico_id: string;
   servico_nome: string;
+  valor_sugerido: number;
+  valor_venda: number;
+  percentual_empresa: number;
+  valor_empresa: number;
   opcao_vista: ProposalOption;
   opcao_parcelado: ProposalOption;
   vendedor_id: string;
@@ -24,6 +32,9 @@ export interface ProposalData {
   status: 'ABERTA' | 'ACEITA' | 'RECUSADA' | 'EXPIRADA' | 'PAGA';
   slug: string;
   visualizacoes?: number;
+  clube_pontos_info?: string;
+  showcase_service_id?: string;
+  is_public?: boolean;
 }
 
 export const createProposal = async (data: Omit<ProposalData, 'timestamp' | 'status' | 'slug'>) => {
@@ -36,7 +47,7 @@ export const createProposal = async (data: Omit<ProposalData, 'timestamp' | 'sta
     timestamp: serverTimestamp(),
   };
 
-  const docRef = await addDoc(collection(db, 'proposals'), proposalData);
+  const docRef = await addDoc(collection(db, 'proposals'), cleanData(proposalData));
   return { id: docRef.id, slug };
 };
 
@@ -100,24 +111,32 @@ export const listAllProposals = async () => {
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ProposalData));
 };
 
-export const updateProposalStatus = async (slug: string, status: ProposalData['status'], cpf: string, whatsapp: string) => {
+export const updateProposalStatus = async (slug: string, status: ProposalData['status'], cpf: string, whatsapp: string, lead_nome?: string) => {
   const proposal = await getProposalBySlug(slug);
   if (!proposal || !proposal.id) throw new Error('Proposta não encontrada');
   
   const proposalRef = doc(db, 'proposals', proposal.id);
-  await updateDoc(proposalRef, {
+  const updatePayload: any = {
     status,
     lead_cpf: cpf,
     lead_whatsapp: whatsapp,
     updatedAt: serverTimestamp()
-  });
+  };
+  
+  if (lead_nome) {
+    updatePayload.lead_nome = lead_nome;
+  }
+
+  await updateDoc(proposalRef, updatePayload);
+
+  const finalLeadNome = lead_nome || proposal.lead_nome;
 
   // Notificar Consultor sobre o aceite
   if (status === 'ACEITA' || status === 'PAGA') {
     await sendNotification({
       usuario_id: proposal.vendedor_id,
       titulo: status === 'PAGA' ? "💰 Proposta PAGA Online!" : "✅ Proposta ACEITA!",
-      mensagem: `O lead ${proposal.lead_nome} (${cpf}) deu aceite na proposta de ${proposal.servico_nome}. ${status === 'PAGA' ? 'O pagamento foi confirmado via PIX.' : 'Ligue agora para fechar!'}`,
+      mensagem: `O lead ${finalLeadNome} (${cpf}) deu aceite na proposta de ${proposal.servico_nome}. ${status === 'PAGA' ? 'O pagamento foi confirmado via PIX.' : 'Ligue agora para fechar!'}`,
       tipo: status === 'PAGA' ? 'SALE' : 'NEW_LEAD',
       vendedor_id: proposal.vendedor_id
     });
@@ -131,7 +150,7 @@ export const updateProposalStatus = async (slug: string, status: ProposalData['s
     // Para simplificar, vamos criar o OrderProcess direto com os dados da proposta
     await addDoc(collection(db, 'order_processes'), {
       protocolo,
-      cliente_nome: proposal.lead_nome,
+      cliente_nome: finalLeadNome,
       cliente_cpf_cnpj: cpf,
       vendedor_id: proposal.vendedor_id,
       vendedor_nome: proposal.vendedor_nome,

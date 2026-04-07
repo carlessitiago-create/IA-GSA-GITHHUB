@@ -13,9 +13,9 @@ export const useShowcaseServices = () => {
       setShowcaseServices(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ShowcaseService)));
       setLoading(false);
     }, (error) => {
-      handleFirestoreError(error, OperationType.GET, 'showcase_services');
       setError('Erro ao carregar serviços da vitrine.');
       setLoading(false);
+      handleFirestoreError(error, OperationType.GET, 'showcase_services');
     });
 
     return () => unsubscribe();

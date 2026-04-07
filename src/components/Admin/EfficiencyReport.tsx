@@ -23,8 +23,8 @@ const EfficiencyReport: React.FC = () => {
 
       snapshot.docs.forEach((doc) => {
         const p = doc.data();
-        const vId = p.vendedorId;
-        const vNome = p.vendedorNome || p.vendedorId || "Vendedor";
+        const vId = p.vendedor_id || p.vendedorId;
+        const vNome = p.vendedorNome || p.vendedor_id || p.vendedorId || "Vendedor";
 
         if (!stats[vId]) {
           stats[vId] = { id: vId, nome: vNome, tempos: [], resolvidas: 0, ativas: 0 };

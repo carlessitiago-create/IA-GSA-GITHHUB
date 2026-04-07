@@ -10,7 +10,7 @@ import {
   updateDoc,
   deleteDoc
 } from 'firebase/firestore';
-import { db, auth, handleFirestoreError, OperationType } from '../firebase';
+import { db, auth, handleFirestoreError, OperationType, cleanData } from '../firebase';
 import { validateDocument } from '../utils/validators';
 
 export interface ClientData {
@@ -127,13 +127,13 @@ export async function cadastrarCliente(data: Omit<ClientData, 'data_entrada' | '
       }
     }
 
-    const docRef = await addDoc(collection(db, path), {
+    const docRef = await addDoc(collection(db, path), cleanData({
       ...data,
       id_superior,
       visibilidade_uids,
       data_nascimento: data.data_nascimento || '',
       data_entrada: serverTimestamp()
-    });
+    }));
     return { id: docRef.id, id_superior, visibilidade_uids, data_nascimento: data.data_nascimento || '' };
   } catch (error) {
     handleFirestoreError(error, OperationType.CREATE, path);

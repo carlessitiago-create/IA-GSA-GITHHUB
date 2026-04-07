@@ -12,35 +12,35 @@ export const ClubePromoBanner: React.FC<ClubePromoBannerProps> = ({ onAction, is
     <motion.div 
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="relative overflow-hidden rounded-[2rem] sm:rounded-[2.5rem] bg-gradient-to-br from-yellow-400 via-orange-500 to-red-600 p-6 sm:p-8 text-white shadow-2xl shadow-orange-500/20"
+      className="relative overflow-hidden rounded-2xl sm:rounded-[2.5rem] bg-gradient-to-br from-yellow-400 via-orange-500 to-red-600 p-4 sm:p-8 text-white shadow-2xl shadow-orange-500/20"
     >
-      <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6 sm:gap-8">
-        <div className="flex flex-col md:flex-row items-center gap-4 sm:gap-6 text-center md:text-left">
-          <div className="size-16 sm:size-20 bg-white/20 backdrop-blur-md rounded-2xl sm:rounded-3xl flex items-center justify-center shadow-inner border border-white/30 shrink-0">
-            <Trophy size={32} className="sm:size-[40px] text-yellow-200 drop-shadow-lg" />
+      <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-8">
+        <div className="flex flex-col md:flex-row items-center gap-3 sm:gap-6 text-center md:text-left">
+          <div className="size-12 sm:size-20 bg-white/20 backdrop-blur-md rounded-xl sm:rounded-3xl flex items-center justify-center shadow-inner border border-white/30 shrink-0">
+            <Trophy size={24} className="sm:size-[40px] text-yellow-200 drop-shadow-lg" />
           </div>
-          <div className="space-y-1 sm:space-y-2">
+          <div className="space-y-0.5 sm:space-y-2">
             <div className="flex items-center justify-center md:justify-start gap-2">
-              <Star size={14} className="sm:size-4 text-yellow-200 fill-yellow-200" />
-              <span className="text-[8px] sm:text-[10px] font-black uppercase tracking-[0.2em] text-yellow-100">Exclusivo GSA</span>
+              <Star size={12} className="sm:size-4 text-yellow-200 fill-yellow-200" />
+              <span className="text-[7px] sm:text-[10px] font-black uppercase tracking-[0.2em] text-yellow-100">Exclusivo GSA</span>
             </div>
-            <h3 className="text-2xl sm:text-3xl font-black uppercase italic tracking-tighter leading-none">
+            <h3 className="text-xl sm:text-3xl font-black uppercase italic tracking-tighter leading-none">
               Clube de Prêmios
             </h3>
-            <p className="text-xs sm:text-sm font-medium text-orange-50 max-w-sm leading-relaxed">
+            <p className="text-[10px] sm:text-sm font-medium text-orange-50 max-w-sm leading-relaxed">
               {isPublic 
-                ? "Cadastre-se agora, indique amigos e troque seus pontos por prêmios incríveis como iPhones, Notebooks e muito mais!"
-                : "Você já tem pontos acumulados! Troque agora por prêmios exclusivos na nossa vitrine de recompensas."}
+                ? "Cadastre-se agora, indique amigos e troque seus pontos por prêmios incríveis!"
+                : "Você já tem pontos acumulados! Troque agora por prêmios exclusivos."}
             </p>
           </div>
         </div>
 
         <button 
           onClick={onAction}
-          className="w-full md:w-auto group relative flex items-center justify-center gap-3 px-6 sm:px-8 py-4 sm:py-5 bg-white text-orange-600 rounded-xl sm:rounded-2xl font-black uppercase tracking-widest text-[10px] sm:text-xs hover:bg-orange-50 transition-all shadow-xl hover:scale-105 active:scale-95"
+          className="w-full md:w-auto group relative flex items-center justify-center gap-2 px-5 sm:px-8 py-3 sm:py-5 bg-white text-orange-600 rounded-lg sm:rounded-2xl font-black uppercase tracking-widest text-[9px] sm:text-xs hover:bg-orange-50 transition-all shadow-xl hover:scale-105 active:scale-95"
         >
           {isPublic ? "Quero Me Cadastrar" : "Ver Meus Prêmios"}
-          <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+          <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
         </button>
       </div>
 

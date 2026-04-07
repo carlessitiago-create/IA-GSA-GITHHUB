@@ -9,7 +9,10 @@ export const useShowcaseLeads = (profile: any, realIsAdm: boolean, realIsGestor:
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!profile) return;
+    if (!profile) {
+      setLoading(false);
+      return;
+    }
 
     let qLeads;
     if (realIsAdm || realIsGestor) {
@@ -27,9 +30,9 @@ export const useShowcaseLeads = (profile: any, realIsAdm: boolean, realIsGestor:
       setShowcaseLeads(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ShowcaseLead)));
       setLoading(false);
     }, (error) => {
-      handleFirestoreError(error, OperationType.GET, 'showcase_leads');
       setError('Erro ao carregar leads da vitrine.');
       setLoading(false);
+      handleFirestoreError(error, OperationType.GET, 'showcase_leads');
     });
 
     return () => unsubscribe();

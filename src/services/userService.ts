@@ -35,6 +35,7 @@ export interface UserProfile {
   nome_empresa?: string;
   cnpj?: string;
   status_conta?: 'PENDENTE' | 'APROVADO' | 'RECUSADO' | 'SUSPENSO' | 'BLOQUEADO';
+  percentual_empresa?: number;
 }
 
 const COLLECTION_NAME = 'usuarios';

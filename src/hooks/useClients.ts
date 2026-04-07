@@ -8,7 +8,10 @@ export const useClients = (profile: any, realIsAdm: boolean) => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!profile) return;
+    if (!profile) {
+      setLoading(false);
+      return;
+    }
 
     let qClients;
     if (realIsAdm) {
@@ -24,9 +27,9 @@ export const useClients = (profile: any, realIsAdm: boolean) => {
       setClients(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setLoading(false);
     }, (error) => {
-      handleFirestoreError(error, OperationType.GET, 'clients');
       setError('Erro ao carregar clientes.');
       setLoading(false);
+      handleFirestoreError(error, OperationType.GET, 'clients');
     });
 
     return () => unsubscribe();

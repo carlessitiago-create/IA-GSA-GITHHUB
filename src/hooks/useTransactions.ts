@@ -9,13 +9,16 @@ export const useTransactions = (profile: any, realIsAdm: boolean, realIsGestor: 
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!profile) return;
+    if (!profile) {
+      setLoading(false);
+      return;
+    }
 
     let qTrans;
     if (realIsAdm) {
       qTrans = query(collection(db, 'financial_transactions'), orderBy('timestamp', 'desc'));
     } else if (realIsGestor && profile?.uid) {
-      qTrans = query(collection(db, 'financial_transactions'), where('managerId', '==', profile.uid), orderBy('timestamp', 'desc'));
+      qTrans = query(collection(db, 'financial_transactions'), where('id_superior', '==', profile.uid), orderBy('timestamp', 'desc'));
     } else if (profile?.nivel === 'VENDEDOR' && profile?.uid) {
       qTrans = query(collection(db, 'financial_transactions'), where('vendedor_id', '==', profile.uid), orderBy('timestamp', 'desc'));
     } else if (profile?.uid) {
@@ -29,9 +32,9 @@ export const useTransactions = (profile: any, realIsAdm: boolean, realIsGestor: 
       setTransactions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FinancialTransaction)));
       setLoading(false);
     }, (error) => {
-      handleFirestoreError(error, OperationType.GET, 'financial_transactions');
       setError('Erro ao carregar transações.');
       setLoading(false);
+      handleFirestoreError(error, OperationType.GET, 'financial_transactions');
     });
 
     return () => unsubscribe();

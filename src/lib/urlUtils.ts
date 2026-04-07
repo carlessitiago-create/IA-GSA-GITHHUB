@@ -4,6 +4,13 @@
  * 'ais-pre-' origins are the public-facing versions.
  */
 export const getPublicOrigin = () => {
+  // Check for a custom domain override in environment variables
+  const customDomain = import.meta.env.VITE_CUSTOM_DOMAIN;
+  if (customDomain) {
+    // Ensure it has a protocol
+    return customDomain.startsWith('http') ? customDomain : `https://${customDomain}`;
+  }
+
   const origin = window.location.origin;
   
   // If we are in the AI Studio Build dev environment, replace dev prefix with pre (preview) prefix
