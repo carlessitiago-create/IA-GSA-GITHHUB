@@ -7,14 +7,27 @@ export const consultaPublicaProcesso = async (documento: string, dataNascimento:
   }
 
   // 1. Busca o cliente com validação dupla obrigatória
-  const qCliente = query(
-    collection(db, 'clients'), 
-    where('documento', '==', documento),
-    where('data_nascimento', '==', dataNascimento), // Trava de segurança obrigatória
+  // Primeiro tentamos na coleção 'usuarios' (novo padrão)
+  let qCliente = query(
+    collection(db, 'usuarios'), 
+    where('cpf', '==', documento),
+    where('data_nascimento', '==', dataNascimento),
     limit(1)
   );
   
-  const snapCliente = await getDocs(qCliente);
+  let snapCliente = await getDocs(qCliente);
+  
+  // Se não encontrar, tentamos na coleção 'clients' (legado)
+  if (snapCliente.empty) {
+    qCliente = query(
+      collection(db, 'clients'), 
+      where('documento', '==', documento),
+      where('data_nascimento', '==', dataNascimento),
+      limit(1)
+    );
+    snapCliente = await getDocs(qCliente);
+  }
+
   if (snapCliente.empty) {
     throw new Error("Dados não conferem ou cliente não encontrado.");
   }
@@ -48,14 +61,25 @@ export const consultaPublicaProcesso = async (documento: string, dataNascimento:
 
 // Listar Indicações do Cliente (para o Portal Público)
 export const listarMinhasIndicacoesPublicas = async (documento: string, dataNascimento: string) => {
-  // 1. Busca o cliente para validar
-  const qCliente = query(
-    collection(db, 'clients'), 
-    where('documento', '==', documento),
+  // 1. Busca o cliente para validar (Tenta usuarios primeiro, depois clients)
+  let qCliente = query(
+    collection(db, 'usuarios'), 
+    where('cpf', '==', documento),
     where('data_nascimento', '==', dataNascimento),
     limit(1)
   );
-  const snapCliente = await getDocs(qCliente);
+  let snapCliente = await getDocs(qCliente);
+  
+  if (snapCliente.empty) {
+    qCliente = query(
+      collection(db, 'clients'), 
+      where('documento', '==', documento),
+      where('data_nascimento', '==', dataNascimento),
+      limit(1)
+    );
+    snapCliente = await getDocs(qCliente);
+  }
+
   if (snapCliente.empty) return [];
 
   const clienteId = snapCliente.docs[0].id;
@@ -115,14 +139,25 @@ export const listarNotificacoesPublicas = async (clienteId: string) => {
 
 // Registrar Indicação vinda da área pública
 export const registrarIndicacaoPublica = async (documento: string, dataNascimento: string, nomeAmigo: string, whatsAmigo: string, bonusValor: number = 50) => {
-  // 1. Busca o cliente para pegar o ID real (para manter integridade na Gestão de Indicações)
-  const qCliente = query(
-    collection(db, 'clients'), 
-    where('documento', '==', documento),
+  // 1. Busca o cliente para pegar o ID real (Tenta usuarios primeiro, depois clients)
+  let qCliente = query(
+    collection(db, 'usuarios'), 
+    where('cpf', '==', documento),
     where('data_nascimento', '==', dataNascimento),
     limit(1)
   );
-  const snapCliente = await getDocs(qCliente);
+  let snapCliente = await getDocs(qCliente);
+  
+  if (snapCliente.empty) {
+    qCliente = query(
+      collection(db, 'clients'), 
+      where('documento', '==', documento),
+      where('data_nascimento', '==', dataNascimento),
+      limit(1)
+    );
+    snapCliente = await getDocs(qCliente);
+  }
+
   const clienteId = !snapCliente.empty ? snapCliente.docs[0].id : documento;
 
   await addDoc(collection(db, 'referrals'), {

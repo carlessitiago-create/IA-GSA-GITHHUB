@@ -59,12 +59,12 @@ export function ConsultaPublicaView() {
       const qProtocol = query(
         collection(db, 'order_processes'), 
         where('protocolo', '==', searchTerm.toUpperCase()),
-        where('cliente_data_nascimento', '==', dataNascimento)
+        where('data_nascimento', '==', dataNascimento)
       );
       const qCpf = query(
         collection(db, 'order_processes'), 
-        where('cliente_cpf', '==', searchTerm),
-        where('cliente_data_nascimento', '==', dataNascimento)
+        where('cliente_cpf_cnpj', '==', searchTerm),
+        where('data_nascimento', '==', dataNascimento)
       );
       
       const [snapProtocol, snapCpf] = await Promise.all([
@@ -280,7 +280,14 @@ export function ConsultaPublicaView() {
                     <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
                       <SmartFicha 
                         processos={[processo]} 
-                        clienteDados={profile || { id: processo.cliente_id, nome_completo: processo.cliente_nome }} 
+                        clienteDados={profile || { 
+                          id: processo.cliente_id, 
+                          uid: processo.cliente_id,
+                          nome_completo: processo.cliente_nome,
+                          cpf: processo.cliente_cpf_cnpj,
+                          data_nascimento: processo.data_nascimento,
+                          ...processo // Passar o processo todo ajuda a SmartFicha a ver o que já tem
+                        }} 
                         onUpdate={() => {
                           setShowSmartFicha(null);
                           handleSearch({ preventDefault: () => {} } as any);

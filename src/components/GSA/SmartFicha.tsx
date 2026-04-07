@@ -165,7 +165,11 @@ export const SmartFicha: React.FC<SmartFichaProps> = ({ processos, clienteDados,
     }
   };
 
-  const camposFaltantes = requisitosDinamicos.campos.filter(c => !clienteDados[c]);
+  const camposFaltantes = Array.from(new Set([
+    ...requisitosDinamicos.campos,
+    ...(!processos[0]?.cliente_cpf_cnpj ? ['cpf'] : []),
+    ...(!processos[0]?.data_nascimento ? ['data_nascimento'] : [])
+  ])).filter(c => !clienteDados[c] || (c === 'cpf' && !processos[0]?.cliente_cpf_cnpj) || (c === 'data_nascimento' && !processos[0]?.data_nascimento));
   const documentosFaltantes = requisitosDinamicos.documentos;
 
   if (loadingReqs) {

@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Search, Gift, CheckCircle2, AlertCircle, ArrowRight, Shield, ShieldCheck, Play, User, Clock, Wallet, Bell, AlertTriangle, Trophy, Star, AlertOctagon, ShieldAlert, Zap, MessageCircle, FileText, Share2 } from 'lucide-react';
 import { ClubePromoBanner } from '../components/GSA/ClubePromoBanner';
 import { consultaPublicaProcesso, registrarIndicacaoPublica, listarMinhasIndicacoesPublicas, listarPendenciasPublicas, listarNotificacoesPublicas } from '../services/publicService';
+import { SmartFicha } from '../components/GSA/SmartFicha';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { PublicPortalConfig } from '../services/configService';
@@ -87,6 +88,20 @@ export const PublicPortal = ({ previewConfig }: { previewConfig?: PublicPortalCo
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const refreshData = async () => {
+    if (!documento || !dataNascimento) return;
+    try {
+      const res = await consultaPublicaProcesso(documento, dataNascimento);
+      setProcesso(res);
+      if (res) {
+        const pends = await listarPendenciasPublicas(res.cliente_id);
+        setPendencias(pends);
+      }
+    } catch (err) {
+      console.error("Erro ao atualizar dados:", err);
     }
   };
 
@@ -485,16 +500,33 @@ export const PublicPortal = ({ previewConfig }: { previewConfig?: PublicPortalCo
 
               {/* Card de Pendências Ativas */}
               {pendenciasAtivas.length > 0 && (
-                <div className="bg-amber-50 p-8 rounded-[2.5rem] shadow-xl border border-amber-200">
-                  <div className="flex items-center gap-3 mb-6">
+                <div className="bg-amber-50 p-6 sm:p-8 rounded-[2.5rem] shadow-xl border border-amber-200 space-y-6">
+                  <div className="flex items-center gap-3">
                     <div className="size-10 bg-amber-200 rounded-full flex items-center justify-center text-amber-700">
                       <AlertTriangle size={20} />
                     </div>
-                    <h3 className="text-xl font-black text-amber-900 uppercase italic">Pendências Ativas</h3>
+                    <h3 className="text-xl font-black text-amber-900 uppercase italic">Resolver Pendências</h3>
                   </div>
-                  <div className="space-y-4">
+                  
+                  <div className="bg-white p-6 rounded-3xl border border-amber-100 shadow-inner">
+                    <SmartFicha 
+                      processos={[processo]} 
+                      clienteDados={{
+                        id: processo.cliente_id,
+                        uid: processo.cliente_id,
+                        nome_completo: processo.cliente_nome,
+                        cpf: processo.cliente_cpf_cnpj,
+                        data_nascimento: processo.data_nascimento,
+                        ...processo
+                      }}
+                      onUpdate={refreshData}
+                    />
+                  </div>
+
+                  <div className="space-y-4 pt-4 border-t border-amber-100">
+                    <p className="text-[10px] font-black text-amber-800 uppercase tracking-widest">Lista Detalhada de Pendências:</p>
                     {pendenciasAtivas.map((p, i) => (
-                      <div key={i} className="bg-white p-4 rounded-2xl border border-amber-100 shadow-sm">
+                      <div key={i} className="bg-white/50 p-4 rounded-2xl border border-amber-100 shadow-sm">
                         <div className="flex justify-between items-start mb-2">
                           <h4 className="text-sm font-black text-slate-800 uppercase">{p.titulo}</h4>
                           <span className="text-[9px] font-black px-2 py-0.5 rounded bg-amber-100 text-amber-700 uppercase">
@@ -505,9 +537,6 @@ export const PublicPortal = ({ previewConfig }: { previewConfig?: PublicPortalCo
                       </div>
                     ))}
                   </div>
-                  <p className="mt-6 text-[10px] text-amber-700 font-bold text-center uppercase tracking-widest">
-                    Por favor, entre em contato com o suporte para resolver estas pendências.
-                  </p>
                 </div>
               )}
 

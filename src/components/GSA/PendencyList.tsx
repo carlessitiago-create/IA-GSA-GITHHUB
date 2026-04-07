@@ -2,16 +2,19 @@ import React, { useEffect, useState } from 'react';
 import { collection, query, where, onSnapshot, orderBy, doc, updateDoc, Timestamp, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../AuthContext';
-import { AlertCircle, CheckCircle2, Clock, User, Shield, ArrowRight, Upload } from 'lucide-react';
-import { PendingIssue } from '../../services/orderService';
+import { AlertCircle, CheckCircle2, Clock, User, Shield, ArrowRight, Upload, ClipboardList, ChevronRight } from 'lucide-react';
+import { PendingIssue, OrderProcess } from '../../services/orderService';
 import Swal from 'sweetalert2';
 import { FileUploader } from './FileUploader';
-import { motion } from 'motion/react';
+import { SmartFicha } from './SmartFicha';
+import { motion, AnimatePresence } from 'motion/react';
 
 export const PendencyList: React.FC = () => {
   const { profile } = useAuth();
   const [pendencies, setPendencies] = useState<PendingIssue[]>([]);
+  const [processPendencies, setProcessPendencies] = useState<OrderProcess[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showSmartFicha, setShowSmartFicha] = useState<string | null>(null);
 
   useEffect(() => {
     if (!profile) return;
@@ -19,38 +22,62 @@ export const PendencyList: React.FC = () => {
     const nivel = profile.nivel;
     const uid = profile.uid;
 
-    let q;
+    // 1. Buscar Pendências Manuais
+    let qManual;
     const pendenciesRef = collection(db, 'pendencies');
 
     if (nivel === 'ADM_MASTER' || nivel === 'ADM_ANALISTA' || nivel === 'ADM_GERENTE') {
-      q = query(pendenciesRef, orderBy('criadaEm', 'desc'));
+      qManual = query(pendenciesRef, orderBy('criadaEm', 'desc'));
     } else if (nivel === 'GESTOR' && uid) {
-      q = query(pendenciesRef, where('id_superior', '==', uid), orderBy('criadaEm', 'desc'));
+      qManual = query(pendenciesRef, where('id_superior', '==', uid), orderBy('criadaEm', 'desc'));
     } else if (nivel === 'VENDEDOR' && uid) {
-      q = query(pendenciesRef, where('vendedor_id', '==', uid), orderBy('criadaEm', 'desc'));
+      qManual = query(pendenciesRef, where('vendedor_id', '==', uid), orderBy('criadaEm', 'desc'));
     } else if (nivel === 'CLIENTE' && uid) {
-      q = query(
+      qManual = query(
         pendenciesRef, 
         where('status_pendencia', '==', 'ENVIADO_CLIENTE'),
         where('cliente_id', '==', uid),
         orderBy('criadaEm', 'desc')
       );
-    } else if (uid) {
-      q = query(pendenciesRef, where('criado_por_id', '==', uid), orderBy('criadaEm', 'desc'));
     } else {
-      setLoading(false);
-      return;
+      qManual = query(pendenciesRef, where('criado_por_id', '==', uid), orderBy('criadaEm', 'desc'));
     }
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const unsubManual = onSnapshot(qManual, (snapshot) => {
       setPendencies(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PendingIssue)));
-      setLoading(false);
-    }, (error) => {
-      console.error("Erro ao buscar pendências:", error);
-      setLoading(false);
     });
 
-    return () => unsubscribe();
+    // 2. Buscar Processos com Dados/Docs Faltantes
+    let qProc;
+    const processesRef = collection(db, 'order_processes');
+    const pendingStatuses = ['Aguardando Documentação', 'Pendente'];
+
+    if (nivel === 'ADM_MASTER' || nivel === 'ADM_ANALISTA' || nivel === 'ADM_GERENTE') {
+      qProc = query(processesRef, where('status_atual', 'in', pendingStatuses));
+    } else if (nivel === 'GESTOR' && uid) {
+      qProc = query(processesRef, where('id_superior', '==', uid), where('status_atual', 'in', pendingStatuses));
+    } else if (nivel === 'VENDEDOR' && uid) {
+      qProc = query(processesRef, where('vendedor_id', '==', uid), where('status_atual', 'in', pendingStatuses));
+    } else if (nivel === 'CLIENTE' && uid) {
+      qProc = query(processesRef, where('cliente_id', '==', uid), where('status_atual', 'in', pendingStatuses));
+    }
+
+    const unsubProc = qProc ? onSnapshot(qProc, (snapshot) => {
+      const procs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as OrderProcess));
+      // Filtrar apenas os que realmente têm pendências de dados ou docs
+      const filtered = procs.filter(p => 
+        (p.dados_faltantes && p.dados_faltantes.length > 0) || 
+        (p.pendencias_iniciais && p.pendencias_iniciais.length > 0) ||
+        !p.cliente_cpf_cnpj || !p.data_nascimento
+      );
+      setProcessPendencies(filtered);
+      setLoading(false);
+    }) : () => setLoading(false);
+
+    return () => {
+      unsubManual();
+      unsubProc();
+    };
   }, [profile]);
 
   const handleResolve = async (id: string, vendaId: string, processoId?: string) => {
@@ -127,8 +154,9 @@ export const PendencyList: React.FC = () => {
     );
   }
 
-  const activePendencies = pendencies.filter(p => p.status_pendencia !== 'RESOLVIDO');
+  const activeManualPendencies = pendencies.filter(p => p.status_pendencia !== 'RESOLVIDO');
   const resolvedPendencies = pendencies.filter(p => p.status_pendencia === 'RESOLVIDO');
+  const totalActive = activeManualPendencies.length + processPendencies.length;
 
   return (
     <div className="space-y-12 pb-20">
@@ -146,7 +174,7 @@ export const PendencyList: React.FC = () => {
           </div>
           <div className="relative z-10">
             <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em] mb-2">Pendências Ativas</p>
-            <h3 className="text-5xl font-black text-[#0a0a2e] italic tracking-tighter leading-none">{activePendencies.length}</h3>
+            <h3 className="text-5xl font-black text-[#0a0a2e] italic tracking-tighter leading-none">{totalActive}</h3>
             <p className="text-[10px] font-black text-rose-400 uppercase tracking-widest mt-3">Ações imediatas requeridas</p>
           </div>
         </motion.div>
@@ -177,10 +205,10 @@ export const PendencyList: React.FC = () => {
             <div className="size-2 bg-rose-500 rounded-full animate-pulse" />
             <h4 className="text-sm font-black text-[#0a0a2e] uppercase tracking-widest italic">Fila de Resolução Operacional</h4>
           </div>
-          <span className="bg-slate-100 text-slate-500 text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest border border-slate-200">{activePendencies.length} AGUARDANDO</span>
+          <span className="bg-slate-100 text-slate-500 text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest border border-slate-200">{totalActive} AGUARDANDO</span>
         </div>
         
-        {activePendencies.length === 0 && (
+        {totalActive === 0 && (
           <div className="p-32 bg-white rounded-[4rem] border-2 border-dashed border-slate-100 flex flex-col items-center justify-center text-center shadow-inner">
             <div className="size-24 bg-slate-50 rounded-full flex items-center justify-center text-slate-200 mb-8 shadow-sm">
               <Shield size={48} />
@@ -191,7 +219,67 @@ export const PendencyList: React.FC = () => {
         )}
 
         <div className="grid grid-cols-1 gap-6">
-          {activePendencies.map((p, idx) => (
+          {/* 1. Pendências de Processos (Dados/Docs Faltantes) */}
+          {processPendencies.map((proc, idx) => (
+            <motion.div 
+              key={`proc-${proc.id}`}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: idx * 0.05 }}
+              className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 group relative overflow-hidden"
+            >
+              <div className="absolute top-0 left-0 w-2.5 h-full bg-amber-500"></div>
+              <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-10">
+                <div className="flex items-start gap-8">
+                  <div className="size-20 rounded-[1.8rem] bg-amber-50 flex items-center justify-center shrink-0 text-amber-600 shadow-inner group-hover:rotate-12 transition-transform duration-500">
+                    <ClipboardList size={36} />
+                  </div>
+                  <div className="space-y-4">
+                    <div className="flex flex-wrap items-center gap-4">
+                      <div className="bg-slate-100 px-4 py-1.5 rounded-xl border border-slate-200">
+                        <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Protocolo: {proc.protocolo}</span>
+                      </div>
+                      <div className="bg-amber-50 text-amber-600 border border-amber-100 px-4 py-1.5 rounded-xl">
+                        <span className="text-[9px] font-black uppercase tracking-widest">Dados/Docs Faltantes</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-slate-400">
+                        <Clock size={14} />
+                        <span className="text-[10px] font-black uppercase tracking-widest">
+                          {proc.data_venda?.toDate ? proc.data_venda.toDate().toLocaleDateString('pt-BR') : 'N/A'}
+                        </span>
+                      </div>
+                    </div>
+                    <h3 className="text-3xl font-black text-[#0a0a2e] uppercase tracking-tighter italic leading-none group-hover:text-amber-600 transition-colors duration-500">
+                      {proc.servico_nome} - {proc.cliente_nome}
+                    </h3>
+                    <div className="flex flex-wrap gap-4">
+                      {(!proc.cliente_cpf_cnpj || !proc.data_nascimento) && (
+                        <span className="text-[8px] font-black text-rose-600 bg-rose-50 px-2 py-1 rounded-lg border border-rose-100 uppercase tracking-widest">Falta Dados de Rastreio</span>
+                      )}
+                      {proc.dados_faltantes?.map(f => (
+                        <span key={f} className="text-[8px] font-black text-amber-600 bg-amber-50 px-2 py-1 rounded-lg border border-amber-100 uppercase tracking-widest">Falta {f}</span>
+                      ))}
+                      {proc.pendencias_iniciais?.map(d => (
+                        <span key={d} className="text-[8px] font-black text-blue-600 bg-blue-50 px-2 py-1 rounded-lg border border-blue-100 uppercase tracking-widest">Falta Doc: {d}</span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row xl:flex-col gap-4 min-w-[280px]">
+                  <button 
+                    onClick={() => setShowSmartFicha(proc.id!)}
+                    className="flex-1 flex items-center justify-center gap-4 bg-amber-500 hover:bg-amber-600 text-white px-10 py-5 rounded-[1.8rem] font-black uppercase text-[11px] tracking-[0.2em] transition-all shadow-2xl shadow-amber-600/20 hover:scale-105 active:scale-95"
+                  >
+                    Resolver via SmartFicha <ArrowRight size={18} />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+
+          {/* 2. Pendências Manuais */}
+          {activeManualPendencies.map((p, idx) => (
             <motion.div 
               key={p.id}
               initial={{ opacity: 0, x: -20 }}
@@ -301,6 +389,56 @@ export const PendencyList: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Modal SmartFicha */}
+      <AnimatePresence>
+        {showSmartFicha && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-white dark:bg-slate-900 w-full max-w-4xl max-h-[90vh] rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col relative border border-slate-100 dark:border-slate-800"
+            >
+              <button 
+                onClick={() => setShowSmartFicha(null)}
+                className="absolute top-6 right-6 z-50 size-10 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full flex items-center justify-center text-slate-500 transition-all"
+              >
+                <ChevronRight size={20} className="rotate-45" />
+              </button>
+
+              <div className="p-8 border-b border-slate-50 dark:border-slate-800 flex items-center gap-4">
+                <div className="size-12 bg-amber-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-amber-500/20">
+                  <ClipboardList size={24} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase italic tracking-tight">Resolver Pendências</h3>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Complete as informações para o processo</p>
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+                {processPendencies.find(p => p.id === showSmartFicha) && (
+                  <SmartFicha 
+                    processos={[processPendencies.find(p => p.id === showSmartFicha)!]} 
+                    clienteDados={{ 
+                      id: processPendencies.find(p => p.id === showSmartFicha)!.cliente_id, 
+                      uid: processPendencies.find(p => p.id === showSmartFicha)!.cliente_id,
+                      nome_completo: processPendencies.find(p => p.id === showSmartFicha)!.cliente_nome,
+                      cpf: processPendencies.find(p => p.id === showSmartFicha)!.cliente_cpf_cnpj,
+                      data_nascimento: processPendencies.find(p => p.id === showSmartFicha)!.data_nascimento,
+                      ...processPendencies.find(p => p.id === showSmartFicha)!
+                    }} 
+                    onUpdate={() => {
+                      setShowSmartFicha(null);
+                    }} 
+                  />
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

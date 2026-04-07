@@ -94,8 +94,8 @@ export function VendasPDVView({ preSelectedService, setPreSelectedService }: { p
 
   const handleRegisterClient = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newClient.nome_completo || !newClient.cpf || !newClient.email) {
-      Swal.fire('Erro', 'Preencha os campos obrigatórios.', 'error');
+    if (!newClient.nome_completo || !newClient.cpf || !newClient.email || !newClient.data_nascimento) {
+      Swal.fire('Erro', 'Preencha os campos obrigatórios (Nome, CPF, E-mail e Data de Nascimento).', 'error');
       return;
     }
 
@@ -194,46 +194,143 @@ export function VendasPDVView({ preSelectedService, setPreSelectedService }: { p
       return;
     }
 
+    // Verificar dados críticos para acompanhamento público
+    let finalCpf = selectedClient.cpf;
+    let finalDob = selectedClient.data_nascimento;
+
+    if (!isProposal && (!selectedClient.cpf || !selectedClient.data_nascimento)) {
+      const { value: formValues } = await Swal.fire({
+        title: 'Dados Faltantes para Acompanhamento',
+        html: `
+          <div class="text-left space-y-4">
+            <p class="text-xs text-slate-500">O CPF e Data de Nascimento são obrigatórios para que o cliente acompanhe o processo pelo link público.</p>
+            <div class="space-y-1">
+              <label class="text-[10px] font-bold uppercase text-slate-400 ml-1">CPF do Cliente</label>
+              <input id="swal-cpf" class="swal2-input !mt-0 !w-full" placeholder="000.000.000-00" value="${selectedClient.cpf || ''}">
+            </div>
+            <div class="space-y-1">
+              <label class="text-[10px] font-bold uppercase text-slate-400 ml-1">Data de Nascimento</label>
+              <input id="swal-dob" class="swal2-input !mt-0 !w-full" type="date" value="${selectedClient.data_nascimento || ''}">
+            </div>
+          </div>
+        `,
+        focusConfirm: false,
+        showCancelButton: true,
+        confirmButtonText: 'Confirmar e Continuar',
+        cancelButtonText: 'Cancelar',
+        preConfirm: () => {
+          const cpf = (document.getElementById('swal-cpf') as HTMLInputElement).value;
+          const dob = (document.getElementById('swal-dob') as HTMLInputElement).value;
+          if (!cpf || !dob) {
+            Swal.showValidationMessage('CPF e Data de Nascimento são obrigatórios');
+            return false;
+          }
+          return { cpf, dob };
+        }
+      });
+
+      if (formValues) {
+        finalCpf = formValues.cpf;
+        finalDob = formValues.dob;
+        
+        // Atualizar estado local corretamente sem mutação direta
+        const updatedClient = { ...selectedClient, cpf: finalCpf, data_nascimento: finalDob };
+        setSelectedClient(updatedClient);
+        
+        // Atualizar no banco em background
+        try {
+          const { doc, updateDoc } = await import('firebase/firestore');
+          await updateDoc(doc(db, 'usuarios', selectedClient.uid), {
+            cpf: finalCpf,
+            data_nascimento: finalDob
+          });
+        } catch (e) {
+          console.error("Erro ao atualizar dados do cliente:", e);
+        }
+      } else {
+        return; // Cancelou
+      }
+    }
+
     setLoading(true);
     try {
-      const saleData = {
-        cliente_id: selectedClient.uid,
-        cliente_nome: selectedClient.nome_completo,
-        servico_id: selectedService.id,
-        servico_nome: selectedService.nome_servico,
-        valor_total: finalPrice,
-        metodo_pagamento: paymentMethod,
-        parcelas: installments,
-        status_pagamento: paymentMethod === 'CARTEIRA' ? 'Pago' : 'Pendente',
-        vendedor_id: profile?.uid,
-        vendedor_nome: profile?.nome_completo,
-        id_superior: profile?.id_superior || profile?.uid,
-        timestamp: serverTimestamp(),
-        data_venda: serverTimestamp(),
-        protocolo: `GSA-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
-        is_proposta: isProposal
-      };
+      // Usar os dados mais recentes do cliente (incluindo CPF/DOB se acabaram de ser preenchidos)
+      const currentClient = selectedClient; 
 
-      const saleRef = await addDoc(collection(db, 'sales'), saleData);
+      let saleId = '';
+      let protocolo = '';
 
-      if (!isProposal) {
-        const processData = {
-          cliente_id: selectedClient.uid,
-          cliente_nome: selectedClient.nome_completo,
+      const isSecureMethod = paymentMethod === 'PIX' || paymentMethod === 'CARTEIRA';
+
+      if (!isProposal && isSecureMethod) {
+        // USAR SERVIÇO SEGURO (BACKEND) PARA VENDAS REAIS COM MÉTODOS SUPORTADOS
+        const { processarVendaSeguraFront } = await import('../services/vendaService');
+        const result = await processarVendaSeguraFront(
+          currentClient.uid,
+          selectedService.id,
+          finalPrice,
+          paymentMethod as 'PIX' | 'CARTEIRA'
+        );
+        saleId = result.saleId;
+        protocolo = result.protocolo;
+      } else {
+        // PROPOSTAS OU MÉTODOS NÃO SUPORTADOS PELO BACKEND (BOLETO/CARTÃO)
+        const saleData = {
+          cliente_id: currentClient.uid,
+          cliente_nome: currentClient.nome_completo,
           servico_id: selectedService.id,
           servico_nome: selectedService.nome_servico,
-          status_atual: 'Pendente',
+          valor_total: finalPrice,
+          metodo_pagamento: paymentMethod,
+          parcelas: installments,
+          status_pagamento: paymentMethod === 'CARTEIRA' ? 'Pago' : 'Pendente',
+          vendedor_id: profile?.uid,
+          vendedor_nome: profile?.nome_completo,
+          id_superior: profile?.id_superior || profile?.uid,
+          timestamp: serverTimestamp(),
+          data_venda: serverTimestamp(),
+          protocolo: isProposal 
+            ? `PROP-${Date.now().toString(36).toUpperCase()}` 
+            : `GSA-${Date.now().toString(36).toUpperCase()}-${Math.floor(Math.random() * 1000)}`,
+          is_proposta: isProposal
+        };
+
+        const saleRef = await addDoc(collection(db, 'sales'), saleData);
+        saleId = saleRef.id;
+        protocolo = saleData.protocolo;
+      }
+
+      if (!isProposal) {
+        // Buscar requisitos do serviço para definir pendências iniciais
+        const { PROCESS_REQUIREMENTS } = await import('../constants/processRequirements');
+        const req = PROCESS_REQUIREMENTS[selectedService.id] || { campos: [], documentos: [] };
+        
+        // Identificar o que já temos e o que falta
+        const dadosFaltantes = req.campos.filter(campo => !currentClient[campo as keyof typeof currentClient]);
+        const pendenciasIniciais = req.documentos;
+
+        const processData = {
+          venda_id: saleId,
+          cliente_id: currentClient.uid,
+          cliente_nome: currentClient.nome_completo,
+          cliente_cpf_cnpj: finalCpf,
+          data_nascimento: finalDob,
+          servico_id: selectedService.id,
+          servico_nome: selectedService.nome_servico,
+          status_atual: (dadosFaltantes.length > 0 || pendenciasIniciais.length > 0) ? 'Aguardando Documentação' : 'Pendente',
           vendedor_id: profile?.uid,
           vendedor_nome: profile?.nome_completo,
           id_superior: profile?.id_superior || profile?.uid,
           data_venda: serverTimestamp(),
           prazo_estimado_dias: selectedService.prazo_sla_dias || 7,
-          protocolo: saleData.protocolo,
-          checklist_documentos: [],
+          protocolo: protocolo,
+          dados_faltantes: dadosFaltantes,
+          pendencias_iniciais: pendenciasIniciais,
+          documentos_enviados: [],
           historico_status: [{
-            status: 'Pendente',
+            status: (dadosFaltantes.length > 0 || pendenciasIniciais.length > 0) ? 'Aguardando Documentação' : 'Pendente',
             data: new Date().toISOString(),
-            observacao: 'Venda realizada via PDV Direto'
+            observacao: 'Venda realizada via PDV Direto (Serviço Seguro)'
           }]
         };
 
@@ -418,6 +515,16 @@ export function VendasPDVView({ preSelectedService, setPreSelectedService }: { p
                             placeholder="(00) 00000-0000"
                           />
                         </div>
+                        <div className="space-y-2">
+                          <span className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase ml-4 sm:ml-6 tracking-widest">Data de Nascimento</span>
+                          <input 
+                            type="date" 
+                            required
+                            value={newClient.data_nascimento}
+                            onChange={e => setNewClient({...newClient, data_nascimento: e.target.value})}
+                            className="w-full bg-white border border-slate-100 rounded-xl sm:rounded-[1.8rem] p-3.5 sm:p-5 text-sm font-medium focus:ring-4 focus:ring-blue-500/10 outline-none transition-all placeholder:text-slate-300"
+                          />
+                        </div>
                       </div>
                       <button 
                         type="submit"
@@ -579,7 +686,25 @@ export function VendasPDVView({ preSelectedService, setPreSelectedService }: { p
 
                     <div className="space-y-4">
                       <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Forma de Pagamento</span>
-                      <div className="grid grid-cols-2 gap-4">
+                      {/* Alerta para Métodos Manuais */}
+                  {(paymentMethod === 'BOLETO' || paymentMethod === 'CARTAO') && (
+                    <motion.div 
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      className="bg-amber-50 border border-amber-100 p-4 rounded-2xl flex items-start gap-3"
+                    >
+                      <AlertCircle className="text-amber-600 shrink-0 mt-0.5" size={16} />
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-black text-amber-800 uppercase tracking-widest">Atenção: Método Manual</p>
+                        <p className="text-[10px] text-amber-600 font-medium leading-relaxed">
+                          Pagamentos via {paymentMethod} não são confirmados automaticamente. 
+                          O processo ficará com status <span className="font-bold">Pendente</span> até que um administrador confirme o recebimento.
+                        </p>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-4">
                         {[
                           { id: 'PIX', label: 'PIX', icon: QrCode },
                           { id: 'CARTAO', label: 'Cartão', icon: CreditCard },

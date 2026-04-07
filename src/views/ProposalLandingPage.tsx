@@ -76,6 +76,10 @@ export const ProposalLandingPage: React.FC = () => {
             <input id="swal-cpf" class="swal2-input !mt-1 !w-full !mx-0" placeholder="000.000.000-00">
           </div>
           <div>
+            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Sua Data de Nascimento</label>
+            <input id="swal-nascimento" type="date" class="swal2-input !mt-1 !w-full !mx-0">
+          </div>
+          <div>
             <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Seu WhatsApp</label>
             <input id="swal-tel" class="swal2-input !mt-1 !w-full !mx-0" placeholder="(00) 00000-0000">
           </div>
@@ -89,13 +93,14 @@ export const ProposalLandingPage: React.FC = () => {
       preConfirm: () => {
         const cpf = (document.getElementById('swal-cpf') as HTMLInputElement).value;
         const tel = (document.getElementById('swal-tel') as HTMLInputElement).value;
+        const nascimento = (document.getElementById('swal-nascimento') as HTMLInputElement).value;
         const nome = proposal?.is_public ? (document.getElementById('swal-nome') as HTMLInputElement).value : undefined;
         
-        if (!cpf || !tel || (proposal?.is_public && !nome)) {
+        if (!cpf || !tel || !nascimento || (proposal?.is_public && !nome)) {
           Swal.showValidationMessage('Por favor, preencha todos os campos');
           return false;
         }
-        return { cpf, tel, nome };
+        return { cpf, tel, nome, nascimento };
       }
     });
 
@@ -146,13 +151,13 @@ export const ProposalLandingPage: React.FC = () => {
             
             // Atualizar Proposta para PAGA e Criar OS
             if (slug) {
-              await updateProposalStatus(slug, 'PAGA', formValues.cpf, formValues.tel, formValues.nome);
+              await updateProposalStatus(slug, 'PAGA', formValues.cpf, formValues.tel, formValues.nome, formValues.nascimento);
               Swal.fire('Sucesso!', 'Pagamento identificado! Sua Ordem de Serviço foi criada e um analista já está cuidando do seu caso.', 'success');
             }
           } else {
             // Notificar Consultor
             if (slug) {
-              await updateProposalStatus(slug, 'ACEITA', formValues.cpf, formValues.tel, formValues.nome);
+              await updateProposalStatus(slug, 'ACEITA', formValues.cpf, formValues.tel, formValues.nome, formValues.nascimento);
               Swal.fire('Sucesso!', `O consultor ${proposal?.vendedor_nome} recebeu seu aceite e entrará em contato em instantes para finalizar os detalhes!`, 'success');
             }
           }

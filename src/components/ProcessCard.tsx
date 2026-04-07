@@ -110,11 +110,14 @@ export const ProcessCard: React.FC<ProcessCardProps> = ({ proc, pendencies, hist
     const fieldsPercent = totalFields > 0 ? (filledFields / totalFields) * 100 : 100;
     const docsPercent = totalDocs > 0 ? (filledDocs / totalDocs) * 100 : 100;
     
-    if (fieldsPercent === 100 && docsPercent === 100) {
+    // Check if critical tracking data is missing
+    const isMissingTrackingData = !proc.cliente_cpf_cnpj || !proc.data_nascimento;
+    
+    if (fieldsPercent === 100 && docsPercent === 100 && !isMissingTrackingData) {
       return { color: 'bg-emerald-500', label: 'Pronto para Início' };
     }
     
-    if (fieldsPercent > 0 || docsPercent > 0) {
+    if (isMissingTrackingData || fieldsPercent < 100 || docsPercent < 100) {
       return { color: 'bg-amber-500', label: 'Aguardando Documentos' };
     }
     

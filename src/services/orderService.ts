@@ -750,49 +750,61 @@ export async function registrarLogAuditoria(processoId: string, mensagem: string
 
 export async function processarDadosFichaTecnica(processoId: string, clienteId: string, dados: any) {
   try {
-    // 1. Atualizar dados do cliente
-    const clientRef = doc(db, 'clients', clienteId);
-    await updateDoc(clientRef, dados);
+    // 1. Atualizar dados do cliente (usuarios é a coleção principal de perfis)
+    const userRef = doc(db, 'usuarios', clienteId);
+    await updateDoc(userRef, dados);
 
     // 2. Registrar log de auditoria
     await registrarLogAuditoria(
       processoId,
-      'Ficha técnica atualizada pelo cliente.',
+      'Ficha técnica atualizada.',
       clienteId,
-      'Cliente'
+      'Sistema'
     );
 
-    // 3. Atualizar documentos_enviados no processo
+    // 3. Atualizar o processo em si
     const processRef = doc(db, PROCESSES_COLLECTION, processoId);
     const processSnap = await getDoc(processRef);
+    
     if (processSnap.exists()) {
       const processData = processSnap.data();
-      const docsEnviados = processData.documentos_enviados || [];
+      const updates: any = { ...dados }; // Inclui todos os dados enviados (como cpf, data_nascimento)
       
-      // Identifica quais chaves nos dados são documentos (baseado no prefixo ou se estão nos requisitos)
-      // Para simplificar, vamos assumir que qualquer chave enviada que esteja nos requisitos é um documento
+      // Mapear campos específicos para os nomes usados no processo
+      if (dados.cpf) updates.cliente_cpf_cnpj = dados.cpf;
+      if (dados.data_nascimento) updates.data_nascimento = dados.data_nascimento;
+
+      const docsEnviados = processData.documentos_enviados || [];
       const requisitosDocs = processData.pendencias_iniciais || [];
       const novosDocs = Object.keys(dados).filter(key => 
         requisitosDocs.includes(key) && !docsEnviados.includes(key)
       );
 
       if (novosDocs.length > 0) {
-        const todosDocsEnviados = [...docsEnviados, ...novosDocs];
-        const updates: any = {
-          documentos_enviados: todosDocsEnviados
-        };
-
-        // Se todos os documentos iniciais foram enviados, move para Em Análise
-        if (requisitosDocs.every((req: string) => todosDocsEnviados.includes(req))) {
-          updates.status_atual = 'Em Análise';
-          updates.status_info_extra = 'DOCUMENTAÇÃO COMPLETA - AGUARDANDO ANÁLISE';
-        }
-
-        await updateDoc(processRef, updates);
+        updates.documentos_enviados = [...docsEnviados, ...novosDocs];
       }
+
+      // Atualizar dados_faltantes removendo o que foi preenchido
+      if (processData.dados_faltantes) {
+        updates.dados_faltantes = processData.dados_faltantes.filter((f: string) => !dados[f]);
+      }
+
+      // Se tudo estiver resolvido, atualizar status
+      const totalDocsEnviados = updates.documentos_enviados || docsEnviados;
+      const todosDocsOk = requisitosDocs.every((req: string) => totalDocsEnviados.includes(req));
+      const todosCamposOk = (updates.dados_faltantes || processData.dados_faltantes || []).length === 0;
+      const trackingOk = !!(updates.cliente_cpf_cnpj || processData.cliente_cpf_cnpj) && 
+                         !!(updates.data_nascimento || processData.data_nascimento);
+
+      if (todosDocsOk && todosCamposOk && trackingOk) {
+        updates.status_atual = 'Em Análise';
+        updates.status_info_extra = 'DOCUMENTAÇÃO COMPLETA - AGUARDANDO ANÁLISE';
+      }
+
+      await updateDoc(processRef, updates);
     }
   } catch (error) {
-    handleFirestoreError(error, OperationType.UPDATE, 'clients');
+    handleFirestoreError(error, OperationType.UPDATE, 'order_processes');
     throw error;
   }
 }

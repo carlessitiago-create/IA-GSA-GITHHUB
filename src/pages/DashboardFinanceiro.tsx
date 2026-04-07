@@ -49,6 +49,7 @@ import { motion, AnimatePresence } from 'motion/react';
 type TabType = 'financeiro' | 'equipe' | 'inteligencia' | 'vendas' | 'leads' | 'operacional' | 'pendencias' | 'auditoria' | 'clube' | 'consulta' | 'suporte' | 'fabrica' | 'perfil' | 'vitrine' | 'conversao' | 'processos';
 
 import { Sidebar } from '../components/Sidebar';
+import { Outlet } from 'react-router-dom';
 
 export function DashboardFinanceiro() {
   const { user, profile } = useAuth();
@@ -307,8 +308,6 @@ export function DashboardFinanceiro() {
     { id: 'perfil', label: 'Perfil', icon: UserCircle },
   ];
 
-  const visibleTabs = tabs.filter(tab => !tab.roles || (profile && tab.roles.includes(profile.nivel)));
-
   const totalPending = pendingTransactions.reduce((acc, curr) => acc + curr.valor, 0);
   const totalOpenInvoices = sales.filter(s => s.status_pagamento === 'Pendente' || s.status_pagamento === 'Vencida').reduce((acc, curr) => acc + curr.valor_total, 0);
 
@@ -325,109 +324,70 @@ export function DashboardFinanceiro() {
     currentProfile: profile,
     marcarFaturaVencida,
     totalPending,
-    totalOpenInvoices
+    totalOpenInvoices,
+    processes,
+    pendencies,
+    showcaseLeads,
+    statusHistory,
+    preSelectedService,
+    setPreSelectedService,
+    setActiveTab
   };
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-[#f8fafc]">
-      
-      <Sidebar 
-        view={activeTab}
-        setView={handleTabChange}
-        currentProfile={profile}
-        isOpen={isSidebarOpen}
-        setIsOpen={setIsSidebarOpen}
-      />
+    <div className="w-full space-y-8">
+      <AlertCenter onResolveClick={() => handleTabChange('pendencias')} />
 
-      {/* Mobile Header Trigger */}
-      <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-slate-100 z-[60] flex items-center justify-between px-4 shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="size-10 bg-[#0a0a2e] rounded-xl flex items-center justify-center shadow-lg">
-            <ShieldCheck className="text-white" size={20} />
-          </div>
-          <span className="font-black text-lg uppercase italic tracking-tighter text-[#0a0a2e]">GSA IA</span>
-        </div>
-        <button 
-          onClick={() => setIsSidebarOpen(true)}
-          className="size-10 rounded-xl bg-slate-50 flex items-center justify-center text-[#0a0a2e]"
+      {notification && (
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={`p-4 rounded-2xl font-bold text-sm shadow-sm border ${
+            notification.type === 'success' 
+              ? 'bg-emerald-50 border-emerald-100 text-emerald-800' 
+              : 'bg-red-50 border-red-100 text-red-800'
+          }`}
         >
-          <Menu size={20} />
-        </button>
-      </div>
+          {notification.message}
+        </motion.div>
+      )}
 
-      {/* ÁREA DE CONTEÚDO PRINCIPAL */}
-      <main className="flex-1 flex flex-col h-full overflow-hidden bg-white">
-        
-        {/* HEADER DESKTOP/MOBILE */}
-        <header className="h-16 shrink-0 bg-white border-b flex items-center justify-between px-4 md:px-8 mt-16 md:mt-0">
-          <div className="flex items-center gap-4">
-            <h2 className="text-xl font-black text-slate-800 uppercase italic tracking-tighter">
-              {activeTab === 'perfil' && profile?.nivel === 'CLIENTE' ? profile.nome_completo : (tabs.find(t => t.id === activeTab)?.label || 'Dashboard')}
-            </h2>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="hidden sm:block text-[10px] font-black text-slate-400 uppercase tracking-widest">Saldo Caixa</span>
-            <p className="font-black text-emerald-600 text-lg">R$ 142k</p>
-          </div>
-        </header>
-
-        {/* ÁREA DINÂMICA DE CONTEÚDO */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-8 space-y-8 no-scrollbar bg-slate-50/50">
-          <div className="w-full max-w-[1600px] mx-auto space-y-8">
-            <AlertCenter onResolveClick={() => setActiveTab('pendencias')} />
-
-          {notification && (
-            <motion.div 
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className={`p-4 rounded-2xl font-bold text-sm shadow-sm border ${
-                notification.type === 'success' 
-                  ? 'bg-emerald-50 border-emerald-100 text-emerald-800' 
-                  : 'bg-red-50 border-red-100 text-red-800'
-              }`}
-            >
-              {notification.message}
-            </motion.div>
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={location.pathname}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          transition={{ duration: 0.3 }}
+        >
+          {activeTab === 'financeiro' && <FinanceiroView {...props} />}
+          {activeTab === 'equipe' && <GestaoEquipeView />}
+          {activeTab === 'inteligencia' && (
+            <IntelligenceDashboardView 
+              sales={sales}
+              processes={processes}
+              pendencies={pendencies}
+              allUsers={allUsers}
+              statusHistory={statusHistory}
+            />
           )}
-
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeTab}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              {activeTab === 'financeiro' && <FinanceiroView {...props} />}
-              {activeTab === 'equipe' && <GestaoEquipeView />}
-              {activeTab === 'inteligencia' && (
-                <IntelligenceDashboardView 
-                  sales={sales}
-                  processes={processes}
-                  pendencies={pendencies}
-                  allUsers={allUsers}
-                  statusHistory={statusHistory}
-                />
-              )}
-              {activeTab === 'processos' && <ClientDashboardView processes={processes} pendencies={pendencies} showcaseLeads={showcaseLeads} />}
-              {activeTab === 'conversao' && <ConversionDashboardView />}
-              {activeTab === 'vendas' && <VendasPDVView preSelectedService={preSelectedService} setPreSelectedService={setPreSelectedService} />}
-              {activeTab === 'leads' && <LeadsCentralView />}
-              {activeTab === 'operacional' && <OperationalView />}
-              {activeTab === 'pendencias' && <PendencyList />}
-              {activeTab === 'auditoria' && <EfficiencyReport />}
-              {activeTab === 'clube' && (profile?.nivel?.startsWith('ADM') ? <PointsSettingsView /> : <ClubeMarketingView />)}
-              {activeTab === 'vitrine' && <VitrineView setActiveTab={setActiveTab} setPreSelectedService={setPreSelectedService} />}
-              {activeTab === 'fabrica' && <ServiceFactoryView />}
-              {activeTab === 'consulta' && <ConsultaPublicaView />}
-              {activeTab === 'suporte' && profile && <SupportModule nivel={profile.nivel} />}
-              {activeTab === 'perfil' && <ProfileView />}
-            </motion.div>
-          </AnimatePresence>
-        </div>
-      </div>
-    </main>
-  </div>
-);
+          {activeTab === 'processos' && <ClientDashboardView processes={processes} pendencies={pendencies} showcaseLeads={showcaseLeads} />}
+          {activeTab === 'conversao' && <ConversionDashboardView />}
+          {activeTab === 'vendas' && <VendasPDVView preSelectedService={preSelectedService} setPreSelectedService={setPreSelectedService} />}
+          {activeTab === 'leads' && <LeadsCentralView />}
+          {activeTab === 'operacional' && <OperationalView />}
+          {activeTab === 'pendencias' && <PendencyList />}
+          {activeTab === 'auditoria' && <EfficiencyReport />}
+          {activeTab === 'clube' && (profile?.nivel?.startsWith('ADM') ? <PointsSettingsView /> : <ClubeMarketingView />)}
+          {activeTab === 'vitrine' && <VitrineView setActiveTab={handleTabChange} setPreSelectedService={setPreSelectedService} />}
+          {activeTab === 'fabrica' && <ServiceFactoryView />}
+          {activeTab === 'consulta' && <ConsultaPublicaView />}
+          {activeTab === 'suporte' && profile && <SupportModule nivel={profile.nivel} />}
+          {activeTab === 'perfil' && <ProfileView />}
+          <Outlet context={props} />
+        </motion.div>
+      </AnimatePresence>
+    </div>
+  );
 }
 

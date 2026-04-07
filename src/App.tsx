@@ -1,24 +1,36 @@
-import React from "react";
-import { Routes, Route } from "react-router-dom";
+import React, { lazy, Suspense } from "react";
+import { Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "./components/AuthContext";
-import LoginView from "./components/LoginView";
-import { DashboardFinanceiro } from "./pages/DashboardFinanceiro"; // Tela ADM
-import PortalCliente from "./components/PortalCliente"; // Tela Cliente
-import { PublicPortal } from "./views/PublicPortal";
-import { VitrinePublicaView } from "./views/VitrinePublicaView";
-import { ProposalLandingPage } from "./views/ProposalLandingPage";
-import { PendingApproval, AccountRefused, AccountSuspended, CompleteProfile } from "./components/Auth";
 import { LoadingScreen } from "./components/LoadingScreen";
+import { DashboardLayout } from "./components/DashboardLayout";
 
-const AppContent: React.FC = () => {
+// Lazy Loading Views
+const LoginView = lazy(() => import("./components/LoginView"));
+const DashboardFinanceiro = lazy(() => import("./pages/DashboardFinanceiro").then(m => ({ default: m.DashboardFinanceiro })));
+const PortalCliente = lazy(() => import("./components/PortalCliente").then(m => ({ default: m.PortalCliente })));
+const PublicPortal = lazy(() => import("./views/PublicPortal").then(m => ({ default: m.PublicPortal })));
+const VitrinePublicaView = lazy(() => import("./views/VitrinePublicaView").then(m => ({ default: m.VitrinePublicaView })));
+const ProposalLandingPage = lazy(() => import("./views/ProposalLandingPage").then(m => ({ default: m.ProposalLandingPage })));
+
+// Auth Components (Keeping them non-lazy for now as they are small and critical)
+import { PendingApproval, AccountRefused, AccountSuspended, CompleteProfile } from "./components/Auth";
+
+// 1. Componente ProtectedRoute para lidar com a verificação de status
+const ProtectedRoute: React.FC = () => {
   const { user, profile, loading, logout } = useAuth();
 
   if (loading) {
     return <LoadingScreen />;
   }
 
-  // LÓGICA DE ROTEAMENTO POR NIVEL
-  if (!user) return <LoginView />;
+  // Se não estiver logado, redireciona para login (ou renderiza LoginView)
+  if (!user) {
+    return (
+      <Suspense fallback={<LoadingScreen />}>
+        <LoginView />
+      </Suspense>
+    );
+  }
 
   // Se o perfil não existe ou está incompleto (sem CPF), força completar perfil
   if (profile && !profile.cpf) {
@@ -38,30 +50,76 @@ const AppContent: React.FC = () => {
     return <AccountSuspended status="SUSPENSO" onLogout={logout} />;
   }
 
+  // Se tudo estiver OK, renderiza as rotas filhas via Outlet
+  return <Outlet />;
+};
+
+// 2. Componente de Redirecionamento Inicial baseado no nível do usuário
+const RootRedirect: React.FC = () => {
+  const { profile } = useAuth();
   const nivel = profile?.nivel;
 
-  // Se for ADM (Master, Gerente ou Analista), GESTOR ou VENDEDOR, mostra o Financeiro/Gestão
-  if (nivel === "ADM_MASTER" || nivel === "ADM_GERENTE" || nivel === "ADM_ANALISTA" || nivel === "GESTOR" || nivel === "VENDEDOR") {
-    return <DashboardFinanceiro />;
+  const isAdm = nivel === "ADM_MASTER" || nivel === "ADM_GERENTE" || nivel === "ADM_ANALISTA" || nivel === "GESTOR" || nivel === "VENDEDOR";
+
+  if (isAdm) {
+    // Redireciona para a aba padrão do Dashboard Administrativo
+    return <Navigate to="/financeiro" replace />;
   }
 
-  // Se for qualquer outra coisa (ou Cliente), mostra o Portal do Cliente
-  return <PortalCliente />;
+  // Redireciona para a aba padrão do Portal do Cliente
+  return <Navigate to="/clube_pontos" replace />;
 };
 
 const App: React.FC = () => {
-  const { user } = useAuth();
-
   return (
-    <Routes>
-      <Route path="/vendas/p/:slug" element={<ProposalLandingPage />} />
-      <Route path="/p/:slug" element={<ProposalLandingPage />} />
-      <Route path="/vendas" element={!user ? <VitrinePublicaView /> : <AppContent />} />
-      <Route path="/consulta" element={<PublicPortal />} />
-      {/* Se não estiver logado, /vitrine mostra a pública. Se estiver logado, segue para AppContent que mostrará a interna */}
-      <Route path="/vitrine" element={!user ? <VitrinePublicaView /> : <AppContent />} />
-      <Route path="/*" element={<AppContent />} />
-    </Routes>
+    <Suspense fallback={<LoadingScreen />}>
+      <Routes>
+        {/* Rotas Públicas (Acessíveis sem login) */}
+        <Route path="/vendas/p/:slug" element={<ProposalLandingPage />} />
+        <Route path="/p/:slug" element={<ProposalLandingPage />} />
+        <Route path="/consulta" element={<PublicPortal />} />
+        <Route path="/vitrine-publica" element={<VitrinePublicaView />} />
+        <Route path="/vendas" element={<VitrinePublicaView />} />
+
+        {/* Rotas Protegidas (Exigem login e status OK) */}
+        <Route element={<ProtectedRoute />}>
+          {/* Redirecionamento Inicial */}
+          <Route path="/" element={<RootRedirect />} />
+          
+          {/* Layout Unificado para Dashboard / Gestão / Portal */}
+          <Route element={<DashboardLayout />}>
+            {/* Rotas Administrativas */}
+            <Route path="/financeiro" element={<DashboardFinanceiro />} />
+            <Route path="/equipe" element={<DashboardFinanceiro />} />
+            <Route path="/inteligencia" element={<DashboardFinanceiro />} />
+            <Route path="/vendas-internas" element={<DashboardFinanceiro />} />
+            <Route path="/leads" element={<DashboardFinanceiro />} />
+            <Route path="/operacional" element={<DashboardFinanceiro />} />
+            <Route path="/pendencias" element={<DashboardFinanceiro />} />
+            <Route path="/auditoria" element={<DashboardFinanceiro />} />
+            <Route path="/clube" element={<DashboardFinanceiro />} />
+            <Route path="/consulta-interna" element={<DashboardFinanceiro />} />
+            <Route path="/suporte" element={<DashboardFinanceiro />} />
+            <Route path="/fabrica" element={<DashboardFinanceiro />} />
+            <Route path="/perfil" element={<DashboardFinanceiro />} />
+            <Route path="/vitrine" element={<DashboardFinanceiro />} />
+            <Route path="/conversao" element={<DashboardFinanceiro />} />
+            <Route path="/processos" element={<DashboardFinanceiro />} />
+
+            {/* Rotas Portal do Cliente */}
+            <Route path="/clube_pontos" element={<PortalCliente />} />
+            <Route path="/vitrine-cliente" element={<PortalCliente />} />
+            <Route path="/clube-cliente" element={<PortalCliente />} />
+            <Route path="/processos-cliente" element={<PortalCliente />} />
+            <Route path="/carteira" element={<PortalCliente />} />
+            <Route path="/perfil-cliente" element={<PortalCliente />} />
+          </Route>
+        </Route>
+
+        {/* Fallback para rotas não encontradas */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
   );
 };
 

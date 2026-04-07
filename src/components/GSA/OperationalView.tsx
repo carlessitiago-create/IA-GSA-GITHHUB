@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { gerarDocumentoProcesso } from '../../services/pdfGeneratorService';
 import { getClienteData } from '../../services/leadService';
 import { obterModeloProcesso } from '../../services/modelService';
+import { SmartFicha } from './SmartFicha';
 import Swal from 'sweetalert2';
 import { useRequirements } from '../../hooks/useRequirements';
 
@@ -298,9 +299,15 @@ export const OperationalView: React.FC = () => {
 
   const isProcessReady = (processo: OrderProcess) => {
     const reqDocs = processo.pendencias_iniciais || [];
-    if (reqDocs.length === 0) return true;
-    const envDocs = processo.documentos_enviados || [];
-    return reqDocs.every(d => envDocs.includes(d));
+    const reqFields = processo.dados_faltantes || [];
+    
+    // Dados críticos para rastreio público
+    const hasTrackingData = !!processo.cliente_cpf_cnpj && !!processo.data_nascimento;
+
+    const docsReady = reqDocs.length === 0 || (processo.documentos_enviados || []).length >= reqDocs.length;
+    const fieldsReady = reqFields.length === 0;
+    
+    return docsReady && fieldsReady && hasTrackingData;
   };
 
   useEffect(() => {
@@ -452,13 +459,33 @@ export const OperationalView: React.FC = () => {
                       <span className="text-[7px] md:text-[8px] font-black text-white uppercase tracking-widest">SLA Crítico</span>
                     </div>
                   )}
-                  {ready && (
+                  {ready ? (
                     <div className="bg-emerald-500 px-3 py-1 rounded-full shadow-lg shadow-emerald-500/20">
                       <span className="text-[7px] md:text-[8px] font-black text-white uppercase tracking-widest">Docs OK</span>
+                    </div>
+                  ) : (
+                    <div className="bg-amber-500 px-3 py-1 rounded-full shadow-lg shadow-amber-500/20">
+                      <span className="text-[7px] md:text-[8px] font-black text-white uppercase tracking-widest">Dados Faltantes</span>
                     </div>
                   )}
                 </div>
                 <h3 className="text-xl md:text-2xl font-black text-[#0a0a2e] uppercase italic leading-none group-hover:text-blue-600 transition-colors">{processo.cliente_nome}</h3>
+                
+                {/* Alerta de Dados Faltantes Detalhado */}
+                {!ready && (
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    {!processo.cliente_cpf_cnpj && (
+                      <span className="text-[7px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 uppercase tracking-tighter">Falta CPF</span>
+                    )}
+                    {!processo.data_nascimento && (
+                      <span className="text-[7px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 uppercase tracking-tighter">Falta Nascimento</span>
+                    )}
+                    {processo.dados_faltantes?.map(f => (
+                      <span key={f} className="text-[7px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100 uppercase tracking-tighter">Falta {f}</span>
+                    ))}
+                  </div>
+                )}
+
                 <div className="flex items-center gap-2 text-slate-400">
                   <div className="size-1.5 bg-slate-300 rounded-full" />
                   <p className="text-[9px] md:text-[10px] font-black uppercase tracking-widest">{processo.servico_nome}</p>
@@ -679,31 +706,24 @@ export const OperationalView: React.FC = () => {
                 </div>
 
                 {/* Dados da Ficha */}
-                {selectedProcess.dados_faltantes && selectedProcess.dados_faltantes.length > 0 && (
-                  <div className="space-y-6">
-                    <div className="flex items-center gap-3 px-2">
-                      <div className="size-10 bg-slate-50 rounded-xl flex items-center justify-center shadow-sm">
-                        <Activity size={20} className="text-blue-600" />
-                      </div>
-                      <h4 className="text-lg font-black text-[#0a0a2e] uppercase tracking-tighter italic">Dados da Ficha Técnica</h4>
-                    </div>
-                    <div className="bg-slate-50 rounded-[2.5rem] border border-slate-100 p-10 shadow-inner">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                        {selectedProcess.dados_faltantes.map(field => (
-                          <div key={field} className="space-y-2">
-                            <span className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">{requirementsConfig.field_labels[field] || field}</span>
-                            <div className="flex items-center gap-3">
-                              <div className="size-2 bg-blue-500 rounded-full" />
-                              <p className="text-sm font-black text-[#0a0a2e] uppercase italic tracking-tight">
-                                {selectedClient?.[field] || 'Não preenchido'}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
+                <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+                  <SmartFicha 
+                    processos={[selectedProcess]} 
+                    clienteDados={selectedClient || { 
+                      id: selectedProcess.cliente_id, 
+                      uid: selectedProcess.cliente_id,
+                      nome_completo: selectedProcess.cliente_nome,
+                      cpf: selectedProcess.cliente_cpf_cnpj,
+                      data_nascimento: selectedProcess.data_nascimento,
+                      ...selectedProcess
+                    }} 
+                    onUpdate={async () => {
+                      setSelectedProcess(null);
+                      const procs = await listarTodosProcessos();
+                      setProcessos(procs);
+                    }} 
+                  />
+                </div>
               </div>
 
               <div className="p-10 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row justify-end gap-4">

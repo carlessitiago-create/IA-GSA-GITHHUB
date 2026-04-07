@@ -23,7 +23,7 @@ import Swal from 'sweetalert2';
 import { transformImageUrl } from '../utils/imageUtils';
 
 export function ClubePontosView() {
-  const { profile } = useAuth();
+  const { profile, refreshProfile } = useAuth();
   const [rewards, setRewards] = useState<any[]>([]);
   const [rules, setRules] = useState<any>(null);
   const [history, setHistory] = useState<any[]>([]);
@@ -31,30 +31,30 @@ export function ClubePontosView() {
   const [activeSubTab, setActiveSubTab] = useState<'premios' | 'historico'>('premios');
   const navigate = useNavigate();
 
+  const fetchData = async () => {
+    if (!profile?.uid) {
+      setLoading(false);
+      return;
+    }
+    try {
+      const [rewardsData, rulesData, historyData] = await Promise.all([
+        getClubRewards(),
+        getPointsRules(),
+        getPointHistory(profile.uid)
+      ]);
+      setRewards(rewardsData);
+      setRules(rulesData);
+      setHistory(historyData);
+    } catch (error) {
+      console.error("Erro ao carregar dados do clube:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      if (!profile?.uid) {
-        setLoading(false);
-        return;
-      }
-      setLoading(true);
-      try {
-        const [rewardsData, rulesData, historyData] = await Promise.all([
-          getClubRewards(),
-          getPointsRules(),
-          getPointHistory(profile.uid)
-        ]);
-        setRewards(rewardsData);
-        setRules(rulesData);
-        setHistory(historyData);
-      } catch (error) {
-        console.error("Erro ao carregar dados do clube:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchData();
-  }, [profile]);
+  }, [profile?.uid]);
 
   const handleRedeem = async (reward: any) => {
     if (!profile?.uid) return;
@@ -84,8 +84,11 @@ export function ClubePontosView() {
           color: '#fff'
         });
         
-        // Refresh history and profile points would be ideal, but profile is in context
-        // Usually we'd need a way to refresh context or just wait for next sync
+        // Refresh history and profile points
+        await Promise.all([
+          refreshProfile(),
+          fetchData()
+        ]);
       } catch (error: any) {
         Swal.fire('Erro', error.message || 'Não foi possível realizar o resgate.', 'error');
       }

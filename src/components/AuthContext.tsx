@@ -41,6 +41,7 @@ interface AuthContextType {
   registerWithEmail: (email: string, pass: string, name: string, cpf: string, dataNascimento: string, telefone: string) => Promise<UserCredential>;
   forgotPassword: (email: string) => Promise<void>;
   updateUserProfile: (data: Partial<UserProfile>) => Promise<void>;
+  refreshProfile: () => Promise<void>;
   logout: () => Promise<void>;
   simulateUser: (profile: UserProfile) => void;
   stopSimulation: () => void;
@@ -91,30 +92,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (docSnap && docSnap.exists()) {
             const data = docSnap.data() as UserProfile;
             console.log("AuthContext: Profile found for UID", user.uid, ":", data.nivel, "Status:", data.status_conta);
-            const isAdminEmail = (user.email === 'carlessitiago@gmail.com' || user.email === 'nomelimpo.gsa@gmail.com' || user.email === 'atende.gsa@gmail.com');
+            // Removed hardcoded admin emails as per security audit.
+            // Roles are now managed exclusively via Firestore 'nivel' field.
             
-            if (isAdminEmail && data.nivel !== 'ADM_MASTER') {
-              data.nivel = 'ADM_MASTER';
-              data.status_conta = 'APROVADO';
-              try {
-                await updateDoc(docRef, { nivel: 'ADM_MASTER', status_conta: 'APROVADO' });
-              } catch (error) {
-                handleFirestoreError(error, OperationType.UPDATE, 'usuarios/' + user.uid);
-              }
-            }
             setProfile(data);
             setRealProfile(data);
           } else {
             console.log("AuthContext: Profile not found. Creating default profile...");
             // Create default profile if not exists (usually for first login)
-            const isAdmin = (user.email === 'carlessitiago@gmail.com' || user.email === 'nomelimpo.gsa@gmail.com' || user.email === 'atende.gsa@gmail.com');
             const newProfile: UserProfile = {
               uid: user.uid,
               nome_completo: user.displayName || 'Usuário',
               email: user.email || '',
               cpf: '',
               data_nascimento: '',
-              nivel: isAdmin ? 'ADM_MASTER' : 'CLIENTE',
+              nivel: 'CLIENTE',
               status_conta: 'APROVADO',
               tem_empresa: false,
               data_cadastro: new Date()
@@ -300,6 +292,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsSimulating(false);
   };
 
+  const refreshProfile = async () => {
+    if (!user) return;
+    try {
+      const docRef = doc(db, 'usuarios', user.uid);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data() as UserProfile;
+        setProfile(data);
+        setRealProfile(data);
+      }
+    } catch (error) {
+      console.error("AuthContext: Error refreshing profile:", error);
+    }
+  };
+
   return (
     <AuthContext.Provider value={{ 
       user, 
@@ -310,6 +317,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       registerWithEmail, 
       forgotPassword, 
       updateUserProfile, 
+      refreshProfile,
       logout,
       simulateUser,
       stopSimulation,

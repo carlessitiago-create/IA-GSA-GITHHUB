@@ -143,7 +143,6 @@ export async function confirmarTransacao(transactionId: string, confirmadoPor: s
     const transRef = doc(db, TRANSACTIONS_COLLECTION, transactionId);
     
     // Use getDoc instead of getDocs with query for better performance and clarity
-    const { getDoc } = await import('firebase/firestore');
     const transSnap = await getDoc(transRef);
     
     if (!transSnap.exists()) throw new Error('Transação não encontrada');
@@ -641,7 +640,6 @@ export async function atualizarStatusFatura(processo: any, status: 'PAGO' | 'VEN
       
       await updateDoc(saleRef, { status_pagamento: 'Pago', dias_atraso: 0 });
       
-      if (!vendaId) throw new Error('ID da venda é obrigatório para atualizar status da fatura.');
       const q = query(collection(db, 'order_processes'), where('venda_id', '==', vendaId));
       const processesSnap = await getDocs(q);
       for (const pDoc of processesSnap.docs) {

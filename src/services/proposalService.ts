@@ -1,6 +1,7 @@
 import { collection, addDoc, serverTimestamp, doc, getDoc, query, where, getDocs, orderBy, updateDoc } from 'firebase/firestore';
 import { db, cleanData } from '../firebase';
 import { sendNotification } from './notificationService';
+import { PROCESS_REQUIREMENTS } from '../constants/processRequirements';
 
 export interface ProposalOption {
   valor: number;
@@ -111,7 +112,7 @@ export const listAllProposals = async () => {
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ProposalData));
 };
 
-export const updateProposalStatus = async (slug: string, status: ProposalData['status'], cpf: string, whatsapp: string, lead_nome?: string) => {
+export const updateProposalStatus = async (slug: string, status: ProposalData['status'], cpf: string, whatsapp: string, lead_nome?: string, data_nascimento?: string) => {
   const proposal = await getProposalBySlug(slug);
   if (!proposal || !proposal.id) throw new Error('Proposta não encontrada');
   
@@ -125,6 +126,10 @@ export const updateProposalStatus = async (slug: string, status: ProposalData['s
   
   if (lead_nome) {
     updatePayload.lead_nome = lead_nome;
+  }
+
+  if (data_nascimento) {
+    updatePayload.data_nascimento = data_nascimento;
   }
 
   await updateDoc(proposalRef, updatePayload);
@@ -146,20 +151,41 @@ export const updateProposalStatus = async (slug: string, status: ProposalData['s
   if (status === 'PAGA') {
     const protocolo = `GSA-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
     
+    // Buscar requisitos do serviço
+    const req = PROCESS_REQUIREMENTS[proposal.servico_id] || { campos: [], documentos: [] };
+    
+    // Identificar o que falta (como é uma proposta pública, assumimos que falta tudo se não estiver na proposta)
+    const dadosFaltantes = req.campos.filter(campo => {
+      if (campo === 'cpf' && cpf) return false;
+      if (campo === 'nome_completo' && finalLeadNome) return false;
+      if (campo === 'data_nascimento' && data_nascimento) return false;
+      return true;
+    });
+    const pendenciasIniciais = req.documentos;
+
     // 1. Criar Cliente (se não existir ou apenas para registro da venda)
     // Para simplificar, vamos criar o OrderProcess direto com os dados da proposta
     await addDoc(collection(db, 'order_processes'), {
       protocolo,
       cliente_nome: finalLeadNome,
       cliente_cpf_cnpj: cpf,
+      data_nascimento: data_nascimento || '',
       vendedor_id: proposal.vendedor_id,
       vendedor_nome: proposal.vendedor_nome,
       servico_id: proposal.servico_id,
       servico_nome: proposal.servico_nome,
-      status_atual: 'PENDENTE',
+      status_atual: (dadosFaltantes.length > 0 || pendenciasIniciais.length > 0) ? 'Aguardando Documentação' : 'Pendente',
       status_financeiro: 'PAGO',
       data_venda: serverTimestamp(),
-      origem: 'PROPOSTA_PUBLICA'
+      origem: 'PROPOSTA_PUBLICA',
+      dados_faltantes: dadosFaltantes,
+      pendencias_iniciais: pendenciasIniciais,
+      documentos_enviados: [],
+      historico_status: [{
+        status: (dadosFaltantes.length > 0 || pendenciasIniciais.length > 0) ? 'Aguardando Documentação' : 'Pendente',
+        data: new Date().toISOString(),
+        observacao: 'Venda realizada via Proposta Pública'
+      }]
     });
   }
 };
