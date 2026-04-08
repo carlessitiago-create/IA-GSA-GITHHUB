@@ -5,18 +5,8 @@
  */
 export const getPublicOrigin = () => {
   // Check for a custom domain override in environment variables
-  const customDomain = import.meta.env.VITE_CUSTOM_DOMAIN;
-  if (customDomain) {
-    // Ensure it has a protocol
-    return customDomain.startsWith('http') ? customDomain : `https://${customDomain}`;
-  }
-
-  const origin = window.location.origin;
+  const customDomain = import.meta.env.VITE_CUSTOM_DOMAIN || '72hrs.online';
   
-  // If we are in the AI Studio Build dev environment, replace dev prefix with pre (preview) prefix
-  if (origin.includes('ais-dev-')) {
-    return origin.replace('ais-dev-', 'ais-pre-');
-  }
-  
-  return origin;
+  // Ensure it has a protocol
+  return customDomain.startsWith('http') ? customDomain : `https://${customDomain}`;
 };

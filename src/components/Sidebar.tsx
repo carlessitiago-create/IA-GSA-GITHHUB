@@ -50,7 +50,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ view, setView, currentProfile,
   const admItems: MenuItem[] = [
     { id: 'financeiro', label: 'DASHBOARD', icon: <BarChart3 className="size-5" />, group: 'FINANCEIRO', roles: ['ADM_MASTER', 'ADM_GERENTE', 'GESTOR', 'VENDEDOR'] },
     
-    { id: 'vendas', label: 'VENDAS (PDV)', icon: <ShoppingCart className="size-5" />, group: 'COMERCIAL', color: 'text-emerald-500', roles: ['ADM_MASTER', 'ADM_GERENTE', 'GESTOR', 'VENDEDOR'] },
+    { id: 'vendas-internas', label: 'VENDAS (PDV)', icon: <ShoppingCart className="size-5" />, group: 'COMERCIAL', color: 'text-emerald-500', roles: ['ADM_MASTER', 'ADM_GERENTE', 'GESTOR', 'VENDEDOR'] },
     { id: 'leads', label: 'LEADS E INDICAÇÕES', icon: <MousePointerClick className="size-5" />, group: 'COMERCIAL', roles: ['ADM_MASTER', 'ADM_GERENTE', 'GESTOR', 'VENDEDOR'] },
     { id: 'clube', label: 'CLUBE DE PONTOS', icon: <Gift className="size-5" />, group: 'COMERCIAL', roles: ['ADM_MASTER', 'ADM_GERENTE', 'GESTOR', 'VENDEDOR'] },
     { id: 'vitrine', label: 'VITRINE GSA', icon: <LayoutGrid className="size-5" />, group: 'COMERCIAL' },
@@ -64,18 +64,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ view, setView, currentProfile,
     { id: 'inteligencia', label: 'INTELIGÊNCIA', icon: <Activity className="size-5" />, group: 'ENGENHARIA', roles: ['ADM_MASTER', 'GESTOR'] },
     { id: 'conversao', label: 'CONVERSÃO', icon: <BarChart3 className="size-5" />, group: 'ENGENHARIA', roles: ['ADM_MASTER', 'GESTOR'] },
     
-    { id: 'consulta', label: 'CONSULTA PÚBLICA', icon: <Search className="size-5" />, group: 'SISTEMA' },
+    { id: 'consulta-interna', label: 'CONSULTA PÚBLICA', icon: <Search className="size-5" />, group: 'SISTEMA' },
     { id: 'suporte', label: 'SUPORTE', icon: <MessageSquare className="size-5" />, group: 'SISTEMA' },
     { id: 'perfil', label: 'MEU PERFIL', icon: <User className="size-5" />, group: 'USUÁRIO' },
   ];
 
   const clientItems: MenuItem[] = [
     { id: 'clube_pontos', label: 'CLUBE DE PONTOS', icon: <Trophy className="size-5" />, group: 'COMERCIAL' },
-    { id: 'clube', label: 'INDIQUE E GANHE', icon: <Gift className="size-5" />, group: 'COMERCIAL' },
-    { id: 'vitrine', label: 'VITRINE DE SERVIÇOS', icon: <LayoutGrid className="size-5" />, group: 'COMERCIAL' },
-    { id: 'processos', label: 'MEUS PROCESSOS', icon: <ClipboardList className="size-5" />, group: 'OPERAÇÕES' },
+    { id: 'clube-cliente', label: 'INDIQUE E GANHE', icon: <Gift className="size-5" />, group: 'COMERCIAL' },
+    { id: 'vitrine-cliente', label: 'VITRINE DE SERVIÇOS', icon: <LayoutGrid className="size-5" />, group: 'COMERCIAL' },
+    { id: 'processos-cliente', label: 'MEUS PROCESSOS', icon: <ClipboardList className="size-5" />, group: 'OPERAÇÕES' },
     { id: 'carteira', label: 'MINHA CARTEIRA', icon: <Wallet className="size-5" />, group: 'FINANCEIRO' },
-    { id: 'perfil', label: 'MEU PERFIL', icon: <User className="size-5" />, group: 'USUÁRIO' },
+    { id: 'perfil-cliente', label: 'MEU PERFIL', icon: <User className="size-5" />, group: 'USUÁRIO' },
   ];
 
   const menuItems = isAdm 

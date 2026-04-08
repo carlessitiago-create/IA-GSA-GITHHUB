@@ -15,6 +15,7 @@ import { solicitarOrcamentoVitrine } from '../../services/marketingService';
 import { useAuth } from '../AuthContext';
 import Swal from 'sweetalert2';
 import { motion, AnimatePresence } from 'motion/react';
+import { useOutletContext, useNavigate } from 'react-router-dom';
 
 const getYoutubeId = (url: string) => {
   if (!url) return '';
@@ -23,8 +24,13 @@ const getYoutubeId = (url: string) => {
   return (match && match[2].length === 11) ? match[2] : '';
 };
 
-export const VitrineView: React.FC<{ setActiveTab?: (tab: any) => void, setPreSelectedService?: (service: any) => void }> = ({ setActiveTab, setPreSelectedService }) => {
+export const VitrineView: React.FC = () => {
   const { profile } = useAuth();
+  const navigate = useNavigate();
+  const outletContext = useOutletContext<any>() || {};
+  
+  const setPreSelectedService = outletContext.setPreSelectedService;
+
   const [services, setServices] = useState<ServiceData[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedService, setSelectedService] = useState<ServiceData | null>(null);
@@ -57,11 +63,11 @@ export const VitrineView: React.FC<{ setActiveTab?: (tab: any) => void, setPreSe
 
     if (isSalesRole) {
       // Redirecionar para o PDV com o serviço selecionado
-      if (setActiveTab && setPreSelectedService) {
+      if (setPreSelectedService) {
         setPreSelectedService(service);
-        setActiveTab('vendas');
-        setSelectedService(null);
       }
+      navigate('/vendas-internas');
+      setSelectedService(null);
       return;
     }
 

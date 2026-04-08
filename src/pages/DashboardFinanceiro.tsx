@@ -1,342 +1,22 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { collection, query, where, onSnapshot, orderBy, getDocs, updateDoc, doc } from 'firebase/firestore';
-import { db } from '../firebase';
-import { useAuth } from '../components/AuthContext';
-import { FinanceiroView } from '../views/FinanceiroView';
-import { GestaoEquipeView } from '../views/GestaoEquipeView';
-import { IntelligenceDashboardView } from '../views/IntelligenceDashboardView';
-import { PendencyList } from '../components/GSA/PendencyList';
+import React from 'react';
+import { useOutletContext } from 'react-router-dom';
+import { FinancialTransactions } from '../components/dashboard/FinancialTransactions';
+import { OpenInvoices } from '../components/dashboard/OpenInvoices';
+import { RecentSales } from '../components/dashboard/RecentSales';
+import { DollarSign, Clock, AlertTriangle, ReceiptText, TrendingUp, ArrowUpRight } from 'lucide-react';
+import { motion } from 'framer-motion';
 import AlertCenter from '../components/GSA/AlertCenter';
-import EfficiencyReport from '../components/Admin/EfficiencyReport';
-import SupportModule from '../components/Support/SupportModule';
-import { LeadsCentralView } from '../components/GSA/LeadsCentralView';
-import { OperationalView } from '../components/GSA/OperationalView';
-import { VendasPDVView } from '../views/VendasPDVView';
-import { ConsultaPublicaView } from '../views/ConsultaPublicaView';
-import { ClubeMarketingView } from '../views/ClubeMarketingView';
-import { ServiceFactoryView } from '../components/GSA/ServiceFactoryView';
-import { ProfileView } from '../views/ProfileView';
-import { PointsSettingsView } from '../components/GSA/PointsSettingsView';
-import { VitrineView } from '../components/GSA/VitrineView';
-import { confirmarTransacao, marcarFaturaVencida } from '../services/financialService';
-import { sendNotification } from '../services/notificationService';
-import { listarTodosUsuarios } from '../services/userService';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { ConversionDashboardView } from '../views/ConversionDashboardView';
-import { ClientDashboardView } from '../views/ClientDashboardView';
-import { 
-  LayoutDashboard, 
-  Users, 
-  Brain, 
-  ShoppingCart, 
-  Target, 
-  Activity, 
-  AlertTriangle, 
-  ShieldCheck, 
-  Gift, 
-  Search, 
-  LifeBuoy, 
-  Factory, 
-  UserCircle,
-  ClipboardList,
-  Bell,
-  ShieldHalf,
-  User,
-  Menu
-} from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
-
-type TabType = 'financeiro' | 'equipe' | 'inteligencia' | 'vendas' | 'leads' | 'operacional' | 'pendencias' | 'auditoria' | 'clube' | 'consulta' | 'suporte' | 'fabrica' | 'perfil' | 'vitrine' | 'conversao' | 'processos';
-
-import { Sidebar } from '../components/Sidebar';
-import { Outlet } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 export function DashboardFinanceiro() {
-  const { user, profile } = useAuth();
+  const props = useOutletContext<any>();
   const navigate = useNavigate();
-  const location = useLocation();
-  const [activeTab, setActiveTab] = useState<TabType>('financeiro');
-
-  // Sincroniza a aba com a URL
-  useEffect(() => {
-    const path = location.pathname.substring(1); // Remove a barra inicial
-    const validTabs: TabType[] = ['financeiro', 'equipe', 'inteligencia', 'vendas', 'leads', 'operacional', 'pendencias', 'auditoria', 'clube', 'consulta', 'suporte', 'fabrica', 'perfil', 'vitrine', 'conversao', 'processos'];
-    
-    if (path && (validTabs as string[]).includes(path)) {
-      setActiveTab(path as TabType);
-    }
-  }, [location.pathname]);
-
-  const handleTabChange = (tab: TabType) => {
-    setActiveTab(tab);
-    navigate(`/${tab}`);
-  };
-
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [pendingTransactions, setPendingTransactions] = useState<any[]>([]);
-  const [sales, setSales] = useState<any[]>([]);
-  const [allUsers, setAllUsers] = useState<any[]>([]);
-  const [processes, setProcesses] = useState<any[]>([]);
-  const [showcaseLeads, setShowcaseLeads] = useState<any[]>([]);
-  const [pendencies, setPendencies] = useState<any[]>([]);
-  const [statusHistory, setStatusHistory] = useState<any[]>([]);
-  const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
-  const [isConfirmingTransaction, setIsConfirmingTransaction] = useState<string | null>(null);
-  const [transactionReceipt, setTransactionReceipt] = useState('');
-
-  const [preSelectedService, setPreSelectedService] = useState<any>(null);
-
-  useEffect(() => {
-    if (!user || !profile) return;
-
-    const nivel = profile.nivel;
-    const uid = profile.uid;
-
-    // Migração de Serviços (Pontos)
-    if (nivel === 'ADM_MASTER') {
-      const migrateServices = async () => {
-        try {
-          const q = query(collection(db, 'services'));
-          const snapshot = await getDocs(q);
-          snapshot.docs.forEach(async (serviceDoc) => {
-            const data = serviceDoc.data();
-            if (data.pontos_cliente === undefined) {
-              await updateDoc(doc(db, 'services', serviceDoc.id), {
-                pontos_cliente: 10,
-                pontos_vendedor: 50,
-                pontos_gestor: 20
-              });
-            }
-          });
-        } catch (error) {
-          console.error("Erro na migração de serviços:", error);
-        }
-      };
-      migrateServices();
-    }
-
-    if (nivel === 'ADM_ANALISTA' && activeTab === 'financeiro') {
-      handleTabChange('operacional');
-    }
-
-    // Fetch pending transactions
-    let qTrans = null;
-    if (nivel === 'ADM_MASTER' || nivel === 'ADM_GERENTE') {
-      qTrans = query(
-        collection(db, 'financial_transactions'),
-        where('confirmado_pelo_administrador', '==', false),
-        orderBy('timestamp', 'desc')
-      );
-    } else if (nivel === 'GESTOR' && uid) {
-      qTrans = query(
-        collection(db, 'financial_transactions'),
-        where('confirmado_pelo_administrador', '==', false),
-        where('id_superior', '==', uid),
-        orderBy('timestamp', 'desc')
-      );
-    } else if (nivel === 'VENDEDOR' && uid) {
-      qTrans = query(
-        collection(db, 'financial_transactions'),
-        where('confirmado_pelo_administrador', '==', false),
-        where('vendedor_id', '==', uid),
-        orderBy('timestamp', 'desc')
-      );
-    } else if (uid) {
-      qTrans = query(
-        collection(db, 'financial_transactions'),
-        where('confirmado_pelo_administrador', '==', false),
-        where('cliente_id', '==', uid),
-        orderBy('timestamp', 'desc')
-      );
-    }
-
-    let unsubTrans = () => {};
-    if (qTrans) {
-      unsubTrans = onSnapshot(qTrans, (snapshot) => {
-        setPendingTransactions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      }, (error) => {
-        console.error("Erro de permissão no Firestore (transactions): ", error);
-      });
-    }
-
-    // Fetch sales
-    let qSales = null;
-    if (nivel === 'ADM_MASTER' || nivel === 'ADM_GERENTE' || nivel === 'ADM_ANALISTA') {
-      qSales = query(collection(db, 'sales'), orderBy('timestamp', 'desc'));
-    } else if (nivel === 'GESTOR' && uid) {
-      qSales = query(collection(db, 'sales'), where('id_superior', '==', uid), orderBy('timestamp', 'desc'));
-    } else if (nivel === 'VENDEDOR' && uid) {
-      qSales = query(collection(db, 'sales'), where('vendedor_id', '==', uid), orderBy('timestamp', 'desc'));
-    } else if (uid) {
-      qSales = query(collection(db, 'sales'), where('cliente_id', '==', uid), orderBy('timestamp', 'desc'));
-    }
-
-    let unsubSales = () => {};
-    if (qSales) {
-      unsubSales = onSnapshot(qSales, (snapshot) => {
-        setSales(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      }, (error) => {
-        console.error("Erro de permissão no Firestore (sales): ", error);
-      });
-    }
-
-    // Fetch processes
-    let qProc = null;
-    if (nivel === 'ADM_MASTER' || nivel === 'ADM_GERENTE') {
-      qProc = query(collection(db, 'order_processes'), orderBy('data_venda', 'desc'));
-    } else if (nivel === 'GESTOR' && uid) {
-      qProc = query(collection(db, 'order_processes'), where('id_superior', '==', uid), orderBy('data_venda', 'desc'));
-    } else if (nivel === 'VENDEDOR' && uid) {
-      qProc = query(collection(db, 'order_processes'), where('vendedor_id', '==', uid), orderBy('data_venda', 'desc'));
-    } else if (uid) {
-      qProc = query(collection(db, 'order_processes'), where('cliente_id', '==', uid), orderBy('data_venda', 'desc'));
-    }
-    
-    let unsubProc = () => {};
-    if (qProc) {
-      unsubProc = onSnapshot(qProc, (snapshot) => {
-        setProcesses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      }, (error) => {
-        console.error("Erro de permissão no Firestore (processes): ", error);
-      });
-    }
-
-    // Fetch showcase leads
-    let qShowcase = null;
-    if (nivel === 'ADM_MASTER' || nivel === 'ADM_GERENTE') {
-      qShowcase = query(collection(db, 'showcase_leads'), orderBy('timestamp', 'desc'));
-    } else if (nivel === 'GESTOR' && uid) {
-      qShowcase = query(collection(db, 'showcase_leads'), where('vendedor_id', '==', uid), orderBy('timestamp', 'desc'));
-    } else if (nivel === 'VENDEDOR' && uid) {
-      qShowcase = query(collection(db, 'showcase_leads'), where('vendedor_id', '==', uid), orderBy('timestamp', 'desc'));
-    } else if (uid) {
-      qShowcase = query(collection(db, 'showcase_leads'), where('cliente_id', '==', uid), orderBy('timestamp', 'desc'));
-    }
-
-    let unsubShowcase = () => {};
-    if (qShowcase) {
-      unsubShowcase = onSnapshot(qShowcase, (snapshot) => {
-        setShowcaseLeads(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      }, (error) => {
-        console.error("Erro de permissão no Firestore (showcase): ", error);
-      });
-    }
-
-    // Fetch pendencies
-    let qPend = null;
-    if (nivel === 'ADM_MASTER' || nivel === 'ADM_GERENTE') {
-      qPend = query(collection(db, 'pendencies'), where('status_pendencia', '!=', 'RESOLVIDO'));
-    } else if (nivel === 'GESTOR' && uid) {
-      qPend = query(collection(db, 'pendencies'), where('id_superior', '==', uid), where('status_pendencia', '!=', 'RESOLVIDO'));
-    } else if (nivel === 'VENDEDOR' && uid) {
-      qPend = query(collection(db, 'pendencies'), where('vendedor_id', '==', uid), where('status_pendencia', '!=', 'RESOLVIDO'));
-    } else if (uid) {
-      qPend = query(collection(db, 'pendencies'), where('cliente_id', '==', uid), where('status_pendencia', '!=', 'RESOLVIDO'));
-    }
-
-    let unsubPend = () => {};
-    if (qPend) {
-      unsubPend = onSnapshot(qPend, (snapshot) => {
-        setPendencies(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      }, (error) => {
-        console.error("Erro de permissão no Firestore (pendencies): ", error);
-      });
-    }
-
-    // Fetch status history for activities
-    const qHistory = query(collection(db, 'status_history'), orderBy('timestamp', 'desc'));
-    const unsubHistory = onSnapshot(qHistory, (snapshot) => {
-      setStatusHistory(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    }, (error) => {
-      console.error("Erro de permissão no Firestore (history): ", error);
-    });
-
-    listarTodosUsuarios().then(users => {
-      const filtered = users.filter(u => {
-        if (nivel === 'ADM_MASTER' || nivel === 'ADM_GERENTE') return true;
-        
-        if (nivel === 'GESTOR') {
-          const isSelf = u.uid === uid;
-          const isMyVendedor = u.nivel === 'VENDEDOR' && u.id_superior === uid;
-          const isMyDirectClient = u.nivel === 'CLIENTE' && u.id_superior === uid;
-          
-          const myVendedoresIds = users.filter(v => v.nivel === 'VENDEDOR' && v.id_superior === uid).map(v => v.uid);
-          const isMyVendedorClient = u.nivel === 'CLIENTE' && myVendedoresIds.includes(u.id_superior || '');
-          
-          return isSelf || isMyVendedor || isMyDirectClient || isMyVendedorClient;
-        }
-        
-        if (nivel === 'VENDEDOR') {
-          const isSelf = u.uid === uid;
-          const isMyClient = u.nivel === 'CLIENTE' && u.id_superior === uid;
-          return isSelf || isMyClient;
-        }
-        
-        return u.uid === uid;
-      });
-      setAllUsers(filtered);
-    }).catch(err => {
-      console.error("Erro ao listar usuários: ", err);
-    });
-
-    return () => {
-      unsubTrans();
-      unsubSales();
-      unsubProc();
-      unsubShowcase();
-      unsubPend();
-      unsubHistory();
-    };
-  }, [user, profile]);
-
-  const tabs: { id: TabType, label: string, icon: any, roles?: string[], color?: string }[] = [
-    { id: 'financeiro', label: 'Financeiro', icon: LayoutDashboard, roles: ['ADM_MASTER', 'ADM_GERENTE', 'GESTOR', 'VENDEDOR'] },
-    { id: 'vendas', label: 'Vendas (PDV)', icon: ShoppingCart, roles: ['ADM_MASTER', 'ADM_GERENTE', 'GESTOR', 'VENDEDOR'], color: 'border-emerald-100 text-emerald-600 bg-emerald-50 hover:bg-emerald-100' },
-    { id: 'processos', label: 'Meus Processos', icon: ClipboardList, roles: ['CLIENTE'] },
-    { id: 'equipe', label: profile?.nivel === 'VENDEDOR' ? 'Meus Clientes' : profile?.nivel === 'GESTOR' ? 'Minha Equipe' : 'Equipe', icon: Users, roles: ['ADM_MASTER', 'ADM_GERENTE', 'GESTOR', 'VENDEDOR'] },
-    { id: 'leads', label: 'Leads', icon: Target, roles: ['ADM_MASTER', 'ADM_GERENTE', 'GESTOR', 'VENDEDOR'] },
-    { id: 'operacional', label: 'Operacional', icon: Activity, roles: ['ADM_MASTER', 'ADM_GERENTE', 'ADM_ANALISTA'] },
-    { id: 'pendencias', label: 'Pendências', icon: AlertTriangle, color: 'border-amber-100 text-amber-600 bg-amber-50 hover:bg-amber-100' },
-    { id: 'inteligencia', label: 'Inteligência', icon: Brain, roles: ['ADM_MASTER', 'GESTOR'] },
-    { id: 'conversao', label: 'Conversão', icon: Target, roles: ['ADM_MASTER', 'GESTOR'], color: 'border-indigo-100 text-indigo-600 bg-indigo-50 hover:bg-indigo-100' },
-    { id: 'auditoria', label: 'Auditoria SLA', icon: ShieldCheck, roles: ['ADM_MASTER'] },
-    { id: 'clube', label: 'Clube', icon: Gift },
-    { id: 'vitrine', label: 'Vitrine', icon: ShoppingCart },
-    { id: 'fabrica', label: 'Fábrica', icon: Factory, roles: ['ADM_MASTER', 'ADM_GERENTE'] },
-    { id: 'consulta', label: 'Consulta', icon: Search, roles: ['ADM_MASTER', 'ADM_GERENTE', 'ADM_ANALISTA', 'GESTOR', 'VENDEDOR'] },
-    { id: 'suporte', label: 'Suporte', icon: LifeBuoy },
-    { id: 'perfil', label: 'Perfil', icon: UserCircle },
-  ];
-
-  const totalPending = pendingTransactions.reduce((acc, curr) => acc + curr.valor, 0);
-  const totalOpenInvoices = sales.filter(s => s.status_pagamento === 'Pendente' || s.status_pagamento === 'Vencida').reduce((acc, curr) => acc + curr.valor_total, 0);
-
-  const props = {
-    pendingTransactions,
-    clients: allUsers.filter(u => u.nivel === 'CLIENTE'),
-    confirmarTransacao,
-    sendNotification,
-    sales,
-    allUsers,
-    setNotification,
-    setIsConfirmingTransaction,
-    setTransactionReceipt,
-    currentProfile: profile,
-    marcarFaturaVencida,
-    totalPending,
-    totalOpenInvoices,
-    processes,
-    pendencies,
-    showcaseLeads,
-    statusHistory,
-    preSelectedService,
-    setPreSelectedService,
-    setActiveTab
-  };
+  const { totalPending = 0, totalOpenInvoices = 0, sales = [], notification, setNotification } = props || {};
+  const overdueInvoices = sales.filter((s: any) => s.status_pagamento === 'Vencida').reduce((acc: number, curr: any) => acc + curr.valor_total, 0);
 
   return (
     <div className="w-full space-y-8">
-      <AlertCenter onResolveClick={() => handleTabChange('pendencias')} />
+      <AlertCenter onResolveClick={() => navigate('/pendencias')} />
 
       {notification && (
         <motion.div 
@@ -352,41 +32,111 @@ export function DashboardFinanceiro() {
         </motion.div>
       )}
 
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={location.pathname}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-          transition={{ duration: 0.3 }}
-        >
-          {activeTab === 'financeiro' && <FinanceiroView {...props} />}
-          {activeTab === 'equipe' && <GestaoEquipeView />}
-          {activeTab === 'inteligencia' && (
-            <IntelligenceDashboardView 
-              sales={sales}
-              processes={processes}
-              pendencies={pendencies}
-              allUsers={allUsers}
-              statusHistory={statusHistory}
-            />
-          )}
-          {activeTab === 'processos' && <ClientDashboardView processes={processes} pendencies={pendencies} showcaseLeads={showcaseLeads} />}
-          {activeTab === 'conversao' && <ConversionDashboardView />}
-          {activeTab === 'vendas' && <VendasPDVView preSelectedService={preSelectedService} setPreSelectedService={setPreSelectedService} />}
-          {activeTab === 'leads' && <LeadsCentralView />}
-          {activeTab === 'operacional' && <OperationalView />}
-          {activeTab === 'pendencias' && <PendencyList />}
-          {activeTab === 'auditoria' && <EfficiencyReport />}
-          {activeTab === 'clube' && (profile?.nivel?.startsWith('ADM') ? <PointsSettingsView /> : <ClubeMarketingView />)}
-          {activeTab === 'vitrine' && <VitrineView setActiveTab={handleTabChange} setPreSelectedService={setPreSelectedService} />}
-          {activeTab === 'fabrica' && <ServiceFactoryView />}
-          {activeTab === 'consulta' && <ConsultaPublicaView />}
-          {activeTab === 'suporte' && profile && <SupportModule nivel={profile.nivel} />}
-          {activeTab === 'perfil' && <ProfileView />}
-          <Outlet context={props} />
-        </motion.div>
-      </AnimatePresence>
+      <div className="responsive-container pb-20">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 bg-white p-6 sm:p-8 md:p-10 rounded-[2rem] sm:rounded-[2.5rem] md:rounded-[3rem] border border-slate-100 shadow-sm relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none group-hover:rotate-12 transition-transform duration-1000">
+            <TrendingUp className="size-[140px] sm:size-[180px] text-[#0a0a2e]" />
+          </div>
+
+          <div className="space-y-3 relative z-10">
+            <div className="flex items-center gap-4">
+              <div className="size-12 md:size-14 bg-[#0a0a2e] rounded-2xl md:rounded-[1.5rem] flex items-center justify-center shadow-2xl shadow-blue-900/20">
+                <DollarSign size={24} className="md:size-7 text-white" />
+              </div>
+              <div>
+                <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-[#0a0a2e] uppercase tracking-tighter italic leading-none">
+                  Financeiro
+                </h1>
+                <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-1">GSA IA Financial Control v4.0</p>
+              </div>
+            </div>
+            <p className="text-slate-500 text-xs sm:text-sm font-medium">
+              Gestão de faturas, comprovantes e fluxo de caixa estratégico.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-4 relative z-10">
+            <div className="bg-emerald-50 px-4 sm:px-6 py-3 sm:py-4 rounded-2xl sm:rounded-[1.5rem] border border-emerald-100 flex items-center gap-3 sm:gap-4">
+              <div className="size-8 sm:size-10 bg-emerald-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
+                <TrendingUp size={18} />
+              </div>
+              <div>
+                <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Saúde Financeira</p>
+                <p className="text-base sm:text-lg font-black text-emerald-700 uppercase italic leading-none">Excelente</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Grid de Cards de Estatísticas */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 mt-8">
+          <motion.div 
+            whileHover={{ y: -5 }}
+            className="responsive-card flex flex-col gap-6 sm:gap-8 group hover:shadow-xl transition-all"
+          >
+            <div className="flex justify-between items-start">
+              <div className="size-14 sm:size-16 bg-blue-50 rounded-2xl sm:rounded-[1.5rem] flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
+                <Clock className="size-7 sm:size-8" />
+              </div>
+              <div className="bg-blue-50 text-blue-600 p-2 rounded-xl">
+                <ArrowUpRight size={16} />
+              </div>
+            </div>
+            <div>
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Comprovantes Pendentes</p>
+              <h3 className="text-3xl sm:text-4xl font-black text-[#0a0a2e] tracking-tighter italic">
+                R$ {totalPending.toLocaleString('pt-BR')}
+              </h3>
+            </div>
+          </motion.div>
+
+          <motion.div 
+            whileHover={{ y: -5 }}
+            className="responsive-card flex flex-col gap-6 sm:gap-8 group hover:shadow-xl transition-all"
+          >
+            <div className="flex justify-between items-start">
+              <div className="size-14 sm:size-16 bg-amber-50 rounded-2xl sm:rounded-[1.5rem] flex items-center justify-center text-amber-600 group-hover:bg-amber-600 group-hover:text-white transition-all shadow-sm">
+                <ReceiptText className="size-7 sm:size-8" />
+              </div>
+              <div className="bg-amber-50 text-amber-600 p-2 rounded-xl">
+                <ArrowUpRight size={16} />
+              </div>
+            </div>
+            <div>
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Faturas em Aberto</p>
+              <h3 className="text-3xl sm:text-4xl font-black text-[#0a0a2e] tracking-tighter italic">
+                R$ {totalOpenInvoices.toLocaleString('pt-BR')}
+              </h3>
+            </div>
+          </motion.div>
+
+          <motion.div 
+            whileHover={{ y: -5 }}
+            className="responsive-card flex flex-col gap-6 sm:gap-8 group hover:shadow-xl transition-all"
+          >
+            <div className="flex justify-between items-start">
+              <div className="size-14 sm:size-16 bg-rose-50 rounded-2xl sm:rounded-[1.5rem] flex items-center justify-center text-rose-600 group-hover:bg-rose-600 group-hover:text-white transition-all shadow-sm">
+                <AlertTriangle className="size-7 sm:size-8" />
+              </div>
+              <div className="bg-rose-50 text-rose-600 p-2 rounded-xl">
+                <ArrowUpRight size={16} />
+              </div>
+            </div>
+            <div>
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Faturas Vencidas</p>
+              <h3 className="text-3xl sm:text-4xl font-black text-[#0a0a2e] tracking-tighter italic">
+                R$ {overdueInvoices.toLocaleString('pt-BR')}
+              </h3>
+            </div>
+          </motion.div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-8 sm:gap-12 mt-12">
+          <FinancialTransactions {...props} />
+          <OpenInvoices {...props} />
+          <RecentSales {...props} />
+        </div>
+      </div>
     </div>
   );
 }

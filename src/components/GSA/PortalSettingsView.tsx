@@ -125,7 +125,7 @@ export const PortalSettingsView = () => {
             <Save size={18} /> Salvar Alterações
           </button>
           <button 
-            onClick={() => window.open('/consulta', '_blank')}
+            onClick={() => window.open('/cp', '_blank')}
             className="px-6 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 py-4 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-2 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
           >
             <Eye size={18} /> Preview
@@ -141,12 +141,12 @@ export const PortalSettingsView = () => {
             <input 
               type="text" 
               readOnly 
-              value={`${getPublicOrigin()}/consulta`}
+              value={`${getPublicOrigin()}/cp`}
               className="flex-1 bg-white dark:bg-slate-800 border-none rounded-xl p-3 text-xs font-mono text-slate-600 dark:text-slate-300"
             />
             <button 
               onClick={() => {
-                navigator.clipboard.writeText(`${getPublicOrigin()}/consulta`);
+                navigator.clipboard.writeText(`${getPublicOrigin()}/cp`);
                 Swal.fire({
                   title: 'Copiado!',
                   text: 'Link copiado para a área de transferência.',

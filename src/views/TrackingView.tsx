@@ -388,7 +388,7 @@ export const TrackingView: React.FC<TrackingViewProps> = ({ saleId, onBack }) =>
                 <button 
                   onClick={() => {
                     const refId = currentProfile?.uid || 'convite';
-                    navigator.clipboard.writeText(`${getPublicOrigin()}/portal?ref=${refId}`);
+                    navigator.clipboard.writeText(`${getPublicOrigin()}/cp?ref=${refId}`);
                     Swal.fire('Link Copiado!', 'Partilhe com os seus amigos e ganhe bônus.', 'success');
                   }}
                   className="w-full py-4 bg-blue-500/20 text-white border border-white/20 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-white/10 transition-all flex items-center justify-center gap-2"
@@ -627,7 +627,7 @@ export const TrackingView: React.FC<TrackingViewProps> = ({ saleId, onBack }) =>
                         </button>
                         <button 
                           onClick={() => {
-                            navigator.clipboard.writeText(`Olá! Estou usando a GSA para recuperar meu crédito e recomendo. Use meu link para ganhar desconto: ${getPublicOrigin()}/portal?ref=${proc.cliente_id}`);
+                            navigator.clipboard.writeText(`Olá! Estou usando a GSA para recuperar meu crédito e recomendo. Use meu link para ganhar desconto: ${getPublicOrigin()}/cp?ref=${proc.cliente_id}`);
                             Swal.fire('Link Copiado!', 'Compartilhe com seus amigos e ganhe bônus para abater sua fatura.', 'success');
                           }}
                           className="w-full p-4 bg-emerald-500/20 text-white border border-white/20 rounded-2xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 hover:bg-white/10 transition-all"

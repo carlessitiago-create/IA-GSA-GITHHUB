@@ -7,12 +7,9 @@ import Swal from "sweetalert2";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-interface SupportModuleProps {
-  nivel: string;
-}
-
-const SupportModule: React.FC<SupportModuleProps> = ({ nivel }) => {
+const SupportModule: React.FC = () => {
   const { profile } = useAuth();
+  const nivel = profile?.nivel || 'CLIENTE';
   const [tickets, setTickets] = useState<any[]>([]);
   const [selectedTicket, setSelectedTicket] = useState<any>(null);
   const [messages, setMessages] = useState<any[]>([]);

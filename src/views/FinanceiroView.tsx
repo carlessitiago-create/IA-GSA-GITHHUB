@@ -1,12 +1,14 @@
 import React from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { FinancialTransactions } from '../components/dashboard/FinancialTransactions';
 import { OpenInvoices } from '../components/dashboard/OpenInvoices';
 import { RecentSales } from '../components/dashboard/RecentSales';
 import { DollarSign, Clock, AlertTriangle, ReceiptText, TrendingUp, ArrowUpRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-export const FinanceiroView = (props: any) => {
-    const { totalPending, totalOpenInvoices, sales } = props;
+export const FinanceiroView = () => {
+    const props = useOutletContext<any>();
+    const { totalPending = 0, totalOpenInvoices = 0, sales = [] } = props || {};
     const overdueInvoices = sales.filter((s: any) => s.status_pagamento === 'Vencida').reduce((acc: number, curr: any) => acc + curr.valor_total, 0);
 
     return (

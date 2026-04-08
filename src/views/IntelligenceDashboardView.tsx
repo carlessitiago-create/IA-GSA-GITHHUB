@@ -1,4 +1,5 @@
 import React from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { 
   Activity, 
   TrendingUp, 
@@ -27,17 +28,19 @@ import {
   Cell
 } from 'recharts';
 
-export const IntelligenceDashboardView = ({ 
-    showcaseLeads = [], 
-    statusHistory = [], 
-    allTransactions = [], 
-    processes = [], 
-    pendencies = [], 
-    allWallets = [], 
-    pendingTransactions = [], 
-    sales = [], 
-    allUsers = [] 
-}: any) => {
+export const IntelligenceDashboardView = () => {
+    const props = useOutletContext<any>();
+    const { 
+        showcaseLeads = [], 
+        statusHistory = [], 
+        allTransactions = [], 
+        processes = [], 
+        pendencies = [], 
+        allWallets = [], 
+        pendingTransactions = [], 
+        sales = [], 
+        allUsers = [] 
+    } = props || {};
     
     // Mock data for charts if real data is empty
     const salesData = sales.length > 0 ? sales.slice(-7).map((s: any) => ({

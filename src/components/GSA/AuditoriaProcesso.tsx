@@ -10,8 +10,8 @@ import Swal from 'sweetalert2';
 import { useRequirements } from '../../hooks/useRequirements';
 
 interface AuditoriaProcessoProps {
-  processo: OrderProcess;
-  clienteData: any;
+  processo?: OrderProcess;
+  clienteData?: any;
   onUpdate?: () => void;
   models?: Record<string, any>;
 }
@@ -20,6 +20,16 @@ export const AuditoriaProcesso: React.FC<AuditoriaProcessoProps> = ({ processo, 
   const { profile } = useAuth();
   const { config: requirementsConfig } = useRequirements();
   
+  if (!processo || !clienteData) {
+    return (
+      <div className="p-12 text-center bg-white rounded-[3rem] border border-dashed border-slate-200">
+        <Shield size={48} className="mx-auto text-slate-200 mb-4" />
+        <h3 className="text-lg font-black text-slate-800 uppercase italic">Auditoria SLA</h3>
+        <p className="text-slate-400 font-bold mt-2">Selecione um processo na Fila de Produção para iniciar a auditoria técnica.</p>
+      </div>
+    );
+  }
+
   // Prioriza os requisitos salvos no processo (snapshot da venda)
   const requisitos = (processo.dados_faltantes && processo.pendencias_iniciais && 
                      (processo.dados_faltantes.length > 0 || processo.pendencias_iniciais.length > 0))

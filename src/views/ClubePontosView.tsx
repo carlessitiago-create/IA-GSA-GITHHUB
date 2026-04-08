@@ -21,6 +21,7 @@ import { getPointsRules, getClubRewards, getPointHistory, redeemReward } from '.
 import { motion, AnimatePresence } from 'motion/react';
 import Swal from 'sweetalert2';
 import { transformImageUrl } from '../utils/imageUtils';
+import { ProgressaoClube } from '../components/GSA/ProgressaoClube';
 
 export function ClubePontosView() {
   const { profile, refreshProfile } = useAuth();
@@ -141,6 +142,9 @@ export function ClubePontosView() {
         {/* Background Decoration */}
         <Award className="absolute -right-20 -bottom-20 text-white/5 size-80 rotate-12 pointer-events-none" />
       </section>
+
+      {/* GAMIFICAÇÃO VISUAL */}
+      <ProgressaoClube pontosAtuais={profile?.saldo_pontos || 750} />
 
       {/* TABS DE NAVEGAÇÃO INTERNA */}
       <div className="flex items-center gap-4 p-1.5 bg-slate-100 rounded-2xl w-fit mx-auto sm:mx-0">

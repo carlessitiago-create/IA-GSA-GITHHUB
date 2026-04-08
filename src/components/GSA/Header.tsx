@@ -56,23 +56,31 @@ export const Header: React.FC<HeaderProps> = ({
         
         <h2 className="text-xl font-black text-slate-800 hidden sm:block italic tracking-tight uppercase">
           {selectedClientName ? selectedClientName :
-           view === 'clients' ? 'Meus Clientes' : 
-           view === 'new_sale' ? 'Nova Venda' : 
-           view === 'profile' ? 'Meu Perfil' :
-           view === 'audit_center' ? 'Auditoria/Pendências' :
-           view === 'users' ? 'Gestão de Usuários' :
-           view === 'service_factory' ? 'Fábrica de Serviços' :
-           view === 'showcase_leads' ? 'Leads da Vitrine' :
-           view === 'my_processes' ? 'Portal do Cliente' :
-           view === 'intelligence' ? 'Inteligência' :
-           view === 'referrals' ? 'Minhas Indicações' :
+           view === 'equipe' ? (currentProfile?.nivel === 'VENDEDOR' ? 'Meus Clientes' : currentProfile?.nivel === 'GESTOR' ? 'Minha Equipe' : 'Gestão de Equipe') : 
+           view === 'vendas-internas' ? 'Nova Venda' : 
+           view === 'perfil' ? 'Meu Perfil' :
+           view === 'operacional' ? 'Fila de Produção' :
+           view === 'pendencias' ? 'Pendências' :
+           view === 'auditoria' ? 'Auditoria SLA' :
+           view === 'fabrica' ? 'Fábrica de Serviços' :
+           view === 'leads' ? 'Leads e Indicações' :
+           view === 'processos-cliente' ? 'Meus Processos' :
+           view === 'inteligencia' ? 'Inteligência' :
+           view === 'conversao' ? 'Conversão' :
+           view === 'clube' ? 'Clube de Pontos' :
+           view === 'clube_pontos' ? 'Clube de Pontos' :
+           view === 'vitrine' ? 'Vitrine GSA' :
+           view === 'vitrine-cliente' ? 'Vitrine de Serviços' :
+           view === 'carteira' ? 'Minha Carteira' :
+           view === 'processos' ? 'Modelos de Processos' :
            view === 'financeiro' ? 'Financeiro' : 
-           view === 'settings' ? 'Configurações Globais' : 'Painel de Controle'}
+           view === 'suporte' ? 'Suporte' :
+           view === 'consulta-interna' ? 'Consulta Pública' : 'Painel de Controle'}
         </h2>
       </div>
 
       <div className="flex items-center gap-2 sm:gap-6">
-        {(currentProfile?.role === 'CLIENTE' || currentProfile?.role === 'ADM_MASTER') && (
+        {(currentProfile?.nivel === 'CLIENTE' || currentProfile?.nivel === 'ADM_MASTER') && (
           <div className="flex items-center gap-4 sm:gap-8">
             <div className="text-right pr-2 sm:pr-4 border-r border-slate-200">
               <p className="hidden sm:block text-[10px] font-black text-slate-400 uppercase tracking-widest">Clube GSA</p>

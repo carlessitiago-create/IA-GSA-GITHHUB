@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
-import { ShoppingCart, User, Package, CheckCircle, Search, UserPlus, X, ShieldCheck, Loader2, CreditCard, Banknote, QrCode, FileText, ChevronRight, ArrowLeft } from 'lucide-react';
+import { ShoppingCart, User, Package, CheckCircle, Search, UserPlus, X, ShieldCheck, Loader2, CreditCard, Banknote, QrCode, FileText, ChevronRight, ArrowLeft, AlertCircle } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { useAuth, UserProfile } from '../components/AuthContext';
 import { motion, AnimatePresence } from 'motion/react';
@@ -16,7 +17,9 @@ interface Service {
   categoria: string;
 }
 
-export function VendasPDVView({ preSelectedService, setPreSelectedService }: { preSelectedService?: ServiceData | null, setPreSelectedService?: (service: ServiceData | null) => void }) {
+export function VendasPDVView() {
+  const context = useOutletContext<any>();
+  const { preSelectedService, setPreSelectedService } = context || {};
   const { profile } = useAuth();
   const [services, setServices] = useState<ServiceData[]>([]);
   const [clients, setClients] = useState<UserProfile[]>([]);

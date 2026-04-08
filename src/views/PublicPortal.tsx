@@ -297,7 +297,7 @@ export const PublicPortal = ({ previewConfig }: { previewConfig?: PublicPortalCo
 
                         <button 
                           onClick={() => {
-                            navigator.clipboard.writeText(`${getPublicOrigin()}/portal?ref=${documento}`);
+                            navigator.clipboard.writeText(`${getPublicOrigin()}/cp?ref=${documento}`);
                             Swal.fire('Link Copiado!', 'Partilhe com os seus amigos e ganhe bônus.', 'success');
                           }}
                           className="w-full py-4 bg-white text-blue-700 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-blue-50 transition-all flex items-center justify-center gap-2 shadow-lg"
@@ -487,7 +487,7 @@ export const PublicPortal = ({ previewConfig }: { previewConfig?: PublicPortalCo
                     </p>
                     <button 
                       onClick={() => {
-                        navigator.clipboard.writeText(`Olá! Estou usando a GSA para recuperar meu crédito e recomendo. Use meu link para ganhar desconto: ${getPublicOrigin()}/portal?ref=${processo.cliente_id}`);
+                        navigator.clipboard.writeText(`Olá! Estou usando a GSA para recuperar meu crédito e recomendo. Use meu link para ganhar desconto: ${getPublicOrigin()}/cp?ref=${processo.cliente_id}`);
                         Swal.fire('Link Copiado!', 'Compartilhe com seus amigos e ganhe bônus para abater sua fatura.', 'success');
                       }}
                       className="w-full p-4 bg-emerald-500 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20"

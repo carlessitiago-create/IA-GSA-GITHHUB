@@ -98,7 +98,7 @@ export function ConsultaPublicaView() {
             </div>
             
             <button 
-              onClick={() => window.open('/consulta', '_blank')}
+              onClick={() => window.open('/cp', '_blank')}
               className="w-full md:w-auto flex items-center justify-center gap-2 px-6 py-4 bg-blue-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 active:scale-95"
             >
               <ExternalLink size={14} /> Abrir Portal Externo (Link Público)
@@ -109,7 +109,7 @@ export function ConsultaPublicaView() {
             <Info className="text-blue-600 mt-0.5" size={18} />
             <p className="text-xs text-blue-800 dark:text-blue-200 leading-relaxed">
               Este painel é para consulta administrativa rápida. O cliente final acessa através do link público: 
-              <span className="font-black underline ml-1">{getPublicOrigin()}/consulta</span>
+              <span className="font-black underline ml-1">{getPublicOrigin()}/cp</span>
             </p>
           </div>
         </>

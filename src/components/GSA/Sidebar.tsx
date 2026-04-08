@@ -3,13 +3,14 @@ import { Link, useLocation } from 'react-router-dom';
 import { 
   Shield, Users, PlusCircle, LayoutDashboard, History, Settings, 
   Package, DollarSign, TrendingUp, Bell, ClipboardList, Gift, 
-  ShoppingBag, LogOut, ChevronRight, Activity, AlertTriangle, X
+  ShoppingBag, LogOut, ChevronRight, Activity, AlertTriangle, X,
+  Factory, Trophy, Search, User
 } from 'lucide-react';
 
 
 export function Sidebar({ currentProfile, logout, onClose }: any) {
   const location = useLocation();
-  const role = currentProfile?.role || 'CLIENTE';
+  const role = currentProfile?.nivel || 'CLIENTE';
 
   const isActive = (path: string) => location.pathname === `/${path}`;
 
@@ -47,38 +48,65 @@ export function Sidebar({ currentProfile, logout, onClose }: any) {
       </div>
 
       <nav className="flex-1 overflow-y-auto px-4 space-y-8 custom-scrollbar">
-        {/* CATEGORIA: VENDAS */}
+        {/* CATEGORIA: COMERCIAL */}
         {(role !== 'CLIENTE') && (
           <div className="space-y-2">
-            <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Vendas</p>
-            <MenuItem to="new_sale" icon={PlusCircle} label="Nova Venda" />
-            <MenuItem to="clients" icon={Users} label="Clientes" />
+            <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Comercial</p>
+            <MenuItem to="vendas-internas" icon={PlusCircle} label="Nova Venda" />
+            <MenuItem to="leads" icon={TrendingUp} label="Leads e Indicações" />
+            <MenuItem to="vitrine" icon={ShoppingBag} label="Vitrine GSA" />
+            <MenuItem to="clube" icon={Gift} label="Clube de Pontos" />
           </div>
         )}
 
-        {/* CATEGORIA: GESTÃO */}
-        <div className="space-y-2">
-          <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Gestão</p>
-          <MenuItem to="audit_center" icon={ClipboardList} label="Auditoria/Pendências" />
-          <MenuItem to="processes_history" icon={History} label="Histórico de Processos" />
-          <MenuItem to="pendencies_warning" icon={AlertTriangle} label="Aviso de Pendências" color="text-amber-500" />
-        </div>
+        {/* CATEGORIA: OPERAÇÕES */}
+        {(role !== 'CLIENTE') && (
+          <div className="space-y-2">
+            <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Operações</p>
+            <MenuItem to="operacional" icon={Activity} label="Fila de Produção" />
+            <MenuItem to="pendencias" icon={AlertTriangle} label="Pendências" color="text-amber-500" />
+            <MenuItem to="auditoria" icon={Shield} label="Auditoria SLA" />
+          </div>
+        )}
 
-        {/* CATEGORIA: FINANCEIRO (ADM APENAS) */}
-        {(role.startsWith('ADM')) && (
+        {/* CATEGORIA: ENGENHARIA */}
+        {(role.startsWith('ADM') || role === 'GESTOR') && (
+          <div className="space-y-2">
+            <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Engenharia</p>
+            <MenuItem to="fabrica" icon={Factory} label="Fábrica de Serviços" />
+            <MenuItem to="processos" icon={ClipboardList} label="Modelos de Processos" />
+            <MenuItem to="equipe" icon={Users} label={role === 'VENDEDOR' ? 'Meus Clientes' : role === 'GESTOR' ? 'Minha Equipe' : 'Gestão de Equipe'} />
+            <MenuItem to="inteligencia" icon={LayoutDashboard} label="Inteligência" />
+            <MenuItem to="conversao" icon={TrendingUp} label="Conversão" />
+          </div>
+        )}
+
+        {/* CATEGORIA: FINANCEIRO */}
+        {(role.startsWith('ADM') || role === 'GESTOR' || role === 'VENDEDOR') && (
           <div className="space-y-2">
             <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Financeiro</p>
             <MenuItem to="financeiro" icon={DollarSign} label="Conciliação" color="text-emerald-500" />
-            <MenuItem to="intelligence" icon={Activity} label="Inteligência" />
           </div>
         )}
 
         {/* CATEGORIA: ÁREA DO CLIENTE */}
+        {role === 'CLIENTE' && (
+          <div className="space-y-2">
+            <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Minha Conta</p>
+            <MenuItem to="clube_pontos" icon={Trophy} label="Clube de Pontos" />
+            <MenuItem to="clube-cliente" icon={Gift} label="Indique e Ganhe" />
+            <MenuItem to="vitrine-cliente" icon={ShoppingBag} label="Vitrine de Serviços" />
+            <MenuItem to="processos-cliente" icon={ClipboardList} label="Meus Processos" />
+            <MenuItem to="carteira" icon={DollarSign} label="Minha Carteira" color="text-emerald-500" />
+          </div>
+        )}
+
+        {/* CATEGORIA: SISTEMA */}
         <div className="space-y-2">
-          <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Minha Conta</p>
-          <MenuItem to="my_processes" icon={LayoutDashboard} label="Meus Processos" />
-          <MenuItem to="wallet" icon={DollarSign} label="Carteira Digital" color="text-emerald-500" />
-          <MenuItem to="showcase" icon={ShoppingBag} label="Vitrine" />
+          <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Sistema</p>
+          <MenuItem to="consulta-interna" icon={Search} label="Consulta Pública" />
+          <MenuItem to="suporte" icon={Bell} label="Suporte" />
+          <MenuItem to="perfil" icon={User} label="Meu Perfil" />
         </div>
       </nav>
 
