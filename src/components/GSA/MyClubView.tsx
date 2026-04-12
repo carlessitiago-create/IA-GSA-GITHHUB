@@ -34,8 +34,10 @@ export const MyClubView: React.FC = () => {
   useEffect(() => {
     if (profile?.uid) {
       loadData();
+    } else if (profile === null) {
+      setIsLoading(false);
     }
-  }, [profile?.uid]);
+  }, [profile?.uid, profile]);
 
   const loadData = async () => {
     setIsLoading(true);

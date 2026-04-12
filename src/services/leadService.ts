@@ -104,26 +104,28 @@ export async function cadastrarCliente(data: Omit<ClientData, 'data_entrada' | '
     const visibilidade_uids = [data.especialista_id];
     let id_superior = null;
 
-    // Fetch specialist's hierarchy
-    let currentSuperiorId = data.especialista_id;
-    let depth = 0;
-    while (currentSuperiorId && depth < 5) { // Limit depth to prevent infinite loops
-      const userSnap = await getDoc(doc(db, 'usuarios', currentSuperiorId));
-      if (userSnap.exists()) {
-        const userData = userSnap.data();
-        if (depth === 0) {
-          id_superior = userData.id_superior || null;
-        }
-        
-        if (userData.id_superior && !visibilidade_uids.includes(userData.id_superior)) {
-          visibilidade_uids.push(userData.id_superior);
-          currentSuperiorId = userData.id_superior;
-          depth++;
+    // Fetch specialist's hierarchy - Skip if not authenticated to avoid permission errors
+    if (auth.currentUser) {
+      let currentSuperiorId = data.especialista_id;
+      let depth = 0;
+      while (currentSuperiorId && depth < 5) { // Limit depth to prevent infinite loops
+        const userSnap = await getDoc(doc(db, 'usuarios', currentSuperiorId));
+        if (userSnap.exists()) {
+          const userData = userSnap.data();
+          if (depth === 0) {
+            id_superior = userData.id_superior || null;
+          }
+          
+          if (userData.id_superior && !visibilidade_uids.includes(userData.id_superior)) {
+            visibilidade_uids.push(userData.id_superior);
+            currentSuperiorId = userData.id_superior;
+            depth++;
+          } else {
+            break;
+          }
         } else {
           break;
         }
-      } else {
-        break;
       }
     }
 

@@ -73,6 +73,8 @@ export function Sidebar({ currentProfile, logout, onClose }: any) {
         {(role.startsWith('ADM') || role === 'GESTOR') && (
           <div className="space-y-2">
             <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Engenharia</p>
+            <MenuItem to="saas-settings" icon={Settings} label="Configurações SaaS" color="text-blue-500" />
+            <MenuItem to="diagnostico" icon={LayoutDashboard} label="Landing Page SaaS" color="text-green-500" />
             <MenuItem to="fabrica" icon={Factory} label="Fábrica de Serviços" />
             <MenuItem to="processos" icon={ClipboardList} label="Modelos de Processos" />
             <MenuItem to="equipe" icon={Users} label={role === 'VENDEDOR' ? 'Meus Clientes' : role === 'GESTOR' ? 'Minha Equipe' : 'Gestão de Equipe'} />

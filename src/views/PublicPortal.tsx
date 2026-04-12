@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { formatDate } from '../lib/dateUtils';
 import { motion, AnimatePresence } from 'motion/react';
 import { Search, Gift, CheckCircle2, AlertCircle, ArrowRight, Shield, ShieldCheck, Play, User, Clock, Wallet, Bell, AlertTriangle, Trophy, Star, AlertOctagon, ShieldAlert, Zap, MessageCircle, FileText, Share2 } from 'lucide-react';
@@ -14,6 +15,7 @@ import Swal from 'sweetalert2';
 import { gerarRelatorioStatus } from '../services/statusPdfService';
 
 export const PublicPortal = ({ previewConfig }: { previewConfig?: PublicPortalConfig }) => {
+  const [searchParams] = useSearchParams();
   const [step, setStep] = useState<'SEARCH' | 'RESULT'>('SEARCH');
   const [loading, setLoading] = useState(false);
   const [documento, setDocumento] = useState('');
@@ -23,6 +25,13 @@ export const PublicPortal = ({ previewConfig }: { previewConfig?: PublicPortalCo
   const [pendencias, setPendencias] = useState<any[]>([]);
   const [notificacoes, setNotificacoes] = useState<any[]>([]);
   const [config, setConfig] = useState<PublicPortalConfig | null>(previewConfig || null);
+
+  useEffect(() => {
+    const ref = searchParams.get('ref');
+    if (ref) {
+      localStorage.setItem('gsa_referrer', ref);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (previewConfig) {

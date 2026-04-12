@@ -27,9 +27,20 @@ export interface PublicPortalConfig {
   status_labels?: { [key: string]: string }; // De: "EM_ANALISE" Para: "Estamos analisando seus documentos"
 }
 
+export interface SaasConfig {
+  modo_pagamento: 'MANUAL' | 'AUTOMATICO';
+  links_manuais: {
+    dividas: string;
+    total: string;
+    rating: string;
+  };
+  instrucoes_checkout: string;
+}
+
 const CONFIG_COLLECTION = 'platform_config';
 const DEFAULT_CONFIG_ID = 'settings';
 const PUBLIC_PORTAL_CONFIG_ID = 'portal_publico';
+const SAAS_CONFIG_ID = 'saas_settings';
 
 /**
  * Obtém as configurações do portal público
@@ -115,6 +126,55 @@ export async function getPlatformConfig(): Promise<PlatformConfig> {
 export async function updatePlatformConfig(data: Partial<PlatformConfig>) {
   try {
     const docRef = doc(db, CONFIG_COLLECTION, DEFAULT_CONFIG_ID);
+    await setDoc(docRef, data, { merge: true });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, CONFIG_COLLECTION);
+    throw error;
+  }
+}
+
+/**
+ * Obtém as configurações do SaaS
+ */
+export async function getSaasConfig(): Promise<SaasConfig> {
+  try {
+    const docRef = doc(db, CONFIG_COLLECTION, SAAS_CONFIG_ID);
+    const docSnap = await getDoc(docRef);
+    
+    if (docSnap.exists()) {
+      return docSnap.data() as SaasConfig;
+    }
+    
+    // Configuração padrão se não existir
+    const defaultConfig: SaasConfig = {
+      modo_pagamento: 'MANUAL',
+      links_manuais: {
+        dividas: 'https://link-dividas.com',
+        total: 'https://link-total.com',
+        rating: 'https://link-rating.com'
+      },
+      instrucoes_checkout: 'Após o pagamento, seu diagnóstico será liberado em até 24h.'
+    };
+    
+    try {
+      await setDoc(docRef, defaultConfig);
+    } catch (e) {
+      console.warn('Could not create default saas config');
+    }
+    
+    return defaultConfig;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.GET, CONFIG_COLLECTION);
+    throw error;
+  }
+}
+
+/**
+ * Atualiza as configurações do SaaS
+ */
+export async function updateSaasConfig(data: Partial<SaasConfig>) {
+  try {
+    const docRef = doc(db, CONFIG_COLLECTION, SAAS_CONFIG_ID);
     await setDoc(docRef, data, { merge: true });
   } catch (error) {
     handleFirestoreError(error, OperationType.UPDATE, CONFIG_COLLECTION);

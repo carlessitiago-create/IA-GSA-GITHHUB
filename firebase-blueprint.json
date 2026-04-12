@@ -110,6 +110,9 @@
         "margem_total": { "type": "number" },
         "metodo_pagamento": { "type": "string", "enum": ["PIX", "CARTEIRA"] },
         "status_pagamento": { "type": "string", "enum": ["Pendente", "Aguardando Confirmação", "Pago", "Débito em Carteira", "Vencida"] },
+        "mp_payment_id": { "type": "string", "description": "Mercado Pago Payment ID" },
+        "mp_status": { "type": "string", "description": "Mercado Pago Payment Status" },
+        "pago_em": { "type": "string", "format": "date-time" },
         "comprovante_url": { "type": "string" },
         "dias_atraso": { "type": "integer" },
         "timestamp": { "type": "string", "format": "date-time" }

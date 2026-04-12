@@ -20,6 +20,10 @@ service cloud.firestore {
         : 'GUEST';
     }
 
+    function isVisible(data) {
+      return isAuthenticated() && data.get('visibilidade_uids', []).hasAny([request.auth.uid]);
+    }
+
     function isAdmin() {
       return isAuthenticated() && (
         (request.auth.token.email in ["carlessitiago@gmail.com", "nomelimpo.gsa@gmail.com", "atende.gsa@gmail.com"] && request.auth.token.email_verified == true) ||
@@ -86,7 +90,7 @@ service cloud.firestore {
 
     // Status History (Histórico de Status de Processos)
     match /status_history/{historyId} {
-      allow read: if isAuthenticated();
+      allow read: if isAuthenticated() && (isAdmin() || isVisible(resource.data));
       allow write: if isAdmin();
     }
 
@@ -129,7 +133,7 @@ service cloud.firestore {
 
     // Reward Requests (Resgates do Clube)
     match /reward_requests/{requestId} {
-      allow read: if isAuthenticated() && (isAdmin() || isOwner(resource.data.usuario_id));
+      allow read: if isAuthenticated() && (isAdmin() || isOwner(resource.data.userId));
       allow create: if isAuthenticated();
       allow update: if isAdmin();
       allow delete: if isMaster();
@@ -137,11 +141,11 @@ service cloud.firestore {
 
     // Points History / Transactions
     match /points_history/{historyId} {
-      allow read: if isAuthenticated() && (isAdmin() || isOwner(resource.data.usuario_id));
+      allow read: if isAuthenticated() && (isAdmin() || isOwner(resource.data.userId));
       allow write: if isAdmin();
     }
     match /point_transactions/{transId} {
-      allow read: if isAuthenticated() && (isAdmin() || isOwner(resource.data.usuario_id));
+      allow read: if isAuthenticated() && (isAdmin() || isOwner(resource.data.userId));
       allow write: if isAdmin();
     }
 
@@ -170,7 +174,8 @@ service cloud.firestore {
     // Clients (Clientes e Trava de Carteira)
     match /clients/{clientId} {
       allow read: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor() || isOwner(resource.data.especialista_id));
-      allow create: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor());
+      allow create: if (isAuthenticated() && (isAdmin() || isGestor() || isVendedor())) || 
+                    (request.resource.data.especialista_id == "SaaS_GSA_IA");
       allow update: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor() || isOwner(resource.data.especialista_id));
       allow delete: if isMaster();
     }
@@ -182,10 +187,11 @@ service cloud.firestore {
       allow update, delete: if isMaster();
     }
 
-    // Processos (Workflow de Processos)
+    // Order Process
     match /order_processes/{processId} {
       allow read: if isAuthenticated() && (
         isAdmin() || 
+        isVisible(resource.data) ||
         isDocGestor(resource.data) || 
         isOwner(resource.data.vendedor_id) || 
         isOwner(resource.data.vendedorId) || 
@@ -226,7 +232,7 @@ service cloud.firestore {
 
     // Wallets (Financeiro)
     match /wallets/{walletId} {
-      allow read: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor() || isOwner(resource.data.userId));
+      allow read: if isAuthenticated() && (isAdmin() || isDocGestor(resource.data) || isOwner(resource.data.cliente_id) || isOwner(resource.data.userId));
       allow write: if isAdmin();
     }
 
@@ -266,10 +272,10 @@ service cloud.firestore {
 
     // Notifications
     match /notifications/{notifId} {
-      allow read: if isAuthenticated() && (isOwner(resource.data.usuario_id) || (resource.data.targetRole != null && getRole() == resource.data.targetRole));
+      allow read: if isAuthenticated() && (isOwner(resource.data.usuario_id) || isVisible(resource.data) || (resource.data.targetRole != null && getRole() == resource.data.targetRole));
       allow create: if true; // Permitir criação pública para notificações de aceite de proposta
-      allow update: if isAuthenticated() && isOwner(resource.data.usuario_id);
-      allow delete: if isAuthenticated() && isOwner(resource.data.usuario_id);
+      allow update: if isAuthenticated() && (isOwner(resource.data.usuario_id) || isVisible(resource.data));
+      allow delete: if isAuthenticated() && (isOwner(resource.data.usuario_id) || isVisible(resource.data));
     }
 
     // Referrals (Indicações)

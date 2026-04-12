@@ -10,7 +10,7 @@ import { transformImageUrl } from '../utils/imageUtils';
 import Swal from 'sweetalert2';
 
 export function ClubeMarketingView() {
-  const { profile } = useAuth();
+  const { profile, loading: authLoading } = useAuth();
   const [topReferrers, setTopReferrers] = useState<UserProfile[]>([]);
   const [referralCount, setReferralCount] = useState(0);
   const [referralGoal, setReferralGoal] = useState(10);
@@ -27,35 +27,48 @@ export function ClubeMarketingView() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
+    if (!profile?.uid) return;
+
     const fetchTopReferrers = async () => {
-      const q = query(
-        collection(db, 'usuarios'), 
-        where('nivel', '==', 'CLIENTE'),
-        orderBy('saldo_pontos', 'desc'),
-        limit(5)
-      );
-      const snapshot = await getDocs(q);
-      setTopReferrers(snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as UserProfile)));
+      try {
+        const q = query(
+          collection(db, 'usuarios'), 
+          where('nivel', '==', 'CLIENTE'),
+          orderBy('saldo_pontos', 'desc'),
+          limit(5)
+        );
+        const snapshot = await getDocs(q);
+        setTopReferrers(snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as UserProfile)));
+      } catch (err) {
+        console.error("Error fetching top referrers:", err);
+      }
     };
 
     const fetchUserReferrals = async () => {
-      if (!profile?.uid) return;
-      const q = query(collection(db, 'referrals'), where('cliente_origem_id', '==', profile.uid), orderBy('timestamp', 'desc'));
-      const snapshot = await getDocs(q);
-      const refs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Referral));
-      setMyReferrals(refs);
-      setReferralCount(refs.length);
+      try {
+        const q = query(collection(db, 'referrals'), where('cliente_origem_id', '==', profile.uid), orderBy('timestamp', 'desc'));
+        const snapshot = await getDocs(q);
+        const refs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Referral));
+        setMyReferrals(refs);
+        setReferralCount(refs.length);
+      } catch (err) {
+        console.error("Error fetching user referrals:", err);
+      }
     };
 
     const fetchConfig = async () => {
-      const snap = await getDoc(doc(db, 'platform_config', 'points_rules'));
-      if (snap.exists()) {
-        const data = snap.data();
-        if (data.premios) setPremios(data.premios);
-        if (data.valores) {
-          setRules(data.valores);
-          setBonusValue(data.valores.indicacao || 150);
+      try {
+        const snap = await getDoc(doc(db, 'platform_config', 'points_rules'));
+        if (snap.exists()) {
+          const data = snap.data();
+          if (data.premios) setPremios(data.premios);
+          if (data.valores) {
+            setRules(data.valores);
+            setBonusValue(data.valores.indicacao || 150);
+          }
         }
+      } catch (err) {
+        console.error("Error fetching config:", err);
       }
     };
 
@@ -63,6 +76,15 @@ export function ClubeMarketingView() {
     fetchUserReferrals();
     fetchConfig();
   }, [profile]);
+
+  if (authLoading || !profile) {
+    return (
+      <div className="h-96 flex flex-col items-center justify-center space-y-4">
+        <div className="size-12 border-4 border-blue-600/20 border-t-blue-600 rounded-full animate-spin" />
+        <p className="text-xs font-black uppercase tracking-widest text-slate-400">Carregando seu Clube...</p>
+      </div>
+    );
+  }
 
   const handleIndicacao = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,8 +134,19 @@ export function ClubeMarketingView() {
   };
 
   const handleCopyLink = () => {
-    if (!profile?.uid) return;
-    const link = `${getPublicOrigin()}/vendas?ref=${profile.uid}`;
+    if (!profile?.uid) {
+      Swal.fire({
+        title: 'Perfil não carregado',
+        text: 'Aguarde um momento enquanto carregamos seus dados para gerar seu link exclusivo.',
+        icon: 'info',
+        background: '#0a0a2e',
+        color: '#fff',
+        confirmButtonColor: '#3b82f6'
+      });
+      return;
+    }
+    
+    const link = `${getPublicOrigin()}/cp?ref=${profile.uid}`;
     
     const copyToClipboard = (text: string) => {
       if (navigator.clipboard && window.isSecureContext) {

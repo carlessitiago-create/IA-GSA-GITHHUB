@@ -28,7 +28,8 @@ export interface UserProfile {
   cnpj?: string;
   status_conta: 'APROVADO' | 'PENDENTE' | 'RECUSADO' | 'SUSPENSO' | 'BLOQUEADO';
   data_cadastro?: any;
-  saldo_pontos?: number; // Keep for legacy or points system
+  saldo_pontos?: number; 
+  saldo_carteira?: number;
   percentual_empresa?: number;
 }
 
@@ -90,10 +91,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
           
           if (docSnap && docSnap.exists()) {
-            const data = docSnap.data() as UserProfile;
+            const data = { uid: docSnap.id, ...docSnap.data() } as UserProfile;
             console.log("AuthContext: Profile found for UID", user.uid, ":", data.nivel, "Status:", data.status_conta);
-            // Removed hardcoded admin emails as per security audit.
-            // Roles are now managed exclusively via Firestore 'nivel' field.
             
             setProfile(data);
             setRealProfile(data);
@@ -298,7 +297,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const docRef = doc(db, 'usuarios', user.uid);
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
-        const data = docSnap.data() as UserProfile;
+        const data = { uid: docSnap.id, ...docSnap.data() } as UserProfile;
         setProfile(data);
         setRealProfile(data);
       }

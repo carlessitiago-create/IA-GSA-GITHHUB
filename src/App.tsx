@@ -11,6 +11,7 @@ const PortalCliente = lazy(() => import("./components/PortalCliente").then(m => 
 const PublicPortal = lazy(() => import("./views/PublicPortal").then(m => ({ default: m.PublicPortal })));
 const VitrinePublicaView = lazy(() => import("./views/VitrinePublicaView").then(m => ({ default: m.VitrinePublicaView })));
 const ProposalLandingPage = lazy(() => import("./views/ProposalLandingPage").then(m => ({ default: m.ProposalLandingPage })));
+const SaaSLandingPage = lazy(() => import("./views/SaaSLandingPage"));
 
 // Admin Views
 const FinanceiroView = lazy(() => import("./views/FinanceiroView").then(m => ({ default: m.FinanceiroView })));
@@ -53,6 +54,11 @@ const ProtectedRoute: React.FC = () => {
         <LoginView />
       </Suspense>
     );
+  }
+
+  // Se o usuário está logado mas o perfil ainda não carregou (e não estamos em loading global)
+  if (user && !profile) {
+    return <LoadingScreen />;
   }
 
   // Se o perfil não existe ou está incompleto (sem CPF), força completar perfil
@@ -104,6 +110,7 @@ const App: React.FC = () => {
         <Route path="/cp" element={<PublicPortal />} />
         <Route path="/vitrine-publica" element={<VitrinePublicaView />} />
         <Route path="/vendas" element={<VitrinePublicaView />} />
+        <Route path="/diagnostico" element={<SaaSLandingPage />} />
 
         {/* Rotas Protegidas (Exigem login e status OK) */}
         <Route element={<ProtectedRoute />}>
@@ -132,6 +139,7 @@ const App: React.FC = () => {
               <Route path="/conversao" element={<ConversionDashboardView />} />
               <Route path="/processos" element={<ProcessModelsManager />} />
               <Route path="/dashboard" element={<DashboardView />} />
+              <Route path="/saas-settings" element={<DashboardView view="saas_settings" />} />
 
               {/* Rotas Portal do Cliente Diretas */}
               <Route path="/clube_pontos" element={<ClubePontosView />} />

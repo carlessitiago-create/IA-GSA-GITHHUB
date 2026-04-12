@@ -358,7 +358,7 @@ export function ClubePontosView() {
             Cada amigo indicado que contratar um serviço GSA garante pontos extras e bônus em dinheiro na sua carteira.
           </p>
           <button 
-            onClick={() => navigate('/clube')}
+            onClick={() => navigate('/clube-cliente')}
             className="px-8 py-4 bg-white text-blue-600 rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-xl hover:scale-105 transition-all"
           >
             Começar a Indicar

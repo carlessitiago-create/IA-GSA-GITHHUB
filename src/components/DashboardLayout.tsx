@@ -184,12 +184,25 @@ export const DashboardLayout: React.FC = () => {
     }
 
     // Fetch status history
-    const qHistory = query(collection(db, 'status_history'), orderBy('timestamp', 'desc'));
-    const unsubHistory = onSnapshot(qHistory, (snapshot) => {
-      setStatusHistory(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    }, (error) => {
-      console.error("Erro de permissão no Firestore (history): ", error);
-    });
+    let qHistory = null;
+    if (nivel === 'ADM_MASTER' || nivel === 'ADM_GERENTE' || nivel === 'ADM_ANALISTA') {
+      qHistory = query(collection(db, 'status_history'), orderBy('timestamp', 'desc'));
+    } else if (uid) {
+      qHistory = query(
+        collection(db, 'status_history'),
+        where('visibilidade_uids', 'array-contains', uid),
+        orderBy('timestamp', 'desc')
+      );
+    }
+
+    let unsubHistory = () => {};
+    if (qHistory) {
+      unsubHistory = onSnapshot(qHistory, (snapshot) => {
+        setStatusHistory(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      }, (error) => {
+        console.error("Erro de permissão no Firestore (history): ", error);
+      });
+    }
 
     listarTodosUsuarios().then(users => {
       const filtered = users.filter(u => {
@@ -264,7 +277,7 @@ export const DashboardLayout: React.FC = () => {
     onMenuToggle: toggleSidebar,
     onLogout: logout,
     managerPhone: null,
-    walletBalance: 0, 
+    walletBalance: profile?.saldo_carteira || 0, 
     pointsBalance: profile?.saldo_pontos || 0,
     isNotificationOpen,
     setIsNotificationOpen,
