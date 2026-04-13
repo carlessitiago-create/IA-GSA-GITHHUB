@@ -193,7 +193,7 @@ export const ProposalLandingPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-blue-100">
       {/* Hero Section */}
-      <header className="bg-[#0a0a2e] text-white py-20 px-4 relative overflow-hidden">
+      <header className="bg-[#0a0a2e] text-white py-12 md:py-16 px-4 relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_50%,#3b82f6,transparent)] scale-150"></div>
         </div>
@@ -203,7 +203,7 @@ export const ProposalLandingPage: React.FC = () => {
             <div className="size-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-600/20">
               <ShieldCheck size={20} />
             </div>
-            <span className="font-black text-2xl uppercase italic tracking-tighter text-white">GSA IA</span>
+            <span className="font-black text-2xl uppercase italic tracking-tighter text-white">GSA Diagnóstico</span>
           </div>
 
           <motion.div 
@@ -236,15 +236,15 @@ export const ProposalLandingPage: React.FC = () => {
             className="text-blue-200 text-lg md:text-xl font-medium max-w-2xl mx-auto"
           >
             {proposal.is_public 
-              ? "Confira os detalhes desta oferta especial que preparamos para você iniciar seu processo hoje mesmo com a GSA IA."
-              : `Olá ${proposal.lead_nome.split(' ')[0]}, preparamos as melhores condições para você iniciar seu processo hoje mesmo com a GSA IA.`}
+              ? "Confira os detalhes desta oferta especial que preparamos para você iniciar seu processo hoje mesmo com a GSA Diagnóstico."
+              : `Olá ${proposal.lead_nome.split(' ')[0]}, preparamos as melhores condições para você iniciar seu processo hoje mesmo com a GSA Diagnóstico.`}
           </motion.p>
         </div>
       </header>
 
       {/* Vitrine Section */}
       {showcase && (
-        <section className="py-16 px-4 bg-slate-50 border-b border-slate-100">
+        <section className="py-12 px-4 bg-slate-50 border-b border-slate-100">
           <div className="max-w-4xl mx-auto space-y-12">
             <div className="flex items-center gap-3">
               <div className="size-8 bg-blue-600 rounded-lg flex items-center justify-center text-white">
@@ -331,7 +331,7 @@ export const ProposalLandingPage: React.FC = () => {
       </section>
 
       {/* Options Section */}
-      <section className="py-20 px-4">
+      <section className="py-12 px-4">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16 space-y-4">
             <h2 className="text-3xl md:text-5xl font-black text-[#0a0a2e] uppercase italic tracking-tighter">Escolha sua Condição</h2>
@@ -453,7 +453,7 @@ export const ProposalLandingPage: React.FC = () => {
                     <Star size={40} className="text-yellow-400 fill-yellow-400" />
                   </div>
                   <div className="space-y-4 text-center md:text-left">
-                    <h3 className="text-2xl md:text-3xl font-black uppercase italic tracking-tighter">Clube de Pontos GSA</h3>
+                    <h3 className="text-2xl md:text-3xl font-black uppercase tracking-tighter">Clube de Pontos GSA</h3>
                     <p className="text-blue-100 font-medium leading-relaxed max-w-3xl">
                       {proposal.clube_pontos_info}
                     </p>
@@ -493,7 +493,7 @@ export const ProposalLandingPage: React.FC = () => {
       </section>
 
       {/* Trust Section */}
-      <section className="py-20 bg-slate-50 px-4">
+      <section className="py-12 bg-slate-50 px-4">
         <div className="max-w-4xl mx-auto text-center space-y-12">
           <div className="flex flex-wrap justify-center gap-8 md:gap-16 opacity-50 grayscale">
             <div className="flex items-center gap-2">
@@ -515,7 +515,7 @@ export const ProposalLandingPage: React.FC = () => {
               "Nossa missão é simplificar processos complexos através da inteligência artificial, garantindo que você tenha o melhor resultado no menor tempo possível."
             </p>
             <div className="mt-6">
-              <p className="font-black text-[#0a0a2e] uppercase italic tracking-tighter">Equipe GSA IA</p>
+              <p className="font-black text-[#0a0a2e] uppercase tracking-tighter">Equipe GSA Diagnóstico</p>
             </div>
           </div>
         </div>
@@ -527,9 +527,9 @@ export const ProposalLandingPage: React.FC = () => {
           <div className="size-8 bg-[#0a0a2e] rounded-lg flex items-center justify-center text-white">
             <ShieldCheck size={16} />
           </div>
-          <span className="font-black text-lg uppercase italic tracking-tighter text-[#0a0a2e]">GSA IA</span>
+          <span className="font-black text-lg uppercase tracking-tighter text-[#0a0a2e]">GSA Diagnóstico</span>
         </div>
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">© 2026 GSA IA - Todos os direitos reservados</p>
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">© 2026 GSA Diagnóstico - Todos os direitos reservados</p>
       </footer>
 
       {/* Floating WhatsApp Button */}

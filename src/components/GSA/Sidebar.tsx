@@ -37,7 +37,7 @@ export function Sidebar({ currentProfile, logout, onClose }: any) {
           <div className="bg-blue-600 p-2 rounded-xl shadow-lg shadow-blue-600/20">
             <Shield className="text-white" size={24} />
           </div>
-          <h1 className="text-2xl font-black text-white tracking-tighter italic">GSA IA</h1>
+          <h1 className="text-2xl font-black text-white tracking-tighter italic">GSA Diagnóstico</h1>
         </div>
         <button 
           onClick={onClose}

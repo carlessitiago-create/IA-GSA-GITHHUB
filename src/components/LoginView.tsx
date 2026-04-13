@@ -207,7 +207,7 @@ const LoginView: React.FC = () => {
           <div className="size-16 bg-[#0a0a2e] rounded-2xl flex items-center justify-center shadow-xl mb-4">
             <Shield className="text-white w-8 h-8" />
           </div>
-          <h1 className="text-3xl font-black text-slate-800 tracking-tighter italic">GSA IA</h1>
+          <h1 className="text-3xl font-black text-slate-800 tracking-tighter italic">GSA Diagnóstico</h1>
           <p className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.3em] mt-2">
             {isRegistering ? 'Criação de Conta Segura' : 'Gestão e Processos'}
           </p>

@@ -148,7 +148,7 @@ export const PublicPortal = ({ previewConfig }: { previewConfig?: PublicPortalCo
             <div className="size-10 bg-yellow-400 rounded-xl flex items-center justify-center shadow-lg shadow-yellow-400/20">
               <ShieldCheck className="text-[#0a0a2e]" size={24} />
             </div>
-            <h1 className="text-xl sm:text-2xl font-black italic tracking-tighter uppercase">GSA IA</h1>
+            <h1 className="text-xl sm:text-2xl font-black italic tracking-tighter uppercase">GSA Diagnóstico</h1>
           </div>
           
           <button 

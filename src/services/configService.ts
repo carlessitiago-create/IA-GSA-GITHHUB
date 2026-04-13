@@ -31,8 +31,9 @@ export interface SaasConfig {
   modo_pagamento: 'MANUAL' | 'AUTOMATICO';
   links_manuais: {
     dividas: string;
-    total: string;
+    bacen: string;
     rating: string;
+    master: string;
   };
   instrucoes_checkout: string;
 }
@@ -141,20 +142,28 @@ export async function getSaasConfig(): Promise<SaasConfig> {
     const docRef = doc(db, CONFIG_COLLECTION, SAAS_CONFIG_ID);
     const docSnap = await getDoc(docRef);
     
-    if (docSnap.exists()) {
-      return docSnap.data() as SaasConfig;
-    }
-    
-    // Configuração padrão se não existir
     const defaultConfig: SaasConfig = {
       modo_pagamento: 'MANUAL',
       links_manuais: {
         dividas: 'https://link-dividas.com',
-        total: 'https://link-total.com',
-        rating: 'https://link-rating.com'
+        bacen: 'https://link-bacen.com',
+        rating: 'https://link-rating.com',
+        master: 'https://link-master.com'
       },
       instrucoes_checkout: 'Após o pagamento, seu diagnóstico será liberado em até 24h.'
     };
+
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      return {
+        ...defaultConfig,
+        ...data,
+        links_manuais: {
+          ...defaultConfig.links_manuais,
+          ...(data.links_manuais || {})
+        }
+      } as SaasConfig;
+    }
     
     try {
       await setDoc(docRef, defaultConfig);

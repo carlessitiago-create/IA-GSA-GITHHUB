@@ -47,6 +47,9 @@ const ProtectedRoute: React.FC = () => {
     return <LoadingScreen />;
   }
 
+  // Se estiver no domínio do SaaS e na raiz, não exige login aqui (será tratado nas rotas)
+  // Mas se tentar acessar uma rota interna, o login ainda é necessário
+  
   // Se não estiver logado, redireciona para login (ou renderiza LoginView)
   if (!user) {
     return (
@@ -100,17 +103,26 @@ const RootRedirect: React.FC = () => {
 };
 
 const App: React.FC = () => {
+  const hostname = window.location.hostname.toLowerCase();
+  // Detecta se estamos no subdomínio de diagnóstico (diagnostico.72hrs.online ou variações)
+  const isSaasDomain = hostname.startsWith('diagnostico.') || 
+                       hostname.startsWith('diagnóstico.') || 
+                       hostname.startsWith('xn--diagnstico-mbb.');
+
   return (
     <Suspense fallback={<LoadingScreen />}>
       <Routes>
         {/* Rotas Públicas (Acessíveis sem login) */}
+        {/* Se estiver no domínio do SaaS, a raiz é a Landing Page */}
+        {isSaasDomain && <Route path="/" element={<SaaSLandingPage />} />}
+        
+        <Route path="/diagnostico" element={<SaaSLandingPage />} />
         <Route path="/vendas/p/:slug" element={<ProposalLandingPage />} />
         <Route path="/p/:slug" element={<ProposalLandingPage />} />
         <Route path="/consulta" element={<PublicPortal />} />
         <Route path="/cp" element={<PublicPortal />} />
         <Route path="/vitrine-publica" element={<VitrinePublicaView />} />
         <Route path="/vendas" element={<VitrinePublicaView />} />
-        <Route path="/diagnostico" element={<SaaSLandingPage />} />
 
         {/* Rotas Protegidas (Exigem login e status OK) */}
         <Route element={<ProtectedRoute />}>

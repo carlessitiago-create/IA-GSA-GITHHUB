@@ -10,3 +10,14 @@ export const getPublicOrigin = () => {
   // Ensure it has a protocol
   return customDomain.startsWith('http') ? customDomain : `https://${customDomain}`;
 };
+
+/**
+ * Utility to get the dedicated SaaS diagnostic domain.
+ */
+export const getSaasOrigin = () => {
+  const hostname = window.location.hostname.toLowerCase();
+  if (hostname.includes('72h.online')) {
+    return 'https://diagnostico.72h.online';
+  }
+  return 'https://diagnostico.72hrs.online';
+};

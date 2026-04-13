@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { getSaasConfig, SaasConfig, updateSaasConfig } from '../../services/configService';
+import { getSaasOrigin } from '../../lib/urlUtils';
 import { Settings, Link, Info, Save, CheckCircle } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -10,6 +11,9 @@ export const AdminSaasSettings: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  const saasUrl = getSaasOrigin();
+  const displayUrl = saasUrl.replace('https://', '');
 
   useEffect(() => {
     getSaasConfig().then(data => {
@@ -52,6 +56,48 @@ export const AdminSaasSettings: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Link Público do SaaS */}
+        <div className="md:col-span-2 bg-blue-600 p-8 rounded-[2.5rem] text-white shadow-lg shadow-blue-600/20 relative overflow-hidden">
+          <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-4">
+              <div className="size-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md">
+                <Link size={24} />
+              </div>
+              <div>
+                <h3 className="text-xl font-black uppercase italic tracking-tight">Link Público do SaaS</h3>
+                <p className="text-blue-100 text-[10px] font-bold uppercase tracking-widest">Este é o link que você deve divulgar para seus clientes</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-3 bg-white/10 p-2 rounded-2xl border border-white/10 w-full md:w-auto">
+              <div className="flex flex-col">
+                <code className="px-4 py-1 text-sm font-mono font-bold text-white truncate">
+                  {displayUrl}
+                </code>
+                <a 
+                  href={window.location.origin + "/diagnostico"} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="px-4 text-[9px] font-black text-blue-200 uppercase tracking-tighter hover:text-white transition-colors"
+                >
+                  Testar Link Interno (Clique aqui)
+                </a>
+              </div>
+              <button 
+                onClick={() => {
+                  navigator.clipboard.writeText(saasUrl);
+                  setSuccess(true);
+                  setTimeout(() => setSuccess(false), 2000);
+                }}
+                className="bg-white text-blue-600 px-6 py-2 rounded-xl font-black text-xs uppercase hover:bg-blue-50 transition-all"
+              >
+                Copiar
+              </button>
+            </div>
+          </div>
+          <div className="absolute -right-10 -bottom-10 size-48 bg-white/10 rounded-full blur-3xl"></div>
+        </div>
+
         {/* Modo de Pagamento */}
         <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 space-y-6">
           <div className="flex items-center gap-3 mb-2">
@@ -105,18 +151,26 @@ export const AdminSaasSettings: React.FC = () => {
               <input 
                 type="text"
                 value={config?.links_manuais?.dividas || ''}
-                onChange={(e) => setConfig(prev => prev ? { ...prev, links_manuais: { ...prev.links_manuais, dividas: e.target.value } } : null)}
+                onChange={(e) => setConfig(prev => {
+                  if (!prev) return null;
+                  const links = prev.links_manuais || { dividas: '', bacen: '', rating: '', master: '' };
+                  return { ...prev, links_manuais: { ...links, dividas: e.target.value } };
+                })}
                 placeholder="https://pay.kiwify.com.br/..."
                 className="w-full bg-slate-50 border-none rounded-2xl p-4 text-sm font-bold text-[#0a0a2e] focus:ring-2 focus:ring-blue-600 outline-none"
               />
             </div>
 
             <div>
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Link: Diagnóstico TOTAL (R$ 297,00)</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Link: Diagnóstico BACEN (R$ 47,00)</label>
               <input 
                 type="text"
-                value={config?.links_manuais?.total || ''}
-                onChange={(e) => setConfig(prev => prev ? { ...prev, links_manuais: { ...prev.links_manuais, total: e.target.value } } : null)}
+                value={config?.links_manuais?.bacen || ''}
+                onChange={(e) => setConfig(prev => {
+                  if (!prev) return null;
+                  const links = prev.links_manuais || { dividas: '', bacen: '', rating: '', master: '' };
+                  return { ...prev, links_manuais: { ...links, bacen: e.target.value } };
+                })}
                 placeholder="https://pay.kiwify.com.br/..."
                 className="w-full bg-slate-50 border-none rounded-2xl p-4 text-sm font-bold text-[#0a0a2e] focus:ring-2 focus:ring-blue-600 outline-none"
               />
@@ -127,7 +181,26 @@ export const AdminSaasSettings: React.FC = () => {
               <input 
                 type="text"
                 value={config?.links_manuais?.rating || ''}
-                onChange={(e) => setConfig(prev => prev ? { ...prev, links_manuais: { ...prev.links_manuais, rating: e.target.value } } : null)}
+                onChange={(e) => setConfig(prev => {
+                  if (!prev) return null;
+                  const links = prev.links_manuais || { dividas: '', bacen: '', rating: '', master: '' };
+                  return { ...prev, links_manuais: { ...links, rating: e.target.value } };
+                })}
+                placeholder="https://pay.kiwify.com.br/..."
+                className="w-full bg-slate-50 border-none rounded-2xl p-4 text-sm font-bold text-[#0a0a2e] focus:ring-2 focus:ring-blue-600 outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Link: Diagnóstico Master (R$ 297,00)</label>
+              <input 
+                type="text"
+                value={config?.links_manuais?.master || ''}
+                onChange={(e) => setConfig(prev => {
+                  if (!prev) return null;
+                  const links = prev.links_manuais || { dividas: '', bacen: '', rating: '', master: '' };
+                  return { ...prev, links_manuais: { ...links, master: e.target.value } };
+                })}
                 placeholder="https://pay.kiwify.com.br/..."
                 className="w-full bg-slate-50 border-none rounded-2xl p-4 text-sm font-bold text-[#0a0a2e] focus:ring-2 focus:ring-blue-600 outline-none"
               />

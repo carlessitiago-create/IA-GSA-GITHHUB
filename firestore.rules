@@ -260,7 +260,8 @@ service cloud.firestore {
         isOwner(resource.data.cliente_id) ||
         isOwner(resource.data.clienteId)
       );
-      allow create: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor());
+      allow create: if (isAuthenticated() && (isAdmin() || isGestor() || isVendedor())) ||
+                    (request.resource.data.origem == 'SAAS_LANDING_PAGE');
       allow update: if isAuthenticated() && (
         isAdmin() || 
         isDocGestor(resource.data) || 
