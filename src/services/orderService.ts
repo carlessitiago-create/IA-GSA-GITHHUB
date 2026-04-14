@@ -581,6 +581,7 @@ export async function atualizarStatusProcesso(
     if (novoStatus === 'Concluído') {
       updates.data_conclusao = serverTimestamp();
       updates.url_nada_consta = urlArquivo;
+      updates.anexo_conclusao_url = urlArquivo;
     }
 
     if (statusAnterior === 'Pendente' && novoStatus !== 'Pendente') {

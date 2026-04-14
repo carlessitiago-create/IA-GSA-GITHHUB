@@ -35,6 +35,7 @@ const ClubePontosView = lazy(() => import("./views/ClubePontosView").then(m => (
 const ClubeMarketingView = lazy(() => import("./views/ClubeMarketingView").then(m => ({ default: m.ClubeMarketingView })));
 const ClientProcessesView = lazy(() => import("./components/GSA/ClientProcessesView").then(m => ({ default: m.ClientProcessesView })));
 const ClientWalletView = lazy(() => import("./components/GSA/ClientWalletView").then(m => ({ default: m.ClientWalletView })));
+const TabelaCustasView = lazy(() => import("./views/TabelaCustasView").then(m => ({ default: m.TabelaCustasView })));
 
 // Auth Components (Keeping them non-lazy for now as they are small and critical)
 import { PendingApproval, AccountRefused, AccountSuspended, CompleteProfile } from "./components/Auth";
@@ -105,9 +106,13 @@ const RootRedirect: React.FC = () => {
 const App: React.FC = () => {
   const hostname = window.location.hostname.toLowerCase();
   // Detecta se estamos no subdomínio de diagnóstico (diagnostico.72hrs.online ou variações)
-  const isSaasDomain = hostname.startsWith('diagnostico.') || 
-                       hostname.startsWith('diagnóstico.') || 
-                       hostname.startsWith('xn--diagnstico-mbb.');
+  const isSaasDomain = hostname.includes('diagnostico') || 
+                       hostname.includes('diagnóstico') || 
+                       hostname.includes('xn--diagnstico') ||
+                       hostname.includes('72h.online') ||
+                       hostname.includes('72hrs.online') ||
+                       hostname.includes('run.app') || // Adicionado para ambiente de desenvolvimento
+                       hostname.includes('localhost'); // Adicionado para ambiente local
 
   return (
     <Suspense fallback={<LoadingScreen />}>
@@ -143,6 +148,7 @@ const App: React.FC = () => {
               <Route path="/pendencias" element={<PendencyList />} />
               <Route path="/auditoria" element={<AuditoriaProcesso />} />
               <Route path="/clube" element={<MyClubView />} />
+              <Route path="/custas" element={<TabelaCustasView />} />
               <Route path="/consulta-interna" element={<ConsultaPublicaView />} />
               <Route path="/suporte" element={<SupportModule />} />
               <Route path="/fabrica" element={<ServiceFactoryView />} />

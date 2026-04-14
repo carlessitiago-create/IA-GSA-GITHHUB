@@ -142,6 +142,15 @@ export const PointsSettingsView = () => {
               <option value="esgotado">Esgotado</option>
             </select>
           </div>
+          <div className="space-y-1">
+            <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Público Alvo</label>
+            <select id="swal-input6" class="swal2-input !m-0 !w-full">
+              <option value="CLIENTE">Clientes</option>
+              <option value="VENDEDOR">Vendedores</option>
+              <option value="GESTOR">Gestores</option>
+              <option value="EQUIPE">Toda a Equipe (V+G)</option>
+            </select>
+          </div>
         </div>
       `,
       didOpen: () => {
@@ -165,6 +174,7 @@ export const PointsSettingsView = () => {
         let foto = (document.getElementById('swal-input3') as HTMLInputElement).value;
         const ordem = (document.getElementById('swal-input4') as HTMLInputElement).value;
         const status = (document.getElementById('swal-input5') as HTMLSelectElement).value;
+        const publico_alvo = (document.getElementById('swal-input6') as HTMLSelectElement).value;
         const fileInput = document.getElementById('swal-file') as HTMLInputElement;
         const file = fileInput.files?.[0];
         
@@ -199,7 +209,8 @@ export const PointsSettingsView = () => {
             pontos: Number(pontos), 
             foto: transformImageUrl(foto), 
             ordem: Number(ordem) || (premios.length + 1),
-            status 
+            status,
+            publico_alvo
           };
         } catch (error: any) {
           console.error("Erro no preConfirm (add):", error);
@@ -253,6 +264,15 @@ export const PointsSettingsView = () => {
               <option value="esgotado" ${premio.status === 'esgotado' ? 'selected' : ''}>Esgotado</option>
             </select>
           </div>
+          <div className="space-y-1">
+            <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Público Alvo</label>
+            <select id="swal-input6" class="swal2-input !m-0 !w-full">
+              <option value="CLIENTE" ${premio.publico_alvo === 'CLIENTE' ? 'selected' : ''}>Clientes</option>
+              <option value="VENDEDOR" ${premio.publico_alvo === 'VENDEDOR' ? 'selected' : ''}>Vendedores</option>
+              <option value="GESTOR" ${premio.publico_alvo === 'GESTOR' ? 'selected' : ''}>Gestores</option>
+              <option value="EQUIPE" ${premio.publico_alvo === 'EQUIPE' ? 'selected' : ''}>Toda a Equipe (V+G)</option>
+            </select>
+          </div>
         </div>
       `,
       didOpen: () => {
@@ -276,6 +296,7 @@ export const PointsSettingsView = () => {
         let foto = (document.getElementById('swal-input3') as HTMLInputElement).value;
         const ordem = (document.getElementById('swal-input4') as HTMLInputElement).value;
         const status = (document.getElementById('swal-input5') as HTMLSelectElement).value;
+        const publico_alvo = (document.getElementById('swal-input6') as HTMLSelectElement).value;
         const fileInput = document.getElementById('swal-file') as HTMLInputElement;
         const file = fileInput.files?.[0];
         
@@ -305,7 +326,8 @@ export const PointsSettingsView = () => {
             pontos: Number(pontos), 
             foto: transformImageUrl(foto), 
             ordem: Number(ordem),
-            status 
+            status,
+            publico_alvo
           };
         } catch (error: any) {
           console.error("Erro no preConfirm (edit):", error);
@@ -493,6 +515,7 @@ export const PointsSettingsView = () => {
                   <div className="inline-flex items-center gap-1 text-[10px] font-black text-yellow-600 bg-yellow-100 px-3 py-1 rounded-full">
                     <Trophy size={10} /> {p.pontos} PTS
                   </div>
+                  <span className="text-[8px] font-bold text-slate-400 uppercase">Público: {p.publico_alvo || 'CLIENTE'}</span>
                   <span className="text-[8px] font-bold text-slate-400 uppercase">Ordem: {p.ordem || 0}</span>
                 </div>
               </div>

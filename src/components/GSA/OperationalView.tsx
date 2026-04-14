@@ -109,18 +109,32 @@ export const OperationalView: React.FC = () => {
     if (novoStatus === 'Concluído') {
       const { value: fileUrl } = await Swal.fire({
         title: 'Finalizar Processo',
-        text: 'Para concluir, anexe o arquivo (Nada Consta/Comprovante). Isso liberará o resultado no Portal do Cliente.',
-        input: 'url',
-        inputLabel: 'URL do PDF Final',
-        inputPlaceholder: 'https://...',
+        text: 'Anexe o arquivo do diagnóstico (PDF ou Imagem). Isso liberará o resultado no Portal do Cliente.',
+        input: 'file',
+        inputAttributes: {
+          'accept': 'application/pdf,image/*',
+          'aria-label': 'Upload do diagnóstico'
+        },
         showCancelButton: true,
-        confirmButtonText: 'Concluir e Notificar Tudo',
+        confirmButtonText: 'Enviar e Concluir',
         confirmButtonColor: '#10b981',
         cancelButtonText: 'Voltar',
-        inputValidator: (value) => {
-          if (!value) return 'A URL do arquivo é obrigatória!';
-          if (!value.startsWith('http')) return 'A URL deve ser válida!';
-        }
+        showLoaderOnConfirm: true,
+        preConfirm: async (file) => {
+          if (!file) {
+            Swal.showValidationMessage('Você precisa selecionar um arquivo!');
+            return false;
+          }
+          try {
+            const { uploadFile } = await import('../../services/uploadService');
+            const path = `diagnosticos/${processo.protocolo.replace('#', '')}_${Date.now()}_${file.name}`;
+            const url = await uploadFile(file, path);
+            return url;
+          } catch (error: any) {
+            Swal.showValidationMessage(`Erro no upload: ${error.message}`);
+          }
+        },
+        allowOutsideClick: () => !Swal.isLoading()
       });
 
       if (fileUrl) {

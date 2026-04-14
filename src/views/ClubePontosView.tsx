@@ -43,7 +43,19 @@ export function ClubePontosView() {
         getPointsRules(),
         getPointHistory(profile.uid)
       ]);
-      setRewards(rewardsData);
+
+      // Filtrar prêmios por público alvo
+      const userRole = profile.nivel || 'CLIENTE';
+      const filteredRewards = rewardsData.filter((r: any) => {
+        const target = r.publico_alvo || 'CLIENTE';
+        if (userRole === 'CLIENTE') return target === 'CLIENTE';
+        if (userRole === 'GESTOR' || userRole === 'VENDEDOR') {
+          return target === userRole || target === 'EQUIPE';
+        }
+        return true; // ADM vê tudo
+      });
+
+      setRewards(filteredRewards);
       setRules(rulesData);
       setHistory(historyData);
     } catch (error) {

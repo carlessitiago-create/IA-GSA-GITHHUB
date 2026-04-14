@@ -134,6 +134,26 @@ export const AdminSaasSettings: React.FC = () => {
           <p className="text-[10px] text-slate-400 font-bold leading-relaxed uppercase">
             * O modo automático requer o plano Blaze do Firebase para funcionar corretamente com Cloud Functions.
           </p>
+
+          <div className="pt-4 border-t border-slate-100">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="size-8 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400">
+                <Settings size={18} />
+              </div>
+              <h3 className="font-black text-[#0a0a2e] uppercase italic tracking-tight">Vídeo de Vendas (VSL)</h3>
+            </div>
+            <div>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">ID do Vídeo no YouTube</label>
+              <input 
+                type="text"
+                value={config?.vsl_youtube_id || ''}
+                onChange={(e) => setConfig(prev => prev ? { ...prev, vsl_youtube_id: e.target.value } : null)}
+                placeholder="Ex: dQw4w9WgXcQ"
+                className="w-full bg-slate-50 border-none rounded-2xl p-4 text-sm font-bold text-[#0a0a2e] focus:ring-2 focus:ring-blue-600 outline-none"
+              />
+              <p className="text-[9px] text-slate-400 mt-2 font-medium">Insira apenas o ID do vídeo (o que vem após o v= na URL).</p>
+            </div>
+          </div>
         </div>
 
         {/* Configurações Manuais */}

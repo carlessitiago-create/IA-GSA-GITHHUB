@@ -245,43 +245,61 @@ const SaaSLandingPage: React.FC = () => {
   if (showPayment) {
     if (manualRedirectLink) {
       return (
-        <div className="min-h-screen bg-[#0f172a] flex items-center justify-center p-6 text-center">
-          <div className="max-w-xl w-full bg-slate-800/80 backdrop-blur-xl p-12 rounded-[40px] border-2 border-blue-500 shadow-[0_0_80px_rgba(59,130,246,0.15)] relative">
+        <div className="min-h-screen bg-[#0a0a2e] flex items-center justify-center p-6 text-center font-sans">
+          <div className="max-w-md w-full bg-[#161b33]/80 backdrop-blur-xl p-10 rounded-[2.5rem] border border-blue-500/50 shadow-[0_0_50px_rgba(59,130,246,0.1)] relative overflow-hidden">
             
-            <div className="w-20 h-20 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-8 animate-pulse">
-              <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
-              </svg>
-            </div>
+            <div className="absolute -top-24 -right-24 w-48 h-48 bg-blue-600/10 rounded-full blur-3xl"></div>
+            <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-blue-600/10 rounded-full blur-3xl"></div>
 
-            <h2 className="text-3xl font-black text-white mb-4 tracking-tight uppercase">
-              TUDO PRONTO!
-            </h2>
-            
-            <p className="text-slate-300 text-lg mb-10 leading-relaxed">
-              Clique no botão abaixo para finalizar o pagamento do seu <span className="text-blue-400 font-bold">{selectedPlan.nome}</span> em nossa plataforma segura.
-            </p>
-
-            <div className="space-y-6">
-              <a 
-                href={manualRedirectLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block w-full bg-blue-600 text-white py-5 rounded-2xl font-black text-xl hover:bg-blue-500 transition transform hover:scale-105 shadow-xl text-center no-underline"
-              >
-                IR PARA O PAGAMENTO
-              </a>
-              
-              <div className="bg-slate-900/50 p-4 rounded-xl border border-white/5">
-                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-2">Instruções</p>
-                <p className="text-slate-300 text-sm italic">
-                  {config?.instrucoes_checkout || "Após o pagamento, seu diagnóstico será liberado em até 24h."}
-                </p>
+            <div className="relative z-10">
+              <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-8 shadow-[0_0_30px_rgba(37,99,235,0.3)]">
+                <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                </svg>
               </div>
 
-              <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest">
-                Protocolo de Registro: {pixData?.protocolo}
+              <h2 className="text-3xl font-black text-white mb-6 tracking-tighter uppercase italic">
+                TUDO PRONTO!
+              </h2>
+              
+              <div className="bg-blue-600/10 border border-blue-500/30 p-4 rounded-2xl mb-6 text-left">
+                <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Seu Investimento:</p>
+                <p className="text-white font-black text-lg uppercase italic tracking-tighter">
+                  {selectedPlan.nome}
+                </p>
+                <div className="flex items-center gap-2 mt-2">
+                  <div className="size-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <p className="text-green-500 text-[10px] font-black uppercase tracking-widest">
+                    R$ {selectedPlan.preco.toFixed(2).replace('.', ',')} vira crédito imediato
+                  </p>
+                </div>
+              </div>
+
+              <p className="text-slate-300 text-sm mb-8 leading-relaxed font-medium">
+                Clique no botão abaixo para finalizar o pagamento em nossa plataforma segura.
               </p>
+
+              <div className="space-y-6">
+                <a 
+                  href={manualRedirectLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block w-full bg-blue-600 text-white py-5 rounded-2xl font-black text-lg hover:bg-blue-500 transition-all transform hover:scale-[1.02] active:scale-95 shadow-xl text-center no-underline uppercase tracking-widest"
+                >
+                  IR PARA O PAGAMENTO
+                </a>
+                
+                <div className="bg-slate-900/40 p-6 rounded-2xl border border-white/5">
+                  <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Instruções</p>
+                  <p className="text-slate-300 text-xs italic font-medium">
+                    {config?.instrucoes_checkout || "Após o pagamento, seu diagnóstico será liberado em até 24h."}
+                  </p>
+                </div>
+
+                <p className="text-slate-500 text-[9px] uppercase font-black tracking-[0.3em] opacity-50">
+                  Protocolo de Registro: {pixData?.protocolo}
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -330,19 +348,42 @@ const SaaSLandingPage: React.FC = () => {
     }
 
     return (
-      <div className="min-h-screen bg-[#0f172a] flex items-center justify-center p-6">
-        <div className="bg-slate-800 p-8 rounded-3xl border border-green-500/30 max-w-md w-full text-center shadow-2xl">
+      <div className="min-h-screen bg-[#0a0a2e] flex items-center justify-center p-6 font-sans">
+        <div className="bg-[#161b33] p-10 rounded-[2.5rem] border border-green-500/30 max-w-md w-full text-center shadow-[0_0_60px_rgba(34,197,94,0.1)] relative overflow-hidden">
           
+          <div className="absolute -top-24 -left-24 w-48 h-48 bg-green-600/5 rounded-full blur-3xl"></div>
+
           {/* Header do Pagamento */}
-          <div className="mb-6">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/10 text-green-500 text-xs font-black mb-4">
+          <div className="mb-8 relative z-10">
+            <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-green-500/10 text-green-500 text-[10px] font-black mb-6 border border-green-500/20 uppercase tracking-widest">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
               </span>
-              AGUARDANDO PAGAMENTO
+              Aguardando Pagamento em Tempo Real
             </div>
-            <h2 className="text-2xl font-black text-white uppercase tracking-tight">Escaneie ou Copie o PIX</h2>
+            <h2 className="text-3xl font-black text-white uppercase tracking-tighter italic mb-2">Escaneie ou Copie o PIX</h2>
+            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">
+              Mais de 500.000 brasileiros já realizaram este diagnóstico
+            </p>
+          </div>
+
+          {/* Info de Valor e Crédito */}
+          <div className="bg-slate-900/50 border border-white/5 p-4 rounded-2xl mb-6 text-left">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-[10px] font-black text-slate-500 uppercase">Plano Selecionado:</span>
+              <span className="text-xs font-black text-white uppercase italic">{selectedPlan.nome}</span>
+            </div>
+            <div className="flex justify-between items-center pt-2 border-t border-white/5">
+              <div className="flex flex-col">
+                <span className="text-[9px] font-black text-green-500 uppercase">Crédito de Volta:</span>
+                <span className="text-sm font-black text-white">R$ {selectedPlan.preco.toFixed(2).replace('.', ',')}</span>
+              </div>
+              <div className="flex flex-col text-right">
+                <span className="text-[9px] font-black text-amber-500 uppercase">Pontos GSA:</span>
+                <span className="text-sm font-black text-white">+{Math.floor(selectedPlan.preco * 10)} PTS</span>
+              </div>
+            </div>
           </div>
 
           {/* QR Code Real */}
@@ -450,37 +491,49 @@ const SaaSLandingPage: React.FC = () => {
             </motion.p>
           </div>
 
-          {/* VSL Placeholder */}
+          {/* VSL Section */}
           <motion.div 
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5, duration: 0.8 }}
-            className="max-w-5xl mx-auto aspect-video bg-slate-900 rounded-3xl md:rounded-[3rem] border border-white/10 shadow-[0_50px_100px_rgba(0,0,0,0.5)] overflow-hidden relative group cursor-pointer"
+            className="max-w-5xl mx-auto aspect-video bg-slate-900 rounded-3xl md:rounded-[3rem] border border-white/10 shadow-[0_50px_100px_rgba(0,0,0,0.5)] overflow-hidden relative group"
           >
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent z-10 opacity-60"></div>
-            <div className="absolute inset-0 flex items-center justify-center z-20">
-              <motion.div 
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                className="size-24 bg-green-500 rounded-full flex items-center justify-center shadow-[0_0_50px_rgba(34,197,94,0.4)] group-hover:bg-green-400 transition-all"
-              >
-                <PlayCircle className="text-slate-900 size-12 fill-slate-900/20" />
-              </motion.div>
-            </div>
-            <img 
-              src="https://picsum.photos/seed/vsl-finance/1920/1080?blur=2" 
-              className="w-full h-full object-cover opacity-30 group-hover:scale-105 transition-transform duration-700"
-              alt="VSL Preview"
-              referrerPolicy="no-referrer"
-            />
-            <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2">
-              <div className="flex gap-1">
-                {[1,2,3,4,5].map(i => <Star key={i} size={12} className="text-yellow-500 fill-yellow-500" />)}
+            {config?.vsl_youtube_id ? (
+              <iframe
+                src={`https://www.youtube.com/embed/${config.vsl_youtube_id}?autoplay=0&rel=0`}
+                title="VSL GSA Diagnóstico"
+                className="w-full h-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            ) : (
+              <div className="w-full h-full relative cursor-pointer">
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent z-10 opacity-60"></div>
+                <div className="absolute inset-0 flex items-center justify-center z-20">
+                  <motion.div 
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    className="size-24 bg-green-500 rounded-full flex items-center justify-center shadow-[0_0_50px_rgba(34,197,94,0.4)] group-hover:bg-green-400 transition-all"
+                  >
+                    <PlayCircle className="text-slate-900 size-12 fill-slate-900/20" />
+                  </motion.div>
+                </div>
+                <img 
+                  src="https://picsum.photos/seed/vsl-finance/1920/1080?blur=2" 
+                  className="w-full h-full object-cover opacity-30 group-hover:scale-105 transition-transform duration-700"
+                  alt="VSL Preview"
+                  referrerPolicy="no-referrer"
+                />
+                <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2">
+                  <div className="flex gap-1">
+                    {[1,2,3,4,5].map(i => <Star key={i} size={12} className="text-yellow-500 fill-yellow-500" />)}
+                  </div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white/60">
+                    ASSISTA E ENTENDA O SISTEMA
+                  </p>
+                </div>
               </div>
-              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white/60">
-                ASSISTA E ENTENDA O SISTEMA
-              </p>
-            </div>
+            )}
           </motion.div>
 
           <motion.div 
@@ -615,7 +668,7 @@ const SaaSLandingPage: React.FC = () => {
       </section>
 
       {/* OFERTA IRRESISTÍVEL - O INVESTIMENTO QUE VIRA CRÉDITO */}
-      <section id="ofertas" className="py-10 bg-[#0f172a] text-white relative overflow-hidden">
+      <section id="ofertas" className="py-20 bg-[#0a0a2e] text-white relative overflow-hidden">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full -z-10">
           <div className="absolute top-0 left-0 w-full h-full bg-green-500/5 blur-[150px] rounded-full"></div>
         </div>
@@ -623,26 +676,27 @@ const SaaSLandingPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-6">
           
           {/* Header de Valor Real */}
-          <div className="text-center mb-10 space-y-6">
-            <h2 className="text-3xl md:text-7xl font-black uppercase tracking-tighter bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
-              O INVESTIMENTO QUE VIRA CRÉDITO
+          <div className="text-center mb-16 space-y-8">
+            <h2 className="text-4xl md:text-9xl font-black uppercase tracking-tighter text-white leading-none">
+              O INVESTIMENTO <br className="hidden md:block" />
+              <span className="text-slate-400">QUE VIRA CRÉDITO</span>
             </h2>
-            <p className="text-slate-400 text-base md:text-xl max-w-2xl mx-auto font-medium px-4">
+            <p className="text-slate-400 text-lg md:text-2xl max-w-3xl mx-auto font-medium px-4 leading-relaxed">
               Não é um pagamento. É o seu primeiro passo para o crédito bancário. 100% do valor investido retorna como créditos para você usar na plataforma.
             </p>
             
-            <div className="flex flex-col items-center gap-4">
-              <div className="inline-flex items-center gap-4 bg-green-500/10 border border-green-500/20 px-6 py-3 rounded-full">
-                <Zap className="w-5 h-5 text-green-500 animate-pulse" />
-                <p className="text-green-500 font-bold text-sm md:text-base">
+            <div className="flex flex-col items-center gap-6">
+              <div className="inline-flex items-center gap-4 bg-green-500/5 border border-green-500/20 px-8 py-4 rounded-full shadow-[0_0_30px_rgba(34,197,94,0.05)]">
+                <Zap className="w-6 h-6 text-green-500" />
+                <p className="text-green-500 font-black text-xs md:text-base uppercase tracking-tight">
                   Todo valor pago retorna como crédito para contratar novos serviços
                 </p>
               </div>
 
-              <div className="bg-red-500/10 border border-red-500/20 py-2 px-6 rounded-full inline-flex items-center gap-3">
-                <div className="size-2 bg-red-500 rounded-full animate-ping"></div>
-                <p className="text-red-500 font-black text-[10px] tracking-widest uppercase">
-                  CONDIÇÃO PROMOCIONAL EXPIRA EM: {formatTime(timeLeft)}
+              <div className="bg-rose-500/10 border border-rose-500/20 py-3 px-8 rounded-full inline-flex items-center gap-4 shadow-xl">
+                <div className="size-3 bg-rose-500 rounded-full animate-pulse"></div>
+                <p className="text-rose-500 font-black text-[11px] md:text-xs tracking-[0.2em] uppercase">
+                  CONDIÇÃO PROMOCIONAL EXPIRA EM: <span className="font-mono">{formatTime(timeLeft)}</span>
                 </p>
               </div>
             </div>
@@ -740,29 +794,34 @@ const SaaSLandingPage: React.FC = () => {
           </div>
 
           {/* Rodapé de Confiança */}
-          <div className="mt-12 flex flex-col md:flex-row items-center justify-center gap-12 border-t border-white/5 pt-12">
-            <div className="flex flex-col items-center gap-4">
-              <div className="flex -space-x-4">
+          <div className="mt-20 flex flex-col md:flex-row items-center justify-center gap-16 border-t border-white/5 pt-20">
+            <div className="flex flex-col items-center gap-6">
+              <div className="flex -space-x-6">
                 {[1,2,3,4].map(i => (
-                  <div key={i} className="w-14 h-14 rounded-full border-4 border-[#0f172a] bg-slate-800 overflow-hidden shadow-xl">
-                    <img src={`https://i.pravatar.cc/100?img=${i+10}`} alt="User" referrerPolicy="no-referrer" />
+                  <div key={i} className="w-16 h-16 rounded-full border-4 border-[#0a0a2e] bg-slate-800 overflow-hidden shadow-2xl transform hover:scale-110 transition-transform">
+                    <img src={`https://i.pravatar.cc/100?img=${i+20}`} alt="User" referrerPolicy="no-referrer" />
                   </div>
                 ))}
               </div>
-              <div className="text-center">
-                <p className="text-sm text-slate-400 font-medium">
+              <div className="text-center space-y-2">
+                <p className="text-lg text-slate-400 font-bold tracking-tight">
                   <span className="text-white font-black">+500.000</span> brasileiros já retomaram o controle.
                 </p>
-                <div className="flex justify-center gap-1 mt-1">
-                  {[1,2,3,4,5].map(i => <Star key={i} size={10} className="text-yellow-500 fill-yellow-500" />)}
+                <div className="flex justify-center gap-1.5">
+                  {[1,2,3,4,5].map(i => <Star key={i} size={14} className="text-yellow-500 fill-yellow-500" />)}
                 </div>
               </div>
             </div>
             
-            <div className="flex flex-col items-center gap-4 bg-white/5 p-8 rounded-3xl border border-white/10 min-w-[300px]">
-              <Shield className="w-16 h-16 text-green-500 shadow-[0_0_30px_rgba(34,197,94,0.2)]" />
-              <div className="text-center">
-                <p className="text-sm font-black uppercase tracking-tight">Garantia Blindada GSA Soluções do Brasil</p>
+            <div className="flex flex-col items-center gap-6 bg-white/5 p-12 rounded-[3rem] border-2 border-green-500/30 min-w-[340px] shadow-[0_0_50px_rgba(34,197,94,0.1)] group hover:border-green-500/50 transition-all relative overflow-hidden">
+              <div className="absolute inset-0 bg-green-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <div className="relative">
+                <div className="absolute inset-0 bg-green-500/30 blur-3xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <Shield className="w-24 h-24 text-green-500 relative z-10 drop-shadow-[0_0_20px_rgba(34,197,94,0.6)] animate-pulse-slow" />
+              </div>
+              <div className="text-center relative z-10">
+                <p className="text-lg font-black uppercase tracking-tighter text-white italic leading-tight">Garantia Blindada</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-green-500 mt-1">GSA Soluções do Brasil</p>
               </div>
             </div>
           </div>
@@ -770,30 +829,30 @@ const SaaSLandingPage: React.FC = () => {
       </section>
 
       {/* CLUBE DE PONTOS */}
-      <section className="py-12 px-6 bg-slate-900/50 relative overflow-hidden">
+      <section className="py-24 px-6 bg-[#0a0a2e] relative overflow-hidden border-t border-white/5">
         <div className="absolute top-0 left-0 w-full h-full bg-blue-600/5 blur-[120px] rounded-full -z-10"></div>
-        <div className="max-w-4xl mx-auto text-center space-y-6">
+        <div className="max-w-4xl mx-auto text-center space-y-10">
           <motion.div 
             whileHover={{ rotate: 10, scale: 1.1 }}
-            className="size-24 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-[2rem] flex items-center justify-center mx-auto shadow-2xl shadow-blue-600/30"
+            className="size-28 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-[2.5rem] flex items-center justify-center mx-auto shadow-[0_20px_50px_rgba(37,99,235,0.3)]"
           >
-            <Trophy className="text-white" size={48} />
+            <Trophy className="text-white" size={56} />
           </motion.div>
-          <div className="space-y-4">
-            <h2 className="text-3xl md:text-6xl font-black uppercase tracking-tighter">
+          <div className="space-y-6">
+            <h2 className="text-4xl md:text-8xl font-black uppercase tracking-tighter leading-none italic">
               CLUBE DE <span className="text-blue-500">PONTOS GSA</span>
             </h2>
-            <p className="text-xl md:text-3xl font-black text-slate-300 tracking-tight">
-              "Quanto mais você resolve… mais você ganha"
+            <p className="text-xl md:text-4xl font-black text-white tracking-tight italic opacity-90">
+              "Quanto mais você resolve… <span className="text-slate-400">mais você ganha"</span>
             </p>
           </div>
-          <p className="text-slate-400 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed font-medium">
+          <p className="text-slate-400 text-lg md:text-2xl max-w-3xl mx-auto leading-relaxed font-medium">
             Cada diagnóstico e serviço contratado gera pontos que podem ser trocados por prêmios, descontos agressivos e consultorias exclusivas com nossos especialistas.
           </p>
-          <div className="pt-6">
-            <div className="inline-flex items-center gap-2 px-6 py-3 bg-blue-500/10 rounded-full border border-blue-500/20">
-              <Star className="text-blue-500 size-4 fill-blue-500" />
-              <span className="text-xs font-black uppercase tracking-widest text-blue-400">Programa de Fidelidade Inteligente</span>
+          <div className="pt-8">
+            <div className="inline-flex items-center gap-3 px-8 py-4 bg-blue-500/5 rounded-full border border-blue-500/20 shadow-xl">
+              <Star className="text-blue-500 size-5 fill-blue-500" />
+              <span className="text-xs md:text-sm font-black uppercase tracking-[0.2em] text-blue-400">Programa de Fidelidade Inteligente</span>
             </div>
           </div>
         </div>

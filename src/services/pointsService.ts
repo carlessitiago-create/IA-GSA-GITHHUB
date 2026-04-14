@@ -23,6 +23,7 @@ export interface ClubReward {
   ativo?: boolean;
   status?: 'disponivel' | 'ultimas_unidades' | 'esgotado';
   ordem?: number;
+  publico_alvo?: 'CLIENTE' | 'GESTOR' | 'VENDEDOR' | 'EQUIPE';
 }
 
 export interface PointTransaction {

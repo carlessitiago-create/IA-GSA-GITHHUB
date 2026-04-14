@@ -36,6 +36,7 @@ export interface SaasConfig {
     master: string;
   };
   instrucoes_checkout: string;
+  vsl_youtube_id?: string;
 }
 
 const CONFIG_COLLECTION = 'platform_config';
@@ -150,7 +151,8 @@ export async function getSaasConfig(): Promise<SaasConfig> {
         rating: 'https://link-rating.com',
         master: 'https://link-master.com'
       },
-      instrucoes_checkout: 'Após o pagamento, seu diagnóstico será liberado em até 24h.'
+      instrucoes_checkout: 'Após o pagamento, seu diagnóstico será liberado em até 24h.',
+      vsl_youtube_id: ''
     };
 
     if (docSnap.exists()) {

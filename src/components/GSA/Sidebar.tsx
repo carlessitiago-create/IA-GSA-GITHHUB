@@ -55,12 +55,12 @@ export function Sidebar({ currentProfile, logout, onClose }: any) {
             <MenuItem to="vendas-internas" icon={PlusCircle} label="Nova Venda" />
             <MenuItem to="leads" icon={TrendingUp} label="Leads e Indicações" />
             <MenuItem to="vitrine" icon={ShoppingBag} label="Vitrine GSA" />
-            <MenuItem to="clube" icon={Gift} label="Clube de Pontos" />
+            <MenuItem to="clube" icon={Gift} label={role.startsWith('ADM') ? "Clube de Pontos" : "Clube de Vantagens"} />
           </div>
         )}
 
         {/* CATEGORIA: OPERAÇÕES */}
-        {(role !== 'CLIENTE') && (
+        {(role.startsWith('ADM')) && (
           <div className="space-y-2">
             <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Operações</p>
             <MenuItem to="operacional" icon={Activity} label="Fila de Produção" />
@@ -70,16 +70,25 @@ export function Sidebar({ currentProfile, logout, onClose }: any) {
         )}
 
         {/* CATEGORIA: ENGENHARIA */}
-        {(role.startsWith('ADM') || role === 'GESTOR') && (
+        {(role.startsWith('ADM')) && (
           <div className="space-y-2">
             <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Engenharia</p>
             <MenuItem to="saas-settings" icon={Settings} label="Configurações SaaS" color="text-blue-500" />
             <MenuItem to="diagnostico" icon={LayoutDashboard} label="Landing Page SaaS" color="text-green-500" />
             <MenuItem to="fabrica" icon={Factory} label="Fábrica de Serviços" />
             <MenuItem to="processos" icon={ClipboardList} label="Modelos de Processos" />
-            <MenuItem to="equipe" icon={Users} label={role === 'VENDEDOR' ? 'Meus Clientes' : role === 'GESTOR' ? 'Minha Equipe' : 'Gestão de Equipe'} />
+            <MenuItem to="equipe" icon={Users} label="Gestão de Equipe" />
             <MenuItem to="inteligencia" icon={LayoutDashboard} label="Inteligência" />
             <MenuItem to="conversao" icon={TrendingUp} label="Conversão" />
+          </div>
+        )}
+
+        {/* CATEGORIA: GESTÃO (Para Gestores e Vendedores) */}
+        {(role === 'GESTOR' || role === 'VENDEDOR') && (
+          <div className="space-y-2">
+            <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Minha Gestão</p>
+            <MenuItem to="equipe" icon={Users} label={role === 'VENDEDOR' ? 'Meus Clientes' : 'Minha Equipe'} />
+            <MenuItem to="custas" icon={DollarSign} label="Tabela de Custas" color="text-amber-500" />
           </div>
         )}
 

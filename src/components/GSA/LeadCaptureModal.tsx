@@ -36,69 +36,77 @@ export const LeadCaptureModal: React.FC<ModalProps> = ({ isOpen, onClose, onConf
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-      <div className="bg-[#1e293b] w-full max-w-md rounded-3xl border border-white/10 p-8 shadow-2xl">
-        <h2 className="text-2xl font-bold mb-2 text-white">Diagnóstico: {plano} 🚀</h2>
-        <p className="text-slate-400 text-sm mb-6">Informe seus dados para gerar seu relatório personalizado.</p>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#0a0a2e]/90 backdrop-blur-md">
+      <div className="bg-[#161b33] w-full max-w-md rounded-[2.5rem] border border-blue-500/30 p-10 shadow-[0_0_60px_rgba(59,130,246,0.1)] relative overflow-hidden">
+        <div className="absolute -top-24 -right-24 w-48 h-48 bg-blue-600/10 rounded-full blur-3xl"></div>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-xs uppercase tracking-widest text-slate-500 mb-1">Nome Completo</label>
-            <input 
-              required
-              className="w-full bg-slate-900 border border-white/5 rounded-xl p-3 text-white focus:border-green-500 outline-none transition"
-              onChange={(e) => setFormData({...formData, nome: e.target.value})}
-              value={formData.nome}
-            />
-          </div>
-          <div>
-            <label className="block text-xs uppercase tracking-widest text-slate-500 mb-1">CPF ou CNPJ</label>
-            <input 
-              required
-              className="w-full bg-slate-900 border border-white/5 rounded-xl p-3 text-white focus:border-green-500 outline-none transition"
-              onChange={(e) => setFormData({...formData, documento: e.target.value})}
-              value={formData.documento}
-            />
-          </div>
-          <div>
-            <label className="block text-xs uppercase tracking-widest text-slate-500 mb-1">Data de Nascimento</label>
-            <input 
-              required
-              type="text"
-              placeholder="DD/MM/AAAA"
-              className="w-full bg-slate-900 border border-white/5 rounded-xl p-3 text-white focus:border-green-500 outline-none transition"
-              onChange={(e) => setFormData({...formData, data_nascimento: e.target.value})}
-              value={formData.data_nascimento}
-            />
-          </div>
-          <div>
-            <label className="block text-xs uppercase tracking-widest text-slate-500 mb-1">E-mail</label>
-            <input 
-              required
-              type="email"
-              className="w-full bg-slate-900 border border-white/5 rounded-xl p-3 text-white focus:border-green-500 outline-none transition"
-              onChange={(e) => setFormData({...formData, email: e.target.value})}
-              value={formData.email}
-            />
-          </div>
-          <div>
-            <label className="block text-xs uppercase tracking-widest text-slate-500 mb-1">WhatsApp</label>
-            <input 
-              required
-              placeholder="(00) 00000-0000"
-              className="w-full bg-slate-900 border border-white/5 rounded-xl p-3 text-white focus:border-green-500 outline-none transition"
-              onChange={(e) => setFormData({...formData, telefone: formatPhone(e.target.value)})}
-              value={formData.telefone}
-            />
-          </div>
+        <div className="relative z-10">
+          <h2 className="text-3xl font-black mb-2 text-white uppercase italic tracking-tighter">Diagnóstico GSA 🚀</h2>
+          <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-8">Plano: <span className="text-blue-400">{plano}</span></p>
+          
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-1">
+              <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">Nome Completo</label>
+              <input 
+                required
+                placeholder="Ex: João Silva"
+                className="w-full bg-slate-900/50 border border-white/5 rounded-2xl p-4 text-white focus:border-blue-500 outline-none transition font-medium text-sm"
+                onChange={(e) => setFormData({...formData, nome: e.target.value})}
+                value={formData.nome}
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">CPF ou CNPJ</label>
+              <input 
+                required
+                placeholder="000.000.000-00"
+                className="w-full bg-slate-900/50 border border-white/5 rounded-2xl p-4 text-white focus:border-blue-500 outline-none transition font-medium text-sm"
+                onChange={(e) => setFormData({...formData, documento: e.target.value})}
+                value={formData.documento}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">Nascimento</label>
+                <input 
+                  required
+                  type="date"
+                  className="w-full bg-slate-900/50 border border-white/5 rounded-2xl p-4 text-white focus:border-blue-500 outline-none transition font-medium text-sm"
+                  onChange={(e) => setFormData({...formData, data_nascimento: e.target.value})}
+                  value={formData.data_nascimento}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">WhatsApp</label>
+                <input 
+                  required
+                  placeholder="(00) 00000-0000"
+                  className="w-full bg-slate-900/50 border border-white/5 rounded-2xl p-4 text-white focus:border-blue-500 outline-none transition font-medium text-sm"
+                  onChange={(e) => setFormData({...formData, telefone: formatPhone(e.target.value)})}
+                  value={formData.telefone}
+                />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">E-mail</label>
+              <input 
+                required
+                type="email"
+                placeholder="seu@email.com"
+                className="w-full bg-slate-900/50 border border-white/5 rounded-2xl p-4 text-white focus:border-blue-500 outline-none transition font-medium text-sm"
+                onChange={(e) => setFormData({...formData, email: e.target.value})}
+                value={formData.email}
+              />
+            </div>
 
-          {error && <p className="text-red-500 text-xs font-bold">{error}</p>}
+            {error && <p className="text-rose-500 text-[10px] font-black uppercase tracking-widest text-center">{error}</p>}
 
-          <div className="flex gap-3 mt-8">
-            <button type="button" onClick={onClose} className="flex-1 py-3 text-slate-400 font-bold hover:text-white transition">Cancelar</button>
-            <button type="submit" className="flex-1 bg-green-500 text-slate-900 py-3 rounded-xl font-black hover:bg-green-400 transition shadow-lg shadow-green-500/20">GERAR AGORA</button>
-          </div>
-        </form>
+            <div className="flex flex-col gap-3 mt-8">
+              <button type="submit" className="w-full bg-blue-600 text-white py-5 rounded-2xl font-black uppercase text-xs tracking-[0.2em] hover:bg-blue-500 transition shadow-xl shadow-blue-600/20 active:scale-95">GERAR DIAGNÓSTICO AGORA</button>
+              <button type="button" onClick={onClose} className="w-full py-3 text-slate-500 font-black text-[10px] uppercase tracking-widest hover:text-white transition">Voltar</button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );
