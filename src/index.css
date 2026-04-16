@@ -50,7 +50,18 @@
 @layer base {
   body {
     background-color: #0a0a2e;
-    color: #f8fafc;
+    color: #f1f5f9;
     font-family: 'Inter', sans-serif;
+  }
+  
+  /* Garantir que textos de inputs e campos de formulário sejam visíveis (escuros no fundo claro) */
+  input, select, textarea {
+    color: #0f172a !important;
+    background-color: #ffffff !important;
+  }
+  
+  /* Labels por padrão */
+  label {
+    color: #64748b;
   }
 }

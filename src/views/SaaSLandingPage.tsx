@@ -29,7 +29,7 @@ import {
   Search,
   User
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 
 const SaaSLandingPage: React.FC = () => {
   const navigate = useNavigate();
@@ -451,9 +451,7 @@ const SaaSLandingPage: React.FC = () => {
       
       {/* Botão de Acesso Restrito (Premium Floating) */}
       <div className="fixed top-4 right-4 sm:top-6 sm:right-6 z-[100]">
-        <motion.button 
-          whileHover={{ scale: 1.05, y: -2 }}
-          whileTap={{ scale: 0.95 }}
+        <button 
           onClick={() => navigate('/financeiro')}
           className="group flex items-center gap-2 bg-[#0a0a2e]/60 backdrop-blur-xl border border-white/10 hover:border-blue-500/50 px-4 py-2 sm:px-6 sm:py-3 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.3)] hover:shadow-blue-500/20 transition-all cursor-pointer relative overflow-hidden"
         >
@@ -471,7 +469,7 @@ const SaaSLandingPage: React.FC = () => {
           <span className="text-[10px] font-black text-white uppercase italic tracking-tight sm:hidden">Entrar</span>
           
           <ChevronRight className="size-3 sm:size-4 text-white/30 group-hover:translate-x-1 transition-transform ml-1 sm:ml-2" />
-        </motion.button>
+        </button>
       </div>
 
       {/* HERO SECTION */}

@@ -3,7 +3,7 @@ import { useAuth } from "./AuthContext";
 import Swal from "sweetalert2";
 import { ConsultaPublicaView } from "../views/ConsultaPublicaView";
 import { Search, X, Shield, Mail, Lock, User, CreditCard, Calendar, Phone, ArrowLeft } from "lucide-react";
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 
 const LoginView: React.FC = () => {
   const { login, loginWithEmail, registerWithEmail, forgotPassword } = useAuth();
@@ -198,9 +198,7 @@ const LoginView: React.FC = () => {
       <div className="absolute top-[-10%] left-[-10%] w-80 h-80 bg-blue-600/10 rounded-full blur-3xl"></div>
       <div className="absolute bottom-[-10%] right-[-10%] w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl"></div>
 
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
+      <div 
         className={`w-full ${isRegistering ? 'max-w-2xl' : 'max-w-md'} bg-white rounded-[2.5rem] shadow-2xl p-6 sm:p-8 md:p-10 z-10 transition-all duration-500`}
       >
         <div className="flex flex-col items-center mb-8">
@@ -357,30 +355,25 @@ const LoginView: React.FC = () => {
               )}
             </button>
         </div>
-      </motion.div>
+      </div>
 
       {/* MODAL DE CONSULTA PÚBLICA */}
-      <AnimatePresence>
-        {showPublicSearch && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-[#0a0a2e] overflow-y-auto p-4 md:p-12"
+      {showPublicSearch && (
+        <div 
+          className="fixed inset-0 z-[100] bg-[#0a0a2e] overflow-y-auto p-4 md:p-12"
+        >
+          <button 
+            onClick={() => setShowPublicSearch(false)}
+            className="fixed top-8 right-8 text-white/50 hover:text-white transition-all z-[110]"
           >
-            <button 
-              onClick={() => setShowPublicSearch(false)}
-              className="fixed top-8 right-8 text-white/50 hover:text-white transition-all z-[110]"
-            >
-              <X size={40} />
-            </button>
-            
-            <div className="max-w-5xl mx-auto">
-              <ConsultaPublicaView />
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            <X size={40} />
+          </button>
+          
+          <div className="max-w-5xl mx-auto">
+            <ConsultaPublicaView />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

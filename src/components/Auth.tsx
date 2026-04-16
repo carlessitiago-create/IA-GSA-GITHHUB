@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { Shield, Clock, XCircle, Lock } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { doc, updateDoc } from 'firebase/firestore';

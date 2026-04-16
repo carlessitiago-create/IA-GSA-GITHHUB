@@ -34,14 +34,19 @@ class ErrorBoundary extends React.Component<Props, State> {
 
       try {
         if (this.state.error?.message) {
-          const parsed = JSON.parse(this.state.error.message);
-          if (parsed.error && parsed.error.includes('permission-denied')) {
-            errorMessage = 'Você não tem permissão para acessar estes dados ou sua sessão expirou.';
-            isPermissionError = true;
+          errorMessage = this.state.error.message;
+          try {
+            const parsed = JSON.parse(this.state.error.message);
+            if (parsed.error && parsed.error.includes('permission-denied')) {
+              errorMessage = 'Você não tem permissão para acessar estes dados ou sua sessão expirou.';
+              isPermissionError = true;
+            }
+          } catch (e) {
+            // Not a JSON error
           }
         }
       } catch (e) {
-        // Not a JSON error, use default
+        // Fallback
       }
 
       return (
