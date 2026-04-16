@@ -193,14 +193,28 @@ export const ProposalLandingPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-blue-100">
-      {/* Botão de Acesso Restrito (Discreto) */}
-      <div className="absolute top-6 right-6 z-50">
-        <button 
+      {/* Botão de Acesso Restrito (Premium Floating) */}
+      <div className="fixed top-4 right-4 sm:top-6 sm:right-6 z-[100]">
+        <motion.button 
+          whileHover={{ scale: 1.05, y: -2 }}
+          whileTap={{ scale: 0.95 }}
           onClick={() => navigate('/financeiro')}
-          className="text-[9px] md:text-[10px] font-black text-white/30 hover:text-white uppercase tracking-[0.2em] transition-all bg-white/5 hover:bg-white/10 px-4 py-2 rounded-full border border-white/5 backdrop-blur-sm"
+          className="group flex items-center gap-2 bg-[#0a0a2e]/60 backdrop-blur-xl border border-white/10 hover:border-blue-500/50 px-4 py-2 sm:px-6 sm:py-3 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.3)] hover:shadow-blue-500/20 transition-all cursor-pointer relative overflow-hidden"
         >
-          Acessar área do cliente
-        </button>
+          <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          
+          <div className="size-6 sm:size-8 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg group-hover:rotate-12 transition-transform">
+            <UserPlus className="size-3 sm:size-4" />
+          </div>
+          
+          <div className="text-left hidden sm:block">
+            <p className="text-[8px] font-black text-blue-400 uppercase tracking-widest leading-none mb-1">Acesso Restrito</p>
+            <p className="text-[10px] font-black text-white uppercase italic tracking-tight leading-none">Área do Cliente</p>
+          </div>
+          <span className="text-[10px] font-black text-white uppercase italic tracking-tight sm:hidden">Entrar</span>
+          
+          <ChevronRight className="size-3 sm:size-4 text-white/30 group-hover:translate-x-1 transition-transform ml-1 sm:ml-2" />
+        </motion.button>
       </div>
 
       {/* Hero Section */}

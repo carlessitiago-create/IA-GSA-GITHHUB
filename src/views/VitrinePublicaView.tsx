@@ -188,12 +188,25 @@ export const VitrinePublicaView: React.FC = () => {
           <div className="hidden md:flex items-center gap-8">
             <a href="#servicos" className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-blue-600 transition-colors">Serviços</a>
             <a href="#sobre" className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-blue-600 transition-colors">Sobre Nós</a>
-            <button 
+            
+            <motion.button 
+              whileHover={{ scale: 1.05, y: -2 }}
+              whileTap={{ scale: 0.95 }}
               onClick={() => navigate('/financeiro')}
-              className="text-[9px] md:text-[10px] font-black text-slate-400/40 hover:text-slate-900 uppercase tracking-[0.2em] transition-all bg-slate-50 hover:bg-slate-100 px-4 py-2 rounded-full border border-slate-200"
+              className="group flex items-center gap-2 bg-slate-900/5 backdrop-blur-xl border border-slate-200 hover:border-blue-500/50 px-5 py-2.5 rounded-2xl shadow-sm hover:shadow-blue-500/10 transition-all cursor-pointer relative overflow-hidden"
             >
-              Acessar área do cliente
-            </button>
+              <div className="size-8 bg-slate-900 rounded-xl flex items-center justify-center text-white shadow-lg group-hover:rotate-12 transition-transform">
+                <User className="size-4" />
+              </div>
+              
+              <div className="text-left">
+                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Acesso Restrito</p>
+                <p className="text-[10px] font-black text-slate-900 uppercase italic tracking-tight leading-none">Área do Cliente</p>
+              </div>
+              
+              <ChevronRight className="size-4 text-slate-300 group-hover:translate-x-1 transition-transform ml-2" />
+            </motion.button>
+
             <button className="bg-slate-900 text-white px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all">
               Falar com Consultor
             </button>
