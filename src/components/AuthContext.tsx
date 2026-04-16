@@ -31,6 +31,7 @@ export interface UserProfile {
   saldo_pontos?: number; 
   saldo_carteira?: number;
   percentual_empresa?: number;
+  permissoes_venda?: 'VAREJO' | 'ATACADO' | 'AMBOS';
 }
 
 interface AuthContextType {

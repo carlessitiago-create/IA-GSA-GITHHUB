@@ -8,9 +8,10 @@ interface FileUploadProps {
   onUpload: (file: File) => void;
   status: 'pendente' | 'resolvido';
   existingUrl?: string;
+  isUploading?: boolean;
 }
 
-export const FileUploader = ({ label, onUpload, status, existingUrl }: FileUploadProps) => {
+export const FileUploader = ({ label, onUpload, status, existingUrl, isUploading }: FileUploadProps) => {
   const [preview, setPreview] = useState<string | null>(existingUrl || null);
   const [file, setFile] = useState<File | null>(null);
 
@@ -30,9 +31,15 @@ export const FileUploader = ({ label, onUpload, status, existingUrl }: FileUploa
   const isPdf = preview === 'pdf' || (preview && preview.includes('.pdf')) || (preview && preview.includes('alt=media'));
 
   return (
-    <div className={`p-3 md:p-4 rounded-xl md:rounded-2xl border-2 transition-all ${
+    <div className={`p-3 md:p-4 rounded-xl md:rounded-2xl border-2 transition-all relative overflow-hidden ${
       status === 'resolvido' ? 'border-emerald-100 bg-emerald-50' : 'border-dashed border-slate-200 bg-white'
     }`}>
+      {isUploading && (
+        <div className="absolute inset-0 bg-white/80 backdrop-blur-[2px] z-20 flex flex-col items-center justify-center space-y-2">
+          <div className="size-6 border-2 border-blue-900/20 border-t-blue-900 rounded-full animate-spin"></div>
+          <span className="text-[8px] font-black text-blue-900 uppercase tracking-widest animate-pulse">Analisando...</span>
+        </div>
+      )}
       <div className="flex justify-between items-center mb-2 md:mb-3">
         <span className="text-[10px] md:text-xs font-black uppercase text-slate-500 italic truncate max-w-[80%]">{label}</span>
         {status === 'resolvido' && <CheckCircle className="text-emerald-500 size-4 md:size-[18px]" />}

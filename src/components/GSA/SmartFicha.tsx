@@ -11,6 +11,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { getDoc, doc } from 'firebase/firestore';
 import Swal from 'sweetalert2';
 import { useRequirements } from '../../hooks/useRequirements';
+import { analyzeDocument } from '../../services/aiService';
 
 import { obterModeloProcesso, ProcessModel } from '../../services/modelService';
 
@@ -113,21 +114,110 @@ export const SmartFicha: React.FC<SmartFichaProps> = ({ processos, clienteDados,
     setUploading(docLabel);
     try {
       const clientId = clienteDados.id || clienteDados.uid;
+      const primeiroProcesso = processos[0];
+
+      // 1. Análise de IA (Gemini) - Apenas para imagens
+      let analysisResult = null;
+      if (file.type.startsWith('image/')) {
+        try {
+          analysisResult = await analyzeDocument(file);
+        } catch (aiError) {
+          console.warn("Falha na análise de IA:", aiError);
+        }
+      }
+
+      // 2. Upload para Storage
       const storageRef = ref(storage, `documentos_clientes/${clientId}/${docLabel}_${Date.now()}`);
       await uploadBytes(storageRef, file);
       const url = await getDownloadURL(storageRef);
       
-      // Atualizar ficha com a URL do documento
-      const primeiroProcesso = processos[0];
-      await processarDadosFichaTecnica(primeiroProcesso.id, clientId, { [docLabel]: url });
+      // 3. Preparar dados de atualização
+      const updateData: any = { [docLabel]: url };
       
-      Swal.fire({
-        icon: 'success',
-        title: 'Documento Enviado',
-        text: `${requirementsConfig.document_labels[docLabel] || docLabel} foi carregado com sucesso.`,
-        timer: 2000,
-        showConfirmButton: false
-      });
+      // Se a IA extraiu dados, podemos sugerir o preenchimento ou salvar metadados
+      let analysisSummary = "";
+      if (analysisResult) {
+        const { extractedData, isAuthentic, authenticityScore } = analysisResult;
+        
+        // Salvar metadados de validação
+        updateData[`${docLabel}_validacao`] = {
+          status: isAuthentic ? 'validado_ia' : 'suspeito_ia',
+          score: authenticityScore,
+          data_analise: new Date().toISOString(),
+          notas: analysisResult.validationNotes,
+          tipo_detectado: analysisResult.documentType
+        };
+
+        // Mapear dados extraídos para campos da ficha se estiverem vazios
+        if (extractedData.nome && !clienteDados.nome_completo) {
+          updateData.nome_completo = extractedData.nome;
+          analysisSummary += `\n• Nome: ${extractedData.nome}`;
+        }
+        if (extractedData.cpf && !clienteDados.cpf) {
+          updateData.cpf = extractedData.cpf;
+          analysisSummary += `\n• CPF: ${extractedData.cpf}`;
+        }
+        if (extractedData.cnpj && !clienteDados.cnpj) {
+          updateData.cnpj = extractedData.cnpj;
+          analysisSummary += `\n• CNPJ: ${extractedData.cnpj}`;
+        }
+        if (extractedData.data_nascimento && !clienteDados.data_nascimento) {
+          updateData.data_nascimento = extractedData.data_nascimento;
+          analysisSummary += `\n• Data Nasc.: ${extractedData.data_nascimento}`;
+        }
+      }
+
+      // 4. Atualizar ficha no Firestore
+      await processarDadosFichaTecnica(primeiroProcesso.id, clientId, updateData);
+      
+      // 5. Feedback Visual
+      const docName = requirementsConfig.document_labels[docLabel] || docLabel;
+      
+      if (analysisResult && analysisResult.isAuthentic) {
+        Swal.fire({
+          icon: 'success',
+          title: 'Documento Validado!',
+          html: `
+            <div class="text-left space-y-2">
+              <p>O documento <b>${docName}</b> foi processado e validado com sucesso.</p>
+              ${analysisSummary ? `<div class="p-3 bg-slate-50 rounded-xl border border-slate-100 mt-2">
+                <p class="text-[10px] font-black uppercase text-slate-400 mb-1">Dados Extraídos:</p>
+                <p class="text-xs font-medium text-slate-700 whitespace-pre-line">${analysisSummary}</p>
+              </div>` : ''}
+              <p class="text-[10px] text-emerald-600 font-bold uppercase mt-2">✓ Autenticidade Verificada (${analysisResult.authenticityScore}%)</p>
+            </div>
+          `,
+          confirmButtonText: 'Excelente',
+          confirmButtonColor: '#0a0a2e'
+        });
+      } else if (analysisResult && !analysisResult.isAuthentic) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Atenção na Validação',
+          html: `
+            <div class="text-left space-y-2">
+              <p>O documento foi enviado, mas nossa análise automática identificou possíveis inconsistências.</p>
+              <div class="p-3 bg-rose-50 rounded-xl border border-rose-100 mt-2">
+                <p class="text-[10px] font-black uppercase text-rose-400 mb-1">Observações:</p>
+                <ul class="text-xs font-medium text-rose-700 list-disc ml-4">
+                  ${analysisResult.validationNotes.map(n => `<li>${n}</li>`).join('')}
+                </ul>
+              </div>
+              <p class="text-[10px] text-slate-500 italic mt-2">O documento passará por uma revisão manual da nossa equipe técnica.</p>
+            </div>
+          `,
+          confirmButtonText: 'Entendido',
+          confirmButtonColor: '#0a0a2e'
+        });
+      } else {
+        Swal.fire({
+          icon: 'success',
+          title: 'Documento Enviado',
+          text: `${docName} foi carregado com sucesso.`,
+          timer: 2000,
+          showConfirmButton: false
+        });
+      }
       
       if (onUpdate) onUpdate();
     } catch (error: any) {
@@ -235,6 +325,7 @@ export const SmartFicha: React.FC<SmartFichaProps> = ({ processos, clienteDados,
             label={requirementsConfig.document_labels[docLabel] || docLabel} 
             status={clienteDados[docLabel] ? 'resolvido' : 'pendente'}
             existingUrl={clienteDados[docLabel]}
+            isUploading={uploading === docLabel}
             onUpload={(file) => handleFileUpload(docLabel, file)}
           />
         ))}

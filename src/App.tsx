@@ -36,6 +36,7 @@ const ClubeMarketingView = lazy(() => import("./views/ClubeMarketingView").then(
 const ClientProcessesView = lazy(() => import("./components/GSA/ClientProcessesView").then(m => ({ default: m.ClientProcessesView })));
 const ClientWalletView = lazy(() => import("./components/GSA/ClientWalletView").then(m => ({ default: m.ClientWalletView })));
 const TabelaCustasView = lazy(() => import("./views/TabelaCustasView").then(m => ({ default: m.TabelaCustasView })));
+const VendaEmMassaView = lazy(() => import("./views/VendaEmMassaView").then(m => ({ default: m.VendaEmMassaView })));
 
 // Auth Components (Keeping them non-lazy for now as they are small and critical)
 import { PendingApproval, AccountRefused, AccountSuspended, CompleteProfile } from "./components/Auth";
@@ -143,6 +144,7 @@ const App: React.FC = () => {
               <Route path="/equipe" element={<GestaoEquipeView />} />
               <Route path="/inteligencia" element={<IntelligenceDashboardView />} />
               <Route path="/vendas-internas" element={<VendasPDVView />} />
+              <Route path="/venda-massa" element={<VendaEmMassaView />} />
               <Route path="/leads" element={<LeadsCentralView />} />
               <Route path="/operacional" element={<OperationalView />} />
               <Route path="/pendencias" element={<PendencyList />} />

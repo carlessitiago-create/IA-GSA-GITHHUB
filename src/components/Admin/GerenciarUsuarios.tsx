@@ -26,6 +26,7 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
   const [status, setStatus] = useState("APROVADO");
   const [managerId, setManagerId] = useState("");
   const [percentualEmpresa, setPercentualEmpresa] = useState<number>(0);
+  const [permissoesVenda, setPermissoesVenda] = useState<'VAREJO' | 'ATACADO' | 'AMBOS'>('VAREJO');
   const [listaGestores, setListaGestores] = useState<{id: string, nome: string}[]>([]);
   const [loading, setLoading] = useState(false);
   const { forgotPassword, profile: currentAdminProfile } = useAuth();
@@ -57,6 +58,7 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
       setStatus(userToEdit.status_conta || "APROVADO");
       setManagerId(userToEdit.id_superior || "");
       setPercentualEmpresa(userToEdit.percentual_empresa || 0);
+      setPermissoesVenda(userToEdit.permissoes_venda || "VAREJO");
     } else {
       setNome("");
       setEmail("");
@@ -64,6 +66,7 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
       setTelefone("");
       setDataNascimento("");
       setPercentualEmpresa(0);
+      setPermissoesVenda("VAREJO");
       // Nível padrão baseado em quem está criando
       if (currentAdminProfile?.nivel === 'GESTOR') {
         setRole("VENDEDOR");
@@ -124,7 +127,8 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
           cpf: cpf,
           telefone: telefone,
           data_nascimento: dataNascimento,
-          percentual_empresa: Number(percentualEmpresa)
+          percentual_empresa: Number(percentualEmpresa),
+          permissoes_venda: permissoesVenda
         };
 
         // Preservar ou atualizar id_superior logicamente
@@ -179,7 +183,8 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
           data_nascimento: dataNascimento,
           data_cadastro: new Date(),
           status_conta: "APROVADO",
-          percentual_empresa: Number(percentualEmpresa)
+          percentual_empresa: Number(percentualEmpresa),
+          permissoes_venda: permissoesVenda
         };
 
         // Se for vendedor, vincula ao gestor
@@ -561,6 +566,30 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
               />
               <div className="absolute right-4 sm:right-6 top-1/2 -translate-y-1/2 pointer-events-none text-blue-400 font-black text-xs">
                 %
+              </div>
+            </div>
+          </div>
+        )}
+
+        {['ADM_MASTER', 'ADM_GERENTE', 'GESTOR'].includes(currentAdminProfile?.nivel || '') && 
+         ['GESTOR', 'VENDEDOR'].includes(role) && (
+          <div className="space-y-1.5 sm:space-y-2">
+            <label className="text-[8px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 sm:ml-4 flex items-center gap-2">
+              <Shield size={10} className="sm:size-3" />
+              Permissões de Venda
+            </label>
+            <div className="relative">
+              <select 
+                value={permissoesVenda} 
+                onChange={(e) => setPermissoesVenda(e.target.value as any)}
+                className="w-full bg-slate-50 border border-slate-100 rounded-xl sm:rounded-[1.5rem] p-3.5 sm:p-5 text-xs sm:text-sm font-black text-blue-600 outline-none appearance-none focus:ring-4 focus:ring-blue-500/10 transition-all"
+              >
+                <option value="VAREJO">VAREJO (INDIVIDUAL)</option>
+                <option value="ATACADO">ATACADO (EM MASSA)</option>
+                <option value="AMBOS">AMBOS (MASSA E INDIVIDUAL)</option>
+              </select>
+              <div className="absolute right-4 sm:right-6 top-1/2 -translate-y-1/2 pointer-events-none text-blue-600">
+                <ArrowRight size={14} className="rotate-90 sm:size-[18px]" />
               </div>
             </div>
           </div>

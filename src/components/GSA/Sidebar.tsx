@@ -52,7 +52,14 @@ export function Sidebar({ currentProfile, logout, onClose }: any) {
         {(role !== 'CLIENTE') && (
           <div className="space-y-2">
             <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Comercial</p>
-            <MenuItem to="vendas-internas" icon={PlusCircle} label="Nova Venda" />
+            {/* Varejo - Individual */}
+            {(role.startsWith('ADM') || currentProfile?.permissoes_venda === 'VAREJO' || currentProfile?.permissoes_venda === 'AMBOS' || !currentProfile?.permissoes_venda) && (
+              <MenuItem to="vendas-internas" icon={PlusCircle} label="Nova Venda" />
+            )}
+            {/* Atacado - Em Massa */}
+            {(role.startsWith('ADM') || currentProfile?.permissoes_venda === 'ATACADO' || currentProfile?.permissoes_venda === 'AMBOS') && (
+              <MenuItem to="venda-massa" icon={Package} label="Venda em Massa" color="text-indigo-400" />
+            )}
             <MenuItem to="leads" icon={TrendingUp} label="Leads e Indicações" />
             <MenuItem to="vitrine" icon={ShoppingBag} label="Vitrine GSA" />
             <MenuItem to="clube" icon={Gift} label={role.startsWith('ADM') ? "Clube de Pontos" : "Clube de Vantagens"} />

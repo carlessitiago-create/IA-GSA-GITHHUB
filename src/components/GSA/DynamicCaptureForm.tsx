@@ -11,6 +11,7 @@ import { storage } from '../../firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import Swal from 'sweetalert2';
 import { useRequirements } from '../../hooks/useRequirements';
+import { analyzeDocument } from '../../services/aiService';
 
 interface DynamicCaptureFormProps {
   processos: OrderProcess[];
@@ -47,32 +48,120 @@ export const DynamicCaptureForm: React.FC<DynamicCaptureFormProps> = ({ processo
     setUploading(field);
     try {
       const clientId = clienteData.id || clienteData.uid;
+
+      // 1. Análise de IA (Gemini) - Apenas para imagens
+      let analysisResult = null;
+      if (file.type.startsWith('image/')) {
+        try {
+          analysisResult = await analyzeDocument(file);
+        } catch (aiError) {
+          console.warn("Falha na análise de IA:", aiError);
+        }
+      }
+
+      // 2. Upload para Storage
       const storageRef = ref(storage, `documentos_clientes/${clientId}/${field}_${Date.now()}`);
       await uploadBytes(storageRef, file);
       const url = await getDownloadURL(storageRef);
       
-      // Atualizar o cliente com a URL do documento
-      await updateCliente(clientId, { [field]: url });
+      // 3. Preparar dados de atualização
+      const updateData: any = { [field]: url };
       
-      // Notificar especialistas
+      let analysisSummary = "";
+      if (analysisResult) {
+        const { extractedData, isAuthentic, authenticityScore } = analysisResult;
+        
+        // Salvar metadados de validação
+        updateData[`${field}_validacao`] = {
+          status: isAuthentic ? 'validado_ia' : 'suspeito_ia',
+          score: authenticityScore,
+          data_analise: new Date().toISOString(),
+          notas: analysisResult.validationNotes,
+          tipo_detectado: analysisResult.documentType
+        };
+
+        // Mapear dados extraídos para campos da ficha se estiverem vazios
+        if (extractedData.nome && !clienteData.nome_completo) {
+          updateData.nome_completo = extractedData.nome;
+          analysisSummary += `\n• Nome: ${extractedData.nome}`;
+        }
+        if (extractedData.cpf && !clienteData.cpf) {
+          updateData.cpf = extractedData.cpf;
+          analysisSummary += `\n• CPF: ${extractedData.cpf}`;
+        }
+        if (extractedData.cnpj && !clienteData.cnpj) {
+          updateData.cnpj = extractedData.cnpj;
+          analysisSummary += `\n• CNPJ: ${extractedData.cnpj}`;
+        }
+        if (extractedData.data_nascimento && !clienteData.data_nascimento) {
+          updateData.data_nascimento = extractedData.data_nascimento;
+          analysisSummary += `\n• Data Nasc.: ${extractedData.data_nascimento}`;
+        }
+      }
+
+      // 4. Atualizar o cliente com a URL e dados extraídos
+      await updateCliente(clientId, updateData);
+      
+      // 5. Notificar especialistas
       for (const proc of processos) {
         if (proc.vendedor_id) {
           await sendNotification({
             usuario_id: proc.vendedor_id,
-            titulo: 'Documento Recebido',
-            mensagem: `O cliente ${clienteData.nome || 'N/A'} anexou o documento: ${requirementsConfig.document_labels[field] || field}.`,
+            titulo: 'Documento Recebido e Analisado',
+            mensagem: `O cliente ${clienteData.nome || 'N/A'} anexou ${requirementsConfig.document_labels[field] || field}. ${analysisResult ? `IA: ${analysisResult.isAuthentic ? 'Válido' : 'Suspeito'}` : ''}`,
             tipo: 'PROCESS'
           });
         }
       }
 
-      Swal.fire({
-        icon: 'success',
-        title: 'Documento Enviado',
-        text: `${requirementsConfig.document_labels[field] || field} foi carregado com sucesso.`,
-        timer: 2000,
-        showConfirmButton: false
-      });
+      // 6. Feedback Visual
+      const docName = requirementsConfig.document_labels[field] || field;
+      
+      if (analysisResult && analysisResult.isAuthentic) {
+        Swal.fire({
+          icon: 'success',
+          title: 'Documento Validado!',
+          html: `
+            <div class="text-left space-y-2">
+              <p>O documento <b>${docName}</b> foi processado e validado com sucesso.</p>
+              ${analysisSummary ? `<div class="p-3 bg-slate-50 rounded-xl border border-slate-100 mt-2">
+                <p class="text-[10px] font-black uppercase text-slate-400 mb-1">Dados Extraídos:</p>
+                <p class="text-xs font-medium text-slate-700 whitespace-pre-line">${analysisSummary}</p>
+              </div>` : ''}
+              <p class="text-[10px] text-emerald-600 font-bold uppercase mt-2">✓ Autenticidade Verificada (${analysisResult.authenticityScore}%)</p>
+            </div>
+          `,
+          confirmButtonText: 'Excelente',
+          confirmButtonColor: '#0a0a2e'
+        });
+      } else if (analysisResult && !analysisResult.isAuthentic) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Atenção na Validação',
+          html: `
+            <div class="text-left space-y-2">
+              <p>O documento foi enviado, mas nossa análise automática identificou possíveis inconsistências.</p>
+              <div class="p-3 bg-rose-50 rounded-xl border border-rose-100 mt-2">
+                <p class="text-[10px] font-black uppercase text-rose-400 mb-1">Observações:</p>
+                <ul class="text-xs font-medium text-rose-700 list-disc ml-4">
+                  ${analysisResult.validationNotes.map(n => `<li>${n}</li>`).join('')}
+                </ul>
+              </div>
+              <p class="text-[10px] text-slate-500 italic mt-2">O documento passará por uma revisão manual.</p>
+            </div>
+          `,
+          confirmButtonText: 'Entendido',
+          confirmButtonColor: '#0a0a2e'
+        });
+      } else {
+        Swal.fire({
+          icon: 'success',
+          title: 'Documento Enviado',
+          text: `${docName} foi carregado com sucesso.`,
+          timer: 2000,
+          showConfirmButton: false
+        });
+      }
       
       if (onUpdate) onUpdate();
     } catch (error: any) {

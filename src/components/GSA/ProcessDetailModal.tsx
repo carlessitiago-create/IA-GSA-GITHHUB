@@ -137,11 +137,23 @@ export const ProcessDetailModal: React.FC<ProcessDetailModalProps> = ({
                         }`}>
                           {isEnviado ? <CheckCircle2 size={18} /> : <Clock size={18} />}
                         </div>
-                        <span className={`text-[10px] font-black uppercase tracking-tight ${
-                          isEnviado ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-400'
-                        }`}>
-                          {requirementsConfig.document_labels[docKey] || docKey}
-                        </span>
+                        <div className="flex flex-col">
+                          <span className={`text-[10px] font-black uppercase tracking-tight ${
+                            isEnviado ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-400'
+                          }`}>
+                            {requirementsConfig.document_labels[docKey] || docKey}
+                          </span>
+                          {isEnviado && clienteData?.[`${docKey}_validacao`] && (
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <ShieldCheck size={10} className={clienteData[`${docKey}_validacao`].status === 'validado_ia' ? 'text-emerald-500' : 'text-rose-500'} />
+                              <span className={`text-[8px] font-black uppercase tracking-widest ${
+                                clienteData[`${docKey}_validacao`].status === 'validado_ia' ? 'text-emerald-500' : 'text-rose-500'
+                              }`}>
+                                IA: {clienteData[`${docKey}_validacao`].score}% {clienteData[`${docKey}_validacao`].status === 'validado_ia' ? 'AUTÊNTICO' : 'SUSPEITO'}
+                              </span>
+                            </div>
+                          )}
+                        </div>
                       </div>
                       {isEnviado && clienteData?.[docKey] && (
                         <a 

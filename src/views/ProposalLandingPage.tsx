@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { getProposalBySlug, ProposalData, checkCpfOwnership, updateProposalStatus } from '../services/proposalService';
@@ -32,6 +32,7 @@ import Swal from 'sweetalert2';
 
 export const ProposalLandingPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
   const [proposal, setProposal] = useState<ProposalData | null>(null);
   const [showcase, setShowcase] = useState<ShowcaseService | null>(null);
   const [loading, setLoading] = useState(true);
@@ -192,6 +193,16 @@ export const ProposalLandingPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-blue-100">
+      {/* Botão de Acesso Restrito (Discreto) */}
+      <div className="absolute top-6 right-6 z-50">
+        <button 
+          onClick={() => navigate('/financeiro')}
+          className="text-[9px] md:text-[10px] font-black text-white/30 hover:text-white uppercase tracking-[0.2em] transition-all bg-white/5 hover:bg-white/10 px-4 py-2 rounded-full border border-white/5 backdrop-blur-sm"
+        >
+          Acessar área do cliente
+        </button>
+      </div>
+
       {/* Hero Section */}
       <header className="bg-[#0a0a2e] text-white py-12 md:py-16 px-4 relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">

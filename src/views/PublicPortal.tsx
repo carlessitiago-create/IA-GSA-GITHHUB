@@ -152,10 +152,10 @@ export const PublicPortal = ({ previewConfig }: { previewConfig?: PublicPortalCo
           </div>
           
           <button 
-            onClick={() => window.location.href = '/'}
-            className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-white/10"
+            onClick={() => window.location.href = '/financeiro'}
+            className="text-[9px] md:text-[10px] font-black text-white/30 hover:text-white uppercase tracking-[0.2em] transition-all bg-white/5 hover:bg-white/10 px-4 py-2 rounded-full border border-white/5 backdrop-blur-sm"
           >
-            <User size={14} /> Área do Cliente
+            Acessar área do cliente
           </button>
         </div>
       </header>

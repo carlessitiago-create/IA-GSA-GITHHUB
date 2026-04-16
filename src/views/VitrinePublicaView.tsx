@@ -188,6 +188,12 @@ export const VitrinePublicaView: React.FC = () => {
           <div className="hidden md:flex items-center gap-8">
             <a href="#servicos" className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-blue-600 transition-colors">Serviços</a>
             <a href="#sobre" className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-blue-600 transition-colors">Sobre Nós</a>
+            <button 
+              onClick={() => navigate('/financeiro')}
+              className="text-[9px] md:text-[10px] font-black text-slate-400/40 hover:text-slate-900 uppercase tracking-[0.2em] transition-all bg-slate-50 hover:bg-slate-100 px-4 py-2 rounded-full border border-slate-200"
+            >
+              Acessar área do cliente
+            </button>
             <button className="bg-slate-900 text-white px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all">
               Falar com Consultor
             </button>

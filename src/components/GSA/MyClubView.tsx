@@ -46,7 +46,16 @@ export const MyClubView: React.FC = () => {
         getClubRewards(),
         getPointHistory(profile!.uid)
       ]);
-      setRewards(rewardsData);
+      
+      // Filtra prêmios por público alvo
+      const filteredRewards = (rewardsData as ClubReward[]).filter(reward => {
+        const target = reward.publico_alvo || 'CLIENTE';
+        if (target === 'EQUIPE') return ['GESTOR', 'VENDEDOR'].includes(profile?.nivel || '');
+        if (target === 'CLIENTE') return profile?.nivel === 'CLIENTE';
+        return profile?.nivel === target;
+      });
+
+      setRewards(filteredRewards);
       setHistory(historyData as PointTransaction[]);
     } catch (error) {
       console.error('Erro ao carregar dados do clube:', error);

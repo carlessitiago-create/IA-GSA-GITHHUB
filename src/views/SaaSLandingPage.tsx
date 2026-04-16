@@ -448,6 +448,16 @@ const SaaSLandingPage: React.FC = () => {
   return (
     <div className="bg-[#0f172a] text-white min-h-screen font-sans selection:bg-green-500/30 overflow-x-hidden">
       
+      {/* Botão de Acesso Restrito (Discreto) */}
+      <div className="absolute top-6 right-6 z-50">
+        <button 
+          onClick={() => navigate('/financeiro')}
+          className="text-[9px] md:text-[10px] font-black text-white/30 hover:text-white uppercase tracking-[0.2em] transition-all bg-white/5 hover:bg-white/10 px-4 py-2 rounded-full border border-white/5 backdrop-blur-sm"
+        >
+          Acessar área do cliente
+        </button>
+      </div>
+
       {/* HERO SECTION */}
       <section className="relative pt-12 pb-16 px-6 overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full -z-10">
