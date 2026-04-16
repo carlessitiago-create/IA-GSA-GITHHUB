@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { formatDate } from '../lib/dateUtils';
 import { motion, AnimatePresence } from 'motion/react';
 import { Search, Gift, CheckCircle2, AlertCircle, ArrowRight, Shield, ShieldCheck, Play, User, Clock, Wallet, Bell, AlertTriangle, Trophy, Star, AlertOctagon, ShieldAlert, Zap, MessageCircle, FileText, Share2, ChevronRight } from 'lucide-react';
@@ -16,6 +16,7 @@ import { gerarRelatorioStatus } from '../services/statusPdfService';
 
 export const PublicPortal = ({ previewConfig }: { previewConfig?: PublicPortalConfig }) => {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [step, setStep] = useState<'SEARCH' | 'RESULT'>('SEARCH');
   const [loading, setLoading] = useState(false);
   const [documento, setDocumento] = useState('');
@@ -154,7 +155,7 @@ export const PublicPortal = ({ previewConfig }: { previewConfig?: PublicPortalCo
           <motion.button 
             whileHover={{ scale: 1.05, y: -2 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => window.location.href = '/financeiro'}
+            onClick={() => navigate('/financeiro')}
             className="group flex items-center gap-2 bg-white/10 backdrop-blur-xl border border-white/10 hover:border-blue-500/50 px-3 py-1.5 sm:px-6 sm:py-3 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.3)] hover:shadow-blue-500/20 transition-all cursor-pointer relative overflow-hidden"
           >
             <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />

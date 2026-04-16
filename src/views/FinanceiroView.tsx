@@ -4,7 +4,7 @@ import { FinancialTransactions } from '../components/dashboard/FinancialTransact
 import { OpenInvoices } from '../components/dashboard/OpenInvoices';
 import { RecentSales } from '../components/dashboard/RecentSales';
 import { DollarSign, Clock, AlertTriangle, ReceiptText, TrendingUp, ArrowUpRight } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 
 export const FinanceiroView = () => {
     const props = useOutletContext<any>();
