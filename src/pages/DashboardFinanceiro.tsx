@@ -4,7 +4,7 @@ import { FinancialTransactions } from '../components/dashboard/FinancialTransact
 import { OpenInvoices } from '../components/dashboard/OpenInvoices';
 import { RecentSales } from '../components/dashboard/RecentSales';
 import { DollarSign, Clock, AlertTriangle, ReceiptText, TrendingUp, ArrowUpRight } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import AlertCenter from '../components/GSA/AlertCenter';
 import { useNavigate } from 'react-router-dom';
 

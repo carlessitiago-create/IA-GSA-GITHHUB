@@ -3,7 +3,7 @@ import { useAuth } from "./AuthContext";
 import Swal from "sweetalert2";
 import { ConsultaPublicaView } from "../views/ConsultaPublicaView";
 import { Search, X, Shield, Mail, Lock, User, CreditCard, Calendar, Phone, ArrowLeft } from "lucide-react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence } from 'framer-motion';
 
 const LoginView: React.FC = () => {
   const { login, loginWithEmail, registerWithEmail, forgotPassword } = useAuth();

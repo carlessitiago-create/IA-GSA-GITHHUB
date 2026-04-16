@@ -4,29 +4,18 @@ import { HashRouter } from 'react-router-dom';
 import App from './App.tsx';
 import './index.css';
 import { db } from './firebase';
-import { getDocFromServer, doc } from 'firebase/firestore';
-
 import { AuthProvider } from './components/AuthContext.tsx';
-
-async function testConnection() {
-  try {
-    await getDocFromServer(doc(db, 'test', 'connection'));
-    console.log("Firestore connection successful.");
-  } catch (error) {
-    if(error instanceof Error && error.message.includes('the client is offline')) {
-      console.error("Please check your Firebase configuration. The client is offline.");
-    }
-  }
-}
-
-testConnection();
+import ErrorBoundary from './components/ErrorBoundary.tsx';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <HashRouter>
-      <AuthProvider>
-        <App />
-      </AuthProvider>
-    </HashRouter>
+    <div id="debug-ready" style={{ display: 'none' }}></div>
+    <ErrorBoundary>
+      <HashRouter>
+        <AuthProvider>
+          <App />
+        </AuthProvider>
+      </HashRouter>
+    </ErrorBoundary>
   </StrictMode>,
 );

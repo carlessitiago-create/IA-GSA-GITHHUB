@@ -29,7 +29,7 @@ import {
   Search,
   User
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const SaaSLandingPage: React.FC = () => {
   const navigate = useNavigate();

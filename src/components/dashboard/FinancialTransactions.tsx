@@ -1,6 +1,6 @@
 import React from 'react';
 import { Check, X, ExternalLink, Receipt, ArrowUpRight, Clock } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 
 export const FinancialTransactions = ({ pendingTransactions, clients, confirmarTransacao, sendNotification, sales, allUsers, setNotification, setIsConfirmingTransaction, setTransactionReceipt, currentProfile }: any) => {
   return (
