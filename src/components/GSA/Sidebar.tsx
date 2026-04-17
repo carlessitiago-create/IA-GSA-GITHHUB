@@ -95,7 +95,6 @@ export function Sidebar({ currentProfile, logout, onClose }: any) {
           <div className="space-y-2">
             <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Minha Gestão</p>
             <MenuItem to="equipe" icon={Users} label={role === 'VENDEDOR' ? 'Meus Clientes' : 'Minha Equipe'} />
-            <MenuItem to="custas" icon={DollarSign} label="Tabela de Custas" color="text-amber-500" />
           </div>
         )}
 
@@ -104,6 +103,9 @@ export function Sidebar({ currentProfile, logout, onClose }: any) {
           <div className="space-y-2">
             <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Financeiro</p>
             <MenuItem to="financeiro" icon={DollarSign} label="Conciliação" color="text-emerald-500" />
+            {(role.startsWith('ADM') || role === 'GESTOR') && (
+              <MenuItem to="custas" icon={DollarSign} label="Tabela de Custas" color="text-amber-500" />
+            )}
           </div>
         )}
 

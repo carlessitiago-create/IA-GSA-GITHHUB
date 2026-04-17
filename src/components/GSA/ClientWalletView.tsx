@@ -16,9 +16,15 @@ import {
   ShieldCheck,
   Gift,
   Calendar,
-  AlertCircle
+  AlertCircle,
+  PlusCircle,
+  QrCode,
+  Copy,
+  Zap
 } from 'lucide-react';
 import { motion } from 'motion/react';
+import Swal from 'sweetalert2';
+import { gerarPagamentoPixGateway, processarVenda } from '../../services/vendaService';
 
 export const ClientWalletView: React.FC = () => {
   const { profile } = useAuth();
@@ -59,6 +65,109 @@ export const ClientWalletView: React.FC = () => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
   };
 
+  const handleAddBalance = async () => {
+    if (!profile) return;
+
+    const { value: amount } = await Swal.fire({
+      title: 'Adicionar Saldo',
+      text: 'Quanto você deseja recarregar via PIX?',
+      input: 'number',
+      inputLabel: 'Valor em R$',
+      inputPlaceholder: 'Ex: 100.00',
+      confirmButtonText: 'Gerar PIX',
+      showCancelButton: true,
+      confirmButtonColor: '#10b981',
+      inputValidator: (value) => {
+        if (!value || Number(value) < 10) {
+          return 'O valor mínimo é R$ 10,00';
+        }
+      }
+    });
+
+    if (amount) {
+      setLoading(true);
+      try {
+        const valor = Number(amount);
+        
+        // 1. Criar a venda de Recarga
+        const result = await processarVenda(
+          profile.uid,
+          [{
+            servicoId: 'RECARGA_CARTEIRA',
+            servicoNome: 'Recarga de Saldo',
+            precoBase: valor,
+            precoVenda: valor,
+            prazoEstimadoDias: 0
+          }],
+          'PIX',
+          undefined,
+          profile.nome_completo,
+          profile.cpf || '00000000000',
+          '2000-01-01'
+        );
+
+        // 2. Marcar venda como RECARGA (para o webhook saber o que fazer)
+        const { doc, updateDoc } = await import('firebase/firestore');
+        const { db } = await import('../../firebase');
+        await updateDoc(doc(db, 'sales', result.saleId), {
+           tipo_venda: 'RECARGA',
+           cliente_id: profile.uid
+        });
+
+        // 3. Gerar Pagamento Real
+        const pixResult = await gerarPagamentoPixGateway({
+          valor,
+          descricao: `Recarga de Saldo GSA - ${profile.nome_completo}`,
+          email: profile.email || 'financeiro@gsa.io',
+          nome: profile.nome_completo,
+          cpf: profile.cpf || '00000000000',
+          clienteId: profile.uid,
+          vendaId: result.saleId
+        });
+
+        // 4. Mostrar QR Code
+        await Swal.fire({
+          title: 'PIX Gerado com Sucesso!',
+          html: `
+            <div class="space-y-6 py-4">
+              <div class="flex flex-col items-center gap-4">
+                <p class="text-xs text-slate-500 font-bold uppercase tracking-widest text-center">Escaneie o QR Code abaixo</p>
+                <div class="p-4 bg-white rounded-3xl border-2 border-slate-100 shadow-xl">
+                  <img src="${pixResult.qr_code_base64}" alt="QR Code PIX" style="width: 180px; height: 180px;" />
+                </div>
+              </div>
+              
+              <div class="space-y-2">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Ou copie o código abaixo</p>
+                <div class="flex items-center gap-2 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                  <input id="wallet-pix-copy" class="text-[10px] font-mono text-slate-600 truncate w-full bg-transparent border-none outline-none" value="${pixResult.copy_paste}" readonly />
+                  <button onclick="document.getElementById('wallet-pix-copy').select(); document.execCommand('copy');" class="bg-[#0a0a2e] text-white p-2 rounded-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                  </button>
+                </div>
+              </div>
+
+              <div class="bg-blue-50 p-4 rounded-2xl flex items-center gap-3">
+                <div class="size-8 bg-blue-600 rounded-lg flex items-center justify-center text-white shrink-0">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.89 14 3.5l-2.3 8.1 8.3-1.1-10 11.4 2.3-8.1-8.3 1.1z"/></svg>
+                </div>
+                <p class="text-[10px] font-black text-blue-700 uppercase tracking-widest text-left">Seu saldo será atualizado automaticamente após a confirmação do pagamento via ${pixResult.gateway}.</p>
+              </div>
+            </div>
+          `,
+          confirmButtonText: 'ENTENDIDO',
+          confirmButtonColor: '#0a0a2e'
+        });
+
+      } catch (err: any) {
+        console.error("Erro ao adicionar saldo:", err);
+        Swal.fire('Erro', 'Não foi possível gerar o PIX de recarga. Tente novamente mais tarde.', 'error');
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
   return (
     <div className="space-y-10 pb-24">
       {/* HEADER DE SEÇÃO */}
@@ -97,10 +206,12 @@ export const ClientWalletView: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-4 pt-4">
-              <div className="bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 rounded-2xl flex items-center gap-2">
-                <div className="size-2 bg-emerald-500 rounded-full animate-pulse" />
-                <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Conta Protegida</span>
-              </div>
+              <button 
+                onClick={handleAddBalance}
+                className="bg-emerald-500 hover:bg-emerald-600 text-[#0a0a2e] px-6 py-2.5 rounded-2xl flex items-center gap-2 transition-all font-black uppercase text-[10px] tracking-widest shadow-xl shadow-emerald-500/20 active:scale-95"
+              >
+                <PlusCircle size={16} /> Adicionar Saldo
+              </button>
               <button className="text-[10px] font-black text-white/50 uppercase tracking-widest hover:text-white transition-colors">
                 Ver Detalhes
               </button>

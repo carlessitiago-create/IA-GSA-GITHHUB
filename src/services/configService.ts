@@ -29,12 +29,16 @@ export interface PublicPortalConfig {
 
 export interface SaasConfig {
   modo_pagamento: 'MANUAL' | 'AUTOMATICO';
+  gateway_ativo?: 'MERCADO_PAGO' | 'ASAAS';
   links_manuais: {
     dividas: string;
     bacen: string;
     rating: string;
     master: string;
   };
+  mercado_pago_public_key?: string;
+  mercado_pago_access_token?: string;
+  asaas_key?: string;
   instrucoes_checkout: string;
   vsl_youtube_id?: string;
 }

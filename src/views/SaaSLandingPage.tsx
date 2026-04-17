@@ -4,7 +4,7 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import confetti from 'canvas-confetti';
 import { db } from '../firebase';
 import { cadastrarCliente } from '../services/leadService';
-import { processarVenda, gerarPagamentoSaaS, registrarVendaManual } from '../services/vendaService';
+import { processarVenda, registrarVendaManual } from '../services/vendaService';
 import { getSaasConfig, SaasConfig } from '../services/configService';
 import { LeadCaptureModal } from '../components/GSA/LeadCaptureModal';
 import { trackLeadCapture, trackPurchase, trackInitiateCheckout } from '../utils/tracking';
@@ -198,18 +198,19 @@ const SaaSLandingPage: React.FC = () => {
         throw new Error("A venda foi processada, mas o servidor não retornou um ID de venda válido.");
       }
 
-      // 3. Gera o pagamento no Mercado Pago
-      console.log("Chamando gerarPagamentoSaaS...");
-      const mpResult = await gerarPagamentoSaaS({
+      // 3. Gera o pagamento no Gateway (Asaas / Mercado Pago)
+      console.log("Chamando gerarPagamentoPixGateway...");
+      const { gerarPagamentoPixGateway } = await import('../services/vendaService');
+      const mpResult = await gerarPagamentoPixGateway({
         valor: selectedPlan.preco,
-        plano: selectedPlan.nome,
+        descricao: `Plano ${selectedPlan.nome}`,
         email: leadData.email,
         nome: leadData.nome,
         cpf: leadData.documento,
         clienteId: novoCliente.id,
         vendaId: result.saleId
       });
-      console.log("Pagamento MP gerado:", mpResult);
+      console.log("Pagamento gerado:", mpResult);
 
       // Armazena info da venda para o próximo passo
       const info = { 
@@ -228,13 +229,17 @@ const SaaSLandingPage: React.FC = () => {
     } catch (err: any) {
       console.error("Erro crítico no fluxo SaaS:", err);
       
-      let errorMessage = "Erro desconhecido";
+      let errorMessage = "Erro inesperado ao processar seu pedido. Por favor, tente novamente.";
       
-      if (err.code) {
-        // Erro do Firebase Functions
-        errorMessage = `[${err.code}] ${err.message}`;
-      } else if (err.message) {
+      if (err.message && err.message.toLowerCase() !== 'internal') {
         errorMessage = err.message;
+      } else if (err.details) {
+        errorMessage = typeof err.details === 'string' ? err.details : JSON.stringify(err.details);
+      }
+      
+      const errorStr = errorMessage.toLowerCase();
+      if (errorStr.includes("offline")) {
+        errorMessage = "Falha na conexão com o banco de dados. Por favor, recarregue a página em alguns instantes (o banco de dados está sendo provisionado).";
       }
 
       setError(errorMessage);

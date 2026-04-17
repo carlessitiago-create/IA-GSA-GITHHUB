@@ -271,6 +271,18 @@ service cloud.firestore {
       allow delete: if isMaster();
     }
 
+    // Bulk Sales Batches (Lotes de Venda em Massa)
+    match /bulk_sales_batches/{batchId} {
+      allow read: if isAuthenticated() && (
+        isAdmin() || 
+        isGestor() || 
+        isOwner(resource.data.vendedor_id)
+      );
+      allow create: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor());
+      allow update: if isAuthenticated() && (isAdmin() || isGestor() || isOwner(resource.data.vendedor_id));
+      allow delete: if isMaster();
+    }
+
     // Notifications
     match /notifications/{notifId} {
       allow read: if isAuthenticated() && (isOwner(resource.data.usuario_id) || isVisible(resource.data) || (resource.data.targetRole != null && getRole() == resource.data.targetRole));

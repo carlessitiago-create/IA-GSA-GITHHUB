@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
-import { ShoppingCart, User, Package, CheckCircle, Search, UserPlus, X, ShieldCheck, Loader2, CreditCard, Banknote, QrCode, FileText, ChevronRight, ArrowLeft, AlertCircle } from 'lucide-react';
+import { gerarPagamentoPixGateway, processarVenda } from '../services/vendaService';
+import { ShoppingCart, User, Package, CheckCircle, Search, UserPlus, X, ShieldCheck, Loader2, CreditCard, Banknote, QrCode, FileText, ChevronRight, ArrowLeft, AlertCircle, Copy } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { useAuth, UserProfile } from '../components/AuthContext';
 import { motion, AnimatePresence } from 'motion/react';
@@ -130,7 +131,8 @@ export function VendasPDVView() {
         tem_empresa: false
       };
 
-      const docRef = await addDoc(collection(db, 'usuarios'), clientData);
+      const { cleanData } = await import('../firebase');
+      const docRef = await addDoc(collection(db, 'usuarios'), cleanData(clientData));
       
       // Notifica o ADM Master e a Hierarquia
       try {
@@ -278,6 +280,7 @@ export function VendasPDVView() {
         protocolo = result.protocolo;
       } else {
         // PROPOSTAS OU MÉTODOS NÃO SUPORTADOS PELO BACKEND (BOLETO/CARTÃO)
+        const { cleanData } = await import('../firebase');
         const saleData = {
           cliente_id: currentClient.uid,
           cliente_nome: currentClient.nome_completo,
@@ -298,66 +301,125 @@ export function VendasPDVView() {
           is_proposta: isProposal
         };
 
-        const saleRef = await addDoc(collection(db, 'sales'), saleData);
+        const saleRef = await addDoc(collection(db, 'sales'), cleanData(saleData));
         saleId = saleRef.id;
         protocolo = saleData.protocolo;
       }
 
-      if (!isProposal) {
-        // Buscar requisitos do serviço para definir pendências iniciais
-        const { PROCESS_REQUIREMENTS } = await import('../constants/processRequirements');
-        const req = PROCESS_REQUIREMENTS[selectedService.id] || { campos: [], documentos: [] };
-        
-        // Identificar o que já temos e o que falta
-        const dadosFaltantes = req.campos.filter(campo => !currentClient[campo as keyof typeof currentClient]);
-        const pendenciasIniciais = req.documentos;
-
-        const processData = {
-          venda_id: saleId,
-          cliente_id: currentClient.uid,
-          cliente_nome: currentClient.nome_completo,
-          cliente_cpf_cnpj: finalCpf,
-          data_nascimento: finalDob,
-          servico_id: selectedService.id,
-          servico_nome: selectedService.nome_servico,
-          status_atual: (dadosFaltantes.length > 0 || pendenciasIniciais.length > 0) ? 'Aguardando Documentação' : 'Pendente',
-          vendedor_id: profile?.uid,
-          vendedor_nome: profile?.nome_completo,
-          id_superior: profile?.id_superior || profile?.uid,
-          data_venda: serverTimestamp(),
-          prazo_estimado_dias: selectedService.prazo_sla_dias || 7,
-          protocolo: protocolo,
-          dados_faltantes: dadosFaltantes,
-          pendencias_iniciais: pendenciasIniciais,
-          documentos_enviados: [],
-          historico_status: [{
-            status: (dadosFaltantes.length > 0 || pendenciasIniciais.length > 0) ? 'Aguardando Documentação' : 'Pendente',
-            data: new Date().toISOString(),
-            observacao: 'Venda realizada via PDV Direto (Serviço Seguro)'
-          }]
-        };
-
-        await addDoc(collection(db, 'order_processes'), processData);
-
-        await addDoc(collection(db, 'notifications'), {
-          usuario_id: 'ADM_MASTER',
-          targetRole: 'ADM_MASTER',
-          title: '💰 Nova Venda PDV',
-          message: `${profile?.nome_completo} realizou uma venda de ${selectedService.nome_servico} para ${selectedClient.nome_completo}.`,
-          tipo: 'success',
-          lida: false,
-          timestamp: serverTimestamp()
+      if (isProposal) {
+        Swal.fire({
+          icon: 'success',
+          title: 'Proposta Gerada!',
+          text: `A proposta foi gerada com sucesso para ${selectedClient.nome_completo}.`,
+          confirmButtonColor: '#0a0a2e'
         });
-      }
+      } else {
+        // VENDA REAL
+        if (!isSecureMethod) {
+          // Buscar requisitos do serviço para definir pendências iniciais
+          const { PROCESS_REQUIREMENTS } = await import('../constants/processRequirements');
+          const req = PROCESS_REQUIREMENTS[selectedService.id] || { campos: [], documentos: [] };
+          
+          const dadosFaltantes = req.campos.filter(campo => !currentClient[campo as keyof typeof currentClient]);
+          const pendenciasIniciais = req.documentos;
 
-      Swal.fire({
-        icon: 'success',
-        title: isProposal ? 'Proposta Gerada!' : 'Venda Concluída!',
-        text: isProposal 
-          ? `A proposta foi gerada com sucesso para ${selectedClient.nome_completo}.`
-          : `A Ordem de Serviço foi gerada com sucesso para ${selectedClient.nome_completo}.`,
-        confirmButtonColor: '#0a0a2e'
-      });
+          const { cleanData } = await import('../firebase');
+          const processData = cleanData({
+            venda_id: saleId,
+            cliente_id: currentClient.uid,
+            cliente_nome: currentClient.nome_completo,
+            cliente_cpf_cnpj: finalCpf,
+            data_nascimento: finalDob,
+            servico_id: selectedService.id,
+            servico_nome: selectedService.nome_servico,
+            status_atual: (dadosFaltantes.length > 0 || pendenciasIniciais.length > 0) ? 'Aguardando Documentação' : 'Pendente',
+            vendedor_id: profile?.uid,
+            vendedor_nome: profile?.nome_completo,
+            id_superior: profile?.id_superior || profile?.uid,
+            data_venda: serverTimestamp(),
+            prazo_estimado_dias: selectedService.prazo_sla_dias || 7,
+            protocolo: protocolo,
+            dados_faltantes: dadosFaltantes,
+            pendencias_iniciais: pendenciasIniciais,
+            documentos_enviados: [],
+            historico_status: [{
+              status: (dadosFaltantes.length > 0 || pendenciasIniciais.length > 0) ? 'Aguardando Documentação' : 'Pendente',
+              data: new Date().toISOString(),
+              observacao: 'Venda realizada via PDV Direto'
+            }]
+          });
+
+          await addDoc(collection(db, 'order_processes'), processData);
+
+          await addDoc(collection(db, 'notifications'), cleanData({
+            usuario_id: 'ADM_MASTER',
+            targetRole: 'ADM_MASTER',
+            title: '💰 Nova Venda PDV',
+            message: `${profile?.nome_completo} realizou uma venda de ${selectedService.nome_servico} para ${selectedClient.nome_completo}.`,
+            tipo: 'success',
+            lida: false,
+            timestamp: serverTimestamp()
+          }));
+        }
+
+        // SE FOR PIX, GERAR QR CODE REAL
+        if (paymentMethod === 'PIX') {
+          setLoading(true);
+          try {
+            const { gerarPagamentoPixGateway } = await import('../services/vendaService');
+            const pixResult = await gerarPagamentoPixGateway({
+              valor: finalPrice,
+              descricao: `Venda ${protocolo} - ${selectedService.nome_servico}`,
+              email: currentClient.email,
+              nome: currentClient.nome_completo,
+              cpf: finalCpf,
+              clienteId: currentClient.uid,
+              vendaId: saleId
+            });
+
+            await Swal.fire({
+              title: 'Pagamento PIX Gerado!',
+              html: `
+                <div class="space-y-6 py-4">
+                  <div class="flex flex-col items-center gap-4">
+                    <p class="text-xs text-slate-500 font-bold uppercase tracking-widest">Escaneie o QR Code abaixo</p>
+                    <div class="p-4 bg-white rounded-3xl border-2 border-slate-100 shadow-xl">
+                      <img src="${pixResult.qr_code_base64}" alt="QR Code PIX" style="width: 200px; height: 200px;" />
+                    </div>
+                  </div>
+                  <div class="space-y-2">
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Ou copie o código abaixo</p>
+                    <div class="flex items-center gap-2 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                      <input id="pix-copy-paste" class="text-[10px] font-mono text-slate-600 truncate w-full bg-transparent border-none outline-none" value="${pixResult.copy_paste}" readonly />
+                      <button onclick="document.getElementById('pix-copy-paste').select(); document.execCommand('copy');" class="bg-[#0a0a2e] text-white p-2 rounded-lg hover:scale-110 transition-all">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-copy"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="bg-blue-50 p-4 rounded-2xl flex items-center gap-3">
+                    <div class="size-8 bg-blue-600 rounded-lg flex items-center justify-center text-white shrink-0">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-zap"><path d="M4 14.89 14 3.5l-2.3 8.1 8.3-1.1-10 11.4 2.3-8.1-8.3 1.1z"/></svg>
+                    </div>
+                    <p class="text-[10px] font-black text-blue-700 uppercase tracking-widest text-left">O sistema identificará o pagamento automaticamente via ${pixResult.gateway}.</p>
+                  </div>
+                </div>
+              `,
+              confirmButtonText: 'ENTENDIDO',
+              confirmButtonColor: '#0a0a2e'
+            });
+          } catch (pixErr: any) {
+             console.error("Erro ao gerar PIX:", pixErr);
+             Swal.fire('Venda Registrada', 'Venda registrada mas não conseguimos gerar o QR Code automático. Por favor, envie o link de pagamento manualmente no módulo financeiro.', 'warning');
+          }
+        } else {
+          Swal.fire({
+            icon: 'success',
+            title: 'Venda Concluída!',
+            text: `A Ordem de Serviço foi gerada com sucesso para ${selectedClient.nome_completo}.`,
+            confirmButtonColor: '#0a0a2e'
+          });
+        }
+      }
 
       setSelectedClient(null);
       setSelectedService(null);

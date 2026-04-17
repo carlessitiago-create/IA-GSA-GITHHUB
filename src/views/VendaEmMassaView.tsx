@@ -51,15 +51,26 @@ export const VendaEmMassaView: React.FC = () => {
   useEffect(() => {
     const q = query(collection(db, 'services'), orderBy('nome_servico', 'asc'));
     onSnapshot(q, (snapshot) => {
-      const servicesData = snapshot.docs.map(doc => ({ 
-        id: doc.id, 
-        ...doc.data(),
-        venda_price: profile?.nivel === 'ADM_MASTER' || profile?.nivel === 'ADM_GERENTE' ? (doc.data().preco_base_gestor || 0) :
-                     profile?.nivel === 'GESTOR' ? (doc.data().preco_base_vendedor || doc.data().preco_base_gestor || 0) :
-                     (doc.data().preco_base_vendedor || 0)
-      }));
+      const servicesData = snapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() } as any))
+        .filter(service => service.is_mass_sale_active === true) // Only active for bulk
+        .map(service => ({ 
+          ...service,
+          venda_price: profile?.nivel.startsWith('ADM') ? (service.preco_massa_gestor || 0) :
+                       profile?.nivel === 'GESTOR' ? (service.preco_massa_vendedor || service.preco_massa_gestor || 0) :
+                       (service.preco_massa_vendedor || 0)
+        }));
       setServices(servicesData);
       setLoading(false);
+      
+      if (servicesData.length === 0 && !profile?.nivel.startsWith('ADM')) {
+        Swal.fire({
+          title: 'Venda em Massa Indisponível',
+          text: 'Nenhum serviço foi habilitado para venda em massa pela administração.',
+          icon: 'info',
+          confirmButtonColor: '#0a0a2e'
+        });
+      }
     });
   }, [profile]);
 
@@ -168,15 +179,98 @@ export const VendaEmMassaView: React.FC = () => {
       return Swal.fire('Atenção', 'Corrija os erros na lista antes de prosseguir.', 'warning');
     }
 
-    const total = items.length * selectedService.venda_price;
+    // Determina o preço unitário com base no nível do usuário e na configuração de massa
+    let precoUnitario = selectedService.preco_base_vendedor || 0;
+    
+    // Se o serviço for específico para venda em massa e estiver ativo
+    if (selectedService.is_mass_sale_active) {
+      const nivel = profile?.nivel || 'CLIENTE';
+      if (['ADM_MASTER', 'ADM_MESTRE', 'ADM_GERENTE', 'ADM_ANALISTA', 'GESTOR'].includes(nivel)) {
+        precoUnitario = selectedService.preco_massa_gestor || selectedService.preco_base_gestor || 0;
+      } else {
+        precoUnitario = selectedService.preco_massa_vendedor || selectedService.preco_base_vendedor || 0;
+      }
+    } else {
+      // Venda Varejo (Fallback se não for massa mas estiver sendo usado aqui)
+      const nivel = profile?.nivel || 'CLIENTE';
+      if (['ADM_MASTER', 'ADM_MESTRE', 'ADM_GERENTE', 'ADM_ANALISTA', 'GESTOR'].includes(nivel)) {
+        precoUnitario = selectedService.preco_base_gestor || 0;
+      } else {
+        precoUnitario = selectedService.preco_base_vendedor || 0;
+      }
+    }
+
+    const total = Number((items.length * precoUnitario).toFixed(2));
+    
+    if (isNaN(total) || total <= 0) {
+      return Swal.fire('Erro', 'O valor total da venda é inválido. Verifique os preços dos serviços.', 'error');
+    }
 
     setPaymentData({
       valor: total,
       servico_nome: `ATACADO: ${items.length}x ${selectedService.nome_servico}`,
       itens_massa: items,
-      servico: selectedService
+      servico_id: selectedService.id,
+      servico: selectedService,
+      is_bulk: true,
+      quantidade: items.length
     });
     setShowPayment(true);
+  };
+
+  const handleCreateBatchAndProcesses = async (vendaId: string, metodo: string, statusPagamento: string) => {
+    const { addDoc, collection, serverTimestamp } = await import('firebase/firestore');
+    const { cleanData } = await import('../firebase');
+    
+    const protocoloBatch = `LOTE-${Date.now().toString(36).toUpperCase()}-${Math.floor(Math.random() * 1000)}`;
+
+    // 1. Create a Master Bulk Sale record (Batch)
+    const batchRef = await addDoc(collection(db, 'bulk_sales_batches'), cleanData({
+      vendedor_id: profile?.uid || 'desconhecido',
+      vendedor_nome: profile?.nome_completo || 'Vendedor',
+      valor_total: Number(paymentData.valor || 0),
+      metodo_pagamento: metodo,
+      status_pagamento: statusPagamento,
+      status_lote: metodo === 'CARTEIRA' || statusPagamento === 'Pago' ? 'Processando' : 'Aguardando Pagamento',
+      quantidade: items.length,
+      servico_id: selectedService?.id || 'manual',
+      servico_nome: selectedService?.nome_servico || 'Serviço',
+      protocolo: protocoloBatch,
+      venda_id: vendaId,
+      timestamp: serverTimestamp(),
+      data_envio: serverTimestamp(),
+      itens: items.map(item => ({
+        nome: item.nome || '',
+        documento: item.documento || '',
+        status: item.status || 'Validado'
+      }))
+    }));
+
+    // 2. Register individual processes
+    const statusInicial = metodo === 'CARTEIRA' || statusPagamento === 'Pago' ? 'Em Análise' : 'Aguardando Pagamento';
+    const statusFin = metodo === 'CARTEIRA' || statusPagamento === 'Pago' ? 'PAGO' : 'PENDENTE';
+
+    for (const item of items) {
+      await addDoc(collection(db, 'order_processes'), cleanData({
+        batch_id: batchRef.id,
+        venda_id: vendaId,
+        cliente_nome: item.nome || '',
+        cliente_cpf_cnpj: item.documento || '',
+        servico_id: selectedService?.id || 'manual',
+        servico_nome: selectedService?.nome_servico || 'Serviço',
+        status_atual: statusInicial,
+        status_financeiro: statusFin,
+        vendedor_id: profile?.uid || 'desconhecido',
+        vendedor_nome: profile?.nome_completo || 'Vendedor',
+        id_superior: profile?.id_superior || profile?.uid || 'sistema',
+        data_venda: serverTimestamp(),
+        prazo_estimado_dias: Number(selectedService?.prazo_sla_dias || 7),
+        protocolo: `ATAC-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
+        tipo_emissao: 'ATACADO'
+      }));
+    }
+
+    return protocoloBatch;
   };
 
   const handlePaymentSuccess = async (saleData: any) => {
@@ -184,52 +278,15 @@ export const VendaEmMassaView: React.FC = () => {
     setShowPayment(false);
     
     try {
-      const { addDoc, collection, serverTimestamp } = await import('firebase/firestore');
-      
-      const protocoloBatch = `LOTE-${Date.now().toString(36).toUpperCase()}-${Math.floor(Math.random() * 1000)}`;
-
-      // 1. Create a Master Bulk Sale record (Batch)
-      // The user wants it to stay "Aguardando ADM" after "payment" simulation?
-      // "fica o registro da lista enviada, aguardando confirmação de pagamento pelo ADM"
-      const batchRef = await addDoc(collection(db, 'bulk_sales_batches'), {
-        vendedor_id: profile?.uid,
-        vendedor_nome: profile?.nome_completo,
-        valor_total: saleData.amount,
-        metodo_pagamento: saleData.method,
-        status_pagamento: 'Aguardando ADM', // As requested
-        status_lote: 'Enviado',
-        quantidade: items.length,
-        servico_id: selectedService.id,
-        servico_nome: selectedService.nome_servico,
-        protocolo: protocoloBatch,
-        timestamp: serverTimestamp(),
-        data_envio: serverTimestamp(),
-        itens: items // Save the items list inside the batch for record
-      });
-
-      // 2. Register individual processes (Still helpful to have them separately for tracking)
-      // They will also starts as 'Aguardando Pagamento' or 'Pendente Financeiro'
-      for (const item of items) {
-        await addDoc(collection(db, 'order_processes'), {
-          batch_id: batchRef.id,
-          cliente_nome: item.nome,
-          cliente_cpf_cnpj: item.documento,
-          servico_id: selectedService.id,
-          servico_nome: selectedService.nome_servico,
-          status_atual: 'Aguardando Pagamento', // Individual items also wait
-          vendedor_id: profile?.uid,
-          vendedor_nome: profile?.nome_completo,
-          id_superior: profile?.id_superior || profile?.uid,
-          data_venda: serverTimestamp(),
-          prazo_estimado_dias: selectedService.prazo_sla_dias || 7,
-          protocolo: `ATAC-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
-          tipo_emissao: 'ATACADO'
-        });
-      }
+      const protocoloBatch = await handleCreateBatchAndProcesses(
+        saleData.saleId || '', 
+        saleData.method || 'PIX', 
+        saleData.method === 'CARTEIRA' ? 'Pago' : 'Pendente'
+      );
 
       Swal.fire({
-        title: 'Lote Enviado!',
-        text: `Protocolo: ${protocoloBatch}. Aguardando confirmação financeira do ADM.`,
+        title: saleData.method === 'CARTEIRA' ? 'Lote Pago!' : 'Lote Registrado!',
+        text: `Protocolo: ${protocoloBatch}. ${saleData.method === 'CARTEIRA' ? 'Processamento iniciado.' : 'Aguardando confirmação do PIX.'}`,
         icon: 'success',
         confirmButtonColor: '#0a0a2e'
       });
@@ -631,7 +688,8 @@ export const VendaEmMassaView: React.FC = () => {
             vendedor_id: profile?.uid || '',
             venda_tipo: 'ATACADO',
             servico_id: paymentData.servico?.id,
-            quantidade: paymentData.itens_massa.length
+            quantidade: paymentData.itens_massa.length,
+            is_bulk: true
           }}
         />
       )}

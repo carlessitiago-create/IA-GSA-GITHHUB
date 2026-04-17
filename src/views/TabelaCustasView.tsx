@@ -22,12 +22,27 @@ export const TabelaCustasView: React.FC = () => {
   const [services, setServices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
-  const [margins, setMargins] = useState<Record<string, number>>({});
+  const [margins, setMargins] = useState<Record<string, { gestor: number; vendedor: number }>>({});
 
   const role = profile?.nivel || 'CLIENTE';
   const isAdm = role.startsWith('ADM');
   const isGestor = role === 'GESTOR';
   const isVendedor = role === 'VENDEDOR';
+
+  const [activeTab, setActiveTab] = useState<'individual' | 'massa'>('individual');
+
+  const updateLocalMargin = (id: string, field: 'gestor' | 'vendedor', value: string) => {
+    const numValue = parseFloat(value);
+    const safeValue = isNaN(numValue) ? 0 : numValue;
+    setMargins(prev => ({
+      ...prev,
+      [id]: {
+        gestor: prev[id]?.gestor || 0,
+        vendedor: prev[id]?.vendedor || 0,
+        [field]: safeValue
+      }
+    }));
+  };
 
   useEffect(() => {
     const q = query(collection(db, 'services'), orderBy('nome_servico', 'asc'));
@@ -36,55 +51,81 @@ export const TabelaCustasView: React.FC = () => {
       setServices(servicesData);
       
       // Initialize local margins state
-      const initialMargins: Record<string, number> = {};
+      const initialMargins: Record<string, { gestor: number; vendedor: number }> = {};
       servicesData.forEach((s: any) => {
-        if (isAdm) {
-          initialMargins[s.id] = s.preco_base_gestor || 0;
-        } else if (isGestor || isVendedor) {
-          initialMargins[s.id] = s.preco_base_vendedor || 0;
-        }
+        initialMargins[s.id] = {
+          gestor: activeTab === 'individual' ? (s.preco_base_gestor || 0) : (s.preco_massa_gestor || 0),
+          vendedor: activeTab === 'individual' ? (s.preco_base_vendedor || 0) : (s.preco_massa_vendedor || 0)
+        };
       });
       setMargins(initialMargins);
       setLoading(false);
     });
     return () => unsubscribe();
-  }, [isAdm, isGestor, isVendedor]);
+  }, [isAdm, isGestor, isVendedor, activeTab]);
+
+  const toggleMassSale = async (serviceId: string, currentState: boolean) => {
+    if (!isAdm) return;
+    try {
+      await updateDoc(doc(db, 'services', serviceId), {
+        is_mass_sale_active: !currentState
+      });
+    } catch (error) {
+      console.error("Erro ao alternar venda em massa:", error);
+    }
+  };
 
   const handleUpdatePrice = async (serviceId: string) => {
     if (isVendedor) return;
-    const newPrice = margins[serviceId];
+    const { gestor: newGestorPrice, vendedor: newVendedorPrice } = margins[serviceId];
     const service = services.find(s => s.id === serviceId);
     
     if (!service) return;
 
-    // Validation Rules
-    if (isAdm) {
-      // ADM sets base cost for Gestor
-      // No upper limit for ADM, but must be positive
-      if (newPrice < 0) {
-        return Swal.fire('Erro', 'O valor não pode ser negativo.', 'error');
-      }
-    } else if (isGestor) {
-      // Gestor sets price for Vendedor
-      const baseCost = service.preco_base_gestor || 0;
-      const maxPrice = baseCost * 1.5;
+    // Validation Rules for Individual
+    if (activeTab === 'individual') {
+      if (isAdm) {
+        if (newGestorPrice < 0 || newVendedorPrice < 0) {
+          return Swal.fire('Erro', 'Os valores não podem ser negativos.', 'error');
+        }
+      } else if (isGestor) {
+        const baseCost = service.preco_base_gestor || 0;
+        const maxPrice = baseCost * 1.5;
 
-      if (newPrice < baseCost) {
-        return Swal.fire('Erro', `O valor de venda não pode ser menor que o custo de R$ ${baseCost.toLocaleString('pt-BR')}.`, 'error');
-      }
+        if (newVendedorPrice < baseCost) {
+          return Swal.fire('Erro', `O valor de venda não pode ser menor que o custo de R$ ${baseCost.toLocaleString('pt-BR')}.`, 'error');
+        }
 
-      if (newPrice > maxPrice) {
-        return Swal.fire('Erro', `A margem não pode ultrapassar 50% do valor das custas (Máximo: R$ ${maxPrice.toLocaleString('pt-BR')}).`, 'error');
+        if (newVendedorPrice > maxPrice) {
+          return Swal.fire('Erro', `A margem não pode ultrapassar 50% do valor das custas (Máximo: R$ ${maxPrice.toLocaleString('pt-BR')}).`, 'error');
+        }
+      }
+    } else {
+      // Validation for Massa
+      if (newGestorPrice < 0 || newVendedorPrice < 0) {
+        return Swal.fire('Erro', 'Os valores não podem ser negativos.', 'error');
       }
     }
 
     setSaving(serviceId);
     try {
       const updateData: any = {};
-      if (isAdm) {
-        updateData.preco_base_gestor = newPrice;
-      } else if (isGestor) {
-        updateData.preco_base_vendedor = newPrice;
+      
+      if (activeTab === 'individual') {
+        if (isAdm) {
+          updateData.preco_base_gestor = newGestorPrice;
+          updateData.preco_base_vendedor = newVendedorPrice;
+        } else if (isGestor) {
+          updateData.preco_base_vendedor = newVendedorPrice;
+        }
+      } else {
+        // Active Tab is Massa
+        if (isAdm) {
+          updateData.preco_massa_gestor = newGestorPrice;
+          updateData.preco_massa_vendedor = newVendedorPrice;
+        } else if (isGestor) {
+          updateData.preco_massa_vendedor = newVendedorPrice;
+        }
       }
 
       await updateDoc(doc(db, 'services', serviceId), updateData);
@@ -154,21 +195,45 @@ export const TabelaCustasView: React.FC = () => {
         <DollarSign className="absolute -right-20 -bottom-20 text-white/5 size-80 rotate-12 pointer-events-none" />
       </motion.div>
 
+      {/* TABS DE SELEÇÃO */}
+      <div className="flex gap-4 border-b border-slate-100 px-4">
+        <button 
+          onClick={() => setActiveTab('individual')}
+          className={`pb-4 px-4 text-xs font-black uppercase tracking-widest transition-all relative ${activeTab === 'individual' ? 'text-[#0a0a2e]' : 'text-slate-400 hover:text-slate-600'}`}
+        >
+          Vendas Individuais
+          {activeTab === 'individual' && <motion.div layoutId="tab" className="absolute bottom-0 left-0 right-0 h-1 bg-[#0a0a2e] rounded-full" />}
+        </button>
+        <button 
+          onClick={() => setActiveTab('massa')}
+          className={`pb-4 px-4 text-xs font-black uppercase tracking-widest transition-all relative ${activeTab === 'massa' ? 'text-[#0a0a2e]' : 'text-slate-400 hover:text-slate-600'}`}
+        >
+          Venda em Massa
+          {activeTab === 'massa' && <motion.div layoutId="tab" className="absolute bottom-0 left-0 right-0 h-1 bg-[#0a0a2e] rounded-full" />}
+        </button>
+      </div>
+
       {/* ALERTA DE REGRAS */}
       <div className="bg-amber-50 border border-amber-200 p-6 rounded-3xl flex items-start gap-4">
         <div className="size-10 bg-amber-100 rounded-xl flex items-center justify-center text-amber-600 shrink-0">
           <AlertTriangle size={20} />
         </div>
         <div>
-          <h4 className="text-sm font-black text-amber-900 uppercase tracking-tight">Regras de Precificação</h4>
+          <h4 className="text-sm font-black text-amber-900 uppercase tracking-tight">
+            {activeTab === 'individual' ? 'Regras de Precificação Individual' : 'Regras de Venda em Massa'}
+          </h4>
           <ul className="mt-2 space-y-1">
             <li className="text-xs text-amber-800 font-medium flex items-center gap-2">
               <div className="size-1 bg-amber-400 rounded-full"></div>
-              O valor de venda nunca poderá ser menor que o valor de custo.
+              {activeTab === 'individual' 
+                ? 'O valor de venda nunca poderá ser menor que o valor de custo.'
+                : 'Os valores definidos aqui serão aplicados exclusivamente na ferramenta de Venda em Massa.'}
             </li>
             <li className="text-xs text-amber-800 font-medium flex items-center gap-2">
               <div className="size-1 bg-amber-400 rounded-full"></div>
-              A margem de lucro (markup) não pode ultrapassar 50% do valor das custas.
+              {activeTab === 'individual'
+                ? 'A margem de lucro (markup) não pode ultrapassar 50% do valor das custas.'
+                : 'Apenas os serviços marcados como "Incluso" aparecerão na Venda em Massa.'}
             </li>
           </ul>
         </div>
@@ -181,7 +246,9 @@ export const TabelaCustasView: React.FC = () => {
             <div className="size-10 bg-blue-50 rounded-xl flex items-center justify-center">
               <Package className="text-blue-600" size={20} />
             </div>
-            <h3 className="text-lg font-black italic uppercase text-[#0a0a2e] tracking-tight">Catálogo de Serviços</h3>
+            <h3 className="text-lg font-black italic uppercase text-[#0a0a2e] tracking-tight">
+              {activeTab === 'individual' ? 'Catálogo de Serviços' : 'Catálogo para Venda em Massa'}
+            </h3>
           </div>
         </div>
 
@@ -189,41 +256,75 @@ export const TabelaCustasView: React.FC = () => {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50/50">
-                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Serviço</th>
-                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Custo Base (ADM)</th>
-                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Preço Vendedor</th>
+                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                  {activeTab === 'massa' && isAdm ? 'Incluso' : 'Serviço'}
+                </th>
+                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">R$ GESTOR (CUSTO)</th>
+                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">R$ VENDEDOR (FINAL)</th>
                 <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Margem Atual</th>
                 <th className="px-8 py-5 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Ação</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
               {services.map((service) => {
-                const baseCost = service.preco_base_gestor || 0;
-                const currentPrice = margins[service.id] || 0;
-                const marginPercent = baseCost > 0 ? ((currentPrice - baseCost) / baseCost) * 100 : 0;
-                const isInvalid = isGestor && (currentPrice < baseCost || marginPercent > 50);
+                const baseCost = activeTab === 'individual' ? (service.preco_base_gestor || 0) : (service.preco_massa_gestor || 0);
+                const gestorInMargins = margins[service.id]?.gestor || 0;
+                const vendedorInMargins = margins[service.id]?.vendedor || 0;
+                
+                const marginPercent = baseCost > 0 ? ((vendedorInMargins - baseCost) / baseCost) * 100 : 0;
+                const isInvalid = activeTab === 'individual' && isGestor && (vendedorInMargins < baseCost || marginPercent > 50);
 
                 return (
-                  <tr key={service.id} className="hover:bg-slate-50/50 transition-colors group">
+                  <tr key={service.id} className={`hover:bg-slate-50/50 transition-colors group ${activeTab === 'massa' && !service.is_mass_sale_active && !isAdm ? 'opacity-40 grayscale pointer-events-none' : ''}`}>
                     <td className="px-8 py-6">
-                      <p className="text-sm font-black text-[#0a0a2e] uppercase italic tracking-tight">{service.nome_servico}</p>
-                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">SLA: {service.prazo_sla_dias} Dias</p>
+                      <div className="flex items-center gap-4">
+                        {activeTab === 'massa' && isAdm && (
+                          <button 
+                            onClick={() => toggleMassSale(service.id, !!service.is_mass_sale_active)}
+                            className={`size-6 rounded-lg border-2 flex items-center justify-center transition-all ${
+                              service.is_mass_sale_active 
+                                ? 'bg-[#0a0a2e] border-[#0a0a2e] text-white' 
+                                : 'border-slate-200 bg-white hover:border-blue-400 text-transparent'
+                            }`}
+                          >
+                            <Save size={12} className={service.is_mass_sale_active ? 'opacity-100' : 'opacity-0'} />
+                          </button>
+                        )}
+                        <div>
+                          <p className="text-sm font-black text-[#0a0a2e] uppercase italic tracking-tight">{service.nome_servico}</p>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">SLA: {service.prazo_sla_dias} Dias</p>
+                        </div>
+                      </div>
                     </td>
                     <td className="px-8 py-6 text-center">
-                      <span className="text-sm font-bold text-slate-600">
-                        R$ {baseCost.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                      </span>
+                      {isAdm ? (
+                        <div className="flex justify-center">
+                          <div className="relative flex items-center max-w-[140px]">
+                            <span className="absolute left-3 text-[10px] font-bold text-slate-400">R$</span>
+                            <input 
+                              type="number"
+                              value={gestorInMargins}
+                              onChange={(e) => updateLocalMargin(service.id, 'gestor', e.target.value)}
+                              className="w-full bg-slate-50 border-2 border-transparent rounded-xl py-2 pl-8 pr-3 text-xs font-black text-[#0a0a2e] outline-none focus:border-blue-600 focus:bg-white transition-all"
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-sm font-bold text-slate-600">
+                          R$ {baseCost.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </span>
+                      )}
                     </td>
                     <td className="px-8 py-6">
                       <div className="flex justify-center">
-                        <div className={`relative flex items-center max-w-[160px] ${isInvalid ? 'animate-shake' : ''}`}>
-                          <span className="absolute left-4 text-xs font-bold text-slate-400">R$</span>
+                        <div className={`relative flex items-center max-w-[140px] ${isInvalid ? 'animate-shake' : ''}`}>
+                          <span className="absolute left-3 text-[10px] font-bold text-slate-400">R$</span>
                           <input 
                             type="number"
-                            value={margins[service.id]}
+                            value={vendedorInMargins}
                             disabled={isVendedor}
-                            onChange={(e) => setMargins(prev => ({ ...prev, [service.id]: parseFloat(e.target.value) }))}
-                            className={`w-full bg-slate-50 border-2 rounded-2xl py-3 pl-10 pr-4 text-sm font-black text-[#0a0a2e] outline-none transition-all ${
+                            onChange={(e) => updateLocalMargin(service.id, 'vendedor', e.target.value)}
+                            className={`w-full bg-slate-50 border-2 rounded-xl py-2 pl-8 pr-3 text-xs font-black text-[#0a0a2e] outline-none transition-all ${
                               isInvalid ? 'border-rose-500 bg-rose-50' : 
                               isVendedor ? 'border-transparent bg-slate-100 cursor-not-allowed' :
                               'border-transparent focus:border-blue-600 focus:bg-white'

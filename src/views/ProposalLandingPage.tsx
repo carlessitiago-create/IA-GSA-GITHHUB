@@ -4,6 +4,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { getProposalBySlug, ProposalData, checkCpfOwnership, updateProposalStatus } from '../services/proposalService';
 import { ShowcaseService } from '../services/marketingService';
+import { gerarPagamentoPixGateway, processarVenda } from '../services/vendaService';
 import { 
   CheckCircle, 
   Zap, 
@@ -25,7 +26,8 @@ import {
   Percent,
   Play,
   Image as ImageIcon,
-  Layout
+  Layout,
+  Copy
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import Swal from 'sweetalert2';
@@ -134,26 +136,78 @@ export const ProposalLandingPage: React.FC = () => {
           });
 
           if (payOnline) {
-            // Checkout PIX Simulado
-            await Swal.fire({
-              title: 'Checkout PIX',
-              html: `
-                <div class="space-y-4">
-                  <p class="text-sm text-slate-600">Escaneie o QR Code abaixo para pagar via PIX:</p>
-                  <div class="size-48 bg-slate-100 mx-auto rounded-2xl flex items-center justify-center border-2 border-dashed border-slate-300">
-                    <span class="text-[10px] font-black text-slate-400 uppercase">QR CODE PIX</span>
+            setLoading(true);
+            try {
+              // 1. Criar a Venda real no backend para ter um ID e protocolo
+              const vendaResult = await processarVenda(
+                proposal!.vendedor_id, // Usamos o vendedor como placeholder se não tivermos usuario_id logado
+                [{
+                  servicoId: proposal!.servico_id,
+                  servicoNome: proposal!.servico_nome,
+                  precoBase: selectedOption!.valor * 0.7, // Margem estimada de 30%
+                  precoVenda: selectedOption!.valor,
+                  prazoEstimadoDias: 7
+                }],
+                'PIX',
+                undefined,
+                formValues.nome || proposal!.lead_nome,
+                formValues.cpf,
+                formValues.nascimento
+              );
+
+              // 2. Gerar o Pagamento REAL no Gateway
+              const pixResult = await gerarPagamentoPixGateway({
+                valor: selectedOption!.valor,
+                descricao: `Aceite Proposta: ${proposal!.servico_nome}`,
+                email: proposal!.lead_telefone + "@gsa.io", // Email temporário se não houver
+                nome: formValues.nome || proposal!.lead_nome,
+                cpf: formValues.cpf,
+                clienteId: proposal!.vendedor_id, // Usamos vendedor como ref
+                vendaId: vendaResult.saleId
+              });
+
+              // 3. Mostrar Modal de Pagamento Real
+              await Swal.fire({
+                title: 'Checkout PIX',
+                html: `
+                  <div class="space-y-6 py-4">
+                    <div class="flex flex-col items-center gap-4">
+                      <p class="text-xs text-slate-500 font-bold uppercase tracking-widest text-center">Escaneie o QR Code abaixo para pagar:</p>
+                      <div class="p-4 bg-white rounded-3xl border-2 border-slate-100 shadow-xl">
+                        <img src="${pixResult.qr_code_base64}" alt="QR Code PIX" style="width: 200px; height: 200px;" />
+                      </div>
+                    </div>
+                    
+                    <div class="space-y-2">
+                      <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Ou copie o código abaixo</p>
+                      <div class="flex items-center gap-2 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                        <input id="proposal-pix-copy" class="text-[10px] font-mono text-slate-600 truncate w-full bg-transparent border-none outline-none" value="${pixResult.copy_paste}" readonly />
+                        <button onclick="document.getElementById('proposal-pix-copy').select(); document.execCommand('copy');" class="bg-[#0a0a2e] text-white p-2 rounded-lg">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div class="bg-blue-50 p-4 rounded-2xl flex items-center gap-3">
+                      <div class="size-8 bg-blue-600 rounded-lg flex items-center justify-center text-white shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.89 14 3.5l-2.3 8.1 8.3-1.1-10 11.4 2.3-8.1-8.3 1.1z"/></svg>
+                      </div>
+                      <p class="text-[10px] font-black text-blue-700 uppercase tracking-widest text-left">Seu processo será liberado automaticamente após a confirmação via ${pixResult.gateway}.</p>
+                    </div>
                   </div>
-                  <p class="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Liberação imediata após o pagamento</p>
-                </div>
-              `,
-              confirmButtonText: 'Já paguei',
-              confirmButtonColor: '#10b981'
-            });
-            
-            // Atualizar Proposta para PAGA e Criar OS
-            if (slug) {
-              await updateProposalStatus(slug, 'PAGA', formValues.cpf, formValues.tel, formValues.nome, formValues.nascimento);
-              Swal.fire('Sucesso!', 'Pagamento identificado! Sua Ordem de Serviço foi criada e um analista já está cuidando do seu caso.', 'success');
+                `,
+                confirmButtonText: 'JÁ REALIZEI O PAGAMENTO',
+                confirmButtonColor: '#10b981'
+              });
+              
+              // Atualizar Proposta para EM_PAGAMENTO
+              if (slug) {
+                await updateProposalStatus(slug, 'ACEITA', formValues.cpf, formValues.tel, formValues.nome, formValues.nascimento);
+                Swal.fire('Quase lá!', 'Sua proposta foi aceita. Assim que o pagamento for processado, seu especialista iniciará o trabalho!', 'success');
+              }
+            } catch (err: any) {
+              console.error("Erro no checkout da proposta:", err);
+              Swal.fire('Erro', 'Não conseguimos gerar o pagamento automático. Nosso time entrará em contato para enviar o link.', 'error');
             }
           } else {
             // Notificar Consultor

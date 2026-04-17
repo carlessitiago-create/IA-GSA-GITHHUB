@@ -49,6 +49,9 @@ export const ServiceFactoryView: React.FC = () => {
     ciclo_status: 'LIBERADO',
     ativo: true,
     possui_garantia: false,
+    is_mass_sale_active: false,
+    preco_massa_gestor: 0,
+    preco_massa_vendedor: 0,
     pontos_cliente: 10,
     pontos_vendedor: 50,
     pontos_gestor: 20,
@@ -166,6 +169,9 @@ export const ServiceFactoryView: React.FC = () => {
         ciclo_status: 'LIBERADO',
         ativo: true,
         possui_garantia: false,
+        is_mass_sale_active: false,
+        preco_massa_gestor: 0,
+        preco_massa_vendedor: 0,
         pontos_cliente: 10,
         pontos_vendedor: 50,
         pontos_gestor: 20,
@@ -342,6 +348,46 @@ export const ServiceFactoryView: React.FC = () => {
                     <option value="ENCERRADO">ENCERRADO</option>
                   </select>
                 </div>
+              </div>
+
+              <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-3xl space-y-4 border border-slate-100 dark:border-slate-800">
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                    <Package size={12} /> Configuração Venda em Massa
+                  </p>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      className="sr-only peer" 
+                      checked={formData.is_mass_sale_active}
+                      onChange={(e) => setFormData(prev => ({ ...prev, is_mass_sale_active: e.target.checked }))}
+                    />
+                    <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                  </label>
+                </div>
+
+                {formData.is_mass_sale_active && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[8px] font-black text-slate-400 uppercase block mb-1">Massa Gestor (R$)</label>
+                      <input 
+                        type="number" 
+                        value={formData.preco_massa_gestor}
+                        onChange={(e) => setFormData(prev => ({ ...prev, preco_massa_gestor: parseFloat(e.target.value) }))}
+                        className="w-full bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 rounded-xl p-2 text-xs focus:ring-1 focus:ring-emerald-600 outline-none font-bold text-emerald-600"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[8px] font-black text-slate-400 uppercase block mb-1">Massa Vendedor (R$)</label>
+                      <input 
+                        type="number" 
+                        value={formData.preco_massa_vendedor}
+                        onChange={(e) => setFormData(prev => ({ ...prev, preco_massa_vendedor: parseFloat(e.target.value) }))}
+                        className="w-full bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 rounded-xl p-2 text-xs focus:ring-1 focus:ring-blue-600 outline-none font-bold text-blue-600"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -580,6 +626,19 @@ export const ServiceFactoryView: React.FC = () => {
                         <p className="text-sm font-black text-blue-600 italic">R$ {s.preco_base_vendedor?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                       </div>
                     </div>
+
+                    {s.is_mass_sale_active && (
+                      <div className="grid grid-cols-2 gap-4 py-4 border-b border-slate-50 dark:border-slate-800 bg-blue-50/30 dark:bg-blue-900/10 px-4 -mx-4">
+                        <div>
+                          <p className="text-[8px] font-black text-blue-400 uppercase tracking-widest mb-1">Massa Gestor</p>
+                          <p className="text-xs font-black text-blue-600 italic">R$ {s.preco_massa_gestor?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                        </div>
+                        <div>
+                          <p className="text-[8px] font-black text-blue-400 uppercase tracking-widest mb-1">Massa Vendedor</p>
+                          <p className="text-xs font-black text-blue-600 italic">R$ {s.preco_massa_vendedor?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                        </div>
+                      </div>
+                    )}
 
                     <div className="flex gap-2">
                       <button 

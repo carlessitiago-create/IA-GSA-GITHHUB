@@ -20,6 +20,9 @@ export interface ServiceData {
   prazo_sla_dias: number;
   preco_base_gestor: number;
   preco_base_vendedor: number;
+  preco_massa_gestor?: number;
+  preco_massa_vendedor?: number;
+  is_mass_sale_active?: boolean;
   ciclo_status: 'LIBERADO' | 'ENCERRADO';
   ativo: boolean;
   criado_em?: any;

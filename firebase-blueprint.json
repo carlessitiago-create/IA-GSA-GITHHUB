@@ -360,6 +360,27 @@
       },
       "required": ["documento", "dono_id", "timestamp"]
     },
+    "BulkSalesBatch": {
+      "title": "Bulk Sales Batch",
+      "description": "Lote de vendas em massa",
+      "type": "object",
+      "properties": {
+        "vendedor_id": { "type": "string" },
+        "vendedor_nome": { "type": "string" },
+        "valor_total": { "type": "number" },
+        "metodo_pagamento": { "type": "string" },
+        "status_pagamento": { "type": "string" },
+        "status_lote": { "type": "string" },
+        "quantidade": { "type": "integer" },
+        "servico_id": { "type": "string" },
+        "servico_nome": { "type": "string" },
+        "protocolo": { "type": "string" },
+        "venda_id": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "data_envio": { "type": "string", "format": "date-time" }
+      },
+      "required": ["vendedor_id", "valor_total", "protocolo", "status_lote"]
+    },
     "Message": {
       "title": "Ticket Message",
       "description": "An individual message within a support ticket",
@@ -466,6 +487,10 @@
     "/documento_locks/{docId}": {
       "schema": "DocumentoLock",
       "description": "Unique locks for CPF/CNPJ"
+    },
+    "/bulk_sales_batches/{batchId}": {
+      "schema": "BulkSalesBatch",
+      "description": "Lotes de vendas em massa"
     },
     "/tickets/{ticketId}": {
       "schema": "Ticket",

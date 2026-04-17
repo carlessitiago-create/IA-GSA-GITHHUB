@@ -13,7 +13,7 @@ import {
   limit,
   Timestamp
 } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType } from '../firebase';
+import { db, handleFirestoreError, OperationType, cleanData } from '../firebase';
 import { addPontos, processarPontosDeVenda, libertarPontosPendentes, getPointsRules } from './pointsService';
 import { sendNotification } from './notificationService';
 // import { getPointsForRule } from './clubService'; // Removed as it might not exist or be needed
@@ -101,7 +101,7 @@ export async function registrarTransacao(
     const id_superior = clientData.id_superior || '';
 
     const transactionRef = doc(collection(db, TRANSACTIONS_COLLECTION));
-    const transactionData: any = {
+    const transactionData = cleanData({
       cliente_id: clienteId,
       vendedor_id,
       id_superior,
@@ -114,7 +114,7 @@ export async function registrarTransacao(
       confirmado_pelo_administrador: confirmado,
       visibilidade_uids,
       timestamp: Timestamp.now()
-    };
+    });
     batch.set(transactionRef, transactionData);
 
     // Se já estiver confirmado (ou for débito imediato), atualiza o saldo
@@ -130,6 +130,38 @@ export async function registrarTransacao(
     return transactionRef.id;
   } catch (error) {
     handleFirestoreError(error, OperationType.CREATE, TRANSACTIONS_COLLECTION);
+    throw error;
+  }
+}
+
+/**
+ * Debita saldo da carteira para pagamento de serviço (Pagamento Automático)
+ */
+export async function pagarComCarteira(clienteId: string, valor: number, descricao: string, vendaId: string) {
+  try {
+    const wallet = await getOrCreateWallet(clienteId);
+    if (wallet.saldo_atual < valor) {
+      throw new Error('Saldo insuficiente na carteira. Realize uma recarga.');
+    }
+
+    // Registra a transação de débito confirmada
+    const transId = await registrarTransacao(
+      clienteId,
+      -valor,
+      'DEBITO',
+      'VENDA',
+      descricao,
+      true, 
+      vendaId
+    );
+
+    // Como já está confirmado, chamamos a lógica de confirmação da venda
+    // Para simplificar, vamos chamar a função de confirmação que já atualiza venda e processos
+    await confirmarTransacao(transId, 'SISTEMA_CARTEIRA');
+
+    return transId;
+  } catch (error) {
+    console.error("Erro no pagamento com carteira:", error);
     throw error;
   }
 }
@@ -174,6 +206,17 @@ export async function confirmarTransacao(transactionId: string, confirmadoPor: s
     if (transData.venda_id) {
       const saleRef = doc(db, 'sales', transData.venda_id);
       batch.update(saleRef, { status_pagamento: 'Pago' });
+
+      // Atualiza o lote de venda em massa (bulk_sales_batches) se houver
+      const batchQuery = query(collection(db, 'bulk_sales_batches'), where('venda_id', '==', transData.venda_id));
+      const batchSnap = await getDocs(batchQuery);
+      batchSnap.docs.forEach(bDoc => {
+        batch.update(bDoc.ref, { 
+          status_pagamento: 'Pago',
+          status_lote: 'Processando',
+          data_confirmacao: serverTimestamp()
+        });
+      });
 
       // Atualiza todos os processos vinculados a esta venda para 'Em Análise'
       if (!transData.venda_id) throw new Error('ID da venda é obrigatório para atualizar processos.');

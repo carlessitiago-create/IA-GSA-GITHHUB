@@ -3,8 +3,8 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { getSaasConfig, SaasConfig, updateSaasConfig } from '../../services/configService';
 import { getSaasOrigin } from '../../lib/urlUtils';
-import { Settings, Link, Info, Save, CheckCircle } from 'lucide-react';
-import { motion } from 'motion/react';
+import { Settings, Link, Info, Save, CheckCircle, DollarSign } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 
 export const AdminSaasSettings: React.FC = () => {
   const [config, setConfig] = useState<SaasConfig | null>(null);
@@ -125,15 +125,84 @@ export const AdminSaasSettings: React.FC = () => {
             >
               <div>
                 <p className="font-black text-[#0a0a2e] text-sm uppercase">Modo Automático</p>
-                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Mercado Pago (PIX Nativo)</p>
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">PIX Nativo (Alta Conversão)</p>
               </div>
               {config?.modo_pagamento === 'AUTOMATICO' && <CheckCircle size={20} className="text-blue-600" />}
             </button>
           </div>
+
+          <AnimatePresence>
+            {config?.modo_pagamento === 'AUTOMATICO' && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="pt-4 border-t border-slate-100 space-y-3"
+              >
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Selecione o Gateway</p>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => setConfig(prev => prev ? { ...prev, gateway_ativo: 'MERCADO_PAGO' } : null)}
+                    className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase transition-all border-2 ${config?.gateway_ativo !== 'ASAAS' ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-100 text-slate-400 hover:border-slate-200'}`}
+                  >
+                    Mercado Pago
+                  </button>
+                  <button 
+                    onClick={() => setConfig(prev => prev ? { ...prev, gateway_ativo: 'ASAAS' } : null)}
+                    className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase transition-all border-2 ${config?.gateway_ativo === 'ASAAS' ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-100 text-slate-400 hover:border-slate-200'}`}
+                  >
+                    Asaas
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
           
           <p className="text-[10px] text-slate-400 font-bold leading-relaxed uppercase">
             * O modo automático requer o plano Blaze do Firebase para funcionar corretamente com Cloud Functions.
           </p>
+
+          <div className="pt-4 border-t border-slate-100 space-y-4">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="size-8 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400">
+                <DollarSign size={18} />
+              </div>
+              <h3 className="font-black text-[#0a0a2e] uppercase italic tracking-tight">Crendenciais (API)</h3>
+            </div>
+            
+            <div>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Mercado Pago Access Token</label>
+              <input 
+                type="password"
+                value={config?.mercado_pago_access_token || ''}
+                onChange={(e) => setConfig(prev => prev ? { ...prev, mercado_pago_access_token: e.target.value } : null)}
+                placeholder="APP_USR-..."
+                className="w-full bg-slate-50 border-none rounded-2xl p-4 text-sm font-bold text-[#0a0a2e] focus:ring-2 focus:ring-blue-600 outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Mercado Pago Public Key</label>
+              <input 
+                type="text"
+                value={config?.mercado_pago_public_key || ''}
+                onChange={(e) => setConfig(prev => prev ? { ...prev, mercado_pago_public_key: e.target.value } : null)}
+                placeholder="APP_USR-..."
+                className="w-full bg-slate-50 border-none rounded-2xl p-4 text-sm font-bold text-[#0a0a2e] focus:ring-2 focus:ring-blue-600 outline-none"
+              />
+            </div>
+
+            <div className="pt-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Asaas API Key (Opcional)</label>
+              <input 
+                type="password"
+                value={config?.asaas_key || ''}
+                onChange={(e) => setConfig(prev => prev ? { ...prev, asaas_key: e.target.value } : null)}
+                placeholder="$a..."
+                className="w-full bg-slate-50 border-none rounded-2xl p-4 text-sm font-bold text-[#0a0a2e] focus:ring-2 focus:ring-blue-600 outline-none"
+              />
+            </div>
+          </div>
 
           <div className="pt-4 border-t border-slate-100">
             <div className="flex items-center gap-3 mb-4">
@@ -152,6 +221,30 @@ export const AdminSaasSettings: React.FC = () => {
                 className="w-full bg-slate-50 border-none rounded-2xl p-4 text-sm font-bold text-[#0a0a2e] focus:ring-2 focus:ring-blue-600 outline-none"
               />
               <p className="text-[9px] text-slate-400 mt-2 font-medium">Insira apenas o ID do vídeo (o que vem após o v= na URL).</p>
+            </div>
+          </div>
+
+          <div className="pt-4 border-t border-slate-100 space-y-4">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="size-8 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400">
+                <Info size={18} />
+              </div>
+              <h3 className="font-black text-[#0a0a2e] uppercase italic tracking-tight">Configurações de Webhook</h3>
+            </div>
+            <div className="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+              <div>
+                <p className="text-[9px] font-black text-blue-600 uppercase tracking-widest mb-1">Webhook Mercado Pago:</p>
+                <code className="text-[10px] bg-white px-2 py-1 rounded block border border-slate-200 break-all select-all">
+                  https://us-central1-gen-lang-client-0086269527.cloudfunctions.net/webhookMercadoPago
+                </code>
+              </div>
+              <div>
+                <p className="text-[9px] font-black text-blue-600 uppercase tracking-widest mb-1">Webhook Asaas:</p>
+                <code className="text-[10px] bg-white px-2 py-1 rounded block border border-slate-200 break-all select-all">
+                  https://us-central1-gen-lang-client-0086269527.cloudfunctions.net/webhookAsaas
+                </code>
+              </div>
+              <p className="text-[9px] text-slate-400 mt-1">Configure estas URLs nos respectivos painéis para ter baixa automática.</p>
             </div>
           </div>
         </div>

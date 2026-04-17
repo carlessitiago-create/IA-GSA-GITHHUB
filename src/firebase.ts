@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
 // Import the Firebase configuration
@@ -13,6 +13,21 @@ export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 export const auth = getAuth(app);
 export const storage = getStorage(app);
 export const secondaryAuth = auth; // Simplification for now
+
+// Test connection to Firestore
+async function testConnection() {
+  try {
+    // We attempt to fetch a dummy doc from the server specifically to bypass cache
+    await getDocFromServer(doc(db, 'platform_config', 'test_connection'));
+    console.log("Firestore connection successful.");
+  } catch (error) {
+    if(error instanceof Error && error.message.includes('the client is offline')) {
+      console.error("Firebase Configuration Error: The client is offline. This usually means the firestoreDatabaseId in firebase-applet-config.json is incorrect or the database is not provisioned.");
+    }
+    // Other errors are ignored as this is just a test
+  }
+}
+testConnection();
 
 export enum OperationType {
   CREATE = 'create',
@@ -77,6 +92,10 @@ export function cleanData(data: any): any {
   }
   
   if (typeof data === 'object') {
+    // Preserve special objects (FieldValue, Timestamp, Date, etc.)
+    if (data.constructor && data.constructor.name && data.constructor.name !== 'Object') return data;
+    if (data instanceof Date) return data;
+
     const cleaned: any = {};
     for (const [key, value] of Object.entries(data)) {
       const cleanedValue = cleanData(value);
