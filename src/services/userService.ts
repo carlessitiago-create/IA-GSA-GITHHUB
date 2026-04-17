@@ -40,10 +40,8 @@ export interface UserProfile {
 
 const COLLECTION_NAME = 'usuarios';
 
-import { getFunctions, httpsCallable } from 'firebase/functions';
-import { app } from '../firebase';
-
-const functions = getFunctions(app);
+import { httpsCallable } from 'firebase/functions';
+import { app, functions } from '../firebase';
 
 export async function createSecondaryUser(dados: Omit<UserProfile, 'uid' | 'data_cadastro' | 'ativo' | 'status'> & { senha?: string }, creatorRole: string) {
   try {

@@ -200,25 +200,26 @@ function logError(message: string, error?: any) {
  * Standardized HttpsError wrapper for cleaner "internal" error prevention.
  * Converts 'internal' to 'aborted' to ensure technical details are not masked by Firebase.
  */
-function throwHttpsError(code: functions.https.FunctionsErrorCode, message: string, originalError?: any): never {
-    const safeCode = (code === 'internal' || code === 'unknown') ? 'aborted' : code;
+function throwHttpsError(code: string, message: string, originalError?: any): never {
+    const validCodes = ['ok', 'cancelled', 'unknown', 'invalid-argument', 'deadline-exceeded', 'not-found', 'already-exists', 'permission-denied', 'resource-exhausted', 'failed-precondition', 'aborted', 'out-of-range', 'unimplemented', 'internal', 'unavailable', 'data-loss', 'unauthenticated'];
+    let safeCode = validCodes.includes(code) ? code : 'aborted';
+    if (safeCode === 'internal' || safeCode === 'unknown') safeCode = 'aborted';
     
     let technicalDetails = '';
     if (originalError) {
         if (originalError.response?.data) {
             technicalDetails = JSON.stringify(originalError.response.data);
         } else if (originalError.message) {
-            technicalDetails = originalError.message;
+            technicalDetails = String(originalError.message);
         } else {
             technicalDetails = String(originalError);
         }
     }
 
     const detailMessage = technicalDetails ? `${message} [Info: ${technicalDetails}]` : message;
-    
     console.error(`[HTTPS_ERROR] Code: ${safeCode} | Msg: ${message} | Technical: ${technicalDetails}`);
     
-    throw new functions.https.HttpsError(safeCode, message, detailMessage);
+    throw new functions.https.HttpsError(safeCode as functions.https.FunctionsErrorCode, message, detailMessage);
 }
 
 /**
@@ -242,17 +243,35 @@ function safeExecute(moduleName: string, handler: (data: any, context: functions
             console.log(`[${moduleName}] SUCESSO`);
             return result;
         } catch (error: any) {
-            console.error(`[${moduleName}] ERRO CRITICO:`, error);
+            console.error(`[${moduleName}] ERRO CRITICO capturado:`, error);
             
-            // Se já for um HttpsError com código seguro, repassamos
-            if (error && typeof error === 'object' && typeof error.code === 'string') {
-                if (error.code !== 'internal' && error.code !== 'unknown') {
-                    throw error;
+            // Just extract the core details and repass the error. No nested try/catch.
+            let safeCode = 'aborted';
+            let safeMessage = 'Falha desconhecida';
+            let safeDetails: any = null;
+
+            if (error?.code && typeof error.code === 'string') {
+                const cleanCode = error.code.replace('functions/', '');
+                const validCodes = ['ok', 'cancelled', 'unknown', 'invalid-argument', 'deadline-exceeded', 'not-found', 'already-exists', 'permission-denied', 'resource-exhausted', 'failed-precondition', 'aborted', 'out-of-range', 'unimplemented', 'internal', 'unavailable', 'data-loss', 'unauthenticated'];
+                if (validCodes.includes(cleanCode)) {
+                    safeCode = cleanCode;
                 }
             }
-            
-            // Caso contrário, convertemos para aborted com detalhes
-            throwHttpsError('aborted', `Erro interno no módulo ${moduleName}`, error);
+
+            if (error?.message) {
+                safeMessage = "DEBUG_OVERRIDE: " + String(error.message);
+            }
+
+            if (error?.details) {
+                safeDetails = error.details;
+            }
+
+            if (safeCode === 'internal' || safeCode === 'unknown') {
+                safeCode = 'aborted'; // Prevenir INTERNAL genérico do Firebase
+            }
+
+            console.error(`[${moduleName}] Final Error to emit -> Code: ${safeCode}, Message: ${safeMessage}`);
+            throw new functions.https.HttpsError(safeCode as functions.https.FunctionsErrorCode, safeMessage, safeDetails);
         }
     };
 }
@@ -287,7 +306,7 @@ async function getAsaasHeaders() {
     };
 }
 
-export const criarAdministradorDeUsuarios = functions.https.onCall(async (data, context) => {
+export const criarAdministradorDeUsuarios = functions.https.onCall(async (data: any, context: any) => {
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'Usuário não autenticado');
   }
@@ -343,7 +362,7 @@ export const criarAdministradorDeUsuarios = functions.https.onCall(async (data, 
   }
 });
 
-export const atualizarSenhaUsuario = functions.https.onCall(async (data, context) => {
+export const atualizarSenhaUsuario = functions.https.onCall(async (data: any, context: any) => {
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'Usuário não autenticado');
   }
@@ -386,7 +405,7 @@ export const processVenda = functions.https.onCall(
       throw new functions.https.HttpsError('invalid-argument', 'Dados incompletos');
     }
 
-    return await db.runTransaction(async (transaction) => {
+    return await db.runTransaction(async (transaction: any) => {
         logDetailed("Transação iniciada para processVenda", { clienteId, itemsLength: itens.length });
     let vendedorId = context.auth?.uid || 'SYSTEM_SAAS';
     let vendedorNome = 'GSA-IA SaaS';
@@ -665,8 +684,9 @@ export const processarVendaSegura = functions.https.onCall(
       quantidade = 1
     } = data;
 
-    if (!clienteId || !servicoId || valorVendaFinal === undefined) {
-      throw new functions.https.HttpsError('invalid-argument', 'Dados incompletos');
+    // VALIDAÇÃO INICIAL BLINDADA
+    if (!clienteId || !servicoId || valorVendaFinal === undefined || valorVendaFinal === null) {
+      throw new functions.https.HttpsError('invalid-argument', 'Dados incompletos: clienteId, servicoId ou valor ausentes.');
     }
 
     const valor = Number(valorVendaFinal);
@@ -676,23 +696,38 @@ export const processarVendaSegura = functions.https.onCall(
       throw new functions.https.HttpsError('invalid-argument', 'Valor inválido');
     }
 
-    return await db.runTransaction(async (tx) => {
+    return await db.runTransaction(async (tx: any) => {
       console.log(`[VENDA_SEGURA] Iniciando transação para cliente: ${clienteId}`);
 
       // 🔍 1. VALIDAR VENDEDOR E SERVIÇO
       const userRef = db.collection('usuarios').doc(uid);
-      const servicoRef = db.collection('services').doc(servicoId);
-
-      const [userSnap, servicoSnap] = await Promise.all([
-        tx.get(userRef),
-        tx.get(servicoRef)
-      ]);
-
+      const userSnap = await tx.get(userRef);
       if (!userSnap.exists) throw new functions.https.HttpsError('not-found', 'Vendedor não encontrado');
-      if (!servicoSnap.exists) throw new functions.https.HttpsError('not-found', 'Serviço não encontrado');
-
+      
       const user = userSnap.data()!;
-      const servico = servicoSnap.data()!;
+      
+      // 🔍 2. VALIDAR SERVIÇO (COM FALLBACK PARA VENDA MANUAL)
+      let servico: any = {
+        nome_servico: 'Serviço/Recarga GSA',
+        preco_base_vendedor: 0,
+        preco_base_gestor: 0,
+        is_mass_sale_active: false,
+        modelo_id: '',
+        documentos: [],
+        campos: []
+      };
+
+      // Só tenta buscar no banco se NÃO for manual
+      if (servicoId !== 'manual') {
+        const servicoRef = db.collection('services').doc(servicoId);
+        const servicoSnap = await tx.get(servicoRef);
+        if (servicoSnap.exists) {
+          servico = servicoSnap.data()!;
+        } else {
+          console.warn(`[VENDA_SEGURA] Servico ${servicoId} não encontrado. Assumindo venda manual.`);
+        }
+      }
+      
       const nivel = user.role || 'CLIENTE';
 
       console.log(`[VENDA_SEGURA] Vendedor: ${user.nome_completo}, Nível: ${nivel}`);
@@ -720,14 +755,12 @@ export const processarVendaSegura = functions.https.onCall(
 
       // 💰 3. LÓGICA DE CARTEIRA (INVESTIMENTO QUE VIRA CRÉDITO)
       if (metodoPagamento === 'CARTEIRA') {
-        console.log(`[VENDA_SEGURA] Processando débito em carteira...`);
-        const walletsCol = db.collection('wallets');
-        const walletQuery = await tx.get(walletsCol.where('cliente_id', '==', clienteId).limit(1));
-        
+        const walletQuery = await db.collection('wallets').where('cliente_id', '==', clienteId).limit(1).get();
         if (walletQuery.empty) throw new functions.https.HttpsError('failed-precondition', 'Cliente sem carteira configurada');
 
         const walletRef = walletQuery.docs[0].ref;
-        const wallet = walletQuery.docs[0].data();
+        const walletSnap = await tx.get(walletRef);
+        const wallet = walletSnap.data()!;
         const totalDisponivel = (Number(wallet.saldo_atual) || 0) + (Number(wallet.saldo_bonus) || 0);
 
         console.log(`[VENDA_SEGURA] Carteira encontrada. Saldo disponível: ${totalDisponivel}`);
@@ -820,7 +853,7 @@ export const processarVendaSegura = functions.https.onCall(
         saleId: saleRef.id,
         protocolo
       };
-    }).catch(err => {
+    }).catch((err: any) => {
         console.error("[VENDA_SEGURA] Falha na transação Firestore:", err);
         throw err;
     });
@@ -910,95 +943,98 @@ export const gerarPagamentoPixGateway = functions.https.onCall(
 // ==========================================
 export const gerarPagamentoAsaas = functions.https.onCall(
   safeExecute("ASAAS_PIX", async (data, context) => {
-    assertAuth(context);
-    const clean = cleanDataForFirestore;
-
+    const uid = assertAuth(context);
     const { valor, nome, email, cpf, vendaId, descricao } = data;
 
-    if (!valor || !nome || !email || !cpf || !vendaId) {
-      throw new functions.https.HttpsError('invalid-argument', 'Dados incompletos para geração do Pix Asaas.');
+    // 1. Obtém as configurações
+    const config = await getSaasAdminConfig();
+    const token = config.asaas_key || process.env.ASAAS_KEY;
+
+    // Trava de segurança: Se não tiver token, avisa na hora
+    if (!token) {
+      throw new functions.https.HttpsError('failed-precondition', 'Chave de API do Asaas não encontrada no sistema.');
     }
 
-    // 1. Obtém as configurações do SaaS (chave Asaas)
-    const saasConfig = await getSaasAdminConfig();
-    const asaasKey = saasConfig.asaas_key;
+    const ASAAS_URL = config.is_sandbox ? 'https://sandbox.asaas.com/api/v3' : 'https://www.asaas.com/api/v3';
 
-    if (!asaasKey) {
-      throw new functions.https.HttpsError('failed-precondition', 'Configuração do Asaas (API Key) não encontrada no servidor.');
-    }
+    const headers = {
+      'access_token': token,
+      'Content-Type': 'application/json'
+    };
 
-    const ASAAS_URL = saasConfig.is_sandbox ? 'https://sandbox.asaas.com/api/v3' : 'https://www.asaas.com/api/v3';
-    const headers = { 'access_token': asaasKey };
+    // Limpeza de dados
+    const safeCpf = cpf ? String(cpf).replace(/\D/g, '') : '';
+    const safeName = nome || 'Cliente GSA';
+    const safeEmail = email || 'cliente@gsa.com';
 
-    // 2. Criar ou Recuperar Cliente no Asaas
-    let customerId;
     try {
-      const cpfLimpo = String(cpf).replace(/\D/g, '');
-      const clientListResp = await axios.get(`${ASAAS_URL}/customers?email=${encodeURIComponent(email)}`, { headers });
+      let customerId = '';
+
+      // 2. TENTA BUSCAR O CLIENTE PRIMEIRO (Evita erro de duplicidade)
+      const searchRes = await axios.get(`${ASAAS_URL}/customers?email=${safeEmail}`, { headers });
       
-      const existing = clientListResp.data.data.find((c: any) => c.cpfCnpj === cpfLimpo || c.email === email);
-      
-      if (existing) {
-        customerId = existing.id;
+      if (searchRes.data && searchRes.data.data && searchRes.data.data.length > 0) {
+        customerId = searchRes.data.data[0].id; // Usa o cliente que já existe
       } else {
-        const createRes = await axios.post(`${ASAAS_URL}/customers`, {
-          name: nome,
-          email: email,
-          cpfCnpj: cpfLimpo
-        }, { headers });
-        customerId = createRes.data.id;
-      }
-    } catch (err: any) {
-      logError("Erro ao gerenciar cliente Asaas", err.response?.data || err);
-      throwHttpsError('aborted', 'Falha ao processar dados do cliente no gateway', err);
-    }
+        // 3. SE NÃO EXISTE, CRIA UM NOVO
+        const customerPayload: any = { name: safeName, email: safeEmail };
+        
+        // Só envia o CPF para o Asaas se for um número válido de 11 dígitos e diferente de zero
+        if (safeCpf && safeCpf.length === 11 && safeCpf !== '00000000000') {
+          customerPayload.cpfCnpj = safeCpf;
+        }
 
-    // 3. Gerar Cobrança PIX
-    let paymentId;
-    try {
-      const paymentResp = await axios.post(`${ASAAS_URL}/payments`, {
+        const customerRes = await axios.post(`${ASAAS_URL}/customers`, customerPayload, { headers });
+        customerId = customerRes.data.id;
+      }
+
+      // 4. GERA A COBRANÇA PIX
+      const paymentRes = await axios.post(`${ASAAS_URL}/payments`, {
         customer: customerId,
         billingType: 'PIX',
-        value: Number(valor),
-        dueDate: new Date(Date.now() + 86400000).toISOString().split('T')[0], // 24h
-        description: descricao || 'Pagamento GSA (SaaS)',
-        externalReference: vendaId
+        value: valor,
+        dueDate: new Date().toISOString().split('T')[0], // Vence hoje
+        externalReference: vendaId,
+        description: descricao || 'Pagamento GSA'
       }, { headers });
-      paymentId = paymentResp.data.id;
-    } catch (err: any) {
-      logError("Erro ao gerar pagamento Asaas", err.response?.data || err);
-      throwHttpsError('aborted', 'O gateway Asaas recusou a cobrança', err);
+
+      const paymentId = paymentRes.data.id;
+
+      // 5. BUSCA O QR CODE DO PIX
+      const qrRes = await axios.get(`${ASAAS_URL}/payments/${paymentId}/pixQrCode`, { headers });
+
+      // 6. SALVA O VÍNCULO NO BANCO DE DADOS
+      await db.collection('sales').doc(vendaId).update({
+        asaas_payment_id: paymentId,
+        gateway: 'ASAAS',
+        status_pagamento: 'Pendente'
+      });
+
+      return {
+        copy_paste: qrRes.data.payload,
+        qr_code_base64: qrRes.data.encodedImage,
+        payment_id: paymentId
+      };
+      
+    } catch (error: any) {
+      console.error("ERRO DETALHADO DO ASAAS:", error.response?.data || error);
+      
+      // 7. EXTRAI A MENSAGEM REAL DO ASAAS E MANDA PARA O FRONT-END
+      const asaasErrorMessage = error.response?.data?.errors?.[0]?.description 
+                             || error.response?.data?.message 
+                             || error.message 
+                             || 'Erro desconhecido ao comunicar com o Asaas';
+                             
+      // Lança o erro com a mensagem mastigada para o modal exibir
+      throw new functions.https.HttpsError('aborted', `Asaas recusou: ${asaasErrorMessage}`);
     }
-
-    // 4. Obter QR Code e Copy/Paste
-    let pixData;
-    try {
-      const pixResp = await axios.get(`${ASAAS_URL}/payments/${paymentId}/pixQrCode`, { headers });
-      pixData = pixResp.data;
-    } catch (err: any) {
-      logError("Erro ao obter QR Code Asaas", err.response?.data || err);
-      throwHttpsError('aborted', 'Falha ao recuperar código PIX do Asaas', err);
-    }
-
-    // 5. Atualizar a venda no Firestore
-    await db.collection('sales').doc(vendaId).update(clean({
-      asaas_payment_id: paymentId,
-      gateway: 'ASAAS',
-      status_pagamento: 'Pendente'
-    }));
-
-    return {
-      copy_paste: pixData.payload,
-      qr_code_base64: pixData.encodedImage,
-      payment_id: paymentId
-    };
   })
 );
 
 // ==========================================
 // 5. WEBHOOK: ASAAS NOTIFICATION (ENTERPRISE EDITION)
 // ==========================================
-export const webhookAsaas = functions.https.onRequest(async (req, res) => {
+export const webhookAsaas = functions.https.onRequest(async (req: any, res: any) => {
   const eventId = req.body?.payment?.id;
 
   try {
@@ -1063,7 +1099,7 @@ export const webhookAsaas = functions.https.onRequest(async (req, res) => {
       .where('venda_id', '==', vendaId)
       .get();
 
-    processes.forEach(doc => {
+    processes.forEach((doc: any) => {
       const pData = doc.data();
       batch.update(doc.ref, cleanDataForFirestore({
         status_atual: 'Em Análise',
@@ -1090,7 +1126,7 @@ export const webhookAsaas = functions.https.onRequest(async (req, res) => {
       .where('venda_id', '==', vendaId)
       .get();
 
-    batches.forEach(doc => {
+    batches.forEach((doc: any) => {
       batch.update(doc.ref, cleanDataForFirestore({
         status_pagamento: 'Pago',
         status_lote: 'Processando',
@@ -1142,7 +1178,7 @@ export const webhookAsaas = functions.https.onRequest(async (req, res) => {
 // ==========================================
 // 6. WEBHOOK: MERCADO PAGO NOTIFICATION (ENTERPRISE EDITION)
 // ==========================================
-export const webhookMercadoPago = functions.https.onRequest(async (req, res) => {
+export const webhookMercadoPago = functions.https.onRequest(async (req: any, res: any) => {
   const paymentId = req.body?.data?.id || req.body?.id || req.query?.id;
 
   try {
@@ -1211,7 +1247,7 @@ export const webhookMercadoPago = functions.https.onRequest(async (req, res) => 
       .where('venda_id', '==', vendaId)
       .get();
 
-    processes.forEach(doc => {
+    processes.forEach((doc: any) => {
       batch.update(doc.ref, cleanDataForFirestore({
         status_atual: 'Em Análise',
         status_financeiro: 'PAGO'
@@ -1223,7 +1259,7 @@ export const webhookMercadoPago = functions.https.onRequest(async (req, res) => 
       .where('venda_id', '==', vendaId)
       .get();
 
-    batches.forEach(doc => {
+    batches.forEach((doc: any) => {
       batch.update(doc.ref, cleanDataForFirestore({
         status_pagamento: 'Pago',
         status_lote: 'Processando',

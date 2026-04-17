@@ -1,8 +1,6 @@
-import { getFunctions, httpsCallable } from 'firebase/functions';
+import { httpsCallable } from 'firebase/functions';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
-import { app, db, cleanData } from '../firebase';
-
-const functions = getFunctions(app);
+import { db, cleanData, functions } from '../firebase';
 
 /**
  * Utilitário para extrair a mensagem de erro real de um HttpsError do Firebase.
@@ -148,8 +146,8 @@ export async function gerarPagamentoPixGateway(data: {
 }
 
 export async function gerarPagamentoAsaasFront(data: any) {
-  const { getFunctions, httpsCallable } = await import('firebase/functions');
-  const functions = getFunctions();
+  const { httpsCallable } = await import('firebase/functions');
+  const { functions } = await import('../firebase');
   const func = httpsCallable(functions, 'gerarPagamentoAsaas');
   const result = await func(data);
   return result.data as { qr_code_base64: string; copy_paste: string; payment_id: string };

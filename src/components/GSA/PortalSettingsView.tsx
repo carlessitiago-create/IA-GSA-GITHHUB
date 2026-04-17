@@ -42,7 +42,7 @@ export const PortalSettingsView = () => {
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Título do Portal</label>
               <input 
                 type="text" 
-                value={config.titulo_portal} 
+                value={config.titulo_portal || ''} 
                 onChange={e => setConfig({...config, titulo_portal: e.target.value})}
                 className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-2xl p-4 text-sm dark:text-white"
                 placeholder="Ex: Consulta GSA"
@@ -53,7 +53,7 @@ export const PortalSettingsView = () => {
               <div className="flex gap-4 items-center">
                 <input 
                   type="color" 
-                  value={config.cor_primaria} 
+                  value={config.cor_primaria || '#3b82f6'} 
                   onChange={e => setConfig({...config, cor_primaria: e.target.value})}
                   className="h-10 w-20 rounded cursor-pointer bg-transparent border-none"
                 />
@@ -65,7 +65,7 @@ export const PortalSettingsView = () => {
           <div>
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Boas-vindas (Página Inicial)</label>
             <textarea 
-              value={config.mensagem_boas_vindas} 
+              value={config.mensagem_boas_vindas || ''} 
               onChange={e => setConfig({...config, mensagem_boas_vindas: e.target.value})}
               className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-2xl p-4 text-sm focus:ring-2 focus:ring-blue-500/20 h-24 dark:text-white"
             />
@@ -76,7 +76,7 @@ export const PortalSettingsView = () => {
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">WhatsApp Suporte</label>
               <input 
                 type="text" 
-                value={config.whatsapp_suporte_geral} 
+                value={config.whatsapp_suporte_geral || ''} 
                 onChange={e => setConfig({...config, whatsapp_suporte_geral: e.target.value})}
                 className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-2xl p-4 text-sm dark:text-white"
                 placeholder="5511999999999"
@@ -99,7 +99,7 @@ export const PortalSettingsView = () => {
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Bônus Indicação (R$)</label>
               <input 
                 type="number" 
-                value={config.bonus_indicacao} 
+                value={config.bonus_indicacao || 0} 
                 onChange={e => setConfig({...config, bonus_indicacao: Number(e.target.value)})}
                 className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-2xl p-4 text-sm dark:text-white"
               />
@@ -108,7 +108,7 @@ export const PortalSettingsView = () => {
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Link Vídeo Explicativo</label>
               <input 
                 type="text" 
-                value={config.link_video_explicativo} 
+                value={config.link_video_explicativo || ''} 
                 onChange={e => setConfig({...config, link_video_explicativo: e.target.value})}
                 className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-2xl p-4 text-sm dark:text-white"
                 placeholder="https://youtube.com/..."

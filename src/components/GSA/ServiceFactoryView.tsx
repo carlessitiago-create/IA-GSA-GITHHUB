@@ -272,7 +272,7 @@ export const ServiceFactoryView: React.FC = () => {
                 <label className="text-[10px] font-black text-slate-400 uppercase ml-2 mb-1 block">Nome Comercial</label>
                 <input 
                   type="text" 
-                  value={formData.nome_servico}
+                  value={formData.nome_servico || ''}
                   onChange={(e) => setFormData(prev => ({ ...prev, nome_servico: e.target.value }))}
                   placeholder="Ex: Limpa Nome Premium" 
                   className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-blue-600 transition-all outline-none dark:text-white"
@@ -283,7 +283,7 @@ export const ServiceFactoryView: React.FC = () => {
                 <label className="text-[10px] font-black text-slate-400 uppercase ml-2 mb-1 block">Link do Vídeo (YouTube)</label>
                 <input 
                   type="text" 
-                  value={formData.video_youtube_url || formData.video_youtube_id}
+                  value={formData.video_youtube_url || formData.video_youtube_id || ''}
                   onChange={(e) => handleYoutubeInput(e.target.value)}
                   placeholder="URL do YouTube" 
                   className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-blue-600 transition-all outline-none dark:text-white"
@@ -308,7 +308,7 @@ export const ServiceFactoryView: React.FC = () => {
                   <label className="text-[10px] font-black text-slate-400 uppercase ml-2 mb-1 block">Base Gestor (R$)</label>
                   <input 
                     type="number" 
-                    value={formData.preco_base_gestor}
+                    value={formData.preco_base_gestor || 0}
                     onChange={(e) => setFormData(prev => ({ ...prev, preco_base_gestor: parseFloat(e.target.value) }))}
                     placeholder="500,00" 
                     className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-emerald-600 outline-none font-bold text-emerald-600"
@@ -318,7 +318,7 @@ export const ServiceFactoryView: React.FC = () => {
                   <label className="text-[10px] font-black text-slate-400 uppercase ml-2 mb-1 block">Base Vendedor (R$)</label>
                   <input 
                     type="number" 
-                    value={formData.preco_base_vendedor}
+                    value={formData.preco_base_vendedor || 0}
                     onChange={(e) => setFormData(prev => ({ ...prev, preco_base_vendedor: parseFloat(e.target.value) }))}
                     placeholder="750,00" 
                     className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-blue-600 outline-none font-bold text-blue-600"
@@ -331,7 +331,7 @@ export const ServiceFactoryView: React.FC = () => {
                   <label className="text-[10px] font-black text-slate-400 uppercase ml-2 mb-1 block">SLA (Dias)</label>
                   <input 
                     type="number" 
-                    value={formData.prazo_sla_dias}
+                    value={formData.prazo_sla_dias || 0}
                     onChange={(e) => setFormData(prev => ({ ...prev, prazo_sla_dias: parseInt(e.target.value) }))}
                     placeholder="15" 
                     className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-blue-600 outline-none dark:text-white"
@@ -340,7 +340,7 @@ export const ServiceFactoryView: React.FC = () => {
                 <div>
                   <label className="text-[10px] font-black text-slate-400 uppercase ml-2 mb-1 block">Ciclo</label>
                   <select 
-                    value={formData.ciclo_status}
+                    value={formData.ciclo_status || 'LIBERADO'}
                     onChange={(e) => setFormData(prev => ({ ...prev, ciclo_status: e.target.value as 'LIBERADO' | 'ENCERRADO' }))}
                     className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-blue-600 outline-none font-bold dark:text-white"
                   >
@@ -359,7 +359,7 @@ export const ServiceFactoryView: React.FC = () => {
                     <input 
                       type="checkbox" 
                       className="sr-only peer" 
-                      checked={formData.is_mass_sale_active}
+                      checked={formData.is_mass_sale_active || false}
                       onChange={(e) => setFormData(prev => ({ ...prev, is_mass_sale_active: e.target.checked }))}
                     />
                     <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
@@ -372,7 +372,7 @@ export const ServiceFactoryView: React.FC = () => {
                       <label className="text-[8px] font-black text-slate-400 uppercase block mb-1">Massa Gestor (R$)</label>
                       <input 
                         type="number" 
-                        value={formData.preco_massa_gestor}
+                        value={formData.preco_massa_gestor || 0}
                         onChange={(e) => setFormData(prev => ({ ...prev, preco_massa_gestor: parseFloat(e.target.value) }))}
                         className="w-full bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 rounded-xl p-2 text-xs focus:ring-1 focus:ring-emerald-600 outline-none font-bold text-emerald-600"
                       />
@@ -381,7 +381,7 @@ export const ServiceFactoryView: React.FC = () => {
                       <label className="text-[8px] font-black text-slate-400 uppercase block mb-1">Massa Vendedor (R$)</label>
                       <input 
                         type="number" 
-                        value={formData.preco_massa_vendedor}
+                        value={formData.preco_massa_vendedor || 0}
                         onChange={(e) => setFormData(prev => ({ ...prev, preco_massa_vendedor: parseFloat(e.target.value) }))}
                         className="w-full bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 rounded-xl p-2 text-xs focus:ring-1 focus:ring-blue-600 outline-none font-bold text-blue-600"
                       />
@@ -393,7 +393,7 @@ export const ServiceFactoryView: React.FC = () => {
               <div>
                 <label className="text-[10px] font-black text-slate-400 uppercase ml-2 mb-1 block">Descrição (Vitrine)</label>
                 <textarea 
-                  value={formData.mensagem_publica}
+                  value={formData.mensagem_publica || ''}
                   onChange={(e) => setFormData(prev => ({ ...prev, mensagem_publica: e.target.value }))}
                   placeholder="Descreva o que o cliente ganha com este serviço..." 
                   className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-blue-600 outline-none dark:text-white min-h-[80px]"
@@ -403,7 +403,7 @@ export const ServiceFactoryView: React.FC = () => {
               <div>
                 <label className="text-[10px] font-black text-slate-400 uppercase ml-2 mb-1 block">Instruções Internas (ADM)</label>
                 <textarea 
-                  value={formData.mensagem_interna}
+                  value={formData.mensagem_interna || ''}
                   onChange={(e) => setFormData(prev => ({ ...prev, mensagem_interna: e.target.value }))}
                   placeholder="Instruções para o analista ou gerente..." 
                   className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-blue-600 outline-none dark:text-white min-h-[80px]"
@@ -430,7 +430,7 @@ export const ServiceFactoryView: React.FC = () => {
                         <div className="relative flex items-center">
                           <input 
                             type="checkbox" 
-                            checked={formData.requisitos_documentos?.includes(key)}
+                            checked={formData.requisitos_documentos?.includes(key) || false}
                             onChange={(e) => {
                               const current = formData.requisitos_documentos || [];
                               if (e.target.checked) {
@@ -478,7 +478,7 @@ export const ServiceFactoryView: React.FC = () => {
                         <div className="relative flex items-center">
                           <input 
                             type="checkbox" 
-                            checked={formData.requisitos_campos?.includes(key)}
+                            checked={formData.requisitos_campos?.includes(key) || false}
                             onChange={(e) => {
                               const current = formData.requisitos_campos || [];
                               if (e.target.checked) {
@@ -515,7 +515,7 @@ export const ServiceFactoryView: React.FC = () => {
                     <label className="text-[8px] font-black text-slate-400 uppercase block mb-1">Cliente</label>
                     <input 
                       type="number" 
-                      value={formData.pontos_cliente}
+                      value={formData.pontos_cliente || 0}
                       onChange={(e) => setFormData(prev => ({ ...prev, pontos_cliente: parseInt(e.target.value) }))}
                       className="w-full bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 rounded-xl p-2 text-xs focus:ring-1 focus:ring-blue-600 outline-none dark:text-white"
                     />
@@ -524,7 +524,7 @@ export const ServiceFactoryView: React.FC = () => {
                     <label className="text-[8px] font-black text-slate-400 uppercase block mb-1">Vendedor</label>
                     <input 
                       type="number" 
-                      value={formData.pontos_vendedor}
+                      value={formData.pontos_vendedor || 0}
                       onChange={(e) => setFormData(prev => ({ ...prev, pontos_vendedor: parseInt(e.target.value) }))}
                       className="w-full bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 rounded-xl p-2 text-xs focus:ring-1 focus:ring-blue-600 outline-none dark:text-white"
                     />
@@ -533,7 +533,7 @@ export const ServiceFactoryView: React.FC = () => {
                     <label className="text-[8px] font-black text-slate-400 uppercase block mb-1">Gestor</label>
                     <input 
                       type="number" 
-                      value={formData.pontos_gestor}
+                      value={formData.pontos_gestor || 0}
                       onChange={(e) => setFormData(prev => ({ ...prev, pontos_gestor: parseInt(e.target.value) }))}
                       className="w-full bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 rounded-xl p-2 text-xs focus:ring-1 focus:ring-blue-600 outline-none dark:text-white"
                     />

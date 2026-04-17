@@ -92,9 +92,9 @@ export const PagamentoModal: React.FC<PagamentoModalProps> = ({
         const res = await gerarPagamentoAsaasFront({
           valor: amount,
           descricao: description,
-          email: profile.email,
-          nome: profile.nome_completo,
-          cpf: (profile as any).cpf,
+          email: profile.email || 'cliente@gsa.com',
+          nome: profile.nome_completo || (profile as any).nome || 'Cliente GSA',
+          cpf: (profile as any).cpf || '00000000000',
           vendaId: saleId
         });
 
@@ -257,7 +257,7 @@ export const PagamentoModal: React.FC<PagamentoModalProps> = ({
                     <input 
                       type="text" 
                       readOnly 
-                      value={pixData.copy_paste}
+                      value={pixData.copy_paste || ''}
                       className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-3 text-[10px] font-mono outline-none"
                     />
                     <button 

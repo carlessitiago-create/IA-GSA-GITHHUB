@@ -3,7 +3,8 @@ import { db, firebaseConfig } from "../../firebase"; // Importe sua config
 import { initializeApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword, signOut } from "firebase/auth";
 import { doc, setDoc, collection, query, where, getDocs } from "firebase/firestore";
-import { getFunctions, httpsCallable } from "firebase/functions";
+import { httpsCallable } from "firebase/functions";
+import { functions } from "../../firebase";
 import Swal from "sweetalert2";
 import { UserPlus, Mail, Lock, Shield, Users, ArrowRight, Loader2, Edit3 } from "lucide-react";
 import { motion } from "motion/react";

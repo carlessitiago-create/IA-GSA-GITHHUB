@@ -389,7 +389,7 @@ export const PointsSettingsView = () => {
               <label className="text-[10px] font-black uppercase text-slate-400">Novo Cadastro (Cliente)</label>
               <input 
                 type="number" 
-                value={rules.cadastro} 
+                value={rules.cadastro || 0} 
                 onChange={e => setRules({...rules, cadastro: Number(e.target.value)})} 
                 className="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary/20 outline-none text-sm" 
               />
@@ -398,7 +398,7 @@ export const PointsSettingsView = () => {
               <label className="text-[10px] font-black uppercase text-slate-400">Cliente Indicado</label>
               <input 
                 type="number" 
-                value={rules.indicacao} 
+                value={rules.indicacao || 0} 
                 onChange={e => setRules({...rules, indicacao: Number(e.target.value)})} 
                 className="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary/20 outline-none text-sm" 
               />
@@ -407,7 +407,7 @@ export const PointsSettingsView = () => {
               <label className="text-[10px] font-black uppercase text-slate-400">Pagamento em Dia</label>
               <input 
                 type="number" 
-                value={rules.pagamento_dia} 
+                value={rules.pagamento_dia || 0} 
                 onChange={e => setRules({...rules, pagamento_dia: Number(e.target.value)})} 
                 className="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary/20 outline-none text-sm" 
               />
@@ -416,7 +416,7 @@ export const PointsSettingsView = () => {
               <label className="text-[10px] font-black uppercase text-slate-400">Pagamento Antecipado</label>
               <input 
                 type="number" 
-                value={rules.pagamento_antecipado} 
+                value={rules.pagamento_antecipado || 0} 
                 onChange={e => setRules({...rules, pagamento_antecipado: Number(e.target.value)})} 
                 className="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary/20 outline-none text-sm" 
               />
@@ -430,7 +430,7 @@ export const PointsSettingsView = () => {
               <label className="text-[10px] font-black uppercase text-slate-400">Venda (P/ Vendedor)</label>
               <input 
                 type="number" 
-                value={rules.venda_vendedor} 
+                value={rules.venda_vendedor || 0} 
                 onChange={e => setRules({...rules, venda_vendedor: Number(e.target.value)})} 
                 className="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary/20 outline-none text-sm" 
               />
@@ -439,7 +439,7 @@ export const PointsSettingsView = () => {
               <label className="text-[10px] font-black uppercase text-slate-400">Venda (P/ Gestor)</label>
               <input 
                 type="number" 
-                value={rules.venda_gestor} 
+                value={rules.venda_gestor || 0} 
                 onChange={e => setRules({...rules, venda_gestor: Number(e.target.value)})} 
                 className="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary/20 outline-none text-sm" 
               />
