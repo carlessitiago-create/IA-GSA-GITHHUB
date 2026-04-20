@@ -127,36 +127,48 @@ export const ClientWalletView: React.FC = () => {
 
         // 4. Mostrar QR Code
         await Swal.fire({
-          title: 'PIX Gerado com Sucesso!',
+          title: '<span class="text-emerald-400 font-black italic uppercase tracking-tighter text-2xl">PIX Gerado</span>',
+          background: '#0B0F19',
+          color: '#fff',
           html: `
             <div class="space-y-6 py-4">
-              <div class="flex flex-col items-center gap-4">
-                <p class="text-xs text-slate-500 font-bold uppercase tracking-widest text-center">Escaneie o QR Code abaixo</p>
-                <div class="p-4 bg-white rounded-3xl border-2 border-slate-100 shadow-xl">
-                  <img src="${pixResult.qr_code_base64}" alt="QR Code PIX" style="width: 180px; height: 180px;" />
+              <div class="flex flex-col items-center gap-4 relative">
+                <div class="absolute inset-0 bg-emerald-500/10 blur-[50px] rounded-full pointer-events-none"></div>
+                <div class="p-4 bg-white rounded-3xl border-4 border-emerald-500/20 shadow-[0_0_40px_rgba(52,211,153,0.3)] relative z-10 transition-transform hover:scale-105 duration-300">
+                  <img src="${pixResult.qr_code_base64}" alt="QR Code PIX" style="width: 200px; height: 200px;" />
                 </div>
+                <p class="text-[10px] text-emerald-400 font-bold uppercase tracking-[0.2em] text-center mt-2 flex items-center gap-2">
+                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 14 4-4"/><path d="M3.3 7H6"/><path d="M3 11h3"/><path d="M3 15h3"/><path d="M8 15h3"/><path d="M8 11h3"/><path d="M8 7h3"/><path d="M13 7h3"/><path d="M13 11h3"/><path d="M18 7h3"/><path d="M18 11h3"/><path d="M21 15h-3"/><path d="M21 19h-3"/><path d="M13 19h3"/><path d="M8 19h3"/><path d="M3 19h3"/></svg>
+                   Escaneie para investir saldo
+                </p>
               </div>
               
-              <div class="space-y-2">
-                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Ou copie o código abaixo</p>
-                <div class="flex items-center gap-2 bg-slate-50 p-3 rounded-xl border border-slate-100">
-                  <input id="wallet-pix-copy" class="text-[10px] font-mono text-slate-600 truncate w-full bg-transparent border-none outline-none" value="${pixResult.copy_paste}" readonly />
-                  <button onclick="document.getElementById('wallet-pix-copy').select(); document.execCommand('copy');" class="bg-[#0a0a2e] text-white p-2 rounded-lg">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+              <div class="space-y-2 relative z-10">
+                <p class="text-[9px] font-black text-slate-500 uppercase tracking-widest text-center">Ou use o Código Copia e Cola</p>
+                <div class="flex items-center gap-2 bg-[#020617] p-2 rounded-xl border border-emerald-900/40">
+                  <input id="wallet-pix-copy" class="text-[10px] font-mono text-emerald-100 truncate w-full bg-transparent border-none outline-none pl-2" value="${pixResult.copy_paste}" readonly />
+                  <button onclick="document.getElementById('wallet-pix-copy').select(); document.execCommand('copy');" class="bg-emerald-500 hover:bg-emerald-400 text-[#0a0a2e] p-3 rounded-lg font-black uppercase text-[10px] transition-colors shadow-[0_0_15px_rgba(52,211,153,0.4)]">
+                    COPIAR
                   </button>
                 </div>
               </div>
 
-              <div class="bg-blue-50 p-4 rounded-2xl flex items-center gap-3">
-                <div class="size-8 bg-blue-600 rounded-lg flex items-center justify-center text-white shrink-0">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.89 14 3.5l-2.3 8.1 8.3-1.1-10 11.4 2.3-8.1-8.3 1.1z"/></svg>
+              <div class="bg-emerald-900/20 border border-emerald-500/20 p-4 rounded-2xl flex items-center gap-4 relative z-10">
+                <div class="size-10 bg-emerald-500/20 rounded-xl flex items-center justify-center text-emerald-400 shrink-0">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                 </div>
-                <p class="text-[10px] font-black text-blue-700 uppercase tracking-widest text-left">Seu saldo será atualizado automaticamente após a confirmação do pagamento via ${pixResult.gateway}.</p>
+                <div class="text-left">
+                    <p class="text-[9px] font-black text-emerald-400 uppercase tracking-widest leading-tight">Checkout Segurado SSL</p>
+                    <p class="text-[10px] font-medium text-slate-300 mt-0.5">Seu saldo entra automaticamente via ${pixResult.gateway}.</p>
+                </div>
               </div>
             </div>
           `,
-          confirmButtonText: 'ENTENDIDO',
-          confirmButtonColor: '#0a0a2e'
+          confirmButtonText: 'FECHAR E AGUARDAR O PIX',
+          confirmButtonColor: '#020617',
+          customClass: {
+             confirmButton: 'border border-slate-700 shadow-xl'
+          }
         });
 
       } catch (err: any) {
@@ -205,16 +217,25 @@ export const ClientWalletView: React.FC = () => {
               <p className="text-[10px] font-bold text-blue-300/50 uppercase tracking-widest">Atualizado em tempo real</p>
             </div>
 
-            <div className="flex items-center gap-4 pt-4">
-              <button 
-                onClick={handleAddBalance}
-                className="bg-emerald-500 hover:bg-emerald-600 text-[#0a0a2e] px-6 py-2.5 rounded-2xl flex items-center gap-2 transition-all font-black uppercase text-[10px] tracking-widest shadow-xl shadow-emerald-500/20 active:scale-95"
-              >
-                <PlusCircle size={16} /> Adicionar Saldo
-              </button>
-              <button className="text-[10px] font-black text-white/50 uppercase tracking-widest hover:text-white transition-colors">
-                Ver Detalhes
-              </button>
+            <div className="flex flex-col gap-4 mt-6">
+              <div className="flex items-center gap-4">
+                <button 
+                  onClick={handleAddBalance}
+                  className="bg-emerald-400 hover:bg-emerald-300 text-[#0a0a2e] px-8 py-3.5 rounded-2xl flex items-center justify-center gap-2 transition-all font-black uppercase text-[11px] tracking-widest shadow-[0_0_20px_rgba(52,211,153,0.3)] hover:shadow-[0_0_30px_rgba(52,211,153,0.5)] active:scale-95 group relative overflow-hidden"
+                >
+                  <span className="absolute inset-0 w-full h-full bg-white/20 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] skew-x-12"></span>
+                  <Zap size={16} className="text-[#0a0a2e]" /> Recarga com PIX
+                </button>
+              </div>
+              <div className="flex items-center gap-3">
+                 <div className="h-6 px-3 bg-white/10 rounded-full flex items-center justify-center gap-1.5 border border-white/5">
+                    <ShieldCheck size={12} className="text-emerald-400" />
+                    <span className="text-[9px] font-black text-white/70 uppercase tracking-widest">SSL / 256-bit</span>
+                 </div>
+                 <div className="h-6 px-3 bg-white/10 rounded-full flex items-center justify-center border border-white/5">
+                    <span className="text-[9px] font-black text-emerald-400/80 uppercase tracking-widest">Checkout Segurado</span>
+                 </div>
+              </div>
             </div>
           </div>
         </motion.div>

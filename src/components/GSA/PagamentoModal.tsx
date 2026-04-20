@@ -8,7 +8,10 @@ import {
   CheckCircle2,
   ArrowRight,
   Copy,
-  Zap
+  Zap,
+  Lock,
+  ShieldCheck,
+  Building2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import Swal from 'sweetalert2';
@@ -136,154 +139,184 @@ export const PagamentoModal: React.FC<PagamentoModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        onClick={onClose}
-        className="absolute inset-0 bg-[#0a0a2e]/80 backdrop-blur-sm"
-      />
-      
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.9, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.9, y: 20 }}
-        className="relative w-full max-w-lg bg-white rounded-[2.5rem] shadow-2xl overflow-hidden"
-      >
-        {/* HEADER */}
-        <div className="bg-[#0a0a2e] p-8 text-white relative">
-          <button 
-            onClick={onClose}
-            className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors"
-          >
-            <X size={24} />
-          </button>
-          
-          <div className="flex items-center gap-4 mb-6">
-            <div className="size-12 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-600/20">
-              <CreditCard className="text-white" size={24} />
-            </div>
-            <div>
-              <h3 className="text-xl font-black uppercase italic tracking-tighter">Pagamento Seguro</h3>
-              <p className="text-[10px] text-blue-400 font-bold uppercase tracking-widest">Checkout GSA Diagnostics</p>
-            </div>
-          </div>
+    <AnimatePresence>
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={onClose}
+          className="absolute inset-0 bg-[#020617]/90 backdrop-blur-md"
+        />
+        
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 20 }}
+          transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+          className="relative w-full max-w-[420px] bg-[#0B0F19] border border-slate-800 rounded-[2.5rem] shadow-2xl overflow-hidden"
+        >
+          {/* Fundo Glow Decorativo */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-blue-600/20 rounded-full blur-[80px] pointer-events-none"></div>
 
-          <div className="bg-white/10 p-4 rounded-2xl border border-white/10">
-            <p className="text-[10px] font-black text-blue-300 uppercase tracking-widest mb-1">Valor Total</p>
-            <p className="text-3xl font-black italic">R$ {amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-          </div>
-        </div>
-
-        {/* CONTENT */}
-        <div className="p-8 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
-          {!pixData ? (
-            <>
-              <div className="space-y-4">
-                <p className="text-sm font-black text-[#0a0a2e] uppercase italic tracking-tight">{description}</p>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <button 
-                    onClick={() => setMethod('PIX')}
-                    className={`p-6 rounded-2xl border-2 flex flex-col items-center gap-3 transition-all ${
-                      method === 'PIX' 
-                      ? 'border-[#0a0a2e] bg-slate-50 shadow-inner' 
-                      : 'border-slate-50 bg-white hover:border-slate-100'
-                    }`}
-                  >
-                    <div className={`size-10 rounded-xl flex items-center justify-center ${method === 'PIX' ? 'bg-[#0a0a2e] text-white' : 'bg-slate-100 text-slate-400'}`}>
-                      <QrCode size={20} />
-                    </div>
-                    <span className={`text-[10px] font-black uppercase tracking-widest ${method === 'PIX' ? 'text-[#0a0a2e]' : 'text-slate-400'}`}>PIX Copia e Cola</span>
-                  </button>
-
-                  <button 
-                    onClick={() => setMethod('CARTEIRA')}
-                    className={`p-6 rounded-2xl border-2 flex flex-col items-center gap-3 transition-all ${
-                      method === 'CARTEIRA' 
-                      ? 'border-[#0a0a2e] bg-slate-50 shadow-inner' 
-                      : 'border-slate-50 bg-white hover:border-slate-100'
-                    }`}
-                  >
-                    <div className={`size-10 rounded-xl flex items-center justify-center ${method === 'CARTEIRA' ? 'bg-[#0a0a2e] text-white' : 'bg-slate-100 text-slate-400'}`}>
-                      <Wallet size={20} />
-                    </div>
-                    <div className="text-center">
-                      <span className={`text-[10px] font-black uppercase tracking-widest block ${method === 'CARTEIRA' ? 'text-[#0a0a2e]' : 'text-slate-400'}`}>Saldo Carteira</span>
-                      <span className="text-[9px] font-bold text-emerald-600 block mt-1">R$ {walletBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                    </div>
-                  </button>
-                </div>
+          {/* HEADER */}
+          <div className="p-8 relative z-10 border-b border-slate-800/50">
+            <button 
+              onClick={onClose}
+              className="absolute top-6 right-6 size-8 flex items-center justify-center rounded-full bg-slate-800/50 text-slate-400 hover:bg-slate-700 hover:text-white transition-colors"
+            >
+              <X size={16} />
+            </button>
+            
+            <div className="flex items-center gap-4 mb-6">
+              <div className="size-12 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/50 border border-blue-500/30">
+                <Lock className="text-white" size={20} />
               </div>
-
-              <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 flex items-start gap-3">
-                <CheckCircle2 className="text-emerald-600 shrink-0 mt-0.5" size={16} />
-                <p className="text-[10px] text-emerald-700 font-bold leading-relaxed uppercase">
-                  Liberação imediata após a confirmação do pagamento. Os processos entrarão na fila de produção automaticamente.
+              <div>
+                <h3 className="text-lg font-black text-white uppercase italic tracking-tighter">Checkout Blindado</h3>
+                <p className="text-[9px] text-emerald-400 font-bold uppercase tracking-widest flex items-center gap-1">
+                  <ShieldCheck size={10} /> Ambiente 100% Seguro
                 </p>
               </div>
+            </div>
 
-              <button 
-                onClick={handleConfirm}
-                disabled={loading}
-                className="w-full bg-[#0a0a2e] text-white py-5 rounded-[1.5rem] font-black uppercase text-xs tracking-[0.2em] shadow-2xl shadow-blue-900/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+            <div className="bg-[#111827] p-5 rounded-2xl border border-slate-700 shadow-inner">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Valor do Serviço</p>
+              <p className="text-3xl font-black text-white tracking-tighter">
+                R$ <span className="text-4xl">{amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+              </p>
+            </div>
+          </div>
+
+          {/* CONTENT */}
+          <div className="p-8 space-y-6 relative z-10">
+            {!pixData ? (
+              <motion.div 
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="space-y-6"
               >
-                {loading ? <Loader2 className="animate-spin" size={18} /> : null}
-                {loading ? 'PROCESSANDO...' : 'CONFIRMAR PAGAMENTO'}
-                {!loading && <ArrowRight size={18} />}
-              </button>
-            </>
-          ) : (
-            <div className="space-y-6 text-center animate-in fade-in zoom-in duration-300">
-              <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 flex items-center justify-center gap-2">
-                <Zap className="text-emerald-600 animate-pulse" size={20} />
-                <p className="text-xs font-black text-emerald-800 uppercase tracking-tight">Pagamento PIX Gerado!</p>
-              </div>
-
-              <div className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 flex flex-col items-center gap-4">
-                <div className="size-48 bg-white p-4 rounded-2xl shadow-inner border border-slate-200">
-                  <img 
-                    src={pixData.qr_code} 
-                    alt="QR Code PIX" 
-                    className="w-full h-full"
-                    referrerPolicy="no-referrer"
-                  />
+                <div className="bg-slate-800/30 border border-slate-700/50 p-4 rounded-xl">
+                  <p className="text-xs font-medium text-slate-300 italic tracking-tight">{description}</p>
                 </div>
                 
-                <div className="w-full space-y-3">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Código Copia e Cola</p>
-                  <div className="flex gap-2">
-                    <input 
-                      type="text" 
-                      readOnly 
-                      value={pixData.copy_paste || ''}
-                      className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-3 text-[10px] font-mono outline-none"
-                    />
+                <div className="space-y-3">
+                  <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest pl-1">Selecione o Método</p>
+                  <div className="grid grid-cols-2 gap-3">
                     <button 
-                      onClick={handleCopyPix}
-                      className="bg-[#0a0a2e] text-white p-3 rounded-xl hover:bg-blue-900 transition-colors"
+                      onClick={() => setMethod('PIX')}
+                      className={`p-4 rounded-2xl border flex flex-col items-center gap-3 transition-all duration-300 ${
+                        method === 'PIX' 
+                        ? 'border-blue-500 bg-blue-500/10 shadow-[0_0_15px_rgba(59,130,246,0.15)] scale-[1.02]' 
+                        : 'border-slate-800 bg-[#111827] hover:border-slate-700 hover:bg-slate-800'
+                      }`}
                     >
-                      <Copy size={18} />
+                      <div className={`size-10 rounded-full flex items-center justify-center ${method === 'PIX' ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400'}`}>
+                        <QrCode size={18} />
+                      </div>
+                      <span className={`text-[10px] font-black uppercase tracking-widest ${method === 'PIX' ? 'text-blue-400' : 'text-slate-400'}`}>PIX Instântaneo</span>
+                    </button>
+
+                    <button 
+                      onClick={() => setMethod('CARTEIRA')}
+                      className={`p-4 rounded-2xl border flex flex-col items-center gap-3 transition-all duration-300 ${
+                        method === 'CARTEIRA' 
+                        ? 'border-emerald-500 bg-emerald-500/10 shadow-[0_0_15px_rgba(16,185,129,0.15)] scale-[1.02]' 
+                        : 'border-slate-800 bg-[#111827] hover:border-slate-700 hover:bg-slate-800'
+                      }`}
+                    >
+                      <div className={`size-10 rounded-full flex items-center justify-center ${method === 'CARTEIRA' ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-400'}`}>
+                        <Wallet size={18} />
+                      </div>
+                      <div className="text-center">
+                        <span className={`text-[10px] font-black uppercase tracking-widest block ${method === 'CARTEIRA' ? 'text-emerald-400' : 'text-slate-400'}`}>Carteira GSA</span>
+                        <span className="text-[10px] font-bold text-slate-500 block mt-0.5 tracking-tighter">R$ {walletBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                      </div>
                     </button>
                   </div>
                 </div>
-              </div>
 
-              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tight leading-relaxed">
-                Após pagar, o sistema identificará automaticamente em até 60 segundos e iniciará os processos.
-              </p>
+                {/* TRUST BADGES SECTION */}
+                <div className="flex items-center justify-center gap-4 py-2 border-t border-b border-slate-800/50">
+                  <div className="flex items-center gap-1.5 text-slate-500">
+                    <Lock size={12} />
+                    <span className="text-[8px] font-black uppercase tracking-widest">SSL 256-bit</span>
+                  </div>
+                  <div className="size-1 rounded-full bg-slate-700"></div>
+                  <div className="flex items-center gap-1.5 text-slate-500">
+                    <Building2 size={12} />
+                    <span className="text-[8px] font-black uppercase tracking-widest">Homologado Bacen</span>
+                  </div>
+                </div>
 
-              <button 
-                onClick={onClose}
-                className="w-full bg-slate-100 text-slate-600 py-4 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-slate-200 transition-all"
+                <div className="relative group">
+                  {/* Glow do botão */}
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl blur opacity-30 group-hover:opacity-60 transition duration-500"></div>
+                  <button 
+                    onClick={handleConfirm}
+                    disabled={loading}
+                    className="relative w-full bg-[#0F172A] border border-slate-700 text-white py-4 rounded-2xl font-black uppercase text-xs tracking-[0.2em] transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-800"
+                  >
+                    {loading ? <Loader2 className="animate-spin text-blue-500" size={18} /> : <Zap className="text-blue-500" size={18} />}
+                    {loading ? 'PROCESSANDO...' : 'FINALIZAR COM SEGURANÇA'}
+                  </button>
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="space-y-6 text-center"
               >
-                FECHAR E IR PARA HISTÓRICO
-              </button>
-            </div>
-          )}
-        </div>
-      </motion.div>
-    </div>
+                <div className="bg-emerald-500/10 p-4 rounded-2xl border border-emerald-500/20 flex flex-col items-center justify-center gap-2">
+                  <Zap className="text-emerald-400 animate-pulse" size={24} />
+                  <p className="text-xs font-black text-emerald-400 uppercase tracking-widest">Código Gerado com Sucesso</p>
+                  <p className="text-[10px] text-emerald-500/70 uppercase">Escaneie o QR Code no app do seu banco</p>
+                </div>
+
+                <div className="bg-[#111827] p-6 rounded-[2rem] border border-slate-800 flex flex-col items-center gap-5 shadow-inner">
+                  <div className="relative">
+                    <div className="absolute -inset-2 bg-gradient-to-tr from-blue-500 to-emerald-500 rounded-3xl blur opacity-20"></div>
+                    <div className="relative size-48 bg-white p-3 rounded-2xl shadow-xl">
+                      <img 
+                        src={pixData.qr_code} 
+                        alt="QR Code PIX" 
+                        className="w-full h-full rounded-xl"
+                        referrerPolicy="no-referrer"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="w-full space-y-2 text-left">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Código Copia e Cola</p>
+                    <div className="flex gap-2">
+                      <input 
+                        type="text" 
+                        readOnly 
+                        value={pixData.copy_paste || ''}
+                        className="flex-1 bg-[#020617] border border-slate-700 rounded-xl px-4 py-3 text-[10px] text-slate-300 font-mono outline-none focus:border-blue-500 transition-colors"
+                      />
+                      <button 
+                        onClick={handleCopyPix}
+                        className="bg-blue-600 text-white p-3 rounded-xl hover:bg-blue-500 transition-colors shadow-lg shadow-blue-900/50"
+                      >
+                        <Copy size={18} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <button 
+                  onClick={onClose}
+                  className="w-full bg-slate-800 text-slate-300 border border-slate-700 py-4 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-slate-700 hover:text-white transition-all"
+                >
+                  <CheckCircle2 size={16} className="inline-block mr-2 -mt-0.5"/> JÁ REALIZEI O PAGAMENTO
+                </button>
+              </motion.div>
+            )}
+          </div>
+        </motion.div>
+      </div>
+    </AnimatePresence>
   );
 };

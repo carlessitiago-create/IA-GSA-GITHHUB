@@ -3,10 +3,10 @@ import { Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "./components/AuthContext";
 import { LoadingScreen } from "./components/LoadingScreen";
 import { DashboardLayout } from "./components/DashboardLayout";
+import { DashboardFinanceiro } from "./pages/DashboardFinanceiro";
 
 // Lazy Loading Views
 const LoginView = lazy(() => import("./components/LoginView"));
-const DashboardFinanceiro = lazy(() => import("./pages/DashboardFinanceiro").then(m => ({ default: m.DashboardFinanceiro })));
 const PortalCliente = lazy(() => import("./components/PortalCliente").then(m => ({ default: m.PortalCliente })));
 const PublicPortal = lazy(() => import("./views/PublicPortal").then(m => ({ default: m.PublicPortal })));
 const VitrinePublicaView = lazy(() => import("./views/VitrinePublicaView").then(m => ({ default: m.VitrinePublicaView })));

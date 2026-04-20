@@ -19,9 +19,12 @@ interface Service {
 }
 
 export function VendasPDVView() {
-  const context = useOutletContext<any>();
-  const { preSelectedService, setPreSelectedService } = context || {};
-  const { profile } = useAuth();
+  const context = useOutletContext<any>() || {};
+  const { preSelectedService, setPreSelectedService } = context;
+  
+  const authContext = useAuth();
+  const profile = authContext?.profile;
+  
   const [services, setServices] = useState<ServiceData[]>([]);
   const [clients, setClients] = useState<UserProfile[]>([]);
   const [selectedClient, setSelectedClient] = useState<UserProfile | null>(null);
@@ -366,16 +369,39 @@ export function VendasPDVView() {
         if (paymentMethod === 'PIX') {
           setLoading(true);
           try {
-            const { gerarPagamentoPixGateway } = await import('../services/vendaService');
-            const pixResult = await gerarPagamentoPixGateway({
-              valor: finalPrice,
-              descricao: `Venda ${protocolo} - ${selectedService.nome_servico}`,
-              email: currentClient.email,
-              nome: currentClient.nome_completo,
-              cpf: finalCpf,
-              clienteId: currentClient.uid,
-              vendaId: saleId
-            });
+            const { getSaasConfig } = await import('../services/configService');
+            const config = await getSaasConfig();
+            let pixResult: any;
+
+            if (config?.gateway_ativo === 'ASAAS') {
+              const { gerarPagamentoAsaasFront } = await import('../services/vendaService');
+              pixResult = await gerarPagamentoAsaasFront({
+                valor: finalPrice,
+                descricao: `Venda ${protocolo} - ${selectedService.nome_servico}`,
+                email: currentClient.email,
+                nome: currentClient.nome_completo,
+                cpf: finalCpf,
+                clienteId: currentClient.uid,
+                vendaId: saleId
+              });
+              pixResult.gateway = 'ASAAS';
+            } else {
+              const { gerarPagamentoPixGateway } = await import('../services/vendaService');
+              pixResult = await gerarPagamentoPixGateway({
+                valor: finalPrice,
+                descricao: `Venda ${protocolo} - ${selectedService.nome_servico}`,
+                email: currentClient.email,
+                nome: currentClient.nome_completo,
+                cpf: finalCpf,
+                clienteId: currentClient.uid,
+                vendaId: saleId
+              });
+              pixResult.gateway = 'MERCADO_PAGO';
+            }
+
+            const imgSrc = pixResult.qr_code_base64?.startsWith('data:image') 
+                         ? pixResult.qr_code_base64 
+                         : `data:image/png;base64,${pixResult.qr_code_base64}`;
 
             await Swal.fire({
               title: 'Pagamento PIX Gerado!',
@@ -384,7 +410,7 @@ export function VendasPDVView() {
                   <div class="flex flex-col items-center gap-4">
                     <p class="text-xs text-slate-500 font-bold uppercase tracking-widest">Escaneie o QR Code abaixo</p>
                     <div class="p-4 bg-white rounded-3xl border-2 border-slate-100 shadow-xl">
-                      <img src="${pixResult.qr_code_base64}" alt="QR Code PIX" style="width: 200px; height: 200px;" />
+                      <img src="${imgSrc}" alt="QR Code PIX" style="width: 200px; height: 200px;" />
                     </div>
                   </div>
                   <div class="space-y-2">
@@ -441,50 +467,64 @@ export function VendasPDVView() {
 
   return (
     <div className="responsive-container pb-20">
-      <div className="bg-white p-4 sm:p-8 md:p-12 lg:p-16 rounded-[2rem] sm:rounded-[3rem] md:rounded-[3.5rem] shadow-2xl border border-slate-100 relative overflow-hidden group">
-        <div className="absolute top-0 right-0 p-16 opacity-5 pointer-events-none group-hover:rotate-12 transition-transform duration-1000">
-          <ShoppingCart className="size-[180px] sm:size-[220px] text-[#0a0a2e]" />
+      {/* VIP TERMINAL HEADER */}
+      <div className="bg-[#020617] p-8 sm:p-10 md:p-16 rounded-[2rem] sm:rounded-[3rem] md:rounded-[3.5rem] shadow-[0_30px_60px_rgba(0,0,0,0.6)] border border-slate-800 relative overflow-hidden group mb-10">
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-blue-600/10 blur-[100px] rounded-full pointer-events-none group-hover:bg-blue-500/20 transition-all duration-1000"></div>
+        <div className="absolute top-0 right-0 p-16 opacity-[0.03] pointer-events-none group-hover:rotate-12 group-hover:scale-110 transition-all duration-1000">
+          <ShoppingCart className="size-[180px] sm:size-[220px] text-white" />
         </div>
 
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 sm:gap-10 mb-10 sm:mb-16 relative z-10">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 sm:gap-10 relative z-10">
           <div className="space-y-4">
             <div className="flex items-center gap-4 sm:gap-5">
-              <div className="size-12 sm:size-16 bg-[#0a0a2e] rounded-2xl sm:rounded-[1.8rem] flex items-center justify-center text-white shadow-2xl shadow-blue-900/20">
+              <div className="size-12 sm:size-16 bg-blue-600/10 border border-blue-500/30 rounded-2xl sm:rounded-[1.8rem] flex items-center justify-center text-blue-400 shadow-[0_0_20px_rgba(37,99,235,0.2)]">
                 <ShoppingCart className="size-6 sm:size-8" />
               </div>
               <div>
-                <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-[#0a0a2e] uppercase italic tracking-tighter leading-none">
-                  PDV Direto
+                <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white uppercase italic tracking-tighter leading-none">
+                  Terminal <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">PDV</span>
                 </h1>
-                <p className="text-slate-400 text-[9px] sm:text-xs font-black uppercase tracking-widest mt-2">GSA IA Sales Engine v4.0</p>
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="flex h-2 w-2 relative">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                  <p className="text-emerald-400 text-[9px] sm:text-xs font-black uppercase tracking-widest">GSA Sales Engine Offline/Online</p>
+                </div>
               </div>
             </div>
-            <p className="text-slate-500 text-sm sm:text-lg font-medium max-w-xl">
-              Gere protocolos e ordens de serviço instantaneamente com validação criptografada.
+            <p className="text-slate-400 text-sm sm:text-lg font-medium max-w-xl">
+              Ambiente de alta conversão. Feche vendas, gere links de pagamento seguros e acelere suas comissões.
             </p>
           </div>
 
           <div className="flex flex-col sm:flex-row items-center gap-4">
             <button 
               onClick={() => setShowProposalGenerator(true)}
-              className="w-full sm:w-auto bg-white border-2 border-[#0a0a2e] text-[#0a0a2e] px-6 sm:px-8 py-4 sm:py-5 rounded-2xl sm:rounded-[2rem] font-black uppercase text-[10px] sm:text-xs tracking-widest hover:bg-[#0a0a2e] hover:text-white transition-all shadow-sm flex items-center justify-center gap-3"
+              className="w-full sm:w-auto bg-[#0F172A] border border-slate-700 text-slate-300 px-6 sm:px-8 py-4 sm:py-5 rounded-2xl sm:rounded-[2rem] font-black uppercase text-[10px] sm:text-xs tracking-widest hover:border-blue-500 hover:text-white hover:bg-blue-900/20 transition-all shadow-inner flex items-center justify-center gap-3"
             >
               <FileText className="size-5 sm:size-6" />
-              Gerar Proposta Personalizada
+              Gerar Proposta GSA
             </button>
 
-            <div className="bg-blue-50 px-6 sm:px-8 py-4 sm:py-5 rounded-2xl sm:rounded-[2rem] border border-blue-100 flex items-center gap-4 sm:gap-5 shadow-sm">
-              <div className="size-10 sm:size-12 bg-blue-600 rounded-xl sm:rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-600/20">
-                <ShieldCheck className="size-5 sm:size-6" />
+            <div className="bg-emerald-900/20 px-6 sm:px-8 py-4 sm:py-5 rounded-2xl sm:rounded-[2rem] border border-emerald-500/30 flex items-center gap-4 sm:gap-5 shadow-[inset_0_0_20px_rgba(16,185,129,0.05)]">
+              <div className="size-10 sm:size-12 bg-emerald-500/20 rounded-xl sm:rounded-2xl flex items-center justify-center text-emerald-400 relative overflow-hidden">
+                <div className="absolute inset-0 bg-emerald-400/20 animate-pulse"></div>
+                <ShieldCheck className="size-5 sm:size-6 relative z-10" />
               </div>
               <div>
-                <p className="text-[9px] font-black text-blue-600 uppercase tracking-widest">Ambiente Seguro</p>
-                <p className="text-lg sm:text-xl font-black text-blue-700 uppercase italic leading-none">Protegido</p>
+                 <p className="text-[9px] sm:text-[10px] font-black text-emerald-500/80 uppercase tracking-[0.2em] mb-1">Criptografia Ativa</p>
+                 <p className="text-white text-xs sm:text-sm font-black tracking-widest uppercase flex items-center gap-2">
+                   SSL Secure <span className="text-emerald-400">256-Bit</span>
+                 </p>
               </div>
             </div>
           </div>
         </div>
-        
+      </div>
+
+      {/* PDV MAIN CONTENT WRAPPER */}
+      <div className="bg-white p-4 sm:p-8 md:p-12 lg:p-16 rounded-[2rem] sm:rounded-[3rem] md:rounded-[3.5rem] shadow-xl border border-slate-100 relative overflow-hidden relative z-10">
         <div className="grid grid-cols-1 gap-12 sm:gap-16 relative z-10">
           {/* INDICADOR DE PASSOS */}
           <div className="flex items-center justify-center gap-3 sm:gap-8 mb-4">

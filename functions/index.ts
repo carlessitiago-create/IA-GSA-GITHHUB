@@ -1,4 +1,6 @@
 import * as functions from 'firebase-functions';
+import { onCall, CallableRequest, HttpsError } from 'firebase-functions/v2/https';
+import { onRequest } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
 import { getFirestore } from 'firebase-admin/firestore';
 import { MercadoPagoConfig, Payment } from 'mercadopago';
@@ -13,7 +15,7 @@ if (admin.apps.length === 0) {
 
 const app = admin.apps[0]!;
 
-// Obtém o databaseId de forma segura
+// Obtém o databaseId (Hardcoded para funcionar corretamente na nuvem já que o firebase.json ignora a raiz)
 let dbId = 'ai-studio-2473fb05-836e-42bf-bfe7-6175607907dd';
 try {
     const configPath = path.join(__dirname, '..', 'firebase-applet-config.json');
@@ -22,7 +24,7 @@ try {
         if (config.firestoreDatabaseId) dbId = config.firestoreDatabaseId;
     }
 } catch (e) {
-    console.warn("Usando databaseId padrão devido a erro na config:", e);
+    console.warn("[STARTUP] Mantendo fallback hardcoded para ambiente de nuvem.");
 }
 
 // Inicializa o Firestore
@@ -219,59 +221,75 @@ function throwHttpsError(code: string, message: string, originalError?: any): ne
     const detailMessage = technicalDetails ? `${message} [Info: ${technicalDetails}]` : message;
     console.error(`[HTTPS_ERROR] Code: ${safeCode} | Msg: ${message} | Technical: ${technicalDetails}`);
     
-    throw new functions.https.HttpsError(safeCode as functions.https.FunctionsErrorCode, message, detailMessage);
+    throw new HttpsError(safeCode as any, message, detailMessage);
 }
 
 /**
  * Asserts that the context has an authenticated user and returns the UID.
  */
-function assertAuth(context: functions.https.CallableContext): string {
-    if (!context.auth) {
-        throwHttpsError('unauthenticated', 'Usuário não autenticado');
+function logToFile(msg: string) {
+    fs.appendFileSync(path.join(process.cwd(), 'debug.log'), msg + '\n');
+}
+
+function assertAuth(request: CallableRequest): string {
+    const uid = request.auth?.uid;
+    
+    if (!uid) {
+        logToFile(`[AUTH DEBUG] Auth failed!`);
+        throw new HttpsError('unauthenticated', 'Usuário não autenticado');
     }
-    return context.auth.uid;
+
+    return uid;
 }
 
 /**
  * Standardizes execution of Cloud Functions with robust logging and error conversion.
  */
-function safeExecute(moduleName: string, handler: (data: any, context: functions.https.CallableContext) => Promise<any>) {
-    return async (data: any, context: functions.https.CallableContext) => {
+function safeExecute(moduleName: string, handler: (request: CallableRequest) => Promise<any>) {
+    return async (request: CallableRequest) => {
         try {
-            console.log(`[${moduleName}] INICIO | UID: ${context.auth?.uid}`);
-            const result = await handler(data, context);
+            console.log(`\n\n\n[SAFE_EXECUTE] >>> intercepting request for ${moduleName}`);
+            console.log(`[${moduleName}] INICIO | UID: ${request.auth?.uid}`);
+            const result = await handler(request);
             console.log(`[${moduleName}] SUCESSO`);
             return result;
         } catch (error: any) {
             console.error(`[${moduleName}] ERRO CRITICO capturado:`, error);
             
-            // Just extract the core details and repass the error. No nested try/catch.
-            let safeCode = 'aborted';
-            let safeMessage = 'Falha desconhecida';
-            let safeDetails: any = null;
+            const grpcToFunctions: Record<number, functions.https.FunctionsErrorCode> = {
+                0: 'ok', 1: 'cancelled', 2: 'unknown', 3: 'invalid-argument', 
+                4: 'deadline-exceeded', 5: 'not-found', 6: 'already-exists', 
+                7: 'permission-denied', 8: 'resource-exhausted', 9: 'failed-precondition', 
+                10: 'aborted', 11: 'out-of-range', 12: 'unimplemented', 
+                13: 'internal', 14: 'unavailable', 15: 'data-loss', 16: 'unauthenticated'
+            };
 
-            if (error?.code && typeof error.code === 'string') {
-                const cleanCode = error.code.replace('functions/', '');
-                const validCodes = ['ok', 'cancelled', 'unknown', 'invalid-argument', 'deadline-exceeded', 'not-found', 'already-exists', 'permission-denied', 'resource-exhausted', 'failed-precondition', 'aborted', 'out-of-range', 'unimplemented', 'internal', 'unavailable', 'data-loss', 'unauthenticated'];
-                if (validCodes.includes(cleanCode)) {
-                    safeCode = cleanCode;
+            let safeCode: functions.https.FunctionsErrorCode = 'aborted';
+            let safeMessage = 'Falha desconhecida no servidor GSA';
+
+            if (error?.code !== undefined) {
+                const rawCode = error.code;
+                if (typeof rawCode === 'number' && grpcToFunctions[rawCode]) {
+                    safeCode = grpcToFunctions[rawCode];
+                } else {
+                    const strCode = String(rawCode).replace('functions/', '');
+                    const validCodes = Object.values(grpcToFunctions);
+                    if (validCodes.includes(strCode as any)) {
+                        safeCode = strCode as any;
+                    }
                 }
             }
 
             if (error?.message) {
-                safeMessage = "DEBUG_OVERRIDE: " + String(error.message);
-            }
-
-            if (error?.details) {
-                safeDetails = error.details;
+                 safeMessage = String(error.message);
             }
 
             if (safeCode === 'internal' || safeCode === 'unknown') {
-                safeCode = 'aborted'; // Prevenir INTERNAL genérico do Firebase
+                safeCode = 'aborted'; // Prevenir INTERNAL genérico do Firebase que mascara a causa real
             }
 
             console.error(`[${moduleName}] Final Error to emit -> Code: ${safeCode}, Message: ${safeMessage}`);
-            throw new functions.https.HttpsError(safeCode as functions.https.FunctionsErrorCode, safeMessage, safeDetails);
+            throw new HttpsError(safeCode, safeMessage, error?.details);
         }
     };
 }
@@ -306,13 +324,13 @@ async function getAsaasHeaders() {
     };
 }
 
-export const criarAdministradorDeUsuarios = functions.https.onCall(async (data: any, context: any) => {
-  if (!context.auth) {
-    throw new functions.https.HttpsError('unauthenticated', 'Usuário não autenticado');
+export const criarAdministradorDeUsuarios = onCall(async (request) => {
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'Usuário não autenticado');
   }
 
   // Verificar se o usuário tem nível ADM ou GESTOR no banco
-  const callerRef = db.collection('usuarios').doc(context.auth.uid);
+  const callerRef = db.collection('usuarios').doc(request.auth.uid);
   const callerSnap = await callerRef.get();
   const callerData = callerSnap.data();
   
@@ -323,10 +341,10 @@ export const criarAdministradorDeUsuarios = functions.https.onCall(async (data: 
                         callerData?.role === 'GESTOR';
 
   if (!isAdmOrGestor) {
-    throw new functions.https.HttpsError('permission-denied', 'Você não tem permissão para criar usuários.');
+    throw new HttpsError('permission-denied', 'Você não tem permissão para criar usuários.');
   }
 
-  const { nome, email, senha, role, cpf, data_nascimento, telefone, id_superior } = data;
+  const { nome, email, senha, role, cpf, data_nascimento, telefone, id_superior } = request.data;
 
   try {
     // Criar usuário no Auth
@@ -358,17 +376,17 @@ export const criarAdministradorDeUsuarios = functions.https.onCall(async (data: 
     return { uid: userRecord.uid };
   } catch (error: any) {
     console.error("Erro em criarAdministradorDeUsuarios:", error);
-    throw new functions.https.HttpsError('aborted', 'Erro ao criar usuário: ' + (error?.message || error));
+    throw new HttpsError('aborted', 'Erro ao criar usuário: ' + (error?.message || error));
   }
 });
 
-export const atualizarSenhaUsuario = functions.https.onCall(async (data: any, context: any) => {
-  if (!context.auth) {
-    throw new functions.https.HttpsError('unauthenticated', 'Usuário não autenticado');
+export const atualizarSenhaUsuario = onCall(async (request) => {
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'Usuário não autenticado');
   }
 
   // Verificar se o usuário tem nível ADM no banco
-  const callerRef = db.collection('usuarios').doc(context.auth.uid);
+  const callerRef = db.collection('usuarios').doc(request.auth.uid);
   const callerSnap = await callerRef.get();
   const callerData = callerSnap.data();
   
@@ -377,13 +395,13 @@ export const atualizarSenhaUsuario = functions.https.onCall(async (data: any, co
                 callerData?.role === 'ADM_GERENTE';
 
   if (!isAdm) {
-    throw new functions.https.HttpsError('permission-denied', 'Você não tem permissão para alterar senhas.');
+    throw new HttpsError('permission-denied', 'Você não tem permissão para alterar senhas.');
   }
 
-  const { uid, novaSenha } = data;
+  const { uid, novaSenha } = request.data;
 
   if (!uid || !novaSenha) {
-    throw new functions.https.HttpsError('invalid-argument', 'UID e nova senha são obrigatórios.');
+    throw new HttpsError('invalid-argument', 'UID e nova senha são obrigatórios.');
   }
 
   try {
@@ -394,45 +412,50 @@ export const atualizarSenhaUsuario = functions.https.onCall(async (data: any, co
     return { success: true };
   } catch (error: any) {
     console.error("Erro em atualizarSenhaUsuario:", error);
-    throw new functions.https.HttpsError('aborted', 'Erro ao atualizar senha: ' + (error?.message || error));
+    throw new HttpsError('aborted', 'Erro ao atualizar senha: ' + (error?.message || error));
   }
 });
 
-export const processVenda = functions.https.onCall(
-  safeExecute("PROCESS_VENDA", async (data, context) => {
+export const processVenda = onCall(
+  safeExecute("PROCESS_VENDA", async (request) => {
+    const data = request.data;
     const { clienteId, itens, metodoPagamento, comprovanteUrl, clienteNome, clienteDocumento, dataNascimento } = data;
     if (!clienteId || !itens || !metodoPagamento) {
-      throw new functions.https.HttpsError('invalid-argument', 'Dados incompletos');
+      throw new HttpsError('invalid-argument', 'Dados incompletos');
     }
 
     return await db.runTransaction(async (transaction: any) => {
-        logDetailed("Transação iniciada para processVenda", { clienteId, itemsLength: itens.length });
-    let vendedorId = context.auth?.uid || 'SYSTEM_SAAS';
+    if (!Array.isArray(itens) || itens.length === 0) {
+      throw new HttpsError('invalid-argument', 'A lista de itens não pode estar vazia');
+    }
+
+    logDetailed("Transação iniciada para processVenda", { clienteId, itemsLength: itens.length });
+    let vendedorId = request.auth?.uid || 'SYSTEM_SAAS';
     let vendedorNome = 'GSA-IA SaaS';
     let managerId = null;
 
-    if (context.auth) {
-      const userRef = db.collection('usuarios').doc(context.auth.uid);
+    if (request.auth) {
+      const userRef = db.collection('usuarios').doc(request.auth.uid);
       const userSnap = await transaction.get(userRef);
       const userData = userSnap.data();
       managerId = userData?.managerId || null;
       vendedorNome = userData?.nome || 'Vendedor';
     }
 
-    // 1. Generate protocol (simplified for now, ideally use a counter)
+    // 1. Generate protocol
     const ano = new Date().getFullYear();
-    const protocolo = `#GSA-${ano}-${Date.now()}`; // Simplified protocol
+    const protocolo = `#GSA-${ano}-${Date.now()}`;
     
     // 2. Calculate totals
     let valorTotal = 0;
     let margemTotal = 0;
     const processDataList: any[] = [];
 
-    if (!Array.isArray(itens) || itens.length === 0) {
-      throw new functions.https.HttpsError('invalid-argument', 'A lista de itens não pode estar vazia');
-    }
-
     for (const item of itens) {
+      if (!item.servicoId) {
+          throw new HttpsError('invalid-argument', 'servicoId ausente em um dos itens da venda');
+      }
+      
       const servicoRef = db.doc(`services/${item.servicoId}`);
       const servicoSnap = await transaction.get(servicoRef);
       
@@ -448,7 +471,7 @@ export const processVenda = functions.https.onCall(
           campos: []
         };
       } else {
-        throw new functions.https.HttpsError('not-found', `Serviço ${item.servicoId} não encontrado`);
+        throw new HttpsError('not-found', `Serviço ${item.servicoId} não encontrado`);
       }
       
       const precoBase = Number(item.precoBase) || 0;
@@ -495,7 +518,7 @@ export const processVenda = functions.https.onCall(
     const clientRef = db.collection('clients').doc(clienteId);
     const clientSnap = await transaction.get(clientRef);
     if (!clientSnap.exists) {
-      throw new functions.https.HttpsError('not-found', 'Cliente não encontrado');
+      throw new HttpsError('not-found', 'Cliente não encontrado');
     }
     const clientData = clientSnap.data() || {};
     responsavelId = clientData.especialista_id || vendedorId;
@@ -670,9 +693,10 @@ export const processVenda = functions.https.onCall(
 // ==========================================
 // 3.5 CLOUD FUNCTION: PROCESSAR VENDA SEGURA (VERSÃO ENTERPRISE)
 // ==========================================
-export const processarVendaSegura = functions.https.onCall(
-  safeExecute("VENDA_SEGURA", async (data, context) => {
-    const uid = assertAuth(context);
+export const processarVendaSegura = onCall(
+  safeExecute("VENDA_SEGURA", async (request) => {
+    const uid = assertAuth(request);
+    const actualData = request.data;
     const clean = cleanDataForFirestore;
 
     const {
@@ -682,18 +706,18 @@ export const processarVendaSegura = functions.https.onCall(
       metodoPagamento,
       isBulk = false,
       quantidade = 1
-    } = data;
+    } = actualData;
 
     // VALIDAÇÃO INICIAL BLINDADA
     if (!clienteId || !servicoId || valorVendaFinal === undefined || valorVendaFinal === null) {
-      throw new functions.https.HttpsError('invalid-argument', 'Dados incompletos: clienteId, servicoId ou valor ausentes.');
+      throw new HttpsError('invalid-argument', 'Dados incompletos: clienteId, servicoId ou valor ausentes.');
     }
 
     const valor = Number(valorVendaFinal);
     const qty = Number(quantidade) || 1;
 
     if (isNaN(valor) || valor <= 0) {
-      throw new functions.https.HttpsError('invalid-argument', 'Valor inválido');
+      throw new HttpsError('invalid-argument', 'Valor inválido');
     }
 
     return await db.runTransaction(async (tx: any) => {
@@ -702,7 +726,7 @@ export const processarVendaSegura = functions.https.onCall(
       // 🔍 1. VALIDAR VENDEDOR E SERVIÇO
       const userRef = db.collection('usuarios').doc(uid);
       const userSnap = await tx.get(userRef);
-      if (!userSnap.exists) throw new functions.https.HttpsError('not-found', 'Vendedor não encontrado');
+      if (!userSnap.exists) throw new HttpsError('not-found', 'Vendedor não encontrado');
       
       const user = userSnap.data()!;
       
@@ -747,7 +771,7 @@ export const processarVendaSegura = functions.https.onCall(
       console.log(`[VENDA_SEGURA] Valor: ${valor}, Mínimo: ${minimoTotal}`);
 
       if (valor < (minimoTotal - 0.01)) {
-        throw new functions.https.HttpsError(
+        throw new HttpsError(
           'permission-denied',
           `Preço abaixo do mínimo autorizado (R$ ${valor} < R$ ${minimoTotal})`
         );
@@ -756,7 +780,7 @@ export const processarVendaSegura = functions.https.onCall(
       // 💰 3. LÓGICA DE CARTEIRA (INVESTIMENTO QUE VIRA CRÉDITO)
       if (metodoPagamento === 'CARTEIRA') {
         const walletQuery = await db.collection('wallets').where('cliente_id', '==', clienteId).limit(1).get();
-        if (walletQuery.empty) throw new functions.https.HttpsError('failed-precondition', 'Cliente sem carteira configurada');
+        if (walletQuery.empty) throw new HttpsError('failed-precondition', 'Cliente sem carteira configurada');
 
         const walletRef = walletQuery.docs[0].ref;
         const walletSnap = await tx.get(walletRef);
@@ -766,7 +790,7 @@ export const processarVendaSegura = functions.https.onCall(
         console.log(`[VENDA_SEGURA] Carteira encontrada. Saldo disponível: ${totalDisponivel}`);
 
         if (totalDisponivel < valor) {
-          throw new functions.https.HttpsError('failed-precondition', 'Saldo insuficiente na plataforma');
+          throw new HttpsError('failed-precondition', 'Saldo insuficiente na plataforma');
         }
 
         let aDebitar = valor;
@@ -863,22 +887,24 @@ export const processarVendaSegura = functions.https.onCall(
 // ==========================================
 // 4. CLOUD FUNCTION: GERAR PAGAMENTO PIX (VERSÃO ENTERPRISE - MP ONLY)
 // ==========================================
-export const gerarPagamentoPixGateway = functions.https.onCall(
-  safeExecute("PIX_GATEWAY", async (data, context) => {
-    assertAuth(context);
+export const gerarPagamentoPixGateway = onCall(
+  safeExecute("PIX_GATEWAY", async (request) => {
+    const data = request.data;
+    assertAuth(request);
     const clean = cleanDataForFirestore;
 
     const { valor, nome, email, cpf, vendaId, descricao } = data;
 
     if (!valor || !nome || !email || !cpf || !vendaId) {
-      throw new functions.https.HttpsError('invalid-argument', 'Dados incompletos para geração do Pix.');
+      throw new HttpsError('invalid-argument', 'Dados incompletos para geração do Pix.');
     }
 
     const valorNum = Number(valor);
     const cpfLimpo = String(cpf).replace(/\D/g, '');
+    const idType = cpfLimpo.length > 11 ? 'CNPJ' : 'CPF';
 
     if (isNaN(valorNum) || valorNum <= 0) {
-      throw new functions.https.HttpsError('invalid-argument', 'Valor de pagamento inválido.');
+      throw new HttpsError('invalid-argument', 'Valor de pagamento inválido.');
     }
 
     // Obtém cliente Mercado Pago
@@ -897,19 +923,21 @@ export const gerarPagamentoPixGateway = functions.https.onCall(
             first_name: nome.split(' ')[0],
             last_name: nome.split(' ').slice(1).join(' ') || 'Cliente',
             identification: {
-              type: 'CPF',
+              type: idType,
               number: cpfLimpo
             }
           },
           notification_url: `https://us-central1-${projectId}.cloudfunctions.net/webhookMercadoPago`
         }
       });
-    } catch (err) {
-      throwHttpsError('aborted', 'O gateway de pagamento recusou a transação', err);
+    } catch (err: any) {
+      const mpError = err.response?.data?.cause?.[0]?.description || err.response?.data?.message || err.message;
+      console.error("ERRO COMPLETO MERCADO PAGO:", err.response?.data || err);
+      throwHttpsError('aborted', `O gateway de pagamento recusou a transação: ${mpError}`, err);
     }
 
     if (!response?.id) {
-      throw new functions.https.HttpsError('aborted', 'O Mercado Pago não gerou um ID de transação válido.');
+      throw new HttpsError('aborted', 'O Mercado Pago não gerou um ID de transação válido.');
     }
 
     const qrData = response.point_of_interaction?.transaction_data;
@@ -941,9 +969,10 @@ export const gerarPagamentoPixGateway = functions.https.onCall(
 // ==========================================
 // 4.5. CLOUD FUNCTION: GERAR PAGAMENTO PIX ASAAS
 // ==========================================
-export const gerarPagamentoAsaas = functions.https.onCall(
-  safeExecute("ASAAS_PIX", async (data, context) => {
-    const uid = assertAuth(context);
+export const gerarPagamentoAsaas = onCall(
+  safeExecute("ASAAS_PIX", async (request) => {
+    const uid = assertAuth(request);
+    const data = request.data;
     const { valor, nome, email, cpf, vendaId, descricao } = data;
 
     // 1. Obtém as configurações
@@ -952,7 +981,7 @@ export const gerarPagamentoAsaas = functions.https.onCall(
 
     // Trava de segurança: Se não tiver token, avisa na hora
     if (!token) {
-      throw new functions.https.HttpsError('failed-precondition', 'Chave de API do Asaas não encontrada no sistema.');
+      throw new HttpsError('failed-precondition', 'Chave de API do Asaas não encontrada no sistema.');
     }
 
     const ASAAS_URL = config.is_sandbox ? 'https://sandbox.asaas.com/api/v3' : 'https://www.asaas.com/api/v3';
@@ -1026,7 +1055,7 @@ export const gerarPagamentoAsaas = functions.https.onCall(
                              || 'Erro desconhecido ao comunicar com o Asaas';
                              
       // Lança o erro com a mensagem mastigada para o modal exibir
-      throw new functions.https.HttpsError('aborted', `Asaas recusou: ${asaasErrorMessage}`);
+      throw new HttpsError('aborted', `Asaas recusou: ${asaasErrorMessage}`);
     }
   })
 );
@@ -1034,7 +1063,7 @@ export const gerarPagamentoAsaas = functions.https.onCall(
 // ==========================================
 // 5. WEBHOOK: ASAAS NOTIFICATION (ENTERPRISE EDITION)
 // ==========================================
-export const webhookAsaas = functions.https.onRequest(async (req: any, res: any) => {
+export const webhookAsaas = onRequest(async (req: any, res: any) => {
   const eventId = req.body?.payment?.id;
 
   try {
@@ -1178,7 +1207,7 @@ export const webhookAsaas = functions.https.onRequest(async (req: any, res: any)
 // ==========================================
 // 6. WEBHOOK: MERCADO PAGO NOTIFICATION (ENTERPRISE EDITION)
 // ==========================================
-export const webhookMercadoPago = functions.https.onRequest(async (req: any, res: any) => {
+export const webhookMercadoPago = onRequest(async (req: any, res: any) => {
   const paymentId = req.body?.data?.id || req.body?.id || req.query?.id;
 
   try {

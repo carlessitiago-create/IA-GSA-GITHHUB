@@ -104,6 +104,15 @@ export async function processarVendaSeguraFront(
       throw new Error(`Dados inválidos para Venda Segura. Valor: ${valorVendaFinal}`);
     }
 
+    const { auth } = await import('../firebase');
+    await auth.authStateReady(); // wait for auth state just in case
+    
+    if (!auth.currentUser) {
+        throw new Error("Sessão expirada ou usuário não autenticado no Client.");
+    }
+    
+    const token = await auth.currentUser.getIdToken(true); // force refresh
+
     const payload = cleanData({ 
       clienteId,
       servicoId,
@@ -130,6 +139,10 @@ export async function gerarPagamentoPixGateway(data: {
   vendaId: string;
 }) {
   try {
+    const { auth } = await import('../firebase');
+    await auth.authStateReady();
+    const token = await auth.currentUser?.getIdToken(true);
+
     const gerarPagamento = httpsCallable(functions, 'gerarPagamentoPixGateway');
     const result = await gerarPagamento(data);
     return result.data as { 
@@ -146,6 +159,10 @@ export async function gerarPagamentoPixGateway(data: {
 }
 
 export async function gerarPagamentoAsaasFront(data: any) {
+  const { auth } = await import('../firebase');
+  await auth.authStateReady();
+  const token = await auth.currentUser?.getIdToken(true);
+
   const { httpsCallable } = await import('firebase/functions');
   const { functions } = await import('../firebase');
   const func = httpsCallable(functions, 'gerarPagamentoAsaas');

@@ -57,8 +57,9 @@ export const VendaEmMassaView: React.FC = () => {
         .map(service => ({ 
           ...service,
           venda_price: profile?.nivel.startsWith('ADM') ? (service.preco_massa_gestor || 0) :
-                       profile?.nivel === 'GESTOR' ? (service.preco_massa_vendedor || service.preco_massa_gestor || 0) :
-                       (service.preco_massa_vendedor || 0)
+                       profile?.nivel === 'GESTOR' ? (service.preco_massa_gestor || 0) :
+                       profile?.nivel === 'VENDEDOR' ? (service.preco_massa_vendedor || 0) :
+                       0
         }));
       setServices(servicesData);
       setLoading(false);

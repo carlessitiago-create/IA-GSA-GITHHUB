@@ -1,8 +1,8 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
+import { getFirestore, doc, getDocFromServer, initializeFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
-import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
+import { getFunctions } from 'firebase/functions';
 
 // Import the Firebase configuration
 import firebaseConfigImport from '../firebase-applet-config.json';
@@ -10,15 +10,15 @@ export const firebaseConfig = firebaseConfigImport;
 
 // Initialize Firebase SDK
 export const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+export const db = initializeFirestore(app, {
+  experimentalForceLongPolling: true,
+}, firebaseConfig.firestoreDatabaseId);
 export const auth = getAuth(app);
 export const storage = getStorage(app);
 export const functions = getFunctions(app);
 
-// Use custom domain for Callable Functions within the preview iframe
-if (typeof window !== 'undefined') {
-    functions.customDomain = window.location.origin;
-}
+// Use correct domain for Callable Functions
+// (We hit the production Firebase Cloud Functions directly using the v2 SDK setup)
 
 export const secondaryAuth = auth; // Simplification for now
 

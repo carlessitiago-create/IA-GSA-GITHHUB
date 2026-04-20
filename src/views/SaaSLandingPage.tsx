@@ -199,17 +199,33 @@ const SaaSLandingPage: React.FC = () => {
       }
 
       // 3. Gera o pagamento no Gateway (Asaas / Mercado Pago)
-      console.log("Chamando gerarPagamentoPixGateway...");
-      const { gerarPagamentoPixGateway } = await import('../services/vendaService');
-      const mpResult = await gerarPagamentoPixGateway({
-        valor: selectedPlan.preco,
-        descricao: `Plano ${selectedPlan.nome}`,
-        email: leadData.email,
-        nome: leadData.nome,
-        cpf: leadData.documento,
-        clienteId: novoCliente.id,
-        vendaId: result.saleId
-      });
+      let mpResult: any;
+      if (config?.gateway_ativo === 'ASAAS') {
+        console.log("Chamando gerarPagamentoAsaasFront...");
+        const { gerarPagamentoAsaasFront } = await import('../services/vendaService');
+        mpResult = await gerarPagamentoAsaasFront({
+          valor: selectedPlan.preco,
+          descricao: `Plano ${selectedPlan.nome}`,
+          email: leadData.email,
+          nome: leadData.nome,
+          cpf: leadData.documento,
+          clienteId: novoCliente.id,
+          vendaId: result.saleId
+        });
+      } else {
+        console.log("Chamando gerarPagamentoPixGateway (Mercado Pago)...");
+        const { gerarPagamentoPixGateway } = await import('../services/vendaService');
+        mpResult = await gerarPagamentoPixGateway({
+          valor: selectedPlan.preco,
+          descricao: `Plano ${selectedPlan.nome}`,
+          email: leadData.email,
+          nome: leadData.nome,
+          cpf: leadData.documento,
+          clienteId: novoCliente.id,
+          vendaId: result.saleId
+        });
+      }
+      
       console.log("Pagamento gerado:", mpResult);
 
       // Armazena info da venda para o próximo passo
@@ -217,7 +233,8 @@ const SaaSLandingPage: React.FC = () => {
         id: result.saleId, 
         protocolo: result.protocolo || result.saleId.substring(0, 8).toUpperCase(),
         qrcode: mpResult.qr_code_base64,
-        copiaECola: mpResult.copy_paste
+        copiaECola: mpResult.copy_paste,
+        gateway: config?.gateway_ativo || 'MERCADO_PAGO'
       };
       
       setPixData(info);
@@ -396,7 +413,7 @@ const SaaSLandingPage: React.FC = () => {
           <div className="bg-white p-4 rounded-2xl inline-block mb-6 shadow-inner">
             {pixData?.qrcode ? (
               <img 
-                src={`data:image/png;base64,${pixData.qrcode}`} 
+                src={pixData.qrcode.startsWith('data:image') ? pixData.qrcode : `data:image/png;base64,${pixData.qrcode}`}
                 alt="QR Code PIX" 
                 className="w-44 h-44"
               />

@@ -121,3 +121,60 @@ const fileToBase64 = (file: File): Promise<string> => {
     reader.onerror = (error) => reject(error);
   });
 };
+
+export interface TriageResult {
+  urgencyScore: number;
+  urgencyLevel: 'BAIXA' | 'MEDIA' | 'ALTA' | 'CRITICA';
+  recommendedAction: string;
+  salesPitch: string;
+  keyInsights: string[];
+}
+
+export const analyzeSmartFicha = async (leadData: any): Promise<TriageResult> => {
+  try {
+    const prompt = `
+      Você é um especialista em análise de crédito e Vendas B2B/B2C (CRO).
+      Analise os dados deste cliente/lead que preencheu uma ficha de triagem:
+      ${JSON.stringify(leadData, null, 2)}
+      
+      Gere um score de urgência de 0 a 100 baseado na probabilidade dele precisar do serviço urgente (Dívidas no BACEN, restrições, etc).
+      Retorne o nível urgência (BAIXA, MEDIA, ALTA, CRITICA).
+      Forneça uma ação recomendada para o consultor.
+      Crie um "Sales Pitch" (Argumento de Venda) curto e um poderoso gatilho mental para ser usado imediatamente por telefone/wpp.
+      E forneça até 3 key insights principais sobre o perfil desse cara.
+    `;
+
+    const ai = getAI();
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash-lite",
+      contents: [
+        {
+          role: 'user',
+          parts: [{ text: prompt }]
+        }
+      ],
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            urgencyScore: { type: Type.NUMBER, description: "0 a 100" },
+            urgencyLevel: { type: Type.STRING, enum: ['BAIXA', 'MEDIA', 'ALTA', 'CRITICA'] },
+            recommendedAction: { type: Type.STRING },
+            salesPitch: { type: Type.STRING },
+            keyInsights: { 
+              type: Type.ARRAY, 
+              items: { type: Type.STRING } 
+            }
+          },
+          required: ['urgencyScore', 'urgencyLevel', 'recommendedAction', 'salesPitch', 'keyInsights']
+        }
+      }
+    });
+
+    return JSON.parse(response.text || '{}') as TriageResult;
+  } catch (error) {
+    console.error("Erro na triagem da Ficha com IA:", error);
+    throw new Error("Falha ao gerar o Raio-X do cliente com a Inteligência Artificial.");
+  }
+};

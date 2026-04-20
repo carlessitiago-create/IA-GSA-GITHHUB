@@ -361,6 +361,30 @@ export const OperationalView: React.FC = () => {
     }).length
   };
 
+  const [displayFila, setDisplayFila] = useState(0);
+  const [displayAtraso, setDisplayAtraso] = useState(0);
+  const [displayConcluido, setDisplayConcluido] = useState(0);
+
+  useEffect(() => {
+    if (!loading) {
+      if (stats.totalFila > 0) {
+        let start = 0; const end = stats.totalFila; const duration = 1000;
+        const inc = end / (duration / 16);
+        const timer = setInterval(() => { start += inc; if (start >= end) { setDisplayFila(end); clearInterval(timer); } else { setDisplayFila(Math.floor(start)); } }, 16);
+      }
+      if (stats.totalAtraso > 0) {
+        let start = 0; const end = stats.totalAtraso; const duration = 1000;
+        const inc = end / (duration / 16);
+        const timer = setInterval(() => { start += inc; if (start >= end) { setDisplayAtraso(end); clearInterval(timer); } else { setDisplayAtraso(Math.floor(start)); } }, 16);
+      }
+      if (stats.totalConcluidoHoje > 0) {
+        let start = 0; const end = stats.totalConcluidoHoje; const duration = 1000;
+        const inc = end / (duration / 16);
+        const timer = setInterval(() => { start += inc; if (start >= end) { setDisplayConcluido(end); clearInterval(timer); } else { setDisplayConcluido(Math.floor(start)); } }, 16);
+      }
+    }
+  }, [loading, stats]);
+
   if (loading) {
     return (
       <div className="p-8 flex items-center justify-center min-h-[400px]">
@@ -374,42 +398,52 @@ export const OperationalView: React.FC = () => {
 
   return (
     <div className="space-y-10 pb-20">
-      {/* HEADER OPERACIONAL (Layout 4.0) */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 bg-white p-6 md:p-10 rounded-[2rem] md:rounded-[3rem] border border-slate-100 shadow-sm relative overflow-hidden group">
+      {/* HEADER OPERACIONAL (Layout 4.0 Glow) */}
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 bg-gradient-to-br from-[#020617] to-[#0a0a2e] p-6 md:p-12 rounded-[2rem] md:rounded-[3rem] border border-slate-800 shadow-[0_20px_50px_rgba(0,0,0,0.5)] relative overflow-hidden group">
         <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none group-hover:rotate-12 transition-transform duration-1000">
-          <Activity size={180} className="text-[#0a0a2e]" />
-        </div>
-
-        <div className="space-y-3 relative z-10">
-          <div className="flex items-center gap-4">
-            <div className="size-12 md:size-14 bg-[#0a0a2e] rounded-2xl md:rounded-[1.5rem] flex items-center justify-center shadow-2xl shadow-blue-900/20">
-              <Activity className="text-white" size={24} />
-            </div>
-            <div>
-              <h1 className="text-3xl md:text-5xl font-black text-[#0a0a2e] uppercase tracking-tighter italic leading-none">
-                Fila de Produção
-              </h1>
-              <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-1">GSA IA Operational v4.0</p>
-            </div>
-          </div>
-          <p className="text-slate-500 text-xs md:text-sm font-medium flex items-center gap-2">
-            Analista: <span className="text-blue-600 font-black uppercase tracking-tight">{auth.currentUser?.displayName || 'Analista GSA'}</span>
-          </p>
+          <Activity size={240} className="text-blue-500" />
         </div>
         
-        {/* MINI DASHBOARD ANALISTA */}
-        <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-3 md:gap-4 relative z-10 w-full lg:w-auto">
-          <div className="bg-blue-50 px-4 md:px-8 py-3 md:py-4 rounded-[1.5rem] md:rounded-[1.8rem] border border-blue-100 text-center shadow-sm hover:shadow-md transition-all">
-            <p className="text-[8px] md:text-[9px] font-black text-blue-400 uppercase tracking-widest mb-1">Em Fila</p>
-            <p className="text-2xl md:text-3xl font-black text-blue-700 italic tracking-tighter">{stats.totalFila.toString().padStart(2, '0')}</p>
+        {/* Animated Glow Elements */}
+        <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-blue-600/10 blur-[120px] rounded-full pointer-events-none transform translate-x-1/3 -translate-y-1/3 group-hover:bg-blue-600/20 transition-all duration-1000"></div>
+        <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-emerald-600/5 blur-[80px] rounded-full pointer-events-none transform -translate-x-1/3 translate-y-1/3"></div>
+
+        <div className="space-y-4 relative z-10 w-full lg:w-auto">
+          <div className="flex items-center gap-6">
+            <div className="size-16 bg-blue-500/10 border border-blue-500/20 rounded-[1.5rem] flex items-center justify-center shadow-[0_0_20px_rgba(59,130,246,0.2)]">
+               <Activity className="text-blue-400" size={28} />
+            </div>
+            <div>
+              <h1 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tighter italic leading-none">
+                Fila de Produção
+              </h1>
+              <p className="text-blue-400 text-[10px] font-black uppercase tracking-[0.2em] mt-2">GSA IA Operational Engine</p>
+            </div>
           </div>
-          <div className="bg-rose-50 px-4 md:px-8 py-3 md:py-4 rounded-[1.5rem] md:rounded-[1.8rem] border border-rose-100 text-center shadow-sm hover:shadow-md transition-all">
-            <p className="text-[8px] md:text-[9px] font-black text-rose-400 uppercase tracking-widest mb-1">Atraso SLA</p>
-            <p className="text-2xl md:text-3xl font-black text-rose-600 italic tracking-tighter">{stats.totalAtraso.toString().padStart(2, '0')}</p>
+          <div className="flex items-center gap-3 bg-[#0F172A] w-fit px-4 py-2 rounded-xl border border-slate-800">
+            <div className="size-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_10px_rgba(52,211,153,0.8)]"></div>
+            <p className="text-slate-400 text-xs font-black uppercase tracking-widest">
+              Terminal: <span className="text-white">{auth.currentUser?.displayName || 'Analista GSA'}</span>
+            </p>
           </div>
-          <div className="col-span-2 sm:col-span-1 bg-emerald-50 px-4 md:px-8 py-3 md:py-4 rounded-[1.5rem] md:rounded-[1.8rem] border border-emerald-100 text-center shadow-sm hover:shadow-md transition-all">
-            <p className="text-[8px] md:text-[9px] font-black text-emerald-500 uppercase tracking-widest mb-1">Concluídos</p>
-            <p className="text-2xl md:text-3xl font-black text-emerald-700 italic tracking-tighter">{stats.totalConcluidoHoje.toString().padStart(2, '0')}</p>
+        </div>
+        
+        {/* MINI DASHBOARD VIP ANALISTA */}
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-4 relative z-10 w-full lg:w-auto mt-4 lg:mt-0">
+          <div className="bg-[#0B0F19] px-6 md:px-10 py-5 rounded-[1.8rem] border border-slate-800/50 shadow-inner flex flex-col items-center justify-center relative overflow-hidden group/card shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+             <div className="absolute inset-0 bg-gradient-to-t from-blue-900/10 to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity"></div>
+             <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1">Em Fila</p>
+             <p className="text-3xl md:text-4xl font-black text-blue-400 italic tracking-tighter drop-shadow-[0_0_10px_rgba(59,130,246,0.3)]">{displayFila.toString().padStart(2, '0')}</p>
+          </div>
+          <div className="bg-[#0B0F19] px-6 md:px-10 py-5 rounded-[1.8rem] border border-rose-900/20 shadow-inner flex flex-col items-center justify-center relative overflow-hidden group/card shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+             <div className="absolute inset-0 bg-gradient-to-t from-rose-900/10 to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity"></div>
+            <p className="text-[9px] font-black text-rose-500/70 uppercase tracking-[0.2em] mb-1">Atraso SLA</p>
+            <p className="text-3xl md:text-4xl font-black text-rose-500 italic tracking-tighter drop-shadow-[0_0_10px_rgba(225,29,72,0.3)]">{displayAtraso.toString().padStart(2, '0')}</p>
+          </div>
+          <div className="col-span-2 sm:col-span-1 bg-[#0B0F19] px-6 md:px-10 py-5 rounded-[1.8rem] border border-emerald-900/20 shadow-inner flex flex-col items-center justify-center relative overflow-hidden group/card shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+             <div className="absolute inset-0 bg-gradient-to-t from-emerald-900/10 to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity"></div>
+            <p className="text-[9px] font-black text-emerald-500/70 uppercase tracking-[0.2em] mb-1">Concluídos</p>
+            <p className="text-3xl md:text-4xl font-black text-emerald-500 italic tracking-tighter drop-shadow-[0_0_10px_rgba(52,211,153,0.3)]">{displayConcluido.toString().padStart(2, '0')}</p>
           </div>
         </div>
       </div>

@@ -5,6 +5,17 @@
   --color-primary: #0a0a2e;
   --color-emerald: #10b981;
   --breakpoint-xs: 480px;
+
+  --animate-shimmer: shimmer 2s linear infinite;
+
+  @keyframes shimmer {
+    from {
+      transform: translateX(-150%) skewX(-12deg);
+    }
+    to {
+      transform: translateX(150%) skewX(-12deg);
+    }
+  }
 }
 
 @layer components {

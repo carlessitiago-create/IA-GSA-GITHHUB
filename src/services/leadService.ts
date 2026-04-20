@@ -19,6 +19,7 @@ export interface ClientData {
   nome: string;
   documento: string;
   telefone: string;
+  email?: string;
   data_nascimento?: string;
   especialista_id: string;
   id_superior?: string;
@@ -129,13 +130,52 @@ export async function cadastrarCliente(data: Omit<ClientData, 'data_entrada' | '
       }
     }
 
+    // --- AI TRIAGE INJECTION ---
+    let aiScoreMsg = '';
+    let aiInsights = null;
+    try {
+      const { analyzeSmartFicha } = await import('./aiService');
+      const triageResult = await analyzeSmartFicha({
+        nome: data.nome,
+        telefone: data.telefone,
+        email: data.email,
+        documento: data.documento,
+        origem: 'Landing Page SaaS'
+      });
+      aiInsights = triageResult;
+      aiScoreMsg = `\r\n🔥 Score IA: ${triageResult.urgencyScore}% - Pitch Sugerido: ${triageResult.salesPitch}`;
+    } catch (err) {
+      console.warn("AI Triage falhou silenciosamente", err);
+    }
+    // ---------------------------
+
     const docRef = await addDoc(collection(db, path), cleanData({
       ...data,
       id_superior,
       visibilidade_uids,
       data_nascimento: data.data_nascimento || '',
-      data_entrada: serverTimestamp()
+      data_entrada: serverTimestamp(),
+      ai_insights: aiInsights
     }));
+
+    // Alert admins if lead is "orphan" (e.g., from SaaS Landing Page without specific seller)
+    if (!data.especialista_id || data.especialista_id === 'ADM' || data.especialista_id === 'SaaS_GSA_IA') {
+      try {
+        const { sendNotification } = await import('./notificationService');
+        const adminsSnapshot = await getDocs(query(collection(db, 'usuarios'), where('nivel', 'in', ['ADM_MASTER', 'ADM_GERENTE'])));
+        for (const adminDoc of adminsSnapshot.docs) {
+          await sendNotification({
+            usuario_id: adminDoc.id,
+            titulo: '🚨 Lead Órfão Capturado (SaaS)' + (aiScoreMsg ? ` 🔥` : ''),
+            mensagem: `O lead ${data.nome} se cadastrou através de uma Landing Page sem Vendedor. Atribua um especialista imediatamente!${aiScoreMsg}`,
+            tipo: 'NEW_LEAD'
+          });
+        }
+      } catch (err) {
+        console.error("Failed to notify admins of orphan lead", err);
+      }
+    }
+
     return { id: docRef.id, id_superior, visibilidade_uids, data_nascimento: data.data_nascimento || '' };
   } catch (error) {
     handleFirestoreError(error, OperationType.CREATE, path);

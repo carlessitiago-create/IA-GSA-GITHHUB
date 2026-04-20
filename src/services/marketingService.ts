@@ -81,6 +81,7 @@ export interface ShowcaseLead {
   comprovante_venda_url?: string;
   indicado_por?: string; // ID do cliente que indicou via link
   origem?: 'MANUAL' | 'VITRINE';
+  ai_insights?: any;
 }
 
 const REFERRALS_COLLECTION = 'referrals';
@@ -405,6 +406,25 @@ export async function solicitarOrcamentoVitrine(
         timestamp: Timestamp.now()
       }]
     });
+
+    // --- AI TRIAGE INJECTION ---
+    let aiScoreMsg = '';
+    try {
+      const { analyzeSmartFicha } = await import('./aiService');
+      const triageResult = await analyzeSmartFicha({
+        nome: newLead.cliente_nome,
+        servicoAlvo: newLead.servico_nome,
+        telefone: newLead.cliente_telefone,
+        email: newLead.cliente_email,
+        origem: 'Vitrine Pública GSA'
+      });
+      newLead.ai_insights = triageResult;
+      aiScoreMsg = ` (Score Venda: ${triageResult.urgencyScore}%) - Sugestão: ${triageResult.salesPitch}`;
+    } catch (err) {
+      console.warn("AI Triage falhou silenciosamente no lead da vitrine", err);
+    }
+    // ---------------------------
+
     const docRef = await addDoc(collection(db, SHOWCASE_LEADS_COLLECTION), newLead);
     
     const { sendNotification } = await import('./notificationService');
@@ -413,8 +433,8 @@ export async function solicitarOrcamentoVitrine(
     if (vendedorId !== 'ADM') {
       await sendNotification({
         usuario_id: vendedorId,
-        titulo: 'Novo Lead da Vitrine',
-        mensagem: `${clienteNome} solicitou orçamento para um serviço.`,
+        titulo: 'Novo Lead da Vitrine' + (aiScoreMsg ? ` 🔥` : ''),
+        mensagem: `${clienteNome} solicitou orçamento.${aiScoreMsg}`,
         tipo: 'NEW_LEAD'
       });
       
@@ -425,20 +445,23 @@ export async function solicitarOrcamentoVitrine(
         await sendNotification({
           usuario_id: vendedorData.id_superior,
           titulo: 'Novo Lead para sua Equipe',
-          mensagem: `O cliente ${clienteNome} solicitou orçamento. Especialista: ${vendedorData.nome}.`,
+          mensagem: `O cliente ${clienteNome} solicitou orçamento. Especialista: ${vendedorData.nome}.${aiScoreMsg}`,
           tipo: 'NEW_LEAD'
         });
       }
     }
 
     // Notificar ADMs (Inteligência do Sistema)
+    const isOrphan = !vendedorId || vendedorId === 'ADM' || vendedorId === 'SaaS_GSA_IA';
     const usersSnapshot = await getDocs(query(collection(db, 'usuarios'), where('nivel', 'in', ['ADM_MASTER', 'ADM_GERENTE'])));
     for (const adminDoc of usersSnapshot.docs) {
       await sendNotification({
         usuario_id: adminDoc.id,
-        titulo: 'Novo Lead no Sistema',
-        mensagem: `O cliente ${clienteNome} iniciou uma intenção de compra na vitrine.`,
-        tipo: 'SYSTEM'
+        titulo: isOrphan ? '🚨 Lead Órfão na Vitrine' + (aiScoreMsg ? ` 🔥` : '') : 'Novo Lead no Sistema',
+        mensagem: isOrphan 
+          ? `O lead ${clienteNome} solicitou orçamento sem vendedor. Atribua um especialista imediatamente!${aiScoreMsg}`
+          : `O cliente ${clienteNome} iniciou intenção na vitrine.${aiScoreMsg}`,
+        tipo: isOrphan ? 'NEW_LEAD' : 'SYSTEM'
       });
     }
 

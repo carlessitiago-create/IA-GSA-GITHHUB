@@ -325,7 +325,7 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
 
     try {
       setLoading(true);
-      const functions = getFunctions();
+      const { functions } = await import('../../firebase');
       const atualizarSenha = httpsCallable(functions, 'atualizarSenhaUsuario');
       
       await atualizarSenha({ uid: userToEdit.uid, novaSenha: tempPassword });

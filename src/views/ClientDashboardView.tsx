@@ -11,10 +11,19 @@ import {
   ExternalLink,
   ChevronRight,
   Search,
-  Filter
+  Filter,
+  ShieldCheck,
+  TrendingUp,
+  Zap,
+  Wallet as WalletIcon,
+  Crown,
+  ChevronUp,
+  Activity,
+  Flame
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { aceitarPropostaLeadVitrine, atualizarStatusLeadVitrine, LeadStatus } from '../services/marketingService';
+import { getOrCreateWallet, Wallet } from '../services/financialService';
 import { useAuth } from '../components/AuthContext';
 import { SmartFicha } from '../components/GSA/SmartFicha';
 import Swal from 'sweetalert2';
@@ -30,12 +39,43 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({ proces
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<'todos' | 'ativos' | 'concluidos'>('todos');
   const [showSmartFicha, setShowSmartFicha] = useState<string | null>(null);
+  const [clientWallet, setClientWallet] = useState<Wallet | null>(null);
 
   useEffect(() => {
+    const fetchWallet = async () => {
+      if (profile?.uid) {
+        try {
+          const w = await getOrCreateWallet(profile.uid);
+          setClientWallet(w);
+        } catch (e) {
+          console.error('Wallet error', e);
+        }
+      }
+    };
+    fetchWallet();
+
     // Simular um pequeno delay para um carregamento mais "profissional"
     const timer = setTimeout(() => setLoading(false), 800);
     return () => clearTimeout(timer);
-  }, []);
+  }, [profile]);
+
+  const saldo = (clientWallet?.saldo_atual || 0) + (clientWallet?.saldo_bonus || 0);
+  
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(value);
+  };
+  
+  // CRO Tactis: Calcular o Rating GSA simulado baseado na interação
+  // Um Score que aumenta para gamificar. (Base 450, + saldo, + processos * 30)
+  const scoreBase = 450;
+  const scoreAumentoWallet = Math.min(Math.floor(saldo / 5), 250);
+  const scoreProcessos = Math.min(processes.length * 35, 150);
+  const ratingSimulado = Math.min(scoreBase + scoreAumentoWallet + scoreProcessos, 985);
+  const ratingClass = ratingSimulado > 750 ? 'text-emerald-400' : ratingSimulado > 600 ? 'text-blue-400' : 'text-amber-400';
+
 
   const filteredProcesses = processes.filter(p => {
     if (activeFilter === 'ativos') return p.status_atual !== 'Concluído' && p.status_atual !== 'Cancelado';
@@ -150,6 +190,80 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({ proces
 
   return (
     <div className="max-w-6xl mx-auto space-y-12 pb-20">
+      
+      {/* POWER CARD - O EFEITO ALAVANCA */}
+      <motion.div 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="relative overflow-hidden rounded-[2.5rem] bg-slate-900 border border-slate-800 shadow-2xl p-8 sm:p-10"
+      >
+        {/* Background Gradients */}
+        <div className="absolute top-0 right-0 -mt-20 -mr-20 size-96 bg-blue-600/30 blur-[100px] rounded-full pointer-events-none"></div>
+        <div className="absolute bottom-0 left-0 -mb-20 -ml-20 size-80 bg-indigo-600/20 blur-[120px] rounded-full pointer-events-none"></div>
+
+        <div className="relative z-10 flex flex-col lg:flex-row gap-10 items-center justify-between">
+          
+          {/* Rating Section */}
+          <div className="flex items-center gap-6 w-full lg:w-auto">
+            <div className="size-24 rounded-full bg-slate-800/80 border-2 border-slate-700 flex items-center justify-center shrink-0 shadow-inner relative">
+              <svg className="absolute inset-0 size-full -rotate-90">
+                <circle cx="48" cy="48" r="44" fill="none" stroke="#334155" strokeWidth="8" />
+                <circle cx="48" cy="48" r="44" fill="none" stroke="currentColor" strokeWidth="8" strokeDasharray="276" strokeDashoffset={276 - (276 * ratingSimulado) / 1000} className={`${ratingClass} opacity-80`} strokeLinecap="round" />
+              </svg>
+              <div className="flex flex-col items-center">
+                <span className={`text-2xl font-black tracking-tighter ${ratingClass}`}>{ratingSimulado}</span>
+                <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Score</span>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Crown className={ratingClass} size={20} />
+                <h3 className="text-xl font-black text-white uppercase italic tracking-tighter">Rating GSA</h3>
+              </div>
+              <p className="text-slate-400 text-sm max-w-xs font-medium">
+                Sua blindagem no mercado. {saldo > 0 ? "O seu saldo está alavancando ativamente o seu perfil de crédito." : "Adicione saldo para acelerar sua reputação e serviços."}
+              </p>
+            </div>
+          </div>
+
+          {/* Wallet Balance Section */}
+          <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-3xl p-6 w-full lg:w-auto flex flex-col gap-4">
+            <div className="flex justify-between items-start gap-12">
+              <div>
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5 mb-1">
+                  <WalletIcon size={12} /> Saldo de Alavancagem
+                </span>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-black text-white tracking-tighter">{formatCurrency(saldo)}</span>
+                </div>
+              </div>
+              <div className="size-10 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-400">
+                <Zap size={20} />
+              </div>
+            </div>
+
+            <button 
+              onClick={() => {
+                // Aqui seria o gatilho para modal de recarga/pagamento, usando router ou handler custom.
+                Swal.fire({
+                  title: 'Acelere seu Rating',
+                  text: 'A funcionalidade de recarga via PIX estará disponível na Vitrine.',
+                  icon: 'info',
+                  background: '#0a0a2e',
+                  color: '#fff',
+                  confirmButtonColor: '#2563eb'
+                })
+              }}
+              className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-black uppercase text-xs tracking-widest transition-all shadow-lg shadow-blue-600/20 flex justify-center items-center gap-2"
+            >
+              <TrendingUp size={16} /> Aumentar Limite de Crédito
+            </button>
+          </div>
+
+        </div>
+      </motion.div>
+
       {/* HEADER & FILTERS */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
@@ -175,8 +289,100 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({ proces
         </div>
       </div>
 
-      {/* PROCESSES LIST */}
-      <div className="space-y-6">
+      {/* RECOVERY SECTION: TIRAR O NOME DO VERMELHO */}
+      {pendencies.length > 0 || processes.some(p => p.dados_faltantes?.length > 0 || p.pendencias_iniciais?.length > 0) ? (
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+          className="relative bg-gradient-to-br from-[#0B0F19] to-[#020617] rounded-[3rem] border border-rose-900/50 p-8 sm:p-12 shadow-[0_20px_50px_rgba(225,29,72,0.15)] overflow-hidden group"
+        >
+          {/* Animated Glow Elements */}
+          <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-rose-600/20 blur-[100px] rounded-full pointer-events-none transform translate-x-1/3 -translate-y-1/3 group-hover:bg-rose-600/30 transition-all duration-1000"></div>
+          <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-orange-600/10 blur-[80px] rounded-full pointer-events-none transform -translate-x-1/3 translate-y-1/3"></div>
+
+          <div className="absolute top-0 right-0 -mr-16 -mt-16 text-rose-500/10 pointer-events-none z-0">
+            <Flame size={250} />
+          </div>
+          
+          <div className="relative z-10 flex flex-col lg:flex-row gap-12 items-center">
+            <div className="flex-1 space-y-5 text-center lg:text-left">
+              <motion.div 
+                animate={{ y: [0, -5, 0] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                className="inline-flex items-center gap-2 bg-rose-500/10 border border-rose-500/30 text-rose-400 px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-[0_0_15px_rgba(225,29,72,0.2)]"
+              >
+                <AlertCircle size={14} className="animate-pulse" /> Ação Requerida Imediata
+              </motion.div>
+              <h2 className="text-4xl sm:text-5xl font-black text-white uppercase italic tracking-tighter leading-none">
+                Tire seu nome do <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-400 to-orange-500">Vermelho</span>
+              </h2>
+              <p className="text-slate-400 font-medium max-w-lg text-sm sm:text-base">
+                Você possui pendências que estão <strong className="text-rose-400">travando a sua evolução</strong> no mercado. Resolver isso agora fará o seu Rating GSA disparar, liberando novos limites.
+              </p>
+            </div>
+
+            {/* Termômetro Gamificado */}
+            <div className="w-full max-w-md bg-[#0F172A] rounded-3xl p-8 border border-slate-800 shadow-2xl relative overflow-hidden">
+               <div className="absolute inset-0 bg-gradient-to-b from-transparent to-emerald-900/20 pointer-events-none"></div>
+               
+              <div className="flex justify-between items-end mb-6 relative z-10">
+                <div>
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Projeção de Rating</p>
+                  <p className="text-3xl font-black text-emerald-400 flex items-center gap-2 drop-shadow-[0_0_10px_rgba(52,211,153,0.3)]">
+                    <Activity size={28} /> +125 PTS
+                  </p>
+                </div>
+                <div className="text-right flex flex-col items-end">
+                  <div className="size-8 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400 mb-1">
+                    <TrendingUp size={16} />
+                  </div>
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ao resolver</p>
+                </div>
+              </div>
+              
+              <div className="relative h-6 bg-slate-900 rounded-full overflow-hidden border border-slate-800 p-0.5 z-10 shadow-inner">
+                {/* Current State (Red) */}
+                <motion.div 
+                  initial={{ width: 0 }}
+                  animate={{ width: "33%" }}
+                  transition={{ duration: 1, delay: 0.5 }}
+                  className="absolute top-0.5 left-0.5 bottom-0.5 bg-gradient-to-r from-rose-600 to-rose-400 rounded-full flex items-center justify-end px-3 shadow-[0_0_15px_rgba(225,29,72,0.5)] z-20"
+                >
+                   <span className="text-[9px] font-black text-white drop-shadow-md">ATUAL</span>
+                </motion.div>
+                
+                {/* Projected increase (Pulse Green) */}
+                <motion.div 
+                   animate={{ opacity: [0.3, 0.7, 0.3] }}
+                   transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                   className="absolute top-0.5 left-[33%] bottom-0.5 bg-gradient-to-r from-emerald-500 to-emerald-400 w-1/2 rounded-r-full z-10"
+                   style={{ maskImage: 'linear-gradient(to right, rgba(0,0,0,1), rgba(0,0,0,0))', WebkitMaskImage: 'linear-gradient(to right, rgba(0,0,0,1), rgba(0,0,0,0))' }}
+                ></motion.div>
+
+                {/* Markers */}
+                <div className="absolute top-0 bottom-0 left-1/3 w-px bg-rose-400/50 z-30"></div>
+                <div className="absolute top-0 bottom-0 right-1/6 w-px bg-emerald-400/50 z-30 border-dashed"></div>
+              </div>
+              
+              <div className="flex justify-between mt-3 text-[9px] font-black uppercase tracking-widest z-10 relative">
+                <span className="text-rose-500">Risco Alto</span>
+                <span className="text-emerald-500">Crédito Liberado</span>
+              </div>
+
+              <button 
+                onClick={() => document.getElementById('processes-section')?.scrollIntoView({ behavior: 'smooth' })}
+                className="relative w-full mt-8 bg-gradient-to-r from-rose-600 to-orange-500 text-white py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest hover:from-rose-500 hover:to-orange-400 transition-all shadow-[0_0_30px_rgba(225,29,72,0.3)] hover:shadow-[0_0_40px_rgba(225,29,72,0.5)] flex items-center justify-center gap-2 group z-10 overflow-hidden"
+              >
+                <span className="absolute inset-0 w-full h-full bg-white/20 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] skew-x-12"></span>
+                Atuar nas Pendências Agora <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      ) : null}
+
+      <div id="processes-section" className="space-y-6">
         {filteredProcesses.length > 0 ? (
           <div className="grid grid-cols-1 gap-6">
             {filteredProcesses.map((process) => (
