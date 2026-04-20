@@ -48,8 +48,10 @@ export const MyClubView: React.FC = () => {
       ]);
       
       // Filtra prêmios por público alvo
-      const filteredRewards = (rewardsData as ClubReward[]).filter(reward => {
+      const filteredRewards = (rewardsData as any[]).filter(reward => {
         const target = reward.publico_alvo || 'CLIENTE';
+        if (target === 'TODOS') return true;
+        if (target === 'ESPECIFICO') return profile?.email?.toLowerCase() === reward.usuario_alvo_email?.toLowerCase();
         if (target === 'EQUIPE') return ['GESTOR', 'VENDEDOR'].includes(profile?.nivel || '');
         if (target === 'CLIENTE') return profile?.nivel === 'CLIENTE';
         return profile?.nivel === target;

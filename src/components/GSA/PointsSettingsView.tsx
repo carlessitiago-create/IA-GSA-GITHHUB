@@ -144,12 +144,18 @@ export const PointsSettingsView = () => {
           </div>
           <div className="space-y-1">
             <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Público Alvo</label>
-            <select id="swal-input6" class="swal2-input !m-0 !w-full">
+            <select id="swal-input6" class="swal2-input !m-0 !w-full" onchange="document.getElementById('email-wrapper').style.display = this.value === 'ESPECIFICO' ? 'block' : 'none'">
               <option value="CLIENTE">Clientes</option>
               <option value="VENDEDOR">Vendedores</option>
               <option value="GESTOR">Gestores</option>
               <option value="EQUIPE">Toda a Equipe (V+G)</option>
+              <option value="TODOS">Todos os Usuários</option>
+              <option value="ESPECIFICO">1 Usuário Específico (Por e-mail)</option>
             </select>
+          </div>
+          <div id="email-wrapper" class="space-y-1" style="display: none; padding-top: 8px;">
+            <label class="text-[10px] font-black uppercase text-slate-400 ml-2">Email do Recompensado</label>
+            <input id="swal-input7" type="email" class="swal2-input !m-0 !w-full" placeholder="Ex: joao@gsa.com">
           </div>
         </div>
       `,
@@ -175,11 +181,17 @@ export const PointsSettingsView = () => {
         const ordem = (document.getElementById('swal-input4') as HTMLInputElement).value;
         const status = (document.getElementById('swal-input5') as HTMLSelectElement).value;
         const publico_alvo = (document.getElementById('swal-input6') as HTMLSelectElement).value;
+        const usuario_alvo_email = (document.getElementById('swal-input7') as HTMLInputElement)?.value;
         const fileInput = document.getElementById('swal-file') as HTMLInputElement;
         const file = fileInput.files?.[0];
         
         if (!nome || !pontos) {
           Swal.showValidationMessage('Nome e pontos são obrigatórios');
+          return false;
+        }
+
+        if (publico_alvo === 'ESPECIFICO' && !usuario_alvo_email) {
+          Swal.showValidationMessage('Informe o e-mail do usuário específico!');
           return false;
         }
 
@@ -210,7 +222,8 @@ export const PointsSettingsView = () => {
             foto: transformImageUrl(foto), 
             ordem: Number(ordem) || (premios.length + 1),
             status,
-            publico_alvo
+            publico_alvo,
+            usuario_alvo_email: publico_alvo === 'ESPECIFICO' ? usuario_alvo_email.toLowerCase() : null
           };
         } catch (error: any) {
           console.error("Erro no preConfirm (add):", error);
@@ -266,12 +279,18 @@ export const PointsSettingsView = () => {
           </div>
           <div className="space-y-1">
             <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Público Alvo</label>
-            <select id="swal-input6" class="swal2-input !m-0 !w-full">
+            <select id="swal-input6" class="swal2-input !m-0 !w-full" onchange="document.getElementById('email-wrapper-edit').style.display = this.value === 'ESPECIFICO' ? 'block' : 'none'">
               <option value="CLIENTE" ${premio.publico_alvo === 'CLIENTE' ? 'selected' : ''}>Clientes</option>
               <option value="VENDEDOR" ${premio.publico_alvo === 'VENDEDOR' ? 'selected' : ''}>Vendedores</option>
               <option value="GESTOR" ${premio.publico_alvo === 'GESTOR' ? 'selected' : ''}>Gestores</option>
               <option value="EQUIPE" ${premio.publico_alvo === 'EQUIPE' ? 'selected' : ''}>Toda a Equipe (V+G)</option>
+              <option value="TODOS" ${premio.publico_alvo === 'TODOS' ? 'selected' : ''}>Todos os Usuários</option>
+              <option value="ESPECIFICO" ${premio.publico_alvo === 'ESPECIFICO' ? 'selected' : ''}>1 Usuário Específico (Por e-mail)</option>
             </select>
+          </div>
+          <div id="email-wrapper-edit" class="space-y-1" style="display: ${premio.publico_alvo === 'ESPECIFICO' ? 'block' : 'none'}; padding-top: 8px;">
+            <label class="text-[10px] font-black uppercase text-slate-400 ml-2">Email do Recompensado</label>
+            <input id="swal-input7" type="email" class="swal2-input !m-0 !w-full" placeholder="Ex: joao@gsa.com" value="${premio.usuario_alvo_email || ''}">
           </div>
         </div>
       `,
@@ -297,11 +316,17 @@ export const PointsSettingsView = () => {
         const ordem = (document.getElementById('swal-input4') as HTMLInputElement).value;
         const status = (document.getElementById('swal-input5') as HTMLSelectElement).value;
         const publico_alvo = (document.getElementById('swal-input6') as HTMLSelectElement).value;
+        const usuario_alvo_email = (document.getElementById('swal-input7') as HTMLInputElement)?.value;
         const fileInput = document.getElementById('swal-file') as HTMLInputElement;
         const file = fileInput.files?.[0];
         
         if (!nome || !pontos || (!foto && !file)) {
           Swal.showValidationMessage('Preencha os campos obrigatórios');
+          return false;
+        }
+
+        if (publico_alvo === 'ESPECIFICO' && !usuario_alvo_email) {
+          Swal.showValidationMessage('Informe o e-mail do usuário específico!');
           return false;
         }
 
@@ -327,7 +352,8 @@ export const PointsSettingsView = () => {
             foto: transformImageUrl(foto), 
             ordem: Number(ordem),
             status,
-            publico_alvo
+            publico_alvo,
+            usuario_alvo_email: publico_alvo === 'ESPECIFICO' ? usuario_alvo_email.toLowerCase() : null
           };
         } catch (error: any) {
           console.error("Erro no preConfirm (edit):", error);

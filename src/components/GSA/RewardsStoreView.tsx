@@ -29,8 +29,21 @@ export const RewardsStoreView = ({ currentProfile }: RewardsStoreProps) => {
         // 2. Puxar a vitrine de prêmios configurada pelo ADM Master
         const regrasSnap = await getDoc(doc(db, 'platform_config', 'points_rules'));
         if (regrasSnap.exists()) {
-          // Ordena os prêmios do menor para o maior ponto
-          const premiosOrdenados = (regrasSnap.data().premios || []).sort((a: any, b: any) => a.pontos - b.pontos);
+          const userRole = currentProfile.nivel || 'CLIENTE';
+          const allPremios = regrasSnap.data().premios || [];
+          
+          const filteredRewards = allPremios.filter((r: any) => {
+            const target = r.publico_alvo || 'CLIENTE';
+            if (userRole.startsWith('ADM')) return true;
+            if (target === 'TODOS') return true;
+            if (target === 'ESPECIFICO') return currentProfile?.email?.toLowerCase() === r.usuario_alvo_email?.toLowerCase();
+            if (target === 'EQUIPE') return ['GESTOR', 'VENDEDOR'].includes(userRole);
+            if (target === 'CLIENTE') return userRole === 'CLIENTE';
+            return userRole === target;
+          });
+
+          // Ordena os prêmios
+          const premiosOrdenados = filteredRewards.sort((a: any, b: any) => a.pontos - b.pontos);
           setPremios(premiosOrdenados);
         }
       } catch (error) {

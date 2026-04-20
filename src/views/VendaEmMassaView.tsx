@@ -46,6 +46,11 @@ export const VendaEmMassaView: React.FC = () => {
   const [newManualItem, setNewManualItem] = useState({ nome: '', documento: '' });
   const [batches, setBatches] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'nova' | 'historico'>('nova');
+  const [totalAmount, setTotalAmount] = useState(0);
+
+  useEffect(() => {
+    setTotalAmount(items.length * (selectedService?.venda_price || 0));
+  }, [items, selectedService]);
 
   // Fetch costs and services
   useEffect(() => {
@@ -308,8 +313,6 @@ export const VendaEmMassaView: React.FC = () => {
       </div>
     );
   }
-
-  const totalAmount = items.length * (selectedService?.venda_price || 0);
 
   return (
     <div className="space-y-8 pb-24">

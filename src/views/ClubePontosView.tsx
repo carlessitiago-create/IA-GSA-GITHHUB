@@ -48,11 +48,15 @@ export function ClubePontosView() {
       const userRole = profile.nivel || 'CLIENTE';
       const filteredRewards = rewardsData.filter((r: any) => {
         const target = r.publico_alvo || 'CLIENTE';
-        if (userRole === 'CLIENTE') return target === 'CLIENTE';
-        if (userRole === 'GESTOR' || userRole === 'VENDEDOR') {
-          return target === userRole || target === 'EQUIPE';
-        }
-        return true; // ADM vê tudo
+        
+        // ADM vê tudo, exceto se for específico para outro ADM (embora ADM veja tudo na gestao)
+        if (userRole.startsWith('ADM')) return true;
+
+        if (target === 'TODOS') return true;
+        if (target === 'ESPECIFICO') return profile?.email?.toLowerCase() === r.usuario_alvo_email?.toLowerCase();
+        if (target === 'EQUIPE') return ['GESTOR', 'VENDEDOR'].includes(userRole);
+        if (target === 'CLIENTE') return userRole === 'CLIENTE';
+        return userRole === target;
       });
 
       setRewards(filteredRewards);
