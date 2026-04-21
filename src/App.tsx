@@ -160,6 +160,7 @@ const App: React.FC = () => {
               <Route path="/processos" element={<ProcessModelsManager />} />
               <Route path="/dashboard" element={<DashboardView />} />
               <Route path="/saas-settings" element={<DashboardView view="saas_settings" />} />
+              <Route path="/admin_clube_settings" element={<DashboardView view="admin_clube_settings" />} />
 
               {/* Rotas Portal do Cliente Diretas */}
               <Route path="/clube_pontos" element={<ClubePontosView />} />

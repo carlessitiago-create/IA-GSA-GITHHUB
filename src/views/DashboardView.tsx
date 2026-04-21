@@ -3,6 +3,7 @@ import { IntelligenceDashboardView } from './IntelligenceDashboardView';
 import { ClientDashboardView } from './ClientDashboardView';
 import { FinanceiroView } from './FinanceiroView';
 import { AdminSaasSettings } from '../components/GSA/AdminSaasSettings';
+import { PointsSettingsView } from '../components/GSA/PointsSettingsView';
 
 export const DashboardView = ({ view, props }: any) => {
     switch (view) {
@@ -14,6 +15,8 @@ export const DashboardView = ({ view, props }: any) => {
             return <FinanceiroView {...props} />;
         case 'saas_settings':
             return <AdminSaasSettings {...props} />;
+        case 'admin_clube_settings':
+            return <PointsSettingsView {...props} />;
         default:
             return <IntelligenceDashboardView {...props} />;
     }

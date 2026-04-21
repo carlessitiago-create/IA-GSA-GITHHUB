@@ -59,13 +59,18 @@ export const VendaEmMassaView: React.FC = () => {
       const servicesData = snapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() } as any))
         .filter(service => service.is_mass_sale_active === true) // Only active for bulk
-        .map(service => ({ 
-          ...service,
-          venda_price: profile?.nivel.startsWith('ADM') ? (service.preco_massa_gestor || 0) :
-                       profile?.nivel === 'GESTOR' ? (service.preco_massa_gestor || 0) :
-                       profile?.nivel === 'VENDEDOR' ? (service.preco_massa_vendedor || 0) :
-                       0
-        }));
+        .map(service => {
+          let price = 0;
+          const nivel = profile?.nivel || '';
+          
+          if (nivel.startsWith('ADM') || nivel === 'GESTOR') {
+            price = service.preco_massa_gestor || service.preco_base_gestor || 0;
+          } else if (nivel === 'VENDEDOR') {
+            price = service.preco_massa_vendedor || service.preco_base_vendedor || 0;
+          }
+          
+          return { ...service, venda_price: price };
+        });
       setServices(servicesData);
       setLoading(false);
       
@@ -186,23 +191,14 @@ export const VendaEmMassaView: React.FC = () => {
     }
 
     // Determina o preço unitário com base no nível do usuário e na configuração de massa
-    let precoUnitario = selectedService.preco_base_vendedor || 0;
+    let precoUnitario = selectedService.venda_price || 0;
     
-    // Se o serviço for específico para venda em massa e estiver ativo
-    if (selectedService.is_mass_sale_active) {
-      const nivel = profile?.nivel || 'CLIENTE';
-      if (['ADM_MASTER', 'ADM_MESTRE', 'ADM_GERENTE', 'ADM_ANALISTA', 'GESTOR'].includes(nivel)) {
+    // Fallback extra se o venda_price foi zero mas o serviço está ativo
+    if (precoUnitario <= 0) {
+      if (['ADM_MASTER', 'ADM_GERENTE', 'GESTOR'].includes(profile?.nivel || '')) {
         precoUnitario = selectedService.preco_massa_gestor || selectedService.preco_base_gestor || 0;
       } else {
         precoUnitario = selectedService.preco_massa_vendedor || selectedService.preco_base_vendedor || 0;
-      }
-    } else {
-      // Venda Varejo (Fallback se não for massa mas estiver sendo usado aqui)
-      const nivel = profile?.nivel || 'CLIENTE';
-      if (['ADM_MASTER', 'ADM_MESTRE', 'ADM_GERENTE', 'ADM_ANALISTA', 'GESTOR'].includes(nivel)) {
-        precoUnitario = selectedService.preco_base_gestor || 0;
-      } else {
-        precoUnitario = selectedService.preco_base_vendedor || 0;
       }
     }
 

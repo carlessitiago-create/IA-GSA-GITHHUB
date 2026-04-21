@@ -105,12 +105,12 @@ export const PointsSettingsView = () => {
 
   const adicionarPremio = () => {
     Swal.fire({
-      title: 'Novo Prêmio',
+      title: 'Nova Recompensa',
       html: `
         <div class="space-y-4 text-left">
           <div class="space-y-1">
-            <label class="text-[10px] font-black uppercase text-slate-400 ml-2">Nome do Produto</label>
-            <input id="swal-input1" class="swal2-input !m-0 !w-full" placeholder="Ex: iPhone 15 Pro">
+            <label class="text-[10px] font-black uppercase text-slate-400 ml-2">Nome da Recompensa</label>
+            <input id="swal-input1" class="swal2-input !m-0 !w-full" placeholder="Ex: iPhone 15 Pro, R$500 de Bônus">
           </div>
           <div class="space-y-1">
             <label class="text-[10px] font-black uppercase text-slate-400 ml-2">Pontos necessários</label>
@@ -157,6 +157,14 @@ export const PointsSettingsView = () => {
             <label class="text-[10px] font-black uppercase text-slate-400 ml-2">Email do Recompensado</label>
             <input id="swal-input7" type="email" class="swal2-input !m-0 !w-full" placeholder="Ex: joao@gsa.com">
           </div>
+          <div class="space-y-1">
+            <label class="text-[10px] font-black uppercase text-slate-400 ml-2">Tipo de Recompensa</label>
+            <select id="swal-input8" class="swal2-input !m-0 !w-full">
+              <option value="PREMIO">Prêmio / Produto</option>
+              <option value="BONUS">Bônus / Saldo</option>
+              <option value="DESCONTO">Desconto Específico</option>
+            </select>
+          </div>
         </div>
       `,
       didOpen: () => {
@@ -182,6 +190,7 @@ export const PointsSettingsView = () => {
         const status = (document.getElementById('swal-input5') as HTMLSelectElement).value;
         const publico_alvo = (document.getElementById('swal-input6') as HTMLSelectElement).value;
         const usuario_alvo_email = (document.getElementById('swal-input7') as HTMLInputElement)?.value;
+        const tipo = (document.getElementById('swal-input8') as HTMLSelectElement).value;
         const fileInput = document.getElementById('swal-file') as HTMLInputElement;
         const file = fileInput.files?.[0];
         
@@ -223,6 +232,7 @@ export const PointsSettingsView = () => {
             ordem: Number(ordem) || (premios.length + 1),
             status,
             publico_alvo,
+            tipo,
             usuario_alvo_email: publico_alvo === 'ESPECIFICO' ? usuario_alvo_email.toLowerCase() : null
           };
         } catch (error: any) {
@@ -240,12 +250,12 @@ export const PointsSettingsView = () => {
 
   const editarPremio = (premio: any) => {
     Swal.fire({
-      title: 'Editar Prêmio',
+      title: 'Editar Recompensa',
       html: `
         <div class="space-y-4 text-left">
           <div class="space-y-1">
-            <label class="text-[10px] font-black uppercase text-slate-400 ml-2">Nome do Produto</label>
-            <input id="swal-input1" class="swal2-input !m-0 !w-full" placeholder="Nome do Produto" value="${premio.nome}">
+            <label class="text-[10px] font-black uppercase text-slate-400 ml-2">Nome da Recompensa</label>
+            <input id="swal-input1" class="swal2-input !m-0 !w-full" placeholder="Nome da recompensa" value="${premio.nome}">
           </div>
           <div class="space-y-1">
             <label class="text-[10px] font-black uppercase text-slate-400 ml-2">Pontos necessários</label>
@@ -292,6 +302,14 @@ export const PointsSettingsView = () => {
             <label class="text-[10px] font-black uppercase text-slate-400 ml-2">Email do Recompensado</label>
             <input id="swal-input7" type="email" class="swal2-input !m-0 !w-full" placeholder="Ex: joao@gsa.com" value="${premio.usuario_alvo_email || ''}">
           </div>
+          <div class="space-y-1">
+            <label class="text-[10px] font-black uppercase text-slate-400 ml-2">Tipo de Recompensa</label>
+            <select id="swal-input8" class="swal2-input !m-0 !w-full">
+              <option value="PREMIO" ${premio.tipo === 'PREMIO' ? 'selected' : ''}>Prêmio / Produto</option>
+              <option value="BONUS" ${premio.tipo === 'BONUS' ? 'selected' : ''}>Bônus / Saldo</option>
+              <option value="DESCONTO" ${premio.tipo === 'DESCONTO' ? 'selected' : ''}>Desconto Específico</option>
+            </select>
+          </div>
         </div>
       `,
       didOpen: () => {
@@ -317,6 +335,7 @@ export const PointsSettingsView = () => {
         const status = (document.getElementById('swal-input5') as HTMLSelectElement).value;
         const publico_alvo = (document.getElementById('swal-input6') as HTMLSelectElement).value;
         const usuario_alvo_email = (document.getElementById('swal-input7') as HTMLInputElement)?.value;
+        const tipo = (document.getElementById('swal-input8') as HTMLSelectElement).value;
         const fileInput = document.getElementById('swal-file') as HTMLInputElement;
         const file = fileInput.files?.[0];
         
@@ -353,6 +372,7 @@ export const PointsSettingsView = () => {
             ordem: Number(ordem),
             status,
             publico_alvo,
+            tipo,
             usuario_alvo_email: publico_alvo === 'ESPECIFICO' ? usuario_alvo_email.toLowerCase() : null
           };
         } catch (error: any) {
@@ -476,12 +496,12 @@ export const PointsSettingsView = () => {
         {/* LADO DIREITO: Vitrine de Objetivos */}
         <div className="bg-slate-50 p-4 sm:p-6 rounded-2xl">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
-            <h3 className="font-bold text-slate-700 uppercase text-sm sm:text-base">Objetivos / Prêmios</h3>
+            <h3 className="font-bold text-slate-700 uppercase text-sm sm:text-base">Catálogo de Recompensas</h3>
             <button 
               onClick={adicionarPremio} 
               className="w-full sm:w-auto text-[10px] font-black uppercase bg-blue-900 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-1 hover:bg-blue-800 transition-colors"
             >
-              <Plus size={14} /> Add Prêmio
+              <Plus size={14} /> Nova Recompensa
             </button>
           </div>
           
@@ -541,6 +561,7 @@ export const PointsSettingsView = () => {
                   <div className="inline-flex items-center gap-1 text-[10px] font-black text-yellow-600 bg-yellow-100 px-3 py-1 rounded-full">
                     <Trophy size={10} /> {p.pontos} PTS
                   </div>
+                  <span className="text-[8px] font-black text-blue-600 uppercase mt-1">{p.tipo || 'PREMIO'}</span>
                   <span className="text-[8px] font-bold text-slate-400 uppercase">Público: {p.publico_alvo || 'CLIENTE'}</span>
                   <span className="text-[8px] font-bold text-slate-400 uppercase">Ordem: {p.ordem || 0}</span>
                 </div>

@@ -221,6 +221,11 @@ export function ClubePontosView() {
                         </div>
                       )}
                     </div>
+                    {reward.tipo && (
+                      <div className="absolute top-4 right-4 bg-blue-500/90 backdrop-blur-md text-white px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border border-white/20">
+                        {reward.tipo}
+                      </div>
+                    )}
                   </div>
 
                   <div className="px-2 space-y-4 flex-1 flex flex-col">
