@@ -66,12 +66,6 @@ export const PointsSettingsView = () => {
       const storageRef = ref(storage, `club_prizes/${Date.now()}_${file.name}`);
       const uploadTask = uploadBytesResumable(storageRef, file);
 
-      // Timeout de 60 segundos para conexões lentas
-      const timeout = setTimeout(() => {
-        uploadTask.cancel();
-        reject(new Error('Tempo limite de upload excedido (60s). Verifique sua conexão ou tente um arquivo menor.'));
-      }, 60000);
-
       uploadTask.on('state_changed', 
         (snapshot) => {
           const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
@@ -79,19 +73,17 @@ export const PointsSettingsView = () => {
           console.log(`Upload do prêmio: ${progress.toFixed(0)}%`);
         }, 
         (error: any) => {
-          clearTimeout(timeout);
           console.error("Erro no upload task:", error);
           
           if (error.code === 'storage/unauthorized') {
             reject(new Error('Sem permissão para salvar no Storage. Verifique as regras de segurança.'));
           } else if (error.code === 'storage/canceled') {
-            reject(new Error('Upload cancelado ou tempo limite atingido.'));
+            reject(new Error('Upload cancelado.'));
           } else {
             reject(new Error('Falha na comunicação com o servidor de imagens. Verifique sua rede.'));
           }
         }, 
         async () => {
-          clearTimeout(timeout);
           try {
             const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
             resolve(downloadURL);

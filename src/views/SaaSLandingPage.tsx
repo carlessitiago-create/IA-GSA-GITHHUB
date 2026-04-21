@@ -176,6 +176,54 @@ const SaaSLandingPage: React.FC = () => {
 
       // 2. Gera a venda no backend (MODO AUTOMÁTICO)
       console.log("Chamando processarVenda...");
+
+      // AUTO-FIX: Create fallback service if missing (resolves "Serviço diag_credito não encontrado")
+      try {
+        const { auth, db } = await import('../firebase');
+        if (auth.currentUser) {
+            const { doc, getDoc, setDoc } = await import('firebase/firestore');
+            
+            // diag_credito
+            const svcRef = doc(db, 'services', 'diag_credito');
+            const svcSnap = await getDoc(svcRef);
+            if (!svcSnap.exists()) {
+                await setDoc(svcRef, {
+                    nome: 'Diagnóstico de Crédito (SaaS)',
+                    nome_servico: 'Diagnóstico de Crédito (SaaS)',
+                    preco_base_vendedor: 0,
+                    preco_base_gestor: 0,
+                    is_mass_sale_active: false,
+                    modelo_id: '',
+                    documentos: [],
+                    campos: [],
+                    descricao: 'Serviço base para a Landing Page SaaS.',
+                    ativo: true
+                }, { merge: true });
+                console.log("Serviço diag_credito auto-criado!");
+            }
+
+            // diag_saas
+            const saasRef = doc(db, 'services', 'diag_saas');
+            const saasSnap = await getDoc(saasRef);
+            if (!saasSnap.exists()) {
+                await setDoc(saasRef, {
+                    nome: 'Diagnóstico de Dívidas (SaaS)',
+                    nome_servico: 'Diagnóstico de Dívidas (SaaS)',
+                    preco_base_vendedor: 0,
+                    preco_base_gestor: 0,
+                    is_mass_sale_active: false,
+                    modelo_id: '',
+                    documentos: [],
+                    campos: [],
+                    descricao: 'Serviço base para fluxo Manual SaaS.',
+                    ativo: true
+                }, { merge: true });
+            }
+        }
+      } catch (autoFixErr) {
+        console.warn("Auto-fix do diag_credito falhou - ignorando:", autoFixErr);
+      }
+
       const result = await processarVenda(
         novoCliente.id, 
         [{ 

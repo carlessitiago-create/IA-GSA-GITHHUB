@@ -407,7 +407,7 @@ exports.processVenda = (0, https_1.onCall)(safeExecute("PROCESS_VENDA", async (r
             if (servicoSnap.exists) {
                 servicoData = servicoSnap.data();
             }
-            else if (vendedorId === 'SYSTEM_SAAS') {
+            else if (vendedorId === 'SYSTEM_SAAS' || item.servicoId === 'diag_credito' || item.servicoId === 'diag_saas') {
                 servicoData = {
                     nome: item.servicoNome || 'Serviço SaaS',
                     modelo_id: '',

@@ -462,7 +462,7 @@ export const processVenda = onCall(
       let servicoData: any = null;
       if (servicoSnap.exists) {
         servicoData = servicoSnap.data();
-      } else if (vendedorId === 'SYSTEM_SAAS') {
+      } else if (vendedorId === 'SYSTEM_SAAS' || item.servicoId === 'diag_credito' || item.servicoId === 'diag_saas') {
         // Fallback for SaaS sales if service doc is missing
         servicoData = {
           nome: item.servicoNome || 'Serviço SaaS',
