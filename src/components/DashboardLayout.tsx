@@ -4,11 +4,12 @@ import { Sidebar } from './GSA/Sidebar';
 import { Header } from './GSA/Header';
 import { useAuth } from './AuthContext';
 import { LoadingScreen } from './LoadingScreen';
-import { collection, query, where, onSnapshot, orderBy, getDocs, updateDoc, doc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, orderBy, getDocs, updateDoc, doc, or } from 'firebase/firestore';
 import { db } from '../firebase';
 import { confirmarTransacao, marcarFaturaVencida } from '../services/financialService';
-import { sendNotification } from '../services/notificationService';
+import { sendNotification, AppNotification, markAsRead, listenToNotifications, playNotificationSound } from '../services/notificationService';
 import { listarTodosUsuarios } from '../services/userService';
+import Swal from 'sweetalert2';
 
 export const DashboardLayout: React.FC = () => {
   const { user, profile, logout, loading } = useAuth();
@@ -25,6 +26,7 @@ export const DashboardLayout: React.FC = () => {
   const [showcaseLeads, setShowcaseLeads] = useState<any[]>([]);
   const [pendencies, setPendencies] = useState<any[]>([]);
   const [statusHistory, setStatusHistory] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
   const [isConfirmingTransaction, setIsConfirmingTransaction] = useState<string | null>(null);
   const [transactionReceipt, setTransactionReceipt] = useState('');
@@ -32,6 +34,36 @@ export const DashboardLayout: React.FC = () => {
 
   useEffect(() => {
     if (!user || !profile) return;
+
+    // Listen to notifications
+    let lastNotificationCount = 0;
+    
+    const unsubNotifications = listenToNotifications(profile.uid, profile.nivel, (data: AppNotification[]) => {
+      setNotifications(data);
+      
+      const unread = data.filter(n => !n.lida);
+      if (unread.length > lastNotificationCount) {
+        const newest = unread[0];
+        if (newest) {
+          playNotificationSound(newest.tipo === 'BONUS' ? 'BONUS' : 'DEFAULT');
+          
+          Swal.fire({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 4000,
+            timerProgressBar: true,
+            icon: 'info',
+            title: newest.titulo,
+            text: newest.mensagem,
+            background: '#ffffff',
+            color: '#0a0a2e',
+            iconColor: '#3b82f6',
+          });
+        }
+      }
+      lastNotificationCount = unread.length;
+    });
 
     const nivel = profile.nivel;
     const uid = profile.uid;
@@ -104,7 +136,11 @@ export const DashboardLayout: React.FC = () => {
     if (nivel === 'ADM_MASTER' || nivel === 'ADM_GERENTE' || nivel === 'ADM_ANALISTA') {
       qSales = query(collection(db, 'sales'), orderBy('timestamp', 'desc'));
     } else if (nivel === 'GESTOR' && uid) {
-      qSales = query(collection(db, 'sales'), where('id_superior', '==', uid), orderBy('timestamp', 'desc'));
+      qSales = query(
+        collection(db, 'sales'), 
+        or(where('id_superior', '==', uid), where('vendedor_id', '==', uid)),
+        orderBy('timestamp', 'desc')
+      );
     } else if (nivel === 'VENDEDOR' && uid) {
       qSales = query(collection(db, 'sales'), where('vendedor_id', '==', uid), orderBy('timestamp', 'desc'));
     } else if (uid) {
@@ -125,7 +161,11 @@ export const DashboardLayout: React.FC = () => {
     if (nivel === 'ADM_MASTER' || nivel === 'ADM_GERENTE') {
       qProc = query(collection(db, 'order_processes'), orderBy('data_venda', 'desc'));
     } else if (nivel === 'GESTOR' && uid) {
-      qProc = query(collection(db, 'order_processes'), where('id_superior', '==', uid), orderBy('data_venda', 'desc'));
+      qProc = query(
+        collection(db, 'order_processes'), 
+        or(where('id_superior', '==', uid), where('vendedor_id', '==', uid)),
+        orderBy('data_venda', 'desc')
+      );
     } else if (nivel === 'VENDEDOR' && uid) {
       qProc = query(collection(db, 'order_processes'), where('vendedor_id', '==', uid), orderBy('data_venda', 'desc'));
     } else if (uid) {
@@ -228,6 +268,7 @@ export const DashboardLayout: React.FC = () => {
     });
 
     return () => {
+      unsubNotifications();
       unsubTrans();
       unsubSales();
       unsubProc();
@@ -281,8 +322,8 @@ export const DashboardLayout: React.FC = () => {
     pointsBalance: profile?.saldo_pontos || 0,
     isNotificationOpen,
     setIsNotificationOpen,
-    notifications: [], 
-    markAsRead: () => {},
+    notifications, 
+    markAsRead,
     setView: (v: string) => navigate(`/${v}`),
   };
 

@@ -19,6 +19,7 @@ export interface ClientData {
   nome: string;
   documento: string;
   telefone: string;
+  whatsapp?: string;
   email?: string;
   data_nascimento?: string;
   especialista_id: string;

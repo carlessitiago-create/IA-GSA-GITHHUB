@@ -120,7 +120,19 @@ export const AuditoriaProcesso: React.FC<AuditoriaProcessoProps> = ({ processo, 
     if (!value) return;
     setLoading(field);
     try {
-      await updateCliente(processo.cliente_id!, { [field]: value });
+      const updates: any = { [field]: value };
+      await updateCliente(processo.cliente_id!, updates);
+      
+      // Também atualiza o processo se for um campo de identificação principal
+      if (['cliente_cpf_cnpj', 'data_nascimento', 'documento'].includes(field)) {
+        const { db } = await import('../../firebase');
+        const { updateDoc, doc } = await import('firebase/firestore');
+        const procUpdate: any = {};
+        if (field === 'cliente_cpf_cnpj' || field === 'documento') procUpdate.cliente_cpf_cnpj = value.replace(/\D/g, '');
+        if (field === 'data_nascimento') procUpdate.data_nascimento = value;
+        await updateDoc(doc(db, 'order_processes', processo.id!), procUpdate);
+      }
+
       await registrarLogAuditoria(
         processo.id!, 
         `Campo "${requirementsConfig.field_labels[field] || field}" preenchido manualmente pelo analista.`,
@@ -141,7 +153,20 @@ export const AuditoriaProcesso: React.FC<AuditoriaProcessoProps> = ({ processo, 
     }
   };
 
-  const missingFields = requisitos.campos.filter(campo => !clienteData[campo]);
+  // Requisitos básicos sempre presentes para auditoria
+  const camposAuditoria = Array.from(new Set([
+    'nome_completo', 
+    'whatsapp',
+    'cliente_cpf_cnpj', 
+    'data_nascimento', 
+    ...requisitos.campos
+  ]));
+  const missingFields = camposAuditoria.filter(campo => {
+    const valor = clienteData[campo] || 
+                  (campo === 'cliente_cpf_cnpj' ? (clienteData.documento || clienteData.cpf) : null) ||
+                  (campo === 'nome_completo' ? clienteData.nome : null);
+    return !valor;
+  });
   const missingDocs = requisitos.documentos.filter(doc => !clienteData.documentos?.[doc] && !processo[`check_${doc}`]);
   const allRequirementsMet = missingFields.length === 0 && missingDocs.length === 0;
 
@@ -173,20 +198,30 @@ export const AuditoriaProcesso: React.FC<AuditoriaProcessoProps> = ({ processo, 
       )}
 
       {/* Campos de Dados */}
-      {requisitos.campos.length > 0 && (
+      {camposAuditoria.length > 0 && (
         <div className="space-y-3">
           <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
             <Info size={12} /> Campos de Informação
           </h4>
           <div className="grid grid-cols-1 gap-2">
-            {requisitos.campos.map(campo => {
-              const valor = clienteData[campo];
+            {camposAuditoria.map(campo => {
+              const valor = clienteData[campo] || 
+                           processo[campo] ||
+                           (campo === 'cliente_cpf_cnpj' ? (clienteData.documento || clienteData.cpf || processo.cliente_cpf_cnpj) : null) ||
+                           (campo === 'nome_completo' ? (clienteData.nome || processo.cliente_nome) : null);
+              
               const preenchido = !!valor;
+              
+              const label = requirementsConfig.field_labels[campo] || 
+                           (campo === 'cliente_cpf_cnpj' ? 'CPF/CNPJ' : 
+                            campo === 'data_nascimento' ? 'Data de Nascimento' : 
+                            campo === 'nome_completo' ? 'Nome Completo' : 
+                            campo === 'whatsapp' ? 'WhatsApp' : campo);
               
               return (
                 <div key={campo} className={`flex flex-col p-3 rounded-2xl border transition-all ${preenchido ? 'bg-emerald-50/30 border-emerald-100' : 'bg-slate-50 border-slate-100'}`}>
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-xs font-bold text-slate-700">{requirementsConfig.field_labels[campo] || campo}</span>
+                    <span className="text-xs font-bold text-slate-700">{label}</span>
                     <div className="flex gap-2">
                       <button 
                         disabled={loading === campo}
@@ -207,18 +242,15 @@ export const AuditoriaProcesso: React.FC<AuditoriaProcessoProps> = ({ processo, 
                     </div>
                   </div>
                   
-                  {!preenchido ? (
-                    <div className="flex gap-2">
-                      <input 
-                        type="text" 
-                        placeholder={`Preencher ${requirementsConfig.field_labels[campo] || campo}...`}
-                        className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs focus:ring-2 focus:ring-blue-500 outline-none"
-                        onBlur={(e) => handleUpdateField(campo, e.target.value)}
-                      />
-                    </div>
-                  ) : (
-                    <p className="text-xs font-medium text-slate-500 italic truncate">{valor}</p>
-                  )}
+                  <div className="flex gap-2">
+                    <input 
+                      type="text" 
+                      placeholder={`Preencher ${label}...`}
+                      className={`flex-1 bg-white border rounded-xl px-3 py-1.5 text-xs focus:ring-2 focus:ring-blue-500 outline-none transition-all ${preenchido ? 'border-emerald-100' : 'border-slate-200'}`}
+                      defaultValue={valor || ''}
+                      onBlur={(e) => handleUpdateField(campo, e.target.value)}
+                    />
+                  </div>
                 </div>
               );
             })}

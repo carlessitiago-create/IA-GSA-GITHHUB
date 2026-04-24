@@ -107,13 +107,16 @@ const RootRedirect: React.FC = () => {
 const App: React.FC = () => {
   const hostname = window.location.hostname.toLowerCase();
   // Detecta se estamos no subdomínio de diagnóstico (diagnostico.72hrs.online ou variações)
-  const isSaasDomain = hostname.includes('diagnostico') || 
+  const isConsultaDomain = hostname.startsWith('consulta.');
+  const isSaasDomain = !isConsultaDomain && (
+                       hostname.includes('diagnostico') || 
                        hostname.includes('diagnóstico') || 
                        hostname.includes('xn--diagnstico') ||
                        hostname.includes('72h.online') ||
                        hostname.includes('72hrs.online') ||
                        hostname.includes('run.app') || // Adicionado para ambiente de desenvolvimento
-                       hostname.includes('localhost'); // Adicionado para ambiente local
+                       hostname.includes('localhost') // Adicionado para ambiente local
+  );
 
   return (
     <Suspense fallback={<LoadingScreen />}>
@@ -121,6 +124,9 @@ const App: React.FC = () => {
         {/* Rotas Públicas (Acessíveis sem login) */}
         {/* Se estiver no domínio do SaaS, a raiz é a Landing Page */}
         {isSaasDomain && <Route path="/" element={<SaaSLandingPage />} />}
+        
+        {/* Se estiver no domínio de consulta, a raiz é o PublicPortal */}
+        {isConsultaDomain && <Route path="/" element={<PublicPortal />} />}
         
         <Route path="/diagnostico" element={<SaaSLandingPage />} />
         <Route path="/vendas/p/:slug" element={<ProposalLandingPage />} />

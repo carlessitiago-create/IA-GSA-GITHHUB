@@ -1,10 +1,10 @@
 import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 export const generateProcessPdf = (processo: any) => {
-  const doc = new jsPDF() as any;
+  const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 20;
 
@@ -27,7 +27,7 @@ export const generateProcessPdf = (processo: any) => {
   doc.setFont('helvetica', 'bold');
   doc.text('Informações do Cliente', margin, 55);
   
-  doc.autoTable({
+  autoTable(doc, {
     startY: 60,
     margin: { left: margin },
     theme: 'striped',
@@ -47,7 +47,7 @@ export const generateProcessPdf = (processo: any) => {
   doc.setFont('helvetica', 'bold');
   doc.text('Detalhes do Processo', margin, finalY);
 
-  doc.autoTable({
+  autoTable(doc, {
     startY: finalY + 5,
     margin: { left: margin },
     theme: 'grid',
@@ -68,7 +68,7 @@ export const generateProcessPdf = (processo: any) => {
     doc.setFont('helvetica', 'bold');
     doc.text('Histórico de Atualizações', margin, finalY2);
 
-    doc.autoTable({
+    autoTable(doc, {
       startY: finalY2 + 5,
       margin: { left: margin },
       theme: 'striped',

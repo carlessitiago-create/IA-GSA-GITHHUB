@@ -36,6 +36,7 @@ export async function listarModelosProcesso(): Promise<ProcessModel[]> {
 }
 
 export async function salvarModeloProcesso(modelo: ProcessModel) {
+  if (!modelo || !modelo.id) throw new Error("ID do modelo é obrigatório");
   try {
     const { id, ...data } = modelo;
     await setDoc(doc(db, MODELS_COLLECTION, id), {
@@ -49,6 +50,7 @@ export async function salvarModeloProcesso(modelo: ProcessModel) {
 }
 
 export async function excluirModeloProcesso(id: string) {
+  if (!id) return;
   try {
     await deleteDoc(doc(db, MODELS_COLLECTION, id));
   } catch (error) {
@@ -58,6 +60,7 @@ export async function excluirModeloProcesso(id: string) {
 }
 
 export async function obterModeloProcesso(id: string): Promise<ProcessModel | null> {
+  if (!id) return null;
   try {
     const d = await getDoc(doc(db, MODELS_COLLECTION, id));
     if (d.exists()) {

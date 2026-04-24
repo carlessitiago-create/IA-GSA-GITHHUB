@@ -15,6 +15,8 @@ interface GerenciarUsuariosProps {
   onSuccess?: () => void;
 }
 
+import { IncluirVendaDireta } from './IncluirVendaDireta';
+
 const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuccess }) => {
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
@@ -31,6 +33,7 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
   const [listaGestores, setListaGestores] = useState<{id: string, nome: string}[]>([]);
   const [loading, setLoading] = useState(false);
   const { forgotPassword, profile: currentAdminProfile } = useAuth();
+
 
   useEffect(() => {
     const fetchManagers = async () => {
@@ -708,6 +711,11 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
           )}
         </button>
       </form>
+      <div className="mt-8 pt-8 border-t">
+        {(currentAdminProfile?.nivel === 'ADM_MASTER' || currentAdminProfile?.nivel === 'ADM_GERENTE') && (
+            <IncluirVendaDireta />
+        )}
+      </div>
     </div>
   );
 };

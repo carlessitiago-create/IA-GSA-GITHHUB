@@ -110,136 +110,116 @@ export const MyClubView: React.FC = () => {
     : 100;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8 pb-10 sm:pb-20 px-1 sm:px-0">
       {/* Header com Saldo e Progresso */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-gradient-to-br from-gray-900 to-black p-8 rounded-3xl text-white relative overflow-hidden">
+        <div className="lg:col-span-2 bg-gradient-to-br from-gray-900 to-black p-6 sm:p-8 md:p-10 rounded-3xl text-white relative overflow-hidden shadow-xl">
           <div className="relative z-10">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-yellow-400 rounded-lg">
-                <Trophy className="text-black" size={24} />
+            <div className="flex items-center gap-3 mb-6 sm:mb-8">
+              <div className="p-2 sm:p-2.5 bg-yellow-400 rounded-lg sm:rounded-xl">
+                <Trophy className="text-black size-5 sm:size-6" />
               </div>
-              <h2 className="text-xl font-bold">Meu Clube GSA</h2>
+              <h2 className="text-lg sm:text-xl md:text-2xl font-black uppercase tracking-tight italic">Meu Clube GSA</h2>
             </div>
             
-            <div className="flex items-end gap-2 mb-8">
-              <span className="text-6xl font-black tracking-tighter">{saldo}</span>
-              <span className="text-xl font-bold text-yellow-400 mb-2 uppercase tracking-widest">Pontos</span>
+            <div className="flex items-end gap-2 mb-8 sm:mb-10">
+              <span className="text-5xl sm:text-6xl md:text-7xl font-black tracking-tighter leading-none">{saldo}</span>
+              <span className="text-sm sm:text-lg md:text-xl font-black text-yellow-400 mb-1 sm:mb-2 uppercase tracking-widest italic">Pontos</span>
             </div>
 
             {nextReward && (
-              <div className="space-y-3">
-                <div className="flex justify-between text-sm font-bold uppercase tracking-wider">
-                  <span className="text-gray-400">Próximo Objetivo: {nextReward.nome}</span>
-                  <span className="text-yellow-400">{saldo} / {nextReward.pontos}</span>
+              <div className="space-y-3 sm:space-y-4 max-w-xl">
+                <div className="flex justify-between items-end text-[10px] sm:text-xs font-black uppercase tracking-widest shrink-0">
+                  <span className="text-gray-400 truncate mr-2">Próximo: {nextReward.nome}</span>
+                  <span className="text-yellow-400 whitespace-nowrap">{saldo} / {nextReward.pontos}</span>
                 </div>
-                <div className="h-3 bg-white/10 rounded-full overflow-hidden">
+                <div className="h-2.5 sm:h-3.5 bg-white/10 rounded-full overflow-hidden border border-white/5 p-0.5">
                   <motion.div 
                     initial={{ width: 0 }}
                     animate={{ width: `${progressPercent}%` }}
-                    className="h-full bg-yellow-400"
+                    className="h-full bg-yellow-400 rounded-full shadow-[0_0_15px_rgba(250,204,21,0.3)]"
                   />
                 </div>
-                <p className="text-xs text-gray-400 italic">Faltam {nextReward.pontos - saldo} pontos para você conquistar este prêmio!</p>
+                <p className="text-[9px] sm:text-xs text-gray-400 italic font-medium">Faltam {nextReward.pontos - saldo} pontos para você conquistar este prêmio!</p>
               </div>
             )}
           </div>
           
           {/* Background Decorativo */}
-          <div className="absolute -right-20 -bottom-20 opacity-10">
+          <div className="absolute -right-20 -bottom-20 opacity-10 rotate-12 pointer-events-none">
             <Trophy size={300} />
           </div>
         </div>
 
-        <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm flex flex-col justify-center">
-          <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-6">Como ganhar mais?</h3>
-          <div className="space-y-4">
-            <div className="flex items-center gap-4 group cursor-pointer">
-              <div className="p-3 bg-blue-50 rounded-2xl text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                <TrendingUp size={20} />
+        <div className="bg-white p-6 sm:p-8 rounded-3xl border border-gray-100 shadow-sm flex flex-col justify-center">
+          <h3 className="text-[10px] sm:text-xs font-black text-gray-400 uppercase tracking-widest mb-6">Como ganhar mais?</h3>
+          <div className="space-y-5">
+            {[
+              { icon: TrendingUp, label: 'Indique Amigos', desc: '100 pts por indicação convertida.', color: 'blue' },
+              { icon: Zap, label: 'Pagamento em Dia', desc: '20 pts por cada fatura paga.', color: 'emerald' },
+              { icon: Award, label: 'Conclua Serviços', desc: 'Pontos extras por conclusão.', color: 'purple' }
+            ].map((item, i) => (
+              <div key={i} className="flex items-center gap-4 group cursor-pointer">
+                <div className={`p-3 bg-${item.color}-50 rounded-2xl text-${item.color}-600 group-hover:bg-${item.color}-600 group-hover:text-white transition-all shadow-sm`}>
+                  <item.icon size={18} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-black text-gray-800 uppercase italic leading-tight">{item.label}</p>
+                  <p className="text-[10px] sm:text-xs text-gray-500 font-medium truncate">{item.desc}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm font-bold text-gray-800">Indique Amigos</p>
-                <p className="text-xs text-gray-500">Ganhe 100 pts por indicação convertida.</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4 group cursor-pointer">
-              <div className="p-3 bg-green-50 rounded-2xl text-green-600 group-hover:bg-green-600 group-hover:text-white transition-colors">
-                <Zap size={20} />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-gray-800">Pagamento em Dia</p>
-                <p className="text-xs text-gray-500">Ganhe 20 pts por cada fatura paga.</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4 group cursor-pointer">
-              <div className="p-3 bg-purple-50 rounded-2xl text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-colors">
-                <Award size={20} />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-gray-800">Conclua Serviços</p>
-                <p className="text-xs text-gray-500">Cada serviço concluído gera pontos extras.</p>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-4 border-b border-gray-100">
-        <button
-          onClick={() => setActiveTab('catalog')}
-          className={`pb-4 px-2 font-bold text-sm uppercase tracking-widest transition-colors relative ${
-            activeTab === 'catalog' ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600'
-          }`}
-        >
-          Catálogo de Prêmios
-          {activeTab === 'catalog' && (
-            <motion.div layoutId="tab-underline" className="absolute bottom-0 left-0 right-0 h-1 bg-gray-900" />
-          )}
-        </button>
-        <button
-          onClick={() => setActiveTab('history')}
-          className={`pb-4 px-2 font-bold text-sm uppercase tracking-widest transition-colors relative ${
-            activeTab === 'history' ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600'
-          }`}
-        >
-          Extrato de Pontos
-          {activeTab === 'history' && (
-            <motion.div layoutId="tab-underline" className="absolute bottom-0 left-0 right-0 h-1 bg-gray-900" />
-          )}
-        </button>
+      <div className="flex gap-6 sm:gap-8 border-b border-gray-100 px-2">
+        {['catalog', 'history'].map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab as any)}
+            className={`pb-4 px-1 font-black text-[10px] sm:text-xs uppercase tracking-widest transition-all relative ${
+              activeTab === tab ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600'
+            }`}
+          >
+            {tab === 'catalog' ? 'Catálogo' : 'Extrato'}
+            {activeTab === tab && (
+              <motion.div layoutId="tab-underline" className="absolute bottom-0 left-0 right-0 h-1 bg-gray-900 rounded-full" />
+            )}
+          </button>
+        ))}
       </div>
 
       {activeTab === 'catalog' ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
             {rewards.map((reward) => (
-            <div key={reward.id} className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden flex flex-col group hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-              <div className="h-40 sm:h-48 bg-gray-100 relative overflow-hidden">
+            <div key={reward.id} className="bg-white rounded-2xl sm:rounded-3xl shadow-sm border border-gray-100 overflow-hidden flex flex-col group hover:shadow-xl transition-all duration-500 transform hover:-translate-y-1">
+              <div className="h-32 sm:h-48 bg-gray-50 relative overflow-hidden">
                 {reward.foto ? (
-                  <img src={transformImageUrl(reward.foto)} alt={reward.nome} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" referrerPolicy="no-referrer" />
+                  <img src={transformImageUrl(reward.foto)} alt={reward.nome} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" referrerPolicy="no-referrer" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-300">
-                    <Gift size={48} />
+                  <div className="w-full h-full flex items-center justify-center text-gray-200">
+                    <Gift className="size-8 sm:size-12" />
                   </div>
                 )}
-                <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm text-gray-900 px-3 py-1 rounded-full text-[10px] font-black shadow-sm">
+                <div className="absolute top-2 sm:top-3 right-2 sm:right-3 bg-white/90 backdrop-blur-md text-gray-900 px-2 sm:px-3 py-1 rounded-lg sm:rounded-full text-[8px] sm:text-[10px] font-black shadow-sm border border-white/50">
                   {reward.pontos} PTS
                 </div>
               </div>
-              <div className="p-4 sm:p-6 flex-1 flex flex-col">
-                <h3 className="font-black text-gray-900 mb-2 uppercase tracking-tight text-sm sm:text-base">{reward.nome}</h3>
+              <div className="p-4 sm:p-6 flex-1 flex flex-col gap-4">
+                <h3 className="font-black text-gray-900 uppercase tracking-tight text-xs sm:text-base leading-tight min-h-[2rem] sm:min-h-0 line-clamp-2">{reward.nome}</h3>
                 
                 <button
                   onClick={() => handleRedeem(reward)}
                   disabled={saldo < reward.pontos}
-                  className={`mt-auto w-full py-3 sm:py-4 rounded-xl sm:rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${
+                  className={`mt-auto w-full py-2.5 sm:py-4 rounded-xl sm:rounded-2xl font-black text-[8px] sm:text-[10px] uppercase tracking-widest transition-all ${
                     saldo >= reward.pontos
-                      ? 'bg-gray-900 text-white hover:bg-black shadow-lg shadow-gray-200'
-                      : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      ? 'bg-gray-900 text-white hover:bg-black shadow-lg shadow-gray-200 active:scale-95'
+                      : 'bg-gray-50 text-gray-300 border border-gray-100 cursor-not-allowed opacity-60'
                   }`}
                 >
-                  {saldo >= reward.pontos ? 'Resgatar Agora' : 'Pontos Insuficientes'}
+                  {saldo >= reward.pontos ? 'Resgatar' : 'Bloqueado'}
                 </button>
               </div>
             </div>

@@ -453,28 +453,30 @@ export const TrackingView: React.FC<TrackingViewProps> = ({ saleId, onBack }) =>
         </div>
         
         <div className="relative z-10">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
-            <div>
+<div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8 md:mb-12">
+            <div className="w-full md:w-auto">
               <div className="flex items-center gap-2 mb-2">
                 <div className="px-3 py-1 bg-blue-500/20 rounded-full border border-blue-500/30">
                   <span className="text-[10px] font-black uppercase tracking-widest text-blue-300">Acompanhamento Seguro</span>
                 </div>
               </div>
-              <h1 className="text-3xl font-black uppercase tracking-tight">Status do seu Processo</h1>
-              <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1">Protocolo: {processes[0].protocolo}</p>
+              <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tight">Status do seu Processo</h1>
+              <p className="text-slate-400 text-[10px] sm:text-xs font-bold uppercase tracking-widest mt-1">Protocolo: {processes[0].protocolo}</p>
             </div>
-            <div className="flex flex-col gap-4">
-              <div className="bg-white/5 backdrop-blur-md p-4 rounded-2xl border border-white/10">
+            <div className="flex flex-col sm:flex-row md:flex-col gap-4 w-full md:w-auto">
+              <div className="bg-white/5 backdrop-blur-md p-4 rounded-2xl border border-white/10 flex-1 md:flex-none">
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Previsão Geral</p>
-                <p className="text-xl font-black text-blue-400">
+                <p className="text-lg md:text-xl font-black text-blue-400">
                   {new Date(processes[0].data_venda?.toDate().getTime() + 15 * 24 * 60 * 60 * 1000).toLocaleDateString('pt-BR')}
                 </p>
               </div>
               {clientProfile && nextReward && (
-                <ClientPointsCard 
-                  saldoAtual={clientProfile.saldo_pontos || 0} 
-                  proximoPremio={nextReward} 
-                />
+                <div className="flex-1 md:flex-none">
+                  <ClientPointsCard 
+                    saldoAtual={clientProfile.saldo_pontos || 0} 
+                    proximoPremio={nextReward} 
+                  />
+                </div>
               )}
             </div>
           </div>
@@ -502,63 +504,66 @@ export const TrackingView: React.FC<TrackingViewProps> = ({ saleId, onBack }) =>
                   </div>
 
                   {/* Timeline */}
-                  <div className="relative pt-4">
-                    <div className="absolute top-[27px] left-6 right-6 h-0.5 bg-white/10 rounded-full" />
-                    <div 
-                      className="absolute top-[27px] left-6 h-0.5 bg-blue-500 rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(59,130,246,0.5)]"
-                      style={{ width: `calc(${getProgress(proc.status_atual)}% - 48px)` }}
-                    />
-                    
-                    <div className="relative flex justify-between">
-                      {processSteps.map((step, idx) => {
-                        const progress = getProgress(proc.status_atual);
-                        const isCompleted = progress >= (idx + 1) * 25;
-                        const isCurrent = (idx === 0 && proc.status_atual === 'Pendente') ||
-                                         (idx === 0 && proc.status_atual === 'Aguardando Aprovação') ||
-                                         (idx === 0 && proc.status_atual === 'Em Análise') ||
-                                         (idx === 1 && proc.status_atual === 'Aguardando Documentação') ||
-                                         (idx === 2 && proc.status_atual === 'Em Andamento') ||
-                                         (idx === 3 && proc.status_atual === 'Concluído');
+                  <div className="relative pt-4 overflow-x-auto pb-4 sm:pb-0 hide-scrollbar">
+                    <div className="min-w-[320px] relative">
+                      <div className="absolute top-[27px] left-6 right-6 h-0.5 bg-white/10 rounded-full" />
+                      <div 
+                        className="absolute top-[27px] left-6 h-0.5 bg-blue-500 rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(59,130,246,0.5)]"
+                        style={{ width: `calc(${getProgress(proc.status_atual)}% - 48px)` }}
+                      />
+                      
+                      <div className="relative flex justify-between gap-2 px-1">
+                        {processSteps.map((step, idx) => {
+                          const progress = getProgress(proc.status_atual);
+                          const isCompleted = progress >= (idx + 1) * 25;
+                          const isCurrent = (idx === 0 && proc.status_atual === 'Pendente') ||
+                                           (idx === 0 && proc.status_atual === 'Aguardando Aprovação') ||
+                                           (idx === 0 && proc.status_atual === 'Em Análise') ||
+                                           (idx === 1 && proc.status_atual === 'Aguardando Documentação') ||
+                                           (idx === 2 && proc.status_atual === 'Em Andamento') ||
+                                           (idx === 3 && proc.status_atual === 'Concluído');
 
-                        return (
-                          <div key={step.id} className="flex flex-col items-center gap-3">
-                            <div className={`size-12 rounded-2xl flex items-center justify-center border-2 transition-all duration-500 ${
-                              isCompleted 
-                                ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-600/20' 
-                                : isCurrent
-                                  ? 'bg-[#0a0a2e] border-blue-500 text-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.3)]'
-                                  : 'bg-white/5 border-white/10 text-slate-600'
-                            }`}>
-                              <step.icon size={20} />
+                          return (
+                            <div key={step.id} className="flex flex-col items-center gap-2 sm:gap-3 shrink-0 sm:shrink">
+                              <div className={`size-10 sm:size-12 rounded-xl sm:rounded-2xl flex items-center justify-center border-2 transition-all duration-500 ${
+                                isCompleted 
+                                  ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-600/20' 
+                                  : isCurrent
+                                    ? 'bg-[#0a0a2e] border-blue-500 text-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.3)]'
+                                    : 'bg-white/5 border-white/10 text-slate-600'
+                              }`}>
+                                <step.icon size={18} className="sm:size-[20px]" />
+                              </div>
+                              <span className={`text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-center max-w-[60px] sm:max-w-none ${
+                                isCompleted || isCurrent ? 'text-white' : 'text-slate-600'
+                              }`}>
+                                {step.label}
+                              </span>
                             </div>
-                            <span className={`text-[10px] font-bold uppercase tracking-widest ${
-                              isCompleted || isCurrent ? 'text-white' : 'text-slate-600'
-                            }`}>
-                              {step.label}
-                            </span>
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
 
                   {/* Histórico do Processo */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-                    <div className="bg-white/5 rounded-3xl p-6 border border-white/10 space-y-4">
+                    <div className="bg-white/5 rounded-3xl p-4 sm:p-6 border border-white/10 space-y-4">
                       <div className="flex items-center gap-2 text-blue-400">
                         <Clock size={16} />
                         <span className="text-[10px] font-black uppercase tracking-widest">Linha do Tempo</span>
                       </div>
-                      <div className="space-y-4">
+                      <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
                         {myHistory.map((h, i) => (
-                          <div key={h.id || i} className="flex gap-3 relative pb-4 last:pb-0">
+                          <div key={h.id || i} className="flex gap-3 relative pb-3 last:pb-0">
                             {i < myHistory.length - 1 && (
                               <div className="absolute left-[5px] top-[14px] bottom-0 w-[1px] bg-white/10" />
                             )}
                             <div className="size-[11px] rounded-full bg-blue-500 shrink-0 mt-1 z-10 shadow-[0_0_5px_rgba(59,130,246,0.5)]" />
-                            <div>
-                              <p className="text-xs font-bold text-white">{h.novo_status}</p>
-                              <p className="text-[9px] text-slate-500">{h.timestamp?.toDate().toLocaleString('pt-BR')}</p>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs font-bold text-white leading-tight">{h.novo_status}</p>
+                              <p className="text-[8px] sm:text-[9px] text-slate-500">{h.timestamp?.toDate().toLocaleString('pt-BR')}</p>
+                              {h.observacoes && <p className="text-[9px] text-slate-400 mt-0.5 italic line-clamp-2">{h.observacoes}</p>}
                             </div>
                           </div>
                         ))}

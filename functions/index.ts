@@ -228,7 +228,7 @@ function throwHttpsError(code: string, message: string, originalError?: any): ne
  * Asserts that the context has an authenticated user and returns the UID.
  */
 function logToFile(msg: string) {
-    fs.appendFileSync(path.join(process.cwd(), 'debug.log'), msg + '\n');
+    console.log(`[FILE_LOG_EMULATED] ${msg}`);
 }
 
 function assertAuth(request: CallableRequest): string {
@@ -1336,3 +1336,129 @@ export const webhookMercadoPago = onRequest(async (req: any, res: any) => {
     res.status(500).send("Internal Error");
   }
 });
+
+// ==========================================
+// 4. CLOUD FUNCTION: REGISTRAR VENDA ADMINISTRATIVA
+// ==========================================
+export const registrarVendaAdministrativa = onCall(
+    async (request) => {
+        // Log start immediately
+        console.log("[REGISTRAR_VENDA_ADMIN] Invoked. Raw data keys:", Object.keys(request.data || {}));
+
+        try {
+            const uid = request.auth?.uid;
+            if (!uid) {
+                console.error("[REGISTRAR_VENDA_ADMIN] No UID in request context.");
+                throw new HttpsError('unauthenticated', 'Acesso negado: Você não está logado.');
+            }
+
+            // Database instance check - Using global db but ensuring it's ready
+            if (!db) {
+                console.error("[REGISTRAR_VENDA_ADMIN] Firestore db instance is null/undefined during execution!");
+                throw new HttpsError('internal', 'O serviço de banco de dados não está inicializado.');
+            }
+
+            const { cliente, servicoId, vendedorId, dataServico } = request.data || {};
+            
+            // Minimal critical validation
+            if (!cliente?.nome || !cliente?.cpf || !servicoId || !dataServico) {
+                console.warn("[REGISTRAR_VENDA_ADMIN] Incomplete payload:", { hasNome: !!cliente?.nome, hasCPF: !!cliente?.cpf, hasSvc: !!servicoId, hasDate: !!dataServico });
+                throw new HttpsError('invalid-argument', 'Campos obrigatórios: Nome, CPF, Serviço e Data.');
+            }
+
+            const cleanCPF = String(cliente.cpf).replace(/\D/g, '');
+            if (!cleanCPF || cleanCPF.length < 11) {
+                throw new HttpsError('invalid-argument', 'CPF inválido. Forneça apenas os 11 dígitos numéricos.');
+            }
+
+            // Check permissions
+            const userSnap = await db.collection('usuarios').doc(uid).get();
+            const userData = userSnap.data();
+            const authorizedRoles = ['ADM_MASTER', 'ADM_GERENTE', 'ADM_ANALISTA'];
+            
+            if (!userData || !authorizedRoles.includes(userData.nivel)) {
+                console.error(`[REGISTRAR_VENDA_ADMIN] Unauthorized role: ${userData?.nivel}`);
+                throw new HttpsError('permission-denied', `Seu nível (${userData?.nivel || 'N/A'}) não permite esta operação.`);
+            }
+
+            const safeVendedorId = vendedorId || uid;
+            const timestamp = admin.firestore.FieldValue.serverTimestamp();
+            const batch = db.batch();
+
+            // 1. New Client
+            const clientRef = db.collection('clients').doc();
+            batch.set(clientRef, cleanDataForFirestore({
+                nome: cliente.nome,
+                documento: cleanCPF,
+                cpf: cleanCPF,
+                data_nascimento: cliente.nasc || "",
+                telefone: cliente.telefone || "0000000000",
+                vendedor_id: safeVendedorId,
+                timestamp: timestamp,
+                created_at: timestamp,
+                origem: 'ADMIN_FLOW'
+            }));
+
+            // 2. Lock
+            const lockRef = db.collection('documento_locks').doc(cleanCPF);
+            batch.set(lockRef, {
+                documento: cleanCPF,
+                dono_id: safeVendedorId,
+                timestamp: timestamp
+            }, { merge: true });
+
+            // 3. Sale
+            const saleRef = db.collection('sales').doc();
+            const protocolo = `ADM-${nowFormat()}-${Math.floor(Math.random() * 1000)}`;
+            batch.set(saleRef, cleanDataForFirestore({
+                protocolo,
+                cliente_id: clientRef.id,
+                cliente_nome: cliente.nome,
+                vendedor_id: safeVendedorId,
+                valor_total: 0,
+                metodo_pagamento: 'MANUAL',
+                status_pagamento: 'Confirmado',
+                timestamp: timestamp,
+                pago_em: timestamp
+            }));
+
+            // 4. Process
+            const processRef = db.collection('order_processes').doc();
+            batch.set(processRef, cleanDataForFirestore({
+                protocolo,
+                venda_id: saleRef.id,
+                servico_id: servicoId,
+                cliente_id: clientRef.id,
+                cliente_nome: cliente.nome,
+                cliente_cpf_cnpj: cleanCPF,
+                vendedor_id: safeVendedorId,
+                status_atual: 'Ativo',
+                status_financeiro: 'PAGO',
+                data_execucao: dataServico,
+                data_venda: timestamp
+            }));
+
+            console.log(`[REGISTRAR_VENDA_ADMIN] Committing batch for ${cleanCPF}...`);
+            await batch.commit();
+            console.log(`[REGISTRAR_VENDA_ADMIN] Success.`);
+
+            return { success: true, vendaId: saleRef.id, protocolo };
+
+        } catch (error: any) {
+            console.error(`[REGISTRAR_VENDA_ADMIN] Error caught:`, error);
+            
+            // If it's already an HttpsError, throw it directly
+            if (error instanceof HttpsError) throw error;
+            
+            // For other errors, wrap them in 'aborted' with the actual message to avoid masked 'internal' errors
+            throw new HttpsError('aborted', error.message || 'Erro inesperado durante o processamento da venda.');
+        }
+    }
+);
+
+// Helper for protocol generation date
+function nowFormat() {
+    const d = new Date();
+    return d.getFullYear() + (d.getMonth() + 1).toString().padStart(2, '0') + d.getDate().toString().padStart(2, '0');
+}
+

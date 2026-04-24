@@ -67,12 +67,20 @@ export function Sidebar({ currentProfile, logout, onClose }: any) {
         )}
 
         {/* CATEGORIA: OPERAÇÕES */}
-        {(role.startsWith('ADM')) && (
+        {(role.startsWith('ADM') || role === 'GESTOR' || role === 'VENDEDOR') && (
           <div className="space-y-2">
             <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Operações</p>
-            <MenuItem to="operacional" icon={Activity} label="Fila de Produção" />
-            <MenuItem to="pendencias" icon={AlertTriangle} label="Pendências" color="text-amber-500" />
-            <MenuItem to="auditoria" icon={Shield} label="Auditoria SLA" />
+            <MenuItem 
+              to="operacional" 
+              icon={ClipboardList} 
+              label={(role === 'GESTOR' || role === 'VENDEDOR') ? "Meus Processos" : "Fila de Produção"} 
+            />
+            {role.startsWith('ADM') && (
+              <>
+                <MenuItem to="pendencias" icon={AlertTriangle} label="Pendências" color="text-amber-500" />
+                <MenuItem to="auditoria" icon={Shield} label="Auditoria SLA" />
+              </>
+            )}
           </div>
         )}
 

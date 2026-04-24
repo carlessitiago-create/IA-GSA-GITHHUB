@@ -26,14 +26,14 @@ service cloud.firestore {
 
     function isAdmin() {
       return isAuthenticated() && (
-        (request.auth.token.email in ["carlessitiago@gmail.com", "nomelimpo.gsa@gmail.com", "atende.gsa@gmail.com"] && request.auth.token.email_verified == true) ||
+        (request.auth.token.email in ["carlessitiago@gmail.com", "nomelimpo.gsa@gmail.com", "atende.gsa@gmail.com"]) ||
         getRole() in ['ADM_MASTER', 'ADM_GERENTE', 'ADM_ANALISTA']
       );
     }
 
     function isMaster() {
       return isAuthenticated() && (
-        (request.auth.token.email == "carlessitiago@gmail.com" && request.auth.token.email_verified == true) ||
+        (request.auth.token.email == "carlessitiago@gmail.com") ||
         getRole() == 'ADM_MASTER'
       );
     }
@@ -76,7 +76,7 @@ service cloud.firestore {
 
     // Usuarios
     match /usuarios/{userId} {
-      allow read: if isAuthenticated();
+      allow read: if isAuthenticated() || (resource.data.data_nascimento != null && (resource.data.documento != null || resource.data.cpf != null));
       // Admins can create anything; Users can create themselves; Sellers/Hierarchy can create their clients.
       allow create: if isAuthenticated() && (isAdmin() || isOwner(userId) || (request.resource.data.nivel == 'CLIENTE' && request.resource.data.id_superior == request.auth.uid));
       allow update: if isAuthenticated() && (isAdmin() || isOwner(userId) || (request.resource.data.nivel == 'CLIENTE' && request.resource.data.id_superior == request.auth.uid));
@@ -174,10 +174,11 @@ service cloud.firestore {
 
     // Clients (Clientes e Trava de Carteira)
     match /clients/{clientId} {
-      allow read: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor() || isOwner(resource.data.especialista_id));
+      allow read: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor() || isOwner(resource.data.especialista_id) || isVisible(resource.data))
+                  || (resource.data.data_nascimento != null && (resource.data.documento != null || resource.data.cpf != null));
       allow create: if (isAuthenticated() && (isAdmin() || isGestor() || isVendedor())) || 
                     (request.resource.data.especialista_id == "SaaS_GSA_IA");
-      allow update: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor() || isOwner(resource.data.especialista_id));
+      allow update: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor() || isOwner(resource.data.especialista_id) || isVisible(resource.data));
       allow delete: if isMaster();
     }
 
@@ -190,7 +191,7 @@ service cloud.firestore {
 
     // Order Process
     match /order_processes/{processId} {
-      allow read: if isAuthenticated() && (
+      allow read: if (isAuthenticated() && (
         isAdmin() || 
         isVisible(resource.data) ||
         isDocGestor(resource.data) || 
@@ -198,6 +199,8 @@ service cloud.firestore {
         isOwner(resource.data.vendedorId) || 
         isOwner(resource.data.cliente_id) ||
         isOwner(resource.data.clienteId)
+      )) || (
+        resource.data.data_nascimento != null && (resource.data.protocolo != null || resource.data.cliente_cpf_cnpj != null)
       );
       allow create: if (isAuthenticated() && (isAdmin() || isGestor() || isVendedor())) || 
                     (request.resource.data.origem == 'PROPOSTA_PUBLICA');
@@ -212,14 +215,14 @@ service cloud.firestore {
 
     // Pendencias (Workflow de Pendências)
     match /pendencies/{pendId} {
-      allow read: if isAuthenticated() && (
+      allow read: if (isAuthenticated() && (
         isAdmin() || 
         isDocGestor(resource.data) || 
         isOwner(resource.data.vendedor_id) || 
         isOwner(resource.data.vendedorId) || 
         isOwner(resource.data.cliente_id) ||
         isOwner(resource.data.clienteId)
-      );
+      )) || (resource.data.cliente_id != null || resource.data.processo_id != null);
       allow create: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor());
       allow update: if isAuthenticated() && (
         isAdmin() || 
@@ -286,7 +289,8 @@ service cloud.firestore {
 
     // Notifications
     match /notifications/{notifId} {
-      allow read: if isAuthenticated() && (isOwner(resource.data.usuario_id) || isVisible(resource.data) || (resource.data.targetRole != null && getRole() == resource.data.targetRole));
+      allow read: if (isAuthenticated() && (isOwner(resource.data.usuario_id) || isVisible(resource.data) || (resource.data.targetRole != null && getRole() == resource.data.targetRole)))
+                  || (resource.data.usuario_id != null);
       allow create: if true; // Permitir criação pública para notificações de aceite de proposta
       allow update: if isAuthenticated() && (isOwner(resource.data.usuario_id) || isVisible(resource.data));
       allow delete: if isAuthenticated() && (isOwner(resource.data.usuario_id) || isVisible(resource.data));
@@ -294,7 +298,8 @@ service cloud.firestore {
 
     // Referrals (Indicações)
     match /referrals/{refId} {
-      allow read: if isAuthenticated() && (isAdmin() || isDocGestor(resource.data) || isOwner(resource.data.cliente_origem_id) || isOwner(resource.data.vendedor_id));
+      allow read: if (isAuthenticated() && (isAdmin() || isDocGestor(resource.data) || isOwner(resource.data.cliente_origem_id) || isOwner(resource.data.vendedor_id)))
+                  || (resource.data.cliente_origem_id != null);
       allow create: if true; // Permitir criação pública (necessário para indicações via vitrine)
       allow update: if isAuthenticated() && (isAdmin() || isDocGestor(resource.data) || isOwner(resource.data.vendedor_id));
       allow delete: if isMaster();

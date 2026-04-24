@@ -5,7 +5,7 @@
  */
 export const getPublicOrigin = () => {
   // Check for a custom domain override in environment variables
-  const customDomain = import.meta.env.VITE_CUSTOM_DOMAIN || '72hrs.online';
+  const customDomain = import.meta.env.VITE_CUSTOM_DOMAIN || 'consulta.72hrs.online';
   
   // Ensure it has a protocol
   return customDomain.startsWith('http') ? customDomain : `https://${customDomain}`;

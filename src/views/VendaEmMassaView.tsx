@@ -458,66 +458,112 @@ export const VendaEmMassaView: React.FC = () => {
                   </button>
                 </div>
 
-                <div className="flex-1 overflow-x-auto">
-                  <table className="w-full text-left border-collapse min-w-[600px]">
-                    <thead>
-                      <tr className="bg-slate-50/50">
-                        <th className="px-8 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">Beneficiário</th>
-                        <th className="px-8 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">CPF / CNPJ</th>
-                        <th className="px-8 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">Status</th>
-                        <th className="px-8 py-4 text-right text-[9px] font-black text-slate-400 uppercase tracking-widest">Ação</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-50">
-                      <AnimatePresence initial={false}>
-                        {items.map((item) => (
-                          <motion.tr 
-                            key={item.id}
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: 10 }}
-                            className="hover:bg-slate-50/30 transition-colors group"
-                          >
-                            <td className="px-8 py-6">
-                              <span className="text-sm font-black text-[#0a0a2e] uppercase italic tracking-tight">{item.nome}</span>
-                            </td>
-                            <td className="px-8 py-6">
-                              <span className="text-sm font-bold text-slate-600">{item.documento}</span>
-                            </td>
-                            <td className="px-8 py-6 text-center">
-                              <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
-                                item.status === 'Validado' ? 'bg-emerald-50 text-emerald-600' :
-                                item.status === 'Erro' ? 'bg-rose-50 text-rose-600' : 'bg-slate-100 text-slate-400'
-                              }`}>
-                                {item.status === 'Erro' ? <AlertCircle size={10} /> : <CheckCircle2 size={10} />}
-                                {item.status === 'Erro' ? item.error : 'PENDENTE'}
-                              </div>
-                            </td>
-                            <td className="px-8 py-6 text-right">
-                              <button 
-                                onClick={() => removeItem(item.id)}
-                                className="size-8 bg-rose-50 text-rose-400 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-rose-600 hover:text-white transition-all transition-opacity mx-auto"
-                              >
-                                <Trash2 size={14} />
-                              </button>
-                            </td>
-                          </motion.tr>
-                        ))}
-                      </AnimatePresence>
-                      {items.length === 0 && (
-                        <tr>
-                          <td colSpan={4} className="px-8 py-20 text-center">
-                            <div className="flex flex-col items-center gap-4">
-                              <div className="size-20 bg-slate-50 rounded-[2rem] flex items-center justify-center text-slate-200">
-                                <Search size={40} />
-                              </div>
-                              <p className="text-xs font-black uppercase text-slate-300 tracking-widest italic">Nenhum item na fila. <br/> Importe uma planilha ou adicione manualmente.</p>
-                            </div>
-                          </td>
+                {/* Desktop and Mobile List */}
+                <div className="flex-1 overflow-hidden">
+                  {/* Desktop Table View */}
+                  <div className="hidden sm:block overflow-x-auto">
+                    <table className="w-full text-left border-collapse min-w-[600px]">
+                      <thead>
+                        <tr className="bg-slate-50/50">
+                          <th className="px-8 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">Beneficiário</th>
+                          <th className="px-8 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">CPF / CNPJ</th>
+                          <th className="px-8 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">Status</th>
+                          <th className="px-8 py-4 text-right text-[9px] font-black text-slate-400 uppercase tracking-widest">Ação</th>
                         </tr>
-                      )}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="divide-y divide-slate-50">
+                        <AnimatePresence initial={false}>
+                          {items.map((item) => (
+                            <motion.tr 
+                              key={item.id}
+                              initial={{ opacity: 0, x: -10 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              exit={{ opacity: 0, x: 10 }}
+                              className="hover:bg-slate-50/30 transition-colors group"
+                            >
+                              <td className="px-8 py-6">
+                                <span className="text-sm font-black text-[#0a0a2e] uppercase italic tracking-tight">{item.nome}</span>
+                              </td>
+                              <td className="px-8 py-6">
+                                <span className="text-sm font-bold text-slate-600">{item.documento}</span>
+                              </td>
+                              <td className="px-8 py-6 text-center">
+                                <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
+                                  item.status === 'Validado' ? 'bg-emerald-50 text-emerald-600' :
+                                  item.status === 'Erro' ? 'bg-rose-50 text-rose-600' : 'bg-slate-100 text-slate-400'
+                                }`}>
+                                  {item.status === 'Erro' ? <AlertCircle size={10} /> : <CheckCircle2 size={10} />}
+                                  {item.status === 'Erro' ? item.error : 'VALIDADO'}
+                                </div>
+                              </td>
+                              <td className="px-8 py-6 text-right">
+                                <button 
+                                  onClick={() => removeItem(item.id)}
+                                  className="size-8 bg-rose-50 text-rose-400 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-rose-600 hover:text-white transition-all transition-opacity mx-auto"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </td>
+                            </motion.tr>
+                          ))}
+                        </AnimatePresence>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Mobile Card View */}
+                  <div className="sm:hidden divide-y divide-slate-100 overflow-y-auto max-h-[400px]">
+                    <AnimatePresence initial={false}>
+                      {items.map((item) => (
+                        <motion.div 
+                          key={item.id}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.95 }}
+                          className="p-5 space-y-3 bg-white"
+                        >
+                          <div className="flex justify-between items-start gap-4">
+                            <div className="min-w-0">
+                              <p className="text-sm font-black text-[#0a0a2e] uppercase italic tracking-tight truncate leading-tight">
+                                {item.nome}
+                              </p>
+                              <p className="text-[10px] font-bold text-slate-400 mt-1">
+                                DOC: {item.documento}
+                              </p>
+                            </div>
+                            <button 
+                              onClick={() => removeItem(item.id)}
+                              className="size-8 bg-rose-50 text-rose-500 rounded-xl flex items-center justify-center active:scale-90 transition-all shrink-0"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                          
+                          <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${
+                            item.status === 'Validado' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
+                            item.status === 'Erro' ? 'bg-rose-50 text-rose-600 border border-rose-100' : 'bg-slate-100 text-slate-400'
+                          }`}>
+                            {item.status === 'Erro' ? <AlertCircle size={10} /> : <CheckCircle2 size={10} />}
+                            {item.status === 'Erro' ? item.error : 'VALIDADO'}
+                          </div>
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+                  </div>
+
+                  {items.length === 0 && (
+                    <div className="px-8 py-20 text-center">
+                      <div className="flex flex-col items-center gap-4">
+                        <div className="size-20 bg-slate-50 rounded-[2rem] flex items-center justify-center text-slate-200">
+                          <Search size={40} />
+                        </div>
+                        <p className="text-xs font-black uppercase text-slate-300 tracking-widest italic leading-relaxed">
+                          Nenhum item na fila. <br/> 
+                          Importe uma planilha ou adicione manualmente.
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {items.length > 0 && (
@@ -560,43 +606,82 @@ export const VendaEmMassaView: React.FC = () => {
               <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Acompanhe seus lotes enviados</p>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-slate-50/50">
-                    <th className="px-8 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">Data / Protocolo</th>
-                    <th className="px-8 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">Serviço</th>
-                    <th className="px-8 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">Itens</th>
-                    <th className="px-8 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">Financeiro</th>
-                    <th className="px-8 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Valor Total</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50">
-                  {batches.map(batch => (
-                    <tr key={batch.id} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="px-8 py-6">
-                        <p className="text-xs font-black text-[#0a0a2e]">{batch.protocolo}</p>
-                        <p className="text-[9px] text-slate-400 font-bold uppercase">{batch.data_envio?.toDate().toLocaleString('pt-BR')}</p>
-                      </td>
-                      <td className="px-8 py-6 font-bold text-slate-600 text-xs uppercase">{batch.servico_nome}</td>
-                      <td className="px-8 py-6 text-center font-black text-[#0a0a2e]">{batch.quantidade}</td>
-                      <td className="px-8 py-6 text-center">
-                        <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
-                          batch.status_pagamento === 'Pago' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'
-                        }`}>
-                          {batch.status_pagamento}
-                        </span>
-                      </td>
-                      <td className="px-8 py-6 text-right font-black text-[#0a0a2e]">R$ {batch.valor_total?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+            <div className="overflow-hidden">
+              {/* Desktop View */}
+              <div className="hidden sm:block overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50/50">
+                      <th className="px-8 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">Data / Protocolo</th>
+                      <th className="px-8 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">Serviço</th>
+                      <th className="px-8 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">Itens</th>
+                      <th className="px-8 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">Financeiro</th>
+                      <th className="px-8 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Valor Total</th>
                     </tr>
-                  ))}
-                  {batches.length === 0 && (
-                    <tr>
-                      <td colSpan={5} className="px-8 py-20 text-center text-slate-300 italic text-sm">Nenhum lote enviado anteriormente.</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {batches.map(batch => (
+                      <tr key={batch.id} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="px-8 py-6">
+                          <p className="text-xs font-black text-[#0a0a2e]">{batch.protocolo}</p>
+                          <p className="text-[9px] text-slate-400 font-bold uppercase">{batch.data_envio?.toDate().toLocaleString('pt-BR')}</p>
+                        </td>
+                        <td className="px-8 py-6 font-bold text-slate-600 text-xs uppercase">{batch.servico_nome}</td>
+                        <td className="px-8 py-6 text-center font-black text-[#0a0a2e]">{batch.quantidade}</td>
+                        <td className="px-8 py-6 text-center">
+                          <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
+                            batch.status_pagamento === 'Pago' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'
+                          }`}>
+                            {batch.status_pagamento}
+                          </span>
+                        </td>
+                        <td className="px-8 py-6 text-right font-black text-[#0a0a2e]">R$ {batch.valor_total?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile View */}
+              <div className="sm:hidden divide-y divide-slate-100">
+                {batches.map(batch => (
+                  <div key={batch.id} className="p-6 space-y-4">
+                    <div className="flex justify-between items-start gap-4">
+                      <div>
+                        <p className="text-sm font-black text-[#0a0a2e] uppercase italic">{batch.protocolo}</p>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase">{batch.data_envio?.toDate().toLocaleString('pt-BR')}</p>
+                      </div>
+                      <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${
+                        batch.status_pagamento === 'Pago' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-amber-50 text-amber-600 border border-amber-100'
+                      }`}>
+                        {batch.status_pagamento}
+                      </span>
+                    </div>
+                    
+                    <div className="flex justify-between items-center py-3 border-y border-slate-50">
+                      <div>
+                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Serviço</p>
+                        <p className="text-[10px] font-bold text-slate-600 uppercase">{batch.servico_nome}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Itens</p>
+                        <p className="text-xs font-black text-[#0a0a2e]">{batch.quantidade}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Valor Total</p>
+                      <p className="text-base font-black text-[#0a0a2e]">R$ {batch.valor_total?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {batches.length === 0 && (
+                <div className="px-8 py-20 text-center">
+                  <p className="text-xs font-black uppercase text-slate-300 tracking-widest italic">Nenhum lote enviado anteriormente.</p>
+                </div>
+              )}
             </div>
           </motion.div>
         )}

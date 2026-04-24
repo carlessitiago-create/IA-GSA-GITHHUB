@@ -6,79 +6,99 @@ export const OpenInvoices = ({ sales, marcarFaturaVencida, currentProfile, sendN
   const isAnalyst = currentProfile?.role === 'ADM_ANALISTA' || currentProfile?.role === 'ADM_MASTER';
 
   return (
-    <div className="bg-white rounded-[2.5rem] border border-slate-100 overflow-hidden shadow-sm transition-all hover:shadow-md">
-      <div className="p-10 border-b border-slate-50 bg-slate-50/30 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div className="bg-white rounded-3xl sm:rounded-[2.5rem] border border-slate-100 overflow-hidden shadow-sm transition-all hover:shadow-md">
+      <div className="p-6 sm:p-8 md:p-10 border-b border-slate-50 bg-slate-50/30 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h3 className="text-2xl font-black text-[#0a0a2e] uppercase tracking-tighter italic leading-none">Faturas em Aberto</h3>
-          <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-2">Gestão de Recebíveis e Inadimplência</p>
+          <h3 className="text-lg sm:text-2xl font-black text-[#0a0a2e] uppercase tracking-tighter italic leading-none">Faturas em Aberto</h3>
+          <p className="text-slate-400 text-[8px] sm:text-[10px] font-black uppercase tracking-widest mt-1 sm:mt-2">Gestão de Recebíveis</p>
         </div>
-        <div className="bg-rose-50 px-6 py-2 rounded-full border border-rose-100">
-          <span className="text-[10px] font-black text-rose-600 uppercase tracking-widest">
-            {sales.filter((s: any) => s.status_pagamento === 'Vencida').length} FATURAS VENCIDAS
+        <div className="bg-rose-50 px-4 sm:px-6 py-1.5 sm:py-2 rounded-full border border-rose-100 shrink-0">
+          <span className="text-[8px] sm:text-[10px] font-black text-rose-600 uppercase tracking-widest">
+            {sales.filter((s: any) => s.status_pagamento === 'Vencida').length} VENCIDAS
           </span>
         </div>
       </div>
-      <div className="md:hidden divide-y divide-slate-50">
+      <div className="md:hidden divide-y divide-slate-100">
         {sales.filter((s: any) => s.status_pagamento === 'Pendente' || s.status_pagamento === 'Vencida').map((sale: any) => (
-          <div key={sale.id} className="p-6 space-y-4">
-            <div className="flex justify-between items-start">
-              <div className="space-y-1">
-                <span className="text-[9px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100 uppercase tracking-widest">
-                  #{sale.protocolo}
-                </span>
-                <p className="text-sm font-black text-[#0a0a2e] uppercase italic tracking-tight">{sale.cliente_nome}</p>
+          <div key={sale.id} className="p-5 space-y-4 bg-white hover:bg-slate-50/50 transition-colors">
+            {/* Header: Status & Price */}
+            <div className="flex justify-between items-start gap-4">
+              <div className="space-y-1.5 flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className={`px-2.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-[0.1em] shadow-sm border ${
+                    sale.status_pagamento === 'Vencida' 
+                      ? 'bg-rose-500 text-white border-rose-400' 
+                      : 'bg-amber-500 text-white border-amber-400'
+                  }`}>
+                    {sale.status_pagamento}
+                  </span>
+                  {sale.status === 'PENDENCIA' && (
+                    <span className="px-2 py-0.5 bg-rose-50 text-rose-600 border border-rose-100 rounded-full text-[7px] font-black uppercase tracking-tight">
+                      PENDÊNCIA
+                    </span>
+                  )}
+                </div>
+                <h4 className="text-sm font-black text-[#0a0a2e] uppercase italic tracking-tight truncate leading-tight">
+                  {sale.cliente_nome}
+                </h4>
               </div>
-              <p className="text-base font-black text-[#0a0a2e] italic tracking-tighter">R$ {sale.valor_total.toLocaleString('pt-BR')}</p>
+              <div className="text-right shrink-0">
+                <p className="text-base font-black text-[#0a0a2e] italic tracking-tighter">
+                  R$ {sale.valor_total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </p>
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">#{sale.protocolo}</p>
+              </div>
             </div>
 
-            <div className="flex items-center justify-between">
-              <div className="flex flex-col gap-1">
-                <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest w-fit shadow-sm border ${
-                  sale.status_pagamento === 'Vencida' 
-                    ? 'bg-rose-500 text-white border-rose-400' 
-                    : 'bg-amber-500 text-white border-amber-400'
-                }`}>
-                  {sale.status_pagamento}
-                </span>
-                {sale.dias_atraso && (
-                  <div className="flex items-center gap-1 text-rose-600">
-                    <div className="size-1.5 bg-rose-500 rounded-full animate-pulse" />
-                    <p className="text-[9px] font-black uppercase italic">{sale.dias_atraso} dias</p>
-                  </div>
-                )}
+            {/* Atraso Alert */}
+            {sale.dias_atraso && (
+              <div className="bg-rose-50 p-2 rounded-xl flex items-center gap-2 border border-rose-100/50">
+                <div className="size-1.5 bg-rose-500 rounded-full animate-pulse" />
+                <p className="text-[10px] font-black text-rose-600 uppercase italic tracking-wider">
+                  ⚠️ {sale.dias_atraso} dias de atraso detectados
+                </p>
               </div>
-              
-              <div className="flex items-center gap-2">
-                {sale.status_pagamento !== 'Vencida' && (
-                  <button 
-                    onClick={async () => {
-                      const result = await Swal.fire({
-                        title: 'Marcar como Vencida?',
-                        text: "O cliente e o vendedor serão notificados.",
-                        icon: 'warning',
-                        input: 'number',
-                        inputLabel: 'Dias de Atraso',
-                        inputValue: 1,
-                        showCancelButton: true,
-                        confirmButtonText: 'Sim!',
-                        cancelButtonText: 'Não',
-                        customClass: {
-                          popup: 'rounded-[2rem]',
-                          confirmButton: 'bg-rose-600 rounded-xl px-6 py-2 font-black uppercase text-[10px]',
-                          cancelButton: 'bg-slate-100 text-slate-400 rounded-xl px-6 py-2 font-black uppercase text-[10px]'
-                        }
-                      });
-                      if (result.isConfirmed) {
-                        await marcarFaturaVencida(sale.id, parseInt(result.value), currentProfile!.uid);
+            )}
+
+            {/* Actions */}
+            <div className="flex items-center gap-2 pt-2">
+              {sale.status_pagamento !== 'Vencida' ? (
+                <button 
+                  onClick={async () => {
+                    const result = await Swal.fire({
+                      title: 'Confirmar Atraso',
+                      text: "Deseja marcar esta fatura como vencida?",
+                      icon: 'warning',
+                      input: 'number',
+                      inputLabel: 'Dias de Atraso',
+                      inputValue: 1,
+                      showCancelButton: true,
+                      confirmButtonText: 'MARCAR AGORA',
+                      cancelButtonText: 'CANCELAR',
+                      customClass: {
+                        popup: 'rounded-[1.5rem]',
+                        confirmButton: 'bg-rose-600 rounded-xl px-4 py-2 font-black uppercase text-[10px] tracking-widest',
+                        cancelButton: 'bg-slate-100 text-slate-400 rounded-xl px-4 py-2 font-black uppercase text-[10px] tracking-widest'
                       }
-                    }}
-                    className="px-4 py-2 bg-white border border-rose-100 text-rose-600 rounded-xl font-black text-[8px] uppercase tracking-widest"
-                  >
-                    Vencida
-                  </button>
-                )}
-                {isAnalyst && <ActionPanel venda={sale} />}
-              </div>
+                    });
+                    if (result.isConfirmed) {
+                      await marcarFaturaVencida(sale.id, parseInt(result.value), currentProfile!.uid);
+                    }
+                  }}
+                  className="flex-1 h-12 bg-[#0a0a2e] text-white rounded-xl font-black text-[10px] uppercase tracking-[0.2em] shadow-lg active:scale-[0.98] transition-all"
+                >
+                  Marcar Vencida
+                </button>
+              ) : (
+                <div className="flex-1 h-12 bg-rose-600/5 rounded-xl border border-rose-100 flex items-center justify-center">
+                  <p className="text-[10px] font-black text-rose-600 uppercase tracking-[0.2em]">SLA Bloqueado</p>
+                </div>
+              )}
+              {isAnalyst && (
+                <div className="shrink-0 h-12">
+                   <ActionPanel venda={sale} />
+                </div>
+              )}
             </div>
           </div>
         ))}

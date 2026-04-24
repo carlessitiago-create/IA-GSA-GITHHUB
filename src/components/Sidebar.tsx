@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAuth, UserProfile } from './AuthContext';
+import { NotificationBell } from './NotificationBell';
 import { 
   LayoutDashboard, 
   Users, 
@@ -57,7 +58,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ view, setView, currentProfile,
     { id: 'clube', label: 'CLUBE DE PONTOS', icon: <Gift className="size-5" />, group: 'COMERCIAL', roles: ['ADM_MASTER', 'ADM_GERENTE', 'GESTOR', 'VENDEDOR'] },
     { id: 'vitrine', label: 'VITRINE GSA', icon: <LayoutGrid className="size-5" />, group: 'COMERCIAL' },
     
-    { id: 'operacional', label: 'FILA DE PRODUÇÃO', icon: <Settings className="size-5" />, group: 'OPERAÇÕES', roles: ['ADM_MASTER', 'ADM_GERENTE', 'ADM_ANALISTA'] },
+    { 
+      id: 'operacional', 
+      label: (currentProfile?.nivel === 'GESTOR' || currentProfile?.nivel === 'VENDEDOR') ? 'MEUS PROCESSOS' : 'FILA DE PRODUÇÃO', 
+      icon: <ClipboardList className="size-5" />, 
+      group: 'OPERAÇÕES', 
+      roles: ['ADM_MASTER', 'ADM_GERENTE', 'ADM_ANALISTA', 'GESTOR', 'VENDEDOR'] 
+    },
     { id: 'pendencias', label: 'PENDÊNCIAS', icon: <AlertTriangle className="size-5" />, group: 'OPERAÇÕES', color: 'text-amber-500' },
     { id: 'auditoria', label: 'AUDITORIA SLA', icon: <Search className="size-5" />, group: 'OPERAÇÕES', roles: ['ADM_MASTER', 'ADM_GERENTE'] },
     
@@ -106,7 +113,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ view, setView, currentProfile,
         ${isOpen ? 'left-0 w-72' : '-left-72 md:left-0 w-0 md:w-64'}
       `}>
         
-        {/* TOPO FIXO: LOGO */}
+        {/* TOPO FIXO: LOGO E NOTIFICAÇÕES */}
         <div className="p-6 shrink-0 flex items-center justify-between border-b border-white/5">
           <div className="flex items-center gap-3">
             <div className="size-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
@@ -114,12 +121,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ view, setView, currentProfile,
             </div>
             <h1 className="text-xl font-black italic tracking-tighter uppercase">GSA IA</h1>
           </div>
-          <button 
-            onClick={() => setIsOpen(false)} 
-            className="md:hidden p-3 bg-white/10 hover:bg-rose-500/20 hover:text-rose-500 rounded-xl text-white transition-all active:scale-95 border border-white/5"
-          >
-            <X className="size-6" />
-          </button>
+          
+          <div className="flex items-center gap-2">
+            <NotificationBell currentProfile={currentProfile} />
+            <button 
+              onClick={() => setIsOpen(false)} 
+              className="md:hidden p-2.5 bg-white/5 hover:bg-rose-500/20 hover:text-rose-500 rounded-xl text-white transition-all active:scale-95 border border-white/5"
+            >
+              <X className="size-5" />
+            </button>
+          </div>
         </div>
 
         {/* ÁREA CENTRAL ROLÁVEL */}

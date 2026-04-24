@@ -330,33 +330,33 @@ export const LeadsCentralView: React.FC = () => {
 
   return (
     <div className="space-y-8 md:space-y-10 pb-20">
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 md:gap-8 bg-white p-6 md:p-10 rounded-[2rem] md:rounded-[3rem] border border-slate-100 shadow-sm">
-        <div className="space-y-2">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 bg-white p-6 sm:p-8 md:p-10 rounded-3xl sm:rounded-[2rem] md:rounded-[3rem] border border-slate-100 shadow-sm overflow-hidden">
+        <div className="space-y-4 w-full lg:w-auto">
           <div className="flex items-center gap-3">
-            <div className="size-10 md:size-12 bg-[#0a0a2e] rounded-xl md:rounded-[1.2rem] flex items-center justify-center shadow-xl shadow-blue-900/20">
-              <Target className="size-5 md:size-6 text-white" />
+            <div className="size-10 sm:size-12 bg-[#0a0a2e] rounded-xl sm:rounded-[1.2rem] flex items-center justify-center shadow-xl shadow-blue-900/20 shrink-0">
+              <Target className="size-5 sm:size-6 text-white" />
             </div>
-            <h2 className="text-3xl md:text-5xl font-black text-[#0a0a2e] uppercase tracking-tighter italic leading-none">
-              Central de Leads
+            <h2 className="text-2xl sm:text-3xl md:text-5xl font-black text-[#0a0a2e] uppercase tracking-tighter italic leading-none truncate">
+              Leads
             </h2>
           </div>
-          <div className="flex gap-4 pt-2">
+          <div className="flex flex-wrap gap-4 pt-2 border-b border-slate-50 lg:border-none">
             <button 
               onClick={() => setActiveTab('leads')}
-              className={`text-xs font-black uppercase tracking-widest pb-1 border-b-2 transition-all ${activeTab === 'leads' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-400'}`}
+              className={`text-[9px] sm:text-xs font-black uppercase tracking-widest pb-2 sm:pb-1 border-b-2 transition-all whitespace-nowrap ${activeTab === 'leads' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-400'}`}
             >
-              Leads da Vitrine
+              Vitrine
             </button>
             <button 
               onClick={() => setActiveTab('referrals')}
-              className={`text-xs font-black uppercase tracking-widest pb-1 border-b-2 transition-all ${activeTab === 'referrals' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-400'}`}
+              className={`text-[9px] sm:text-xs font-black uppercase tracking-widest pb-2 sm:pb-1 border-b-2 transition-all whitespace-nowrap ${activeTab === 'referrals' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-400'}`}
             >
-              Indicações de Clientes
+              Indicações
             </button>
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-center gap-3 bg-slate-50/50 md:bg-white p-2 rounded-[1.5rem] md:rounded-[2rem] border border-slate-100 shadow-sm w-full lg:w-auto">
+        <div className="flex flex-col sm:flex-row items-center gap-3 bg-slate-50/50 sm:bg-white p-2 rounded-2xl sm:rounded-[1.5rem] md:rounded-[2rem] border border-slate-100 shadow-sm w-full lg:w-auto">
           <div className="relative w-full sm:w-64 md:w-72">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 size-4" />
             <input 
@@ -373,7 +373,7 @@ export const LeadsCentralView: React.FC = () => {
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
           >
-            <option value="all">Todos Status</option>
+            <option value="all">Status</option>
             {activeTab === 'leads' ? (
               <>
                 <option value="Novo">Novo</option>
@@ -407,54 +407,46 @@ export const LeadsCentralView: React.FC = () => {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: idx * 0.05, duration: 0.5 }}
-            className="bg-white rounded-[2rem] md:rounded-[2.5rem] border border-slate-100 p-6 md:p-8 shadow-sm hover:shadow-xl transition-all duration-500 flex flex-col lg:flex-row items-center justify-between gap-6 md:gap-8 group"
+            className="bg-white rounded-3xl sm:rounded-[2rem] md:rounded-[2.5rem] border border-slate-100 p-5 sm:p-6 md:p-8 shadow-sm hover:shadow-xl transition-all duration-500 flex flex-col md:flex-row lg:flex-row items-center justify-between gap-6 md:gap-8 group"
           >
-            <div className="flex items-center gap-4 md:gap-6 flex-1 w-full">
-              <div className="size-14 md:size-20 bg-slate-50 rounded-[1.2rem] md:rounded-[1.8rem] flex items-center justify-center text-[#0a0a2e] font-black text-xl md:text-3xl shadow-inner border border-slate-100 group-hover:bg-blue-50 group-hover:text-blue-600 transition-all duration-500">
+            <div className="flex items-center gap-4 md:gap-6 flex-1 w-full min-w-0">
+              <div className="size-14 sm:size-16 md:size-20 bg-slate-50 rounded-2xl sm:rounded-[1.2rem] md:rounded-[1.8rem] flex items-center justify-center text-[#0a0a2e] font-black text-xl sm:text-2xl md:text-3xl shadow-inner border border-slate-100 group-hover:bg-blue-50 group-hover:text-blue-600 transition-all duration-500 shrink-0">
                 {(item.cliente_nome || item.nome_indicado || '').substring(0, 1)}
               </div>
-              <div className="space-y-1 md:space-y-2">
+              <div className="space-y-1 md:space-y-2 min-w-0">
                 <div className="flex items-center gap-2 md:gap-3">
-                  <h3 className="text-lg md:text-2xl font-black text-[#0a0a2e] uppercase tracking-tight group-hover:text-blue-600 transition-colors">
+                  <h3 className="text-base sm:text-lg md:text-2xl font-black text-[#0a0a2e] uppercase tracking-tight group-hover:text-blue-600 transition-colors truncate">
                     {item.cliente_nome || item.nome_indicado}
                   </h3>
-                  <div className="size-1.5 md:size-2 bg-blue-500 rounded-full animate-pulse" />
+                  <div className="size-1.5 md:size-2 bg-blue-500 rounded-full animate-pulse shrink-0" />
                 </div>
-                <div className="flex flex-wrap items-center gap-2 md:gap-4">
-                  <div className="flex items-center gap-1.5 bg-slate-50 px-2.5 py-1 rounded-full border border-slate-100">
-                    <Clock className="text-slate-400 size-3" />
-                    <span className="text-[8px] md:text-[9px] font-black text-slate-500 uppercase tracking-widest">
-                      {item.timestamp?.toDate ? format(item.timestamp.toDate(), "dd MMM, HH:mm", { locale: ptBR }) : 'Agora'}
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3 md:gap-4 capitalize">
+                  <div className="flex items-center gap-1.5 bg-slate-50 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full border border-slate-100">
+                    <Clock className="text-slate-400 size-2.5 sm:size-3" />
+                    <span className="text-[7px] sm:text-[9px] font-black text-slate-500 uppercase tracking-widest">
+                      {item.timestamp?.toDate ? format(item.timestamp.toDate(), "dd MMM", { locale: ptBR }) : 'Agora'}
                     </span>
                   </div>
-                  <div className="flex items-center gap-1.5 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">
-                    <ShoppingBag className="text-blue-500 size-3" />
-                    <span className="text-[8px] md:text-[9px] font-black text-blue-600 uppercase tracking-widest">
-                      {activeTab === 'leads' ? item.servico_nome : 'Indicação Direta'}
+                  <div className="flex items-center gap-1.5 bg-blue-50 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full border border-blue-100">
+                    <ShoppingBag className="text-blue-500 size-2.5 sm:size-3" />
+                    <span className="text-[7px] sm:text-[9px] font-black text-blue-600 uppercase tracking-widest truncate max-w-[80px] sm:max-w-none">
+                      {activeTab === 'leads' ? item.servico_nome : 'Indicação'}
                     </span>
                   </div>
-                  <div className="flex items-center gap-1.5 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">
-                    <MessageSquare className="text-emerald-500 size-3" />
-                    <span className="text-[8px] md:text-[9px] font-black text-emerald-600 uppercase tracking-widest">
+                  <div className="flex items-center gap-1.5 bg-emerald-50 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full border border-emerald-100">
+                    <MessageSquare className="text-emerald-500 size-2.5 sm:size-3" />
+                    <span className="text-[7px] sm:text-[9px] font-black text-emerald-600 uppercase tracking-widest truncate max-w-[100px] sm:max-w-none">
                       {item.cliente_telefone || item.telefone_indicado}
                     </span>
                   </div>
-                  {item.indicado_por && (
-                    <div className="flex items-center gap-1.5 bg-purple-50 px-2.5 py-1 rounded-full border border-purple-100">
-                      <UserPlus className="text-purple-500 size-3" />
-                      <span className="text-[8px] md:text-[9px] font-black text-purple-600 uppercase tracking-widest">
-                        Via Link de Indicação
-                      </span>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 lg:flex lg:flex-wrap items-center gap-6 md:gap-12 flex-1 w-full lg:w-auto border-y lg:border-none border-slate-50 py-6 lg:py-0">
+            <div className="grid grid-cols-2 lg:flex lg:flex-wrap items-center gap-4 sm:gap-6 md:gap-10 lg:gap-12 flex-1 w-full lg:w-auto border-t md:border-t-0 border-slate-50 pt-5 md:pt-0">
               <div className="space-y-1">
-                <span className="block text-[8px] font-black text-slate-300 uppercase tracking-[0.2em]">Status</span>
-                <span className={`inline-flex px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border shadow-sm ${
+                <span className="block text-[7px] sm:text-[8px] font-black text-slate-300 uppercase tracking-[0.2em]">Status</span>
+                <span className={`inline-flex px-2 sm:px-3 py-1 rounded-full text-[7px] sm:text-[9px] font-black uppercase tracking-widest border shadow-sm ${
                   (item.status || item.status_indicacao) === 'Novo' || (item.status || item.status_indicacao) === 'Enviado' ? 'bg-blue-50 text-blue-700 border-blue-100' :
                   (item.status || item.status_indicacao) === 'Venda Concluída' || (item.status || item.status_indicacao) === 'Concluído' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
                   (item.status || item.status_indicacao) === 'Perdido' || (item.status || item.status_indicacao) === 'Sem Retorno' ? 'bg-rose-50 text-rose-700 border-rose-100' :
@@ -465,24 +457,22 @@ export const LeadsCentralView: React.FC = () => {
               </div>
 
               <div className="space-y-1">
-                <span className="block text-[8px] font-black text-slate-300 uppercase tracking-[0.2em]">Especialista</span>
+                <span className="block text-[7px] sm:text-[8px] font-black text-slate-300 uppercase tracking-[0.2em]">Especialista</span>
                 <div className="flex items-center gap-2">
-                  <div className="size-6 bg-slate-100 rounded-lg flex items-center justify-center text-[8px] font-black text-[#0a0a2e]">
+                  <div className="size-5 sm:size-6 bg-slate-100 rounded flex items-center justify-center text-[7px] font-black text-[#0a0a2e]">
                     {(item.vendedor_nome || '').substring(0, 1) || '?'}
                   </div>
-                  <span className="text-[10px] font-black text-[#0a0a2e] uppercase tracking-tight truncate max-w-[80px]">{item.vendedor_nome || 'Aguardando'}</span>
+                  <span className="text-[8px] sm:text-[10px] font-black text-[#0a0a2e] uppercase tracking-tight truncate max-w-[80px]">{item.vendedor_nome || 'Aguardando'}</span>
                 </div>
               </div>
 
-              <div className="col-span-2 lg:col-span-1 flex flex-wrap gap-2">
-                {profile?.nivel?.includes('ADM') && (
-                  <button 
-                    onClick={() => handleUpdateStatus(item, activeTab === 'leads' ? 'Venda Concluída' : 'Concluído')}
-                    className="px-3 py-2 bg-emerald-500 text-white rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-sm"
-                  >
-                    Concluir
-                  </button>
-                )}
+              <div className="col-span-2 lg:col-span-1 flex flex-wrap gap-2 pt-2 md:pt-0">
+                <button 
+                  onClick={() => handleUpdateStatus(item, activeTab === 'leads' ? 'Venda Concluída' : 'Concluído')}
+                  className="px-3 py-1.5 sm:py-2 bg-emerald-500 text-white rounded-lg sm:rounded-xl text-[7px] sm:text-[8px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-sm"
+                >
+                  Concluir
+                </button>
                 <button 
                   onClick={() => {
                     const statuses = activeTab === 'leads' 
@@ -493,72 +483,59 @@ export const LeadsCentralView: React.FC = () => {
                       title: 'Mudar Status',
                       input: 'select',
                       inputOptions: statuses.reduce((acc: any, s) => ({ ...acc, [s]: s }), {}),
-                      inputPlaceholder: 'Selecione o novo status',
+                      inputPlaceholder: 'Selecione',
                       showCancelButton: true,
-                      confirmButtonColor: '#3b82f6'
+                      confirmButtonColor: '#3b82f6',
+                      customClass: {
+                          popup: 'rounded-2xl',
+                          confirmButton: 'rounded-lg font-black uppercase text-[10px] px-6 py-2 bg-blue-600',
+                          cancelButton: 'rounded-lg font-black uppercase text-[10px] px-6 py-2 bg-slate-100 text-slate-400'
+                      }
                     }).then((result) => {
                       if (result.isConfirmed) {
                         handleUpdateStatus(item, result.value);
                       }
                     });
                   }}
-                  className="px-3 py-2 bg-slate-100 text-slate-600 rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all shadow-sm"
+                  className="px-3 py-1.5 sm:py-2 bg-slate-100 text-slate-600 rounded-lg sm:rounded-xl text-[7px] sm:text-[8px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all shadow-sm"
                 >
-                  Mudar Status
+                  Status
                 </button>
                 <button 
                   onClick={() => handleRegisterClient(item)}
-                  className="px-3 py-2 bg-blue-500 text-white rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all shadow-sm"
+                  className="px-3 py-1.5 sm:py-2 bg-blue-500 text-white rounded-lg sm:rounded-xl text-[7px] sm:text-[8px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all shadow-sm"
                 >
-                  Cadastrar Cliente
+                  Cadastrar
                 </button>
-                {activeTab === 'leads' && (
-                  <button 
-                    onClick={() => {
-                      setSelectedItem(item);
-                      setShowProposalModal(true);
-                    }}
-                    className="px-3 py-2 bg-indigo-500 text-white rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-sm"
-                  >
-                    Enviar Proposta
-                  </button>
-                )}
-                {profile?.nivel === 'ADM_MASTER' && (
-                  <button 
-                    onClick={() => handleDeleteItem(item)}
-                    className="px-3 py-2 bg-red-50 text-red-600 rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all shadow-sm flex items-center gap-1.5"
-                  >
-                    <Trash2 size={10} />
-                    Excluir
-                  </button>
-                )}
               </div>
             </div>
 
-            <div className="flex items-center gap-3 w-full lg:w-auto">
+            <div className="flex flex-row md:flex-col lg:flex-row items-center gap-3 w-full md:w-auto lg:w-auto border-t md:border-t-0 border-slate-50 pt-5 md:pt-0">
               <button 
                 onClick={() => {
                   setSelectedItem(item);
                   setShowAssignModal(true);
                 }}
-                className="flex-1 lg:flex-none px-6 py-4 bg-[#0a0a2e] text-white rounded-2xl font-black uppercase text-[9px] tracking-widest shadow-xl shadow-blue-900/20 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2 group/btn"
+                className="flex-1 md:flex-none px-4 sm:px-6 py-3 sm:py-4 bg-[#0a0a2e] text-white rounded-xl sm:rounded-2xl font-black uppercase text-[8px] sm:text-[9px] tracking-widest shadow-xl shadow-blue-900/20 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2"
               >
-                <UserPlus className="size-3.5" /> 
+                <UserPlus className="size-3 sm:size-3.5" /> 
                 Atribuir
               </button>
-              <button 
-                onClick={() => handleBlacklist(item.cliente_telefone || item.telefone_indicado, item.cliente_nome || item.nome_indicado)}
-                className="size-12 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center hover:bg-rose-50 hover:text-rose-600 border border-slate-100 transition-all shadow-sm"
-                title="Blacklist"
-              >
-                <AlertCircle className="size-5" />
-              </button>
-              <button 
-                onClick={() => handleUpdateStatus(item, activeTab === 'leads' ? 'Perdido' : 'Sem Retorno')}
-                className="size-12 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center hover:bg-rose-50 hover:text-rose-600 border border-slate-100 transition-all shadow-sm"
-              >
-                <X className="size-5" />
-              </button>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => handleBlacklist(item.cliente_telefone || item.telefone_indicado, item.cliente_nome || item.nome_indicado)}
+                  className="size-10 sm:size-12 bg-slate-50 text-slate-400 rounded-xl sm:rounded-2xl flex items-center justify-center hover:bg-rose-50 hover:text-rose-600 border border-slate-100 transition-all shadow-sm"
+                  title="Blacklist"
+                >
+                  <AlertCircle className="size-4 sm:size-5" />
+                </button>
+                <button 
+                  onClick={() => handleUpdateStatus(item, activeTab === 'leads' ? 'Perdido' : 'Sem Retorno')}
+                  className="size-10 sm:size-12 bg-slate-50 text-slate-400 rounded-xl sm:rounded-2xl flex items-center justify-center hover:bg-rose-50 hover:text-rose-600 border border-slate-100 transition-all shadow-sm"
+                >
+                  <X className="size-4 sm:size-5" />
+                </button>
+              </div>
             </div>
           </motion.div>
         ))}

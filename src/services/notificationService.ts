@@ -70,7 +70,7 @@ export async function sendNotification(notification: Omit<AppNotification, 'id' 
       const userData = userDoc.data();
       
       // If user is CLIENTE
-      if (userData.role === 'CLIENTE') {
+      if (userData.nivel === 'CLIENTE') {
         // Add their VENDEDOR/GESTOR (id_superior)
         if (userData.id_superior) {
           if (!visibilidade_uids.includes(userData.id_superior)) {
@@ -88,7 +88,7 @@ export async function sendNotification(notification: Omit<AppNotification, 'id' 
         }
       } 
       // If user is VENDEDOR
-      else if (userData.role === 'VENDEDOR') {
+      else if (userData.nivel === 'VENDEDOR') {
         // Add their GESTOR (id_superior)
         if (userData.id_superior && !visibilidade_uids.includes(userData.id_superior)) {
           visibilidade_uids.push(userData.id_superior);
@@ -174,6 +174,32 @@ export const notificarAjudaFicha = async (processo: any, clienteNome: string) =>
     tipo: 'PROCESS',
     vendedor_id: processo.vendedor_id,
     gestor_id: processo.gestor_id
+  });
+};
+
+export const notificarStatusProcesso = async (processo: any, novoStatus: string) => {
+  const mensagem = `O status do processo #${processo.protocolo} (${processo.servico_nome}) foi alterado para: ${novoStatus}.`;
+  
+  await sendNotification({
+    usuario_id: processo.cliente_id,
+    titulo: "📊 Atualização de Status",
+    mensagem: mensagem,
+    tipo: 'PROCESS',
+    vendedor_id: processo.vendedor_id,
+    gestor_id: processo.id_superior || processo.gestor_id
+  });
+};
+
+export const notificarNovaPendencia = async (processo: any, descricao: string) => {
+  const mensagem = `Uma nova pendência foi registrada no processo #${processo.protocolo}: ${descricao}. Por favor, verifique as ações necessárias.`;
+  
+  await sendNotification({
+    usuario_id: processo.cliente_id,
+    titulo: "⚠️ Nova Pendência",
+    mensagem: mensagem,
+    tipo: 'PROCESS',
+    vendedor_id: processo.vendedor_id,
+    gestor_id: processo.id_superior || processo.gestor_id
   });
 };
 

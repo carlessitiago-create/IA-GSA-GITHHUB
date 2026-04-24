@@ -4,102 +4,114 @@ import { motion } from 'motion/react';
 
 export const FinancialTransactions = ({ pendingTransactions, clients, confirmarTransacao, sendNotification, sales, allUsers, setNotification, setIsConfirmingTransaction, setTransactionReceipt, currentProfile }: any) => {
   return (
-    <div className="bg-white rounded-[3rem] shadow-sm border border-slate-100 overflow-hidden transition-all hover:shadow-md">
-      <div className="p-10 border-b border-slate-50 flex flex-col md:flex-row justify-between items-center gap-6 bg-slate-50/30">
-        <div className="flex items-center gap-6">
-          <div className="size-14 bg-blue-600 rounded-[1.2rem] flex items-center justify-center text-white shadow-2xl shadow-blue-500/20">
-            <Receipt size={28} />
+    <div className="bg-white rounded-3xl sm:rounded-[3rem] shadow-sm border border-slate-100 overflow-hidden transition-all hover:shadow-md">
+      <div className="p-6 sm:p-8 md:p-10 border-b border-slate-50 flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-6 bg-slate-50/30">
+        <div className="flex items-center gap-4 sm:gap-6 w-full sm:w-auto">
+          <div className="size-10 sm:size-14 bg-blue-600 rounded-xl sm:rounded-[1.2rem] flex items-center justify-center text-white shadow-2xl shadow-blue-500/20 shrink-0">
+            <Receipt size={20} className="sm:size-[28px]" />
           </div>
           <div>
-            <h3 className="text-2xl font-black text-[#0a0a2e] uppercase italic tracking-tighter leading-none">Comprovantes Pendentes</h3>
-            <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-2">Valide os comprovantes de pagamento enviados pelos clientes.</p>
+            <h3 className="text-lg sm:text-2xl font-black text-[#0a0a2e] uppercase italic tracking-tighter leading-none">Comprovantes</h3>
+            <p className="text-[8px] sm:text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1 sm:mt-2">Valide comprovantes de clientes.</p>
           </div>
         </div>
-        <button className="bg-white border border-slate-100 text-slate-400 px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-[#0a0a2e] hover:text-white hover:border-[#0a0a2e] transition-all shadow-sm">
-          Ver Histórico Completo
+        <button className="w-full sm:w-auto bg-white border border-slate-100 text-slate-400 px-6 sm:px-8 py-3 rounded-xl sm:rounded-2xl text-[8px] sm:text-[10px] font-black uppercase tracking-widest hover:bg-[#0a0a2e] hover:text-white hover:border-[#0a0a2e] transition-all shadow-sm">
+          Ver Histórico
         </button>
       </div>
-      <div className="md:hidden divide-y divide-slate-50">
-        {pendingTransactions.map((trans: any) => (
-          <div key={trans.id} className="p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="size-10 bg-slate-100 rounded-xl flex items-center justify-center text-[#0a0a2e] font-black text-xs">
-                  {(clients.find((c: any) => c.id === trans.cliente_id)?.nome_completo || '').substring(0, 2).toUpperCase() || 'CL'}
+      <div className="md:hidden divide-y divide-slate-100">
+        {pendingTransactions.map((trans: any) => {
+          const client = clients.find((c: any) => c.id === trans.cliente_id);
+          return (
+            <div key={trans.id} className="p-5 space-y-4 bg-white hover:bg-slate-50/50 transition-colors">
+              {/* Header: Client & Amount */}
+              <div className="flex justify-between items-start gap-4">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="size-10 bg-[#0a0a2e] rounded-xl flex items-center justify-center text-white font-black text-[10px] shrink-0 shadow-lg shadow-blue-900/20">
+                    {(client?.nome_completo || 'CL').substring(0, 2).toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-black text-[#0a0a2e] text-sm uppercase italic tracking-tight truncate leading-none">
+                      {client?.nome_completo || 'Cliente'}
+                    </p>
+                    <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest mt-1.5 truncate">
+                      ID: #{trans.id?.slice(-8).toUpperCase()}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-black text-[#0a0a2e] text-sm uppercase italic tracking-tight">
-                    {clients.find((c: any) => c.id === trans.cliente_id)?.nome_completo || 'Cliente'}
+                <div className="text-right shrink-0">
+                  <p className="font-black text-emerald-600 italic text-base leading-none">
+                    R$ {trans.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </p>
-                  <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest">ID: #{trans.id?.slice(-8).toUpperCase()}</p>
+                  <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest mt-1 block">{trans.origem}</span>
                 </div>
               </div>
-              <p className="font-black text-emerald-600 italic text-base">
-                R$ {trans.valor.toLocaleString('pt-BR')}
-              </p>
-            </div>
 
-            <div className="flex items-center gap-2">
-              <span className="bg-slate-100 text-slate-400 px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest">{trans.origem}</span>
-              <p className="text-[10px] text-slate-500 font-medium truncate">{trans.descricao}</p>
-            </div>
+              {/* Description */}
+              <div className="bg-slate-50/50 p-2.5 rounded-xl border border-slate-100">
+                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Motivo / Descrição</p>
+                <p className="text-[10px] font-medium text-slate-600 italic leading-relaxed">{trans.descricao}</p>
+              </div>
 
-            <div className="flex items-center justify-between gap-3 pt-2">
-              {trans.comprovante_url ? (
-                <a 
-                  href={trans.comprovante_url} 
-                  target="_blank" 
-                  rel="noreferrer" 
-                  className="flex-1 inline-flex items-center justify-center gap-2 bg-blue-50 text-blue-600 px-4 py-3 rounded-xl font-black text-[9px] uppercase tracking-widest"
-                >
-                  Ver Anexo <ExternalLink size={12} />
-                </a>
-              ) : (
-                <span className="flex-1 text-center bg-slate-50 text-slate-400 px-4 py-3 rounded-xl font-black text-[9px] uppercase tracking-widest italic border border-slate-100">Sem anexo</span>
-              )}
-              
-              <div className="flex gap-2">
-                {['ADM_MASTER', 'ADM_GERENTE', 'GESTOR'].includes(currentProfile?.nivel) && (
-                  trans.origem === 'SAQUE' ? (
-                    <button 
-                      onClick={() => {
-                        setIsConfirmingTransaction(trans.id!);
-                        setTransactionReceipt('');
-                      }}
-                      className="bg-blue-600 text-white px-6 py-3 rounded-xl font-black text-[9px] uppercase tracking-widest"
-                    >
-                      Pagar
-                    </button>
-                  ) : (
-                    <>
+              {/* Actions Area */}
+              <div className="space-y-3 pt-2">
+                {trans.comprovante_url ? (
+                  <a 
+                    href={trans.comprovante_url} 
+                    target="_blank" 
+                    rel="noreferrer" 
+                    className="w-full h-12 inline-flex items-center justify-center gap-2 bg-blue-50 text-blue-600 rounded-xl font-black text-[10px] uppercase tracking-[0.15em] border border-blue-100 active:scale-[0.98] transition-all"
+                  >
+                     Ver Comprovante <ExternalLink size={14} />
+                  </a>
+                ) : (
+                  <div className="w-full h-12 text-center bg-slate-50 text-slate-400 rounded-xl font-black text-[10px] uppercase tracking-widest italic border border-slate-100 flex items-center justify-center">
+                    Documento não anexado
+                  </div>
+                )}
+                
+                <div className="flex gap-2">
+                  {['ADM_MASTER', 'ADM_GERENTE', 'GESTOR'].includes(currentProfile?.nivel) ? (
+                    trans.origem === 'SAQUE' ? (
                       <button 
-                        onClick={async () => {
-                          try {
-                            await confirmarTransacao(trans.id!, currentProfile!.uid);
-                            setNotification({ message: 'Transação confirmada com sucesso!', type: 'success' });
-                          } catch (err: any) {
-                            setNotification({ message: err.message, type: 'error' });
-                          }
+                        onClick={() => {
+                          setIsConfirmingTransaction(trans.id!);
+                          setTransactionReceipt('');
                         }}
-                        className="bg-emerald-500 text-white p-3 rounded-xl"
+                        className="flex-1 h-12 bg-blue-600 text-white rounded-xl font-black text-[10px] uppercase tracking-[0.2em] shadow-lg shadow-blue-600/20 active:scale-[0.98] transition-all"
                       >
-                        <Check size={18} />
+                        Pagar Agora
                       </button>
-                      <button className="bg-white border border-slate-100 text-slate-300 p-3 rounded-xl">
-                        <X size={18} />
-                      </button>
-                    </>
-                  )
-                )}
-                {!['ADM_MASTER', 'ADM_GERENTE', 'GESTOR'].includes(currentProfile?.nivel) && (
-                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-3 py-2 rounded-lg border border-slate-100">
-                    Aguardando Adm
-                  </span>
-                )}
+                    ) : (
+                      <>
+                        <button 
+                          onClick={async () => {
+                            try {
+                              await confirmarTransacao(trans.id!, currentProfile!.uid);
+                              setNotification({ message: 'Transação confirmada!', type: 'success' });
+                            } catch (err: any) {
+                              setNotification({ message: err.message, type: 'error' });
+                            }
+                          }}
+                          className="flex-[2] h-12 bg-emerald-500 text-white rounded-xl shadow-lg shadow-emerald-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 font-black text-[10px] uppercase tracking-[0.15em]"
+                        >
+                          <Check size={18} /> Confirmar
+                        </button>
+                        <button className="flex-1 h-12 bg-white border border-slate-100 text-rose-500 rounded-xl active:scale-[0.98] transition-all flex items-center justify-center shadow-sm">
+                          <X size={20} />
+                        </button>
+                      </>
+                    )
+                  ) : (
+                    <div className="w-full h-12 text-center bg-amber-50 text-amber-600 rounded-xl font-black text-[10px] uppercase tracking-widest italic border border-amber-100 flex items-center justify-center">
+                      Aguardando Gestão
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="hidden md:block overflow-x-auto no-scrollbar">

@@ -3,7 +3,7 @@ import { useOutletContext } from 'react-router-dom';
 import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { gerarPagamentoPixGateway, processarVenda } from '../services/vendaService';
-import { ShoppingCart, User, Package, CheckCircle, Search, UserPlus, X, ShieldCheck, Loader2, CreditCard, Banknote, QrCode, FileText, ChevronRight, ArrowLeft, AlertCircle, Copy } from 'lucide-react';
+import { ShoppingCart, User, Package, CheckCircle, Search, UserPlus, X, ShieldCheck, Loader2, CreditCard, Banknote, QrCode, FileText, ChevronRight, ArrowLeft, AlertCircle, Copy, Clock, Shield } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { useAuth, UserProfile } from '../components/AuthContext';
 import { motion, AnimatePresence } from 'motion/react';
@@ -226,9 +226,17 @@ export function VendasPDVView() {
         showCancelButton: true,
         confirmButtonText: 'Confirmar e Continuar',
         cancelButtonText: 'Cancelar',
+        didOpen: () => {
+          const cpfInput = document.getElementById('swal-cpf') as HTMLInputElement;
+          cpfInput?.addEventListener('input', (e) => {
+            const target = e.target as HTMLInputElement;
+            target.value = formatDocument(target.value);
+          });
+        },
         preConfirm: () => {
           const cpf = (document.getElementById('swal-cpf') as HTMLInputElement).value;
           const dob = (document.getElementById('swal-dob') as HTMLInputElement).value;
+          
           if (!cpf || !dob) {
             Swal.showValidationMessage('CPF e Data de Nascimento são obrigatórios');
             return false;
@@ -466,56 +474,56 @@ export function VendasPDVView() {
   );
 
   return (
-    <div className="responsive-container pb-20">
+    <div className="w-full max-w-7xl mx-auto pb-10 sm:pb-20 px-4 sm:px-6">
       {/* VIP TERMINAL HEADER */}
-      <div className="bg-[#020617] p-8 sm:p-10 md:p-16 rounded-[2rem] sm:rounded-[3rem] md:rounded-[3.5rem] shadow-[0_30px_60px_rgba(0,0,0,0.6)] border border-slate-800 relative overflow-hidden group mb-10">
+      <div className="bg-[#020617] p-6 md:p-12 lg:p-20 rounded-[2rem] sm:rounded-[3rem] md:rounded-[4rem] shadow-[0_30px_60px_rgba(0,0,0,0.6)] border border-slate-800 relative overflow-hidden group mb-6 sm:mb-10">
         <div className="absolute -top-40 -right-40 w-96 h-96 bg-blue-600/10 blur-[100px] rounded-full pointer-events-none group-hover:bg-blue-500/20 transition-all duration-1000"></div>
         <div className="absolute top-0 right-0 p-16 opacity-[0.03] pointer-events-none group-hover:rotate-12 group-hover:scale-110 transition-all duration-1000">
-          <ShoppingCart className="size-[180px] sm:size-[220px] text-white" />
+          <ShoppingCart className="size-[120px] sm:size-[180px] md:size-[220px] text-white" />
         </div>
 
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 sm:gap-10 relative z-10">
-          <div className="space-y-4">
-            <div className="flex items-center gap-4 sm:gap-5">
-              <div className="size-12 sm:size-16 bg-blue-600/10 border border-blue-500/30 rounded-2xl sm:rounded-[1.8rem] flex items-center justify-center text-blue-400 shadow-[0_0_20px_rgba(37,99,235,0.2)]">
-                <ShoppingCart className="size-6 sm:size-8" />
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 sm:gap-8 md:gap-10 relative z-10 w-full">
+          <div className="space-y-3 sm:space-y-4 w-full lg:w-auto">
+            <div className="flex items-center gap-3 sm:gap-5">
+              <div className="size-10 sm:size-16 bg-blue-600/10 border border-blue-500/30 rounded-xl sm:rounded-[1.8rem] flex items-center justify-center text-blue-400 shadow-[0_0_20px_rgba(37,99,235,0.2)] shrink-0">
+                <ShoppingCart className="size-5 sm:size-8" />
               </div>
-              <div>
-                <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white uppercase italic tracking-tighter leading-none">
+              <div className="min-w-0">
+                <h1 className="text-xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white uppercase italic tracking-tighter leading-none truncate">
                   Terminal <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">PDV</span>
                 </h1>
-                <div className="flex items-center gap-2 mt-2">
-                  <span className="flex h-2 w-2 relative">
+                <div className="flex items-center gap-2 mt-1 sm:mt-2">
+                  <span className="flex h-2 w-2 relative shrink-0">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                   </span>
-                  <p className="text-emerald-400 text-[9px] sm:text-xs font-black uppercase tracking-widest">GSA Sales Engine Offline/Online</p>
+                  <p className="text-emerald-400 text-[8px] sm:text-xs font-black uppercase tracking-widest truncate">Sistema de Vendas GSA Ativo</p>
                 </div>
               </div>
             </div>
-            <p className="text-slate-400 text-sm sm:text-lg font-medium max-w-xl">
-              Ambiente de alta conversão. Feche vendas, gere links de pagamento seguros e acelere suas comissões.
+            <p className="text-slate-400 text-xs sm:text-lg font-medium max-w-xl leading-snug sm:leading-normal">
+              Ambiente de alta conversão. Feche vendas e gere links de pagamento seguros.
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-center gap-4">
+          <div className="flex flex-col xs:flex-row items-center gap-3 sm:gap-4 w-full lg:w-auto mt-2 lg:mt-0">
             <button 
               onClick={() => setShowProposalGenerator(true)}
-              className="w-full sm:w-auto bg-[#0F172A] border border-slate-700 text-slate-300 px-6 sm:px-8 py-4 sm:py-5 rounded-2xl sm:rounded-[2rem] font-black uppercase text-[10px] sm:text-xs tracking-widest hover:border-blue-500 hover:text-white hover:bg-blue-900/20 transition-all shadow-inner flex items-center justify-center gap-3"
+              className="w-full sm:w-auto bg-[#0F172A] border border-slate-700 text-slate-300 px-6 sm:px-8 py-3.5 sm:py-5 rounded-xl sm:rounded-[2rem] font-black uppercase text-[9px] sm:text-xs tracking-widest hover:border-blue-500 hover:text-white hover:bg-blue-900/20 transition-all shadow-inner flex items-center justify-center gap-2 sm:gap-3"
             >
-              <FileText className="size-5 sm:size-6" />
-              Gerar Proposta GSA
+              <FileText className="size-4 sm:size-6" />
+              Gerar Proposta
             </button>
 
-            <div className="bg-emerald-900/20 px-6 sm:px-8 py-4 sm:py-5 rounded-2xl sm:rounded-[2rem] border border-emerald-500/30 flex items-center gap-4 sm:gap-5 shadow-[inset_0_0_20px_rgba(16,185,129,0.05)]">
-              <div className="size-10 sm:size-12 bg-emerald-500/20 rounded-xl sm:rounded-2xl flex items-center justify-center text-emerald-400 relative overflow-hidden">
+            <div className="w-full sm:w-auto bg-emerald-900/20 px-5 sm:px-8 py-3.5 sm:py-5 rounded-xl sm:rounded-[2rem] border border-emerald-500/30 flex items-center justify-center sm:justify-start gap-4 sm:gap-5 shadow-[inset_0_0_20px_rgba(16,185,129,0.05)]">
+              <div className="size-8 sm:size-12 bg-emerald-500/20 rounded-lg sm:rounded-2xl flex items-center justify-center text-emerald-400 relative overflow-hidden shrink-0">
                 <div className="absolute inset-0 bg-emerald-400/20 animate-pulse"></div>
-                <ShieldCheck className="size-5 sm:size-6 relative z-10" />
+                <ShieldCheck className="size-4 sm:size-6 relative z-10" />
               </div>
-              <div>
-                 <p className="text-[9px] sm:text-[10px] font-black text-emerald-500/80 uppercase tracking-[0.2em] mb-1">Criptografia Ativa</p>
-                 <p className="text-white text-xs sm:text-sm font-black tracking-widest uppercase flex items-center gap-2">
-                   SSL Secure <span className="text-emerald-400">256-Bit</span>
+              <div className="min-w-0">
+                 <p className="text-[8px] sm:text-[10px] font-black text-emerald-500/80 uppercase tracking-widest mb-0.5 sm:mb-1 truncate">Criptografia Ativa</p>
+                 <p className="text-white text-[10px] sm:text-sm font-black tracking-widest uppercase flex items-center gap-1.5 sm:gap-2">
+                   SSL <span className="text-emerald-400">256-Bit</span>
                  </p>
               </div>
             </div>
@@ -524,119 +532,127 @@ export function VendasPDVView() {
       </div>
 
       {/* PDV MAIN CONTENT WRAPPER */}
-      <div className="bg-white p-4 sm:p-8 md:p-12 lg:p-16 rounded-[2rem] sm:rounded-[3rem] md:rounded-[3.5rem] shadow-xl border border-slate-100 relative overflow-hidden relative z-10">
-        <div className="grid grid-cols-1 gap-12 sm:gap-16 relative z-10">
+      <div className="bg-white p-5 sm:p-8 md:p-12 lg:p-16 rounded-2xl sm:rounded-[3rem] md:rounded-[3.5rem] shadow-xl border border-slate-100 relative z-10">
+        <div className="grid grid-cols-1 gap-8 sm:gap-16 relative z-10">
           {/* INDICADOR DE PASSOS */}
-          <div className="flex items-center justify-center gap-3 sm:gap-8 mb-4">
+          <div className="flex items-center justify-center gap-2 sm:gap-8 mb-2 sm:mb-4">
             {[1, 2, 3].map(s => (
-              <div key={s} className="flex items-center gap-1.5 sm:gap-2">
-                <div className={`size-7 sm:size-10 rounded-full flex items-center justify-center font-black text-[10px] sm:text-sm transition-all ${
-                  step === s ? 'bg-[#0a0a2e] text-white shadow-lg' : 
-                  step > s ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400'
+              <div key={s} className="flex items-center gap-1.5 sm:gap-3">
+                <div className={`size-7 sm:size-12 rounded-full flex items-center justify-center font-black text-[10px] sm:text-lg transition-all border-2 ${
+                  step === s ? 'bg-[#0a0a2e] text-white border-[#0a0a2e] shadow-xl scale-110' : 
+                  step > s ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-slate-50 text-slate-300 border-slate-100'
                 }`}>
-                  {step > s ? <CheckCircle className="size-3.5 sm:size-5" /> : s}
+                  {step > s ? <CheckCircle className="size-4 sm:size-6" /> : s}
                 </div>
-                <span className={`text-[8px] sm:text-[10px] font-black uppercase tracking-widest hidden xs:block ${
-                  step === s ? 'text-[#0a0a2e]' : 'text-slate-400'
+                <span className={`text-[8px] sm:text-[11px] font-black uppercase tracking-widest hidden sm:block ${
+                  step === s ? 'text-[#0a0a2e]' : 'text-slate-300'
                 }`}>
-                  {s === 1 ? 'Cliente' : s === 2 ? 'Serviço' : 'Proposta'}
+                  {s === 1 ? 'Cliente' : s === 2 ? 'Serviço' : 'Conclusão'}
                 </span>
+                {s < 3 && <div className={`hidden sm:block w-4 sm:w-12 h-0.5 rounded-full ${step > s ? 'bg-emerald-500' : 'bg-slate-100'}`} />}
               </div>
             ))}
           </div>
 
           {/* PASSO 1: IDENTIFICAÇÃO DO CLIENTE */}
           {step === 1 && (
-            <div className="space-y-6 sm:space-y-8">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-4">
-                <div className="flex items-center gap-4">
-                  <div className="size-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400">
-                    <User className="size-5" />
+            <div className="space-y-6 sm:space-y-10">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 md:px-4">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="size-10 sm:size-12 bg-slate-50 border border-slate-100 rounded-xl sm:rounded-2xl flex items-center justify-center text-[#0a0a2e] shadow-sm">
+                    <User className="size-5 sm:size-6" />
                   </div>
-                  <h3 className="text-lg sm:text-xl font-black text-[#0a0a2e] uppercase italic tracking-tight">Identificar Cliente</h3>
+                  <div>
+                    <h3 className="text-lg sm:text-2xl font-black text-[#0a0a2e] uppercase italic tracking-tight">Vender para...</h3>
+                    <p className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest">Selecione ou cadastre um cliente</p>
+                  </div>
                 </div>
                 <button 
                   onClick={() => setIsRegisteringClient(!isRegisteringClient)}
-                  className={`w-full sm:w-auto px-6 sm:px-8 py-3 rounded-xl sm:rounded-2xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all shadow-sm flex items-center justify-center gap-2 ${
+                  className={`w-full sm:w-auto px-6 sm:px-10 py-3.5 sm:py-4 rounded-xl sm:rounded-[1.8rem] text-[9px] sm:text-[11px] font-black uppercase tracking-[0.2em] transition-all shadow-sm flex items-center justify-center gap-2 sm:gap-3 group ${
                     isRegisteringClient 
                       ? 'bg-rose-50 text-rose-600 border border-rose-100 hover:bg-rose-100' 
-                      : 'bg-blue-50 text-blue-600 border border-blue-100 hover:bg-blue-100'
+                      : 'bg-blue-600 text-white hover:bg-[#0a0a2e] shadow-blue-600/20'
                   }`}
                 >
-                  {isRegisteringClient ? <><X className="size-3.5" /> Cancelar Cadastro</> : <><UserPlus className="size-3.5" /> Novo Cliente</>}
+                  {isRegisteringClient ? (
+                    <><X className="size-4" /> Cancelar</>
+                  ) : (
+                    <><UserPlus className="size-4 group-hover:scale-110 transition-transform" /> Novo Cliente</>
+                  )}
                 </button>
               </div>
 
-              <AnimatePresence>
+              <AnimatePresence mode="wait">
                 {isRegisteringClient && (
                   <motion.div 
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
                     className="overflow-hidden"
                   >
-                    <form onSubmit={handleRegisterClient} className="p-4 sm:p-10 bg-slate-50/50 rounded-[2rem] sm:rounded-[3rem] border border-slate-100 space-y-6 sm:space-y-8 mb-10 shadow-inner">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8">
-                        <div className="space-y-2">
-                          <span className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase ml-4 sm:ml-6 tracking-widest">Nome Completo</span>
+                    <form onSubmit={handleRegisterClient} className="p-5 sm:p-10 bg-slate-50/50 rounded-2xl sm:rounded-[3.5rem] border border-slate-100 space-y-6 sm:space-y-10 mb-6 sm:mb-12 shadow-inner">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-10">
+                        <div className="space-y-1.5 sm:space-y-2">
+                          <span className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase ml-4 sm:ml-6 tracking-[0.3em]">Nome Completo</span>
                           <input 
                             type="text" 
                             required
                             value={newClient.nome_completo}
                             onChange={e => setNewClient({...newClient, nome_completo: e.target.value})}
-                            className="w-full bg-white border border-slate-100 rounded-xl sm:rounded-[1.8rem] p-3.5 sm:p-5 text-sm font-medium focus:ring-4 focus:ring-blue-500/10 outline-none transition-all placeholder:text-slate-300"
-                            placeholder="Ex: João Silva"
+                            className="w-full bg-white border border-slate-100 rounded-xl sm:rounded-[2rem] p-4 sm:p-6 text-sm font-bold text-[#0a0a2e] focus:ring-4 focus:ring-blue-500/10 outline-none transition-all placeholder:text-slate-300 shadow-sm"
+                            placeholder="Ex: João da Silva"
                           />
                         </div>
-                        <div className="space-y-2">
-                          <span className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase ml-4 sm:ml-6 tracking-widest">CPF</span>
+                        <div className="space-y-1.5 sm:space-y-2">
+                          <span className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase ml-4 sm:ml-6 tracking-[0.3em]">CPF / CNPJ</span>
                           <input 
                             type="text" 
                             required
                             value={newClient.cpf}
                             onChange={e => setNewClient({...newClient, cpf: formatDocument(e.target.value)})}
-                            className="w-full bg-white border border-slate-100 rounded-xl sm:rounded-[1.8rem] p-3.5 sm:p-5 text-sm font-medium focus:ring-4 focus:ring-blue-500/10 outline-none transition-all placeholder:text-slate-300"
+                            className="w-full bg-white border border-slate-100 rounded-xl sm:rounded-[2rem] p-4 sm:p-6 text-sm font-bold text-[#0a0a2e] focus:ring-4 focus:ring-blue-500/10 outline-none transition-all placeholder:text-slate-300 shadow-sm"
                             placeholder="000.000.000-00"
                           />
                         </div>
-                        <div className="space-y-2">
-                          <span className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase ml-4 sm:ml-6 tracking-widest">E-mail</span>
+                        <div className="space-y-1.5 sm:space-y-2">
+                          <span className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase ml-4 sm:ml-6 tracking-[0.3em]">E-mail de Contato</span>
                           <input 
                             type="email" 
                             required
                             value={newClient.email}
                             onChange={e => setNewClient({...newClient, email: e.target.value})}
-                            className="w-full bg-white border border-slate-100 rounded-xl sm:rounded-[1.8rem] p-3.5 sm:p-5 text-sm font-medium focus:ring-4 focus:ring-blue-500/10 outline-none transition-all placeholder:text-slate-300"
-                            placeholder="email@exemplo.com"
+                            className="w-full bg-white border border-slate-100 rounded-xl sm:rounded-[2rem] p-4 sm:p-6 text-sm font-bold text-[#0a0a2e] focus:ring-4 focus:ring-blue-500/10 outline-none transition-all placeholder:text-slate-300 shadow-sm"
+                            placeholder="cliente@email.com"
                           />
                         </div>
-                        <div className="space-y-2">
-                          <span className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase ml-4 sm:ml-6 tracking-widest">WhatsApp</span>
+                        <div className="space-y-1.5 sm:space-y-2">
+                          <span className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase ml-4 sm:ml-6 tracking-[0.3em]">WhatsApp</span>
                           <input 
                             type="tel" 
                             value={newClient.telefone}
                             onChange={e => setNewClient({...newClient, telefone: formatPhone(e.target.value)})}
-                            className="w-full bg-white border border-slate-100 rounded-xl sm:rounded-[1.8rem] p-3.5 sm:p-5 text-sm font-medium focus:ring-4 focus:ring-blue-500/10 outline-none transition-all placeholder:text-slate-300"
-                            placeholder="(00) 00000-0000"
+                            className="w-full bg-white border border-slate-100 rounded-xl sm:rounded-[2rem] p-4 sm:p-6 text-sm font-bold text-[#0a0a2e] focus:ring-4 focus:ring-blue-500/10 outline-none transition-all placeholder:text-slate-300 shadow-sm"
+                            placeholder="(00) 0 0000-0000"
                           />
                         </div>
-                        <div className="space-y-2">
-                          <span className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase ml-4 sm:ml-6 tracking-widest">Data de Nascimento</span>
+                        <div className="space-y-1.5 sm:space-y-2 md:col-span-2">
+                          <span className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase ml-4 sm:ml-6 tracking-[0.3em]">Data de Nascimento</span>
                           <input 
                             type="date" 
                             required
                             value={newClient.data_nascimento}
                             onChange={e => setNewClient({...newClient, data_nascimento: e.target.value})}
-                            className="w-full bg-white border border-slate-100 rounded-xl sm:rounded-[1.8rem] p-3.5 sm:p-5 text-sm font-medium focus:ring-4 focus:ring-blue-500/10 outline-none transition-all placeholder:text-slate-300"
+                            className="w-full bg-white border border-slate-100 rounded-xl sm:rounded-[2rem] p-4 sm:p-6 text-sm font-bold text-[#0a0a2e] focus:ring-4 focus:ring-blue-500/10 outline-none transition-all shadow-sm"
                           />
                         </div>
                       </div>
                       <button 
                         type="submit"
                         disabled={loading}
-                        className="w-full bg-[#0a0a2e] text-white py-4 sm:py-6 rounded-xl sm:rounded-[2rem] font-black uppercase text-[10px] sm:text-xs tracking-[0.3em] shadow-2xl shadow-blue-900/30 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
+                        className="w-full bg-[#0a0a2e] text-white py-5 sm:py-7 rounded-xl sm:rounded-[2.5rem] font-black uppercase text-[10px] sm:text-xs tracking-[0.4em] shadow-2xl shadow-blue-900/30 hover:scale-[1.01] active:scale-98 transition-all disabled:opacity-50 flex items-center justify-center gap-3"
                       >
-                        {loading ? 'PROCESSANDO CADASTRO...' : 'CONFIRMAR E CADASTRAR CLIENTE'}
+                        {loading ? <><Loader2 className="animate-spin" size={18} /> Processando...</> : 'Cadastrar e Iniciar Venda'}
                       </button>
                     </form>
                   </motion.div>
@@ -645,50 +661,60 @@ export function VendasPDVView() {
               
               {!isRegisteringClient && (
                 <div className="space-y-6 sm:space-y-8">
-                  <div className="relative">
-                    <Search className="absolute left-6 sm:left-8 top-1/2 -translate-y-1/2 text-slate-300 size-5 sm:size-6" />
+                  <div className="relative group">
+                    <Search className="absolute left-6 sm:left-10 top-1/2 -translate-y-1/2 text-slate-300 size-5 sm:size-7 group-focus-within:text-blue-500 transition-colors" />
                     <input 
                       type="text" 
-                      placeholder="Buscar por CPF, Nome ou E-mail do Cliente..." 
+                      placeholder="Pesquisar por CPF, Nome ou E-mail..." 
                       value={searchTermClient}
                       onChange={(e) => setSearchTermClient(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-100 rounded-2xl sm:rounded-[2.5rem] py-4 sm:py-6 pl-14 sm:pl-20 pr-6 sm:pr-10 text-xs sm:text-sm font-black uppercase tracking-widest text-[#0a0a2e] placeholder:text-slate-300 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all shadow-sm"
+                      className="w-full bg-slate-50 border border-slate-100 rounded-2xl sm:rounded-[3rem] py-5 sm:py-7 pl-16 sm:pl-24 pr-8 sm:pr-12 text-xs sm:text-base font-bold text-[#0a0a2e] placeholder:text-slate-300 focus:ring-8 focus:ring-blue-500/5 outline-none transition-all shadow-inner"
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-h-[450px] overflow-y-auto pr-2 sm:pr-4 no-scrollbar pb-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-h-[500px] overflow-y-auto px-1 sm:px-2 pb-6 custom-scrollbar">
                     {filteredClients.map(client => (
                       <motion.div 
                         key={client.uid}
-                        whileHover={{ y: -5 }}
+                        whileHover={{ y: -5, scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
                         onClick={() => {
                           setSelectedClient(client);
                           setStep((selectedService || preSelectedService) ? 3 : 2);
                         }}
-                        className={`p-6 sm:p-8 border-2 rounded-[2rem] sm:rounded-[2.5rem] flex flex-col gap-4 cursor-pointer transition-all relative overflow-hidden group ${
+                        className={`p-6 sm:p-8 border-2 rounded-[2.2rem] sm:rounded-[3rem] flex flex-col gap-4 cursor-pointer transition-all relative overflow-hidden group ${
                           selectedClient?.uid === client.uid 
-                            ? 'border-[#0a0a2e] bg-[#0a0a2e]/5 shadow-xl' 
-                            : 'border-slate-50 bg-white hover:border-slate-200 hover:shadow-md'
+                            ? 'border-[#0a0a2e] bg-[#0a0a2e]/5 shadow-xl ring-4 ring-blue-500/5' 
+                            : 'border-slate-50 bg-white hover:border-slate-200 hover:shadow-lg'
                         }`}
                       >
                         <div className="flex justify-between items-start relative z-10">
-                          <div className={`size-12 sm:size-14 rounded-xl sm:rounded-[1.2rem] flex items-center justify-center font-black text-base sm:text-lg transition-all ${
-                            selectedClient?.uid === client.uid ? 'bg-[#0a0a2e] text-white' : 'bg-slate-100 text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600'
+                          <div className={`size-12 sm:size-16 rounded-2xl sm:rounded-[1.5rem] flex items-center justify-center font-black text-lg sm:text-2xl transition-all shadow-sm ${
+                            selectedClient?.uid === client.uid ? 'bg-[#0a0a2e] text-white ring-4 ring-[#0a0a2e]/10' : 'bg-slate-50 text-slate-300 group-hover:bg-blue-50 group-hover:text-blue-600'
                           }`}>
-                            {(client.nome_completo || '').substring(0, 2).toUpperCase()}
+                            {(client.nome_completo || '??').substring(0, 2).toUpperCase()}
                           </div>
                           {selectedClient?.uid === client.uid && (
-                            <div className="bg-[#0a0a2e] text-white p-1.5 sm:p-2 rounded-full shadow-lg">
-                              <CheckCircle className="size-4 sm:size-5" />
+                            <div className="bg-emerald-500 text-white p-1.5 sm:p-2 rounded-full shadow-lg animate-in zoom-in-50 duration-300">
+                              <CheckCircle className="size-4 sm:size-6" />
                             </div>
                           )}
                         </div>
                         <div className="relative z-10">
-                          <p className="font-black text-[#0a0a2e] uppercase italic text-sm sm:text-base leading-tight group-hover:text-blue-600 transition-colors">{client.nome_completo}</p>
-                          <p className="text-[9px] sm:text-[10px] text-slate-400 font-black uppercase tracking-widest mt-2">{client.cpf || 'CPF NÃO INFORMADO'}</p>
+                          <p className="font-black text-[#0a0a2e] uppercase italic text-sm sm:text-lg leading-[1.1] group-hover:text-blue-600 transition-colors line-clamp-2">{client.nome_completo}</p>
+                          <div className="flex flex-col gap-1 mt-3">
+                            <p className="text-[9px] sm:text-[10px] text-slate-400 font-black uppercase tracking-[0.2em]">{client.cpf || 'DOC NÃO CADASTRADO'}</p>
+                            <p className="text-[8px] sm:text-[9px] text-slate-300 font-bold uppercase truncate">{client.email}</p>
+                          </div>
                         </div>
                       </motion.div>
                     ))}
+                    {filteredClients.length === 0 && (
+                      <div className="col-span-full py-20 text-center text-slate-400 italic bg-slate-50 rounded-3xl border-2 border-dashed border-slate-100">
+                        <p className="font-bold text-sm sm:text-base">Nenhum cliente encontrado.</p>
+                        <p className="text-[10px] sm:text-xs">Utilize o botão "Novo Cliente" para cadastrar.</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -882,7 +908,7 @@ export function VendasPDVView() {
                         </div>
                         <div className="flex justify-between items-center pt-6 border-t border-white/10">
                           <span className="text-lg font-black uppercase italic tracking-tighter text-blue-400">Total</span>
-                          <span className="text-3xl font-black italic">R$ {finalPrice.toLocaleString('pt-BR')}</span>
+                          <span className="text-3xl font-black italic">R$ {finalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                         </div>
                       </div>
 

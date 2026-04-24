@@ -10,7 +10,8 @@ import {
   getDocs,
   getDoc,
   orderBy,
-  writeBatch
+  writeBatch,
+  or
 } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType, cleanData } from '../firebase';
 import { 
@@ -21,6 +22,10 @@ import {
 } from './pointsService';
 // import { getPointsForRule } from './clubService';
 import { UserProfile } from './userService';
+import { 
+  notificarStatusProcesso, 
+  notificarNovaPendencia 
+} from './notificationService';
 
 export interface SaleData {
   id?: string;
@@ -89,6 +94,7 @@ export interface StatusHistory {
   timestamp: Timestamp;
   visibilidade_uids: string[];
   status_info_extra?: string;
+  observacoes?: string;
 }
 
 export interface PendingIssue {
@@ -247,6 +253,16 @@ export async function abrirPendenciaCascata(data: {
     });
 
     await batch.commit();
+
+    // Notificar nova pendência
+    try {
+      if (processoData) {
+        await notificarNovaPendencia(processoData, data.descricao);
+      }
+    } catch (e) {
+      console.warn('Erro ao notificar pendência:', e);
+    }
+
     return pendencyRef.id;
   } catch (error) {
     handleFirestoreError(error, OperationType.CREATE, PENDENCIES_COLLECTION);
@@ -289,6 +305,16 @@ export async function criarPendencia(data: Omit<PendingIssue, 'id' | 'criadaEm'>
     batch.set(logRef, logData);
 
     await batch.commit();
+
+    // Notificar nova pendência
+    try {
+      if (processSnap.exists()) {
+        await notificarNovaPendencia(processSnap.data(), data.descricao);
+      }
+    } catch (e) {
+      console.warn('Erro ao notificar pendência:', e);
+    }
+
     return pendencyRef.id;
   } catch (error) {
     handleFirestoreError(error, OperationType.CREATE, PENDENCIES_COLLECTION);
@@ -527,6 +553,20 @@ export async function criarProcessoDeIndicacao(
       status_financeiro: 'PENDENTE',
       referral_id: referralId || null
     };
+
+    // Sincronizar dados de segurança
+    try {
+      const { getClienteData } = await import('./leadService');
+      const cliente = await getClienteData(clienteOrigemId);
+      if (cliente) {
+        processData.cliente_cpf_cnpj = cliente.documento || (cliente as any).cpf || '';
+        processData.data_nascimento = cliente.data_nascimento || '';
+        processData.cliente_nome = cliente.nome || '';
+      }
+    } catch (e) {
+      console.warn("Erro ao sincronizar dados na indicação:", e);
+    }
+
     batch.set(processRef, processData);
 
     await batch.commit();
@@ -607,6 +647,16 @@ export async function atualizarStatusProcesso(
 
     await batch.commit();
 
+    // Notificar status
+    try {
+      if (processSnap.exists()) {
+        const processData = { id: processoId, ...processSnap.data() };
+        await notificarStatusProcesso(processData, novoStatus);
+      }
+    } catch (e) {
+      console.warn('Erro ao notificar status:', e);
+    }
+
     // Creditar pontos para o Cliente se o processo foi concluído
     if (novoStatus === 'Concluído') {
       try {
@@ -675,11 +725,28 @@ export async function listarProcessosPorVenda(vendaId: string) {
 
 export async function criarProcessoDireto(data: Partial<OrderProcess>) {
   try {
-    const processRef = await addDoc(collection(db, PROCESSES_COLLECTION), cleanData({
+    const processData: any = {
       ...data,
       status_atual: 'Pendente',
       data_venda: serverTimestamp()
-    }));
+    };
+
+    // Sincronizar dados de segurança do cliente para permitir consulta pública
+    if (data.cliente_id) {
+      try {
+        const { getClienteData } = await import('./leadService');
+        const cliente = await getClienteData(data.cliente_id);
+        if (cliente) {
+          if (!processData.cliente_cpf_cnpj && cliente.documento) processData.cliente_cpf_cnpj = cliente.documento;
+          if (!processData.data_nascimento && cliente.data_nascimento) processData.data_nascimento = cliente.data_nascimento;
+          if (!processData.cliente_nome && cliente.nome) processData.cliente_nome = cliente.nome;
+        }
+      } catch (e) {
+        console.warn("Erro ao sincronizar dados do cliente na criação do processo:", e);
+      }
+    }
+
+    const processRef = await addDoc(collection(db, PROCESSES_COLLECTION), cleanData(processData));
     return processRef.id;
   } catch (error) {
     handleFirestoreError(error, OperationType.CREATE, PROCESSES_COLLECTION);
@@ -687,9 +754,28 @@ export async function criarProcessoDireto(data: Partial<OrderProcess>) {
   }
 }
 
-export async function listarTodosProcessos() {
+export async function listarTodosProcessos(profile?: any) {
   try {
-    const snapshot = await getDocs(collection(db, PROCESSES_COLLECTION));
+    let q = query(collection(db, PROCESSES_COLLECTION), orderBy('data_venda', 'desc'));
+
+    if (profile) {
+      if (profile.nivel === 'GESTOR') {
+        q = query(
+          collection(db, PROCESSES_COLLECTION),
+          or(where('id_superior', '==', profile.uid), where('vendedor_id', '==', profile.uid)),
+          orderBy('data_venda', 'desc')
+        );
+      } else if (profile.nivel === 'VENDEDOR') {
+        q = query(
+          collection(db, PROCESSES_COLLECTION),
+          where('vendedor_id', '==', profile.uid),
+          orderBy('data_venda', 'desc')
+        );
+      }
+      // ADM_MASTER, ADM_GERENTE and ADM_ANALISTA see all
+    }
+
+    const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as OrderProcess) }));
   } catch (error) {
     handleFirestoreError(error, OperationType.LIST, PROCESSES_COLLECTION);
@@ -751,9 +837,29 @@ export async function registrarLogAuditoria(processoId: string, mensagem: string
 
 export async function processarDadosFichaTecnica(processoId: string, clienteId: string, dados: any) {
   try {
-    // 1. Atualizar dados do cliente (usuarios é a coleção principal de perfis)
+    // 1. Atualizar dados do cliente (Pode estar em 'usuarios' ou 'clients')
     const userRef = doc(db, 'usuarios', clienteId);
-    await updateDoc(userRef, dados);
+    const clientRef = doc(db, 'clients', clienteId);
+    
+    // Tenta atualizar em usuários (se for um cliente logado)
+    try {
+      const userSnap = await getDoc(userRef);
+      if (userSnap.exists()) {
+        await updateDoc(userRef, dados);
+      }
+    } catch (e) {
+      console.warn("Não foi possível atualizar em 'usuarios':", e);
+    }
+
+    // Tenta atualizar em clients (CRM)
+    try {
+      const clientSnap = await getDoc(clientRef);
+      if (clientSnap.exists()) {
+        await updateDoc(clientRef, dados);
+      }
+    } catch (e) {
+      console.warn("Não foi possível atualizar em 'clients':", e);
+    }
 
     // 2. Registrar log de auditoria
     await registrarLogAuditoria(
@@ -769,11 +875,25 @@ export async function processarDadosFichaTecnica(processoId: string, clienteId: 
     
     if (processSnap.exists()) {
       const processData = processSnap.data();
-      const updates: any = { ...dados }; // Inclui todos os dados enviados (como cpf, data_nascimento)
+      const updates: any = { ...dados };
       
       // Mapear campos específicos para os nomes usados no processo
       if (dados.cpf) updates.cliente_cpf_cnpj = dados.cpf;
+      if (dados.documento && !updates.cliente_cpf_cnpj) updates.cliente_cpf_cnpj = dados.documento;
       if (dados.data_nascimento) updates.data_nascimento = dados.data_nascimento;
+
+      // Sincronizar dados do cliente se estiverem faltando no processo 
+      // (ajuda em vendas administrativas onde o processo nasce incompleto)
+      try {
+        const { getClienteData } = await import('./leadService');
+        const fullCliente = await getClienteData(clienteId);
+        if (fullCliente) {
+          if (!updates.cliente_cpf_cnpj && fullCliente.documento) updates.cliente_cpf_cnpj = fullCliente.documento;
+          if (!updates.data_nascimento && fullCliente.data_nascimento) updates.data_nascimento = fullCliente.data_nascimento;
+        }
+      } catch (e) {
+        console.warn("Erro ao sincronizar dados extras do cliente:", e);
+      }
 
       const docsEnviados = processData.documentos_enviados || [];
       const requisitosDocs = processData.pendencias_iniciais || [];

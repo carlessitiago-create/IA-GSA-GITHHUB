@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, CheckCircle, Clock, Search, Filter, ChevronRight, User, Calendar, FileText, AlertCircle, X, ExternalLink, ShieldCheck, UserCheck, FileDown, Loader2, FolderOpen, AlertTriangle, XCircle, Trash2 } from 'lucide-react';
+import { Activity, CheckCircle, Clock, Search, Filter, ChevronRight, User, Calendar, FileText, AlertCircle, X, ExternalLink, ShieldCheck, UserCheck, FileDown, Loader2, FolderOpen, AlertTriangle, XCircle, Trash2, Edit3 } from 'lucide-react';
 import { format } from 'date-fns';
 import { listarTodosProcessos, OrderProcess, atualizarStatusProcesso, abrirPendenciaCascata, excluirProcesso } from '../../services/orderService';
 import { auth } from '../../firebase';
@@ -9,9 +9,12 @@ import { getClienteData } from '../../services/leadService';
 import { obterModeloProcesso } from '../../services/modelService';
 import { SmartFicha } from './SmartFicha';
 import Swal from 'sweetalert2';
+import { useAuth } from '../../components/AuthContext';
 import { useRequirements } from '../../hooks/useRequirements';
 
 export const OperationalView: React.FC = () => {
+  const { profile } = useAuth();
+  const isAdm = profile?.nivel?.startsWith('ADM') || profile?.nivel === 'ADM_ANALISTA';
   const { config: requirementsConfig } = useRequirements();
   const [processos, setProcessos] = useState<OrderProcess[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,18 +26,54 @@ export const OperationalView: React.FC = () => {
   const [selectedClient, setSelectedClient] = useState<any>(null);
 
   useEffect(() => {
-    const loadClient = async () => {
+    const loadClientAndSync = async () => {
       if (selectedProcess) {
         const client = await getClienteData(selectedProcess.cliente_id);
         setSelectedClient(client);
+
+        // Auto-reparo de dados de segurança para consulta pública (Sync silencioso)
+        if (client && (!selectedProcess.cliente_cpf_cnpj || !selectedProcess.data_nascimento || !selectedProcess.cliente_nome)) {
+          console.log("Detectados campos de segurança ausentes no processo, sincronizando...");
+          try {
+            const { db } = await import('../../firebase');
+            const { updateDoc, doc: fsDoc } = await import('firebase/firestore');
+            
+            const updates: any = {};
+            // Sincroniza CPF/CNPJ
+            const documento = client.documento || (client as any).cpf;
+            if (!selectedProcess.cliente_cpf_cnpj && documento) {
+              updates.cliente_cpf_cnpj = documento.replace(/\D/g, '');
+            }
+            // Sincroniza Data de Nascimento
+            if (!selectedProcess.data_nascimento && client.data_nascimento) {
+              updates.data_nascimento = client.data_nascimento;
+            }
+            // Sincroniza Nome
+            if (!selectedProcess.cliente_nome && client.nome) {
+              updates.cliente_nome = client.nome;
+            }
+
+            if (Object.keys(updates).length > 0) {
+              await updateDoc(fsDoc(db, 'order_processes', selectedProcess.id!), updates);
+              // Atualiza o estado local para refletir a mudança
+              setSelectedProcess(prev => prev?.id === selectedProcess.id ? { ...prev, ...updates } : prev);
+            }
+          } catch (e) {
+            console.warn("Falha no auto-reparo do processo:", e);
+          }
+        }
       } else {
         setSelectedClient(null);
       }
     };
-    loadClient();
+    loadClientAndSync();
   }, [selectedProcess]);
 
   const handleDownloadPDF = async (processo: OrderProcess) => {
+    if (!isAdm && profile?.nivel !== 'GESTOR' && profile?.nivel !== 'VENDEDOR') {
+      Swal.fire('Acesso Restrito', 'Você não tem permissão para esta ação.', 'error');
+      return;
+    }
     setGeneratingPdf(true);
     try {
       let cliente = await getClienteData(processo.cliente_id);
@@ -73,6 +112,10 @@ export const OperationalView: React.FC = () => {
   };
 
   const handleDeleteProcess = async (processo: OrderProcess) => {
+    if (!isAdm) {
+      Swal.fire('Acesso Restrito', 'Apenas administradores podem excluir processos.', 'error');
+      return;
+    }
     const result = await Swal.fire({
       title: 'Excluir Processo?',
       text: `Tem certeza que deseja excluir o processo #${processo.protocolo} de ${processo.cliente_nome}? Esta ação removerá permanentemente o processo, histórico e pendências.`,
@@ -92,7 +135,7 @@ export const OperationalView: React.FC = () => {
         setSelectedProcess(null);
         
         // Refresh list
-        const data = await listarTodosProcessos();
+        const data = await listarTodosProcessos(profile || undefined);
         setProcessos(data);
       } catch (error) {
         console.error("Erro ao excluir processo:", error);
@@ -104,6 +147,7 @@ export const OperationalView: React.FC = () => {
   };
 
   const handleUpdateStatus = async (processo: OrderProcess, novoStatus: OrderProcess['status_atual']) => {
+    if (!isAdm) return;
     const oldStatus = processo.status_atual;
     
     if (novoStatus === 'Concluído') {
@@ -172,7 +216,7 @@ export const OperationalView: React.FC = () => {
             icon: 'success'
           });
           // Refresh
-          const procs = await listarTodosProcessos();
+          const procs = await listarTodosProcessos(profile || undefined);
           setProcessos(procs);
         } catch (error: any) {
           Swal.fire('Erro', error.message || 'Falha ao concluir processo.', 'error');
@@ -222,7 +266,7 @@ export const OperationalView: React.FC = () => {
             timer: 2500
           });
           // Refresh
-          const procs = await listarTodosProcessos();
+          const procs = await listarTodosProcessos(profile || undefined);
           setProcessos(procs);
         } catch (error: any) {
           Swal.fire('Erro', error.message || 'Falha ao atualizar status.', 'error');
@@ -232,6 +276,10 @@ export const OperationalView: React.FC = () => {
   };
 
   const handleAbrirPendencia = async (processo: OrderProcess) => {
+    if (!isAdm) {
+      Swal.fire('Acesso Restrito', 'Apenas analistas podem reprovar documentos ou abrir pendências.', 'error');
+      return;
+    }
     const { value: descricao } = await Swal.fire({
       title: 'Informar Pendência',
       input: 'textarea',
@@ -292,7 +340,7 @@ export const OperationalView: React.FC = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const procs = await listarTodosProcessos();
+        const procs = await listarTodosProcessos(profile || undefined);
         setProcessos(procs);
       } catch (error) {
         console.error("Erro ao carregar dados operacionais:", error);
@@ -415,7 +463,7 @@ export const OperationalView: React.FC = () => {
             </div>
             <div>
               <h1 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tighter italic leading-none">
-                Fila de Produção
+                { (profile?.nivel === 'GESTOR' || profile?.nivel === 'VENDEDOR') ? 'Meus Processos' : 'Fila de Produção' }
               </h1>
               <p className="text-blue-400 text-[10px] font-black uppercase tracking-[0.2em] mt-2">GSA IA Operational Engine</p>
             </div>
@@ -490,76 +538,88 @@ export const OperationalView: React.FC = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.05, duration: 0.5 }}
-              className={`bg-white rounded-[2rem] md:rounded-[2.5rem] border p-6 md:p-8 shadow-sm flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6 md:gap-8 transition-all hover:shadow-2xl hover:-translate-y-1 group ${
+              className={`bg-white rounded-2xl md:rounded-[2.5rem] border p-4 sm:p-6 md:p-8 shadow-sm flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 sm:gap-6 md:gap-8 transition-all hover:shadow-2xl hover:-translate-y-1 group ${
                 isAtrasado ? 'border-rose-100 bg-rose-50/10' : 'border-slate-100'
               }`}
             >
               {/* Info Cliente e Protocolo */}
-              <div className="space-y-3 min-w-[250px] w-full xl:w-auto">
-                <div className="flex flex-wrap items-center gap-2">
-                  <div className="bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
-                    <span className="text-[8px] md:text-[9px] font-black text-blue-600 uppercase tracking-widest">
+              <div className="space-y-2 sm:space-y-3 min-w-[200px] w-full xl:w-auto">
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                  <div className="bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">
+                    <span className="text-[7px] sm:text-[9px] font-black text-blue-600 uppercase tracking-widest">
                       #{processo.protocolo || processo.id?.slice(-6).toUpperCase()}
                     </span>
                   </div>
                   {isAtrasado && (
-                    <div className="bg-rose-500 px-3 py-1 rounded-full shadow-lg shadow-rose-500/20 animate-pulse">
-                      <span className="text-[7px] md:text-[8px] font-black text-white uppercase tracking-widest">SLA Crítico</span>
+                    <div className="bg-rose-500 px-2.5 py-1 rounded-full shadow-lg shadow-rose-500/20 animate-pulse">
+                      <span className="text-[7px] sm:text-[8px] font-black text-white uppercase tracking-widest">SLA Crítico</span>
                     </div>
                   )}
                   {ready ? (
-                    <div className="bg-emerald-500 px-3 py-1 rounded-full shadow-lg shadow-emerald-500/20">
-                      <span className="text-[7px] md:text-[8px] font-black text-white uppercase tracking-widest">Docs OK</span>
+                    <div className="bg-emerald-500 px-2.5 py-1 rounded-full shadow-lg shadow-emerald-500/20">
+                      <span className="text-[7px] sm:text-[8px] font-black text-white uppercase tracking-widest">Docs OK</span>
                     </div>
                   ) : (
-                    <div className="bg-amber-500 px-3 py-1 rounded-full shadow-lg shadow-amber-500/20">
-                      <span className="text-[7px] md:text-[8px] font-black text-white uppercase tracking-widest">Dados Faltantes</span>
+                    <div className="bg-amber-500 px-2.5 py-1 rounded-full shadow-lg shadow-amber-500/20">
+                      <span className="text-[7px] sm:text-[8px] font-black text-white uppercase tracking-widest">Pendente</span>
                     </div>
                   )}
                 </div>
-                <h3 className="text-xl md:text-2xl font-black text-[#0a0a2e] uppercase italic leading-none group-hover:text-blue-600 transition-colors">{processo.cliente_nome}</h3>
+                <h3 className="text-lg sm:text-xl md:text-2xl font-black text-[#0a0a2e] uppercase italic leading-none group-hover:text-blue-600 transition-colors truncate max-w-full">{processo.cliente_nome}</h3>
                 
                 {/* Alerta de Dados Faltantes Detalhado */}
                 {!ready && (
-                  <div className="flex flex-wrap gap-2 mt-1">
+                  <div className="flex flex-wrap gap-1 md:gap-2 mt-1">
                     {!processo.cliente_cpf_cnpj && (
-                      <span className="text-[7px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 uppercase tracking-tighter">Falta CPF</span>
+                      <span className="text-[6px] sm:text-[7px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 uppercase tracking-tighter">Falta CPF</span>
                     )}
                     {!processo.data_nascimento && (
-                      <span className="text-[7px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 uppercase tracking-tighter">Falta Nascimento</span>
+                      <span className="text-[6px] sm:text-[7px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 uppercase tracking-tighter">Falta Nascimento</span>
                     )}
-                    {processo.dados_faltantes?.map(f => (
-                      <span key={f} className="text-[7px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100 uppercase tracking-tighter">Falta {f}</span>
+                    {processo.dados_faltantes?.slice(0, 3).map(f => (
+                      <span key={f} className="text-[6px] sm:text-[7px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100 uppercase tracking-tighter truncate max-w-[80px]">Falta {f}</span>
                     ))}
+                    {processo.dados_faltantes && processo.dados_faltantes.length > 3 && (
+                      <span className="text-[6px] sm:text-[7px] font-bold text-blue-400 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-50">+{processo.dados_faltantes.length - 3}</span>
+                    )}
                   </div>
                 )}
 
-                <div className="flex items-center gap-2 text-slate-400">
-                  <div className="size-1.5 bg-slate-300 rounded-full" />
-                  <p className="text-[9px] md:text-[10px] font-black uppercase tracking-widest">{processo.servico_nome}</p>
+                <div className="flex items-center gap-2 text-slate-400 overflow-hidden">
+                  <div className="size-1 bg-slate-300 rounded-full shrink-0" />
+                  <p className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest truncate">{processo.servico_nome}</p>
                 </div>
               </div>
 
-              {/* Timeline de Status (Dropdown Master) */}
-              <div className="flex-1 w-full xl:w-auto space-y-3">
-                <p className="text-[8px] md:text-[9px] font-black text-slate-300 uppercase tracking-[0.3em] ml-1">Fluxo Operacional</p>
-                <div className="relative group/select">
-                  <select 
-                    value={processo.status_atual}
-                    onChange={(e) => handleUpdateStatus(processo, e.target.value as any)}
-                    className="w-full xl:w-72 bg-slate-50 border border-slate-100 rounded-2xl text-[10px] md:text-[11px] font-black uppercase tracking-widest text-blue-700 py-4 px-6 focus:ring-4 focus:ring-blue-500/10 cursor-pointer appearance-none transition-all hover:bg-blue-50"
-                  >
-                    <option value="Pendente">1. Pendente</option>
-                    <option value="Em Análise">2. Em Análise</option>
-                    <option value="Protocolado">3. Protocolado</option>
-                    <option value="Em Andamento">4. Em Andamento</option>
-                    <option value="Aguardando Documentação">5. Aguardando Doc.</option>
-                    <option value="Concluído">6. CONCLUIR PROCESSO</option>
-                  </select>
-                  <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-blue-400 group-hover/select:translate-y-[-40%] transition-transform">
-                    <ChevronRight size={18} className="rotate-90" />
+              {/* Timeline de Status (Dropdown Master / View Only for Sales) */}
+              <div className="flex-1 w-full xl:w-auto space-y-2">
+                <p className="text-[7px] sm:text-[8px] md:text-[9px] font-black text-slate-300 uppercase tracking-[0.3em] ml-1">Fluxo Operacional</p>
+                {isAdm ? (
+                  <div className="relative group/select">
+                    <select 
+                      value={processo.status_atual}
+                      onChange={(e) => handleUpdateStatus(processo, e.target.value as any)}
+                      className="w-full xl:w-72 bg-slate-50 border border-slate-100 rounded-xl sm:rounded-2xl text-[9px] sm:text-[11px] font-black uppercase tracking-widest text-[#0a0a2e] py-3.5 sm:py-4 pl-4 sm:pl-6 pr-10 focus:ring-4 focus:ring-blue-500/10 cursor-pointer appearance-none transition-all hover:bg-blue-50"
+                    >
+                      <option value="Pendente">1. Pendente</option>
+                      <option value="Em Análise">2. Em Análise</option>
+                      <option value="Protocolado">3. Protocolado</option>
+                      <option value="Em Andamento">4. Em Andamento</option>
+                      <option value="Aguardando Documentação">5. Aguardando Doc.</option>
+                      <option value="Concluído">6. CONCLUIR PROCESSO</option>
+                    </select>
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-blue-400 group-hover/select:translate-y-[-40%] transition-transform">
+                      <ChevronRight size={16} className="rotate-90" />
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="w-full xl:w-72 bg-[#020617] border border-slate-800 rounded-xl sm:rounded-2xl py-3.5 sm:py-4 px-6 flex items-center justify-between">
+                     <span className="text-[9px] sm:text-[11px] font-black uppercase tracking-widest text-blue-400 italic">
+                        {processo.status_atual}
+                     </span>
+                     <div className="size-1.5 rounded-full bg-blue-500 animate-pulse shadow-[0_0_10px_rgba(59,130,246,0.5)]"></div>
+                  </div>
+                )}
               </div>
 
               {/* Time & Team (Visible only on larger screens) */}
@@ -585,21 +645,25 @@ export const OperationalView: React.FC = () => {
               </div>
 
               {/* Botões de Ação */}
-              <div className="flex gap-3 w-full xl:w-auto">
+              <div className="grid grid-cols-2 xl:flex gap-2 sm:gap-3 w-full xl:w-auto">
                 <button 
                   onClick={() => setSelectedProcess(processo)}
-                  className="flex-1 xl:flex-none bg-slate-50 text-slate-400 hover:bg-[#0a0a2e] hover:text-white size-12 md:size-14 rounded-2xl transition-all shadow-sm flex items-center justify-center border border-slate-100" 
+                  className="bg-slate-50 text-slate-400 hover:bg-[#0a0a2e] hover:text-white h-12 sm:h-14 xl:w-14 rounded-xl sm:rounded-2xl transition-all shadow-sm flex items-center justify-center border border-slate-100 group/btn" 
                   title="Ver Pasta do Cliente"
                 >
-                  <FolderOpen size={20} />
+                  <FolderOpen size={20} className="group-hover/btn:scale-110 transition-transform" />
+                  <span className="ml-2 xl:hidden text-[10px] font-black uppercase tracking-widest">Abrir Pasta</span>
                 </button>
-                <button 
-                  onClick={() => handleAbrirPendencia(processo)}
-                  className="flex-1 xl:flex-none bg-amber-50 text-amber-500 hover:bg-amber-500 hover:text-white size-12 md:size-14 rounded-2xl transition-all shadow-sm flex items-center justify-center border border-amber-100" 
-                  title="Abrir Pendência"
-                >
-                  <AlertTriangle size={20} />
-                </button>
+                {isAdm && (
+                  <button 
+                    onClick={() => handleAbrirPendencia(processo)}
+                    className="bg-rose-50 text-rose-500 hover:bg-rose-600 hover:text-white h-12 sm:h-14 xl:w-14 rounded-xl sm:rounded-2xl transition-all shadow-sm flex items-center justify-center border border-rose-100 group/btn" 
+                    title="Abrir Pendência"
+                  >
+                    <AlertTriangle size={20} className="group-hover/btn:scale-110 transition-transform" />
+                    <span className="ml-2 xl:hidden text-[10px] font-black uppercase tracking-widest">Pendência</span>
+                  </button>
+                )}
               </div>
             </motion.div>
           );
@@ -624,28 +688,28 @@ export const OperationalView: React.FC = () => {
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="bg-white w-full max-w-5xl max-h-[90vh] rounded-[3.5rem] overflow-hidden shadow-2xl flex flex-col relative border border-slate-100"
+              className="bg-white w-full max-w-5xl max-h-[95vh] md:max-h-[90vh] rounded-[2rem] md:rounded-[3.5rem] overflow-hidden shadow-2xl flex flex-col relative border border-slate-100"
             >
               <button 
                 onClick={() => setSelectedProcess(null)}
-                className="absolute top-8 right-8 z-50 size-12 bg-white hover:bg-slate-50 rounded-full flex items-center justify-center text-slate-400 shadow-xl border border-slate-100 transition-all"
+                className="absolute top-4 right-4 md:top-8 md:right-8 z-50 size-10 md:size-12 bg-white hover:bg-slate-50 rounded-full flex items-center justify-center text-slate-400 shadow-xl border border-slate-100 transition-all"
               >
-                <X size={24} />
+                <X size={20} className="md:size-6" />
               </button>
 
-              <div className="p-10 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
-                <div className="flex items-center gap-6">
-                  <div className="size-16 bg-blue-600 rounded-[1.5rem] flex items-center justify-center text-white shadow-2xl shadow-blue-500/20">
-                    <ShieldCheck size={32} />
+              <div className="p-6 md:p-10 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
+                <div className="flex items-center gap-4 md:gap-6">
+                  <div className="size-12 md:size-16 bg-blue-600 rounded-2xl md:rounded-[1.5rem] flex items-center justify-center text-white shadow-2xl shadow-blue-500/20 shrink-0">
+                    <ShieldCheck className="size-6 md:size-8" />
                   </div>
-                  <div>
-                    <h3 className="text-3xl font-black text-[#0a0a2e] uppercase tracking-tighter italic">Auditoria do Processo</h3>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Protocolo: #{selectedProcess.protocolo || selectedProcess.id?.slice(-6).toUpperCase()}</p>
+                  <div className="min-w-0">
+                    <h3 className="text-lg md:text-3xl font-black text-[#0a0a2e] uppercase tracking-tighter italic truncate">Auditoria</h3>
+                    <p className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest truncate">Doc: #{selectedProcess.protocolo || selectedProcess.id?.slice(-6).toUpperCase()}</p>
                   </div>
                 </div>
 
                 {/* Botão de Excluir para ADM_MASTER */}
-                {auth.currentUser?.uid && (
+                {isAdm && (
                   <button 
                     onClick={() => handleDeleteProcess(selectedProcess)}
                     className="mr-16 px-6 py-3 bg-red-50 text-red-600 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all flex items-center gap-2 shadow-sm"
@@ -656,77 +720,192 @@ export const OperationalView: React.FC = () => {
                 )}
               </div>
 
-              <div className="flex-1 overflow-y-auto p-10 space-y-10 custom-scrollbar">
+              <div className="flex-1 overflow-y-auto p-5 md:p-10 space-y-6 md:space-y-10 custom-scrollbar">
                 {/* Cabeçalho do Cliente */}
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
-                  <div className="md:col-span-8 bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100 shadow-inner">
-                    <div className="flex items-center gap-3 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-8">
+                  <div className="md:col-span-8 bg-slate-50 p-6 md:p-8 rounded-3xl md:rounded-[2.5rem] border border-slate-100 shadow-inner">
+                    <div className="flex items-center gap-3 mb-4 md:mb-6">
                       <div className="size-8 bg-white rounded-xl flex items-center justify-center shadow-sm">
                         <UserCheck className="text-blue-600" size={16} />
                       </div>
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Informações do Cliente</span>
+                      <span className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest">Cliente</span>
                     </div>
-                    <h4 className="text-3xl font-black text-[#0a0a2e] uppercase italic mb-4">{selectedProcess.cliente_nome}</h4>
-                    <div className="flex flex-wrap gap-6">
+                    <h4 className="text-xl md:text-3xl font-black text-[#0a0a2e] uppercase italic mb-3 md:mb-4 truncate flex items-center gap-3">
+                      {selectedProcess.cliente_nome}
+                      {isAdm && (
+                        <button 
+                          onClick={async () => {
+                            const { value: novoNome } = await Swal.fire({
+                              title: 'Editar Nome do Cliente',
+                              input: 'text',
+                              inputValue: selectedProcess.cliente_nome,
+                              showCancelButton: true
+                            });
+                            if (novoNome && novoNome !== selectedProcess.cliente_nome) {
+                              const { updateCliente } = await import('../../services/leadService');
+                              const { registrarLogAuditoria } = await import('../../services/orderService');
+                              const { db } = await import('../../firebase');
+                              const { updateDoc, doc: fsDoc } = await import('firebase/firestore');
+                              
+                              await updateCliente(selectedProcess.cliente_id, { nome: novoNome });
+                              await updateDoc(fsDoc(db, 'order_processes', selectedProcess.id!), { cliente_nome: novoNome });
+                              await registrarLogAuditoria(selectedProcess.id!, `Nome do cliente alterado para: ${novoNome}`, profile?.uid || '', profile?.nome_completo || 'Analista');
+                              setSelectedProcess({...selectedProcess, cliente_nome: novoNome});
+                              Swal.fire('Atualizado', 'Nome alterado com sucesso.', 'success');
+                            }
+                          }}
+                          className="p-1 hover:bg-white rounded-lg text-slate-300 hover:text-blue-600 transition-all"
+                        >
+                          <Edit3 size={16} />
+                        </button>
+                      )}
+                    </h4>
+                    <div className="flex flex-wrap gap-4 md:gap-6">
                       <div className="space-y-1">
                         <p className="text-[8px] font-black text-slate-300 uppercase tracking-widest">Documento</p>
-                        <p className="text-sm font-black text-slate-600 uppercase tracking-tight">{selectedProcess.cliente_cpf_cnpj}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs md:text-sm font-black text-slate-600 uppercase tracking-tight">{selectedProcess.cliente_cpf_cnpj || 'N/A'}</p>
+                          {isAdm && (
+                            <button 
+                              onClick={async () => {
+                                const { value: novoDoc } = await Swal.fire({
+                                  title: 'Editar CPF/CNPJ',
+                                  input: 'text',
+                                  inputValue: selectedProcess.cliente_cpf_cnpj,
+                                  showCancelButton: true
+                                });
+                                if (novoDoc !== undefined) {
+                                  const cleanDoc = novoDoc.replace(/\D/g, '');
+                                  const { updateCliente } = await import('../../services/leadService');
+                                  const { registrarLogAuditoria } = await import('../../services/orderService');
+                                  const { db } = await import('../../firebase');
+                                  const { updateDoc, doc: fsDoc } = await import('firebase/firestore');
+                                  
+                                  await updateCliente(selectedProcess.cliente_id, { documento: cleanDoc });
+                                  await updateDoc(fsDoc(db, 'order_processes', selectedProcess.id!), { cliente_cpf_cnpj: cleanDoc });
+                                  await registrarLogAuditoria(selectedProcess.id!, `CPF/CNPJ do cliente alterado para: ${cleanDoc}`, profile?.uid || '', profile?.nome_completo || 'Analista');
+                                  setSelectedProcess({...selectedProcess, cliente_cpf_cnpj: cleanDoc});
+                                  Swal.fire('Atualizado', 'Documento alterado com sucesso.', 'success');
+                                }
+                              }}
+                              className="p-1 hover:bg-white rounded-lg text-slate-300 hover:text-blue-600 transition-all"
+                            >
+                              <Edit3 size={12} />
+                            </button>
+                          )}
+                        </div>
                       </div>
                       <div className="space-y-1">
                         <p className="text-[8px] font-black text-slate-300 uppercase tracking-widest">Nascimento</p>
-                        <p className="text-sm font-black text-slate-600 uppercase tracking-tight">{selectedProcess.data_nascimento}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs md:text-sm font-black text-slate-600 uppercase tracking-tight">{selectedProcess.data_nascimento || 'N/A'}</p>
+                          {isAdm && (
+                            <button 
+                              onClick={async () => {
+                                const { value: novaData } = await Swal.fire({
+                                  title: 'Editar Data de Nascimento',
+                                  input: 'text',
+                                  inputPlaceholder: 'DD/MM/AAAA',
+                                  inputValue: selectedProcess.data_nascimento,
+                                  showCancelButton: true
+                                });
+                                if (novaData !== undefined) {
+                                  const { updateCliente } = await import('../../services/leadService');
+                                  const { registrarLogAuditoria } = await import('../../services/orderService');
+                                  const { db } = await import('../../firebase');
+                                  const { updateDoc, doc: fsDoc } = await import('firebase/firestore');
+                                  
+                                  await updateCliente(selectedProcess.cliente_id, { data_nascimento: novaData });
+                                  await updateDoc(fsDoc(db, 'order_processes', selectedProcess.id!), { data_nascimento: novaData });
+                                  await registrarLogAuditoria(selectedProcess.id!, `Data de nascimento alterada para: ${novaData}`, profile?.uid || '', profile?.nome_completo || 'Analista');
+                                  setSelectedProcess({...selectedProcess, data_nascimento: novaData});
+                                  Swal.fire('Atualizado', 'Data alterada com sucesso.', 'success');
+                                }
+                              }}
+                              className="p-1 hover:bg-white rounded-lg text-slate-300 hover:text-blue-600 transition-all"
+                            >
+                              <Edit3 size={12} />
+                            </button>
+                          )}
+                        </div>
                       </div>
+                      {isAdm && (
+                        <div className="space-y-1">
+                          <p className="text-[8px] font-black text-slate-300 uppercase tracking-widest">WhatsApp</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-xs md:text-sm font-black text-slate-600 uppercase tracking-tight">{selectedClient?.whatsapp || selectedClient?.telefone || 'N/A'}</p>
+                            <button 
+                              onClick={async () => {
+                                const { value: novoTel } = await Swal.fire({
+                                  title: 'Editar WhatsApp do Cliente',
+                                  input: 'text',
+                                  inputValue: selectedClient?.whatsapp || selectedClient?.telefone,
+                                  showCancelButton: true
+                                });
+                                if (novoTel !== undefined) {
+                                  const cleanTel = novoTel.replace(/\D/g, '');
+                                  const { updateCliente } = await import('../../services/leadService');
+                                  await updateCliente(selectedProcess.cliente_id, { whatsapp: cleanTel, telefone: cleanTel });
+                                  setSelectedClient({...selectedClient, whatsapp: cleanTel, telefone: cleanTel});
+                                  Swal.fire('Atualizado', 'WhatsApp alterado com sucesso.', 'success');
+                                }
+                              }}
+                              className="p-1 hover:bg-white rounded-lg text-slate-300 hover:text-blue-600 transition-all"
+                            >
+                              <Edit3 size={12} />
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
-                  <div className="md:col-span-4 bg-[#0a0a2e] p-8 rounded-[2.5rem] text-white flex flex-col justify-center shadow-2xl shadow-blue-900/20">
-                    <span className="text-[9px] font-black text-blue-300 uppercase tracking-widest mb-2">Status Operacional</span>
-                    <h4 className="text-2xl font-black uppercase italic leading-none text-blue-400">{selectedProcess.status_atual}</h4>
-                    <div className="mt-8 pt-6 border-t border-white/10">
-                      <span className="text-[9px] font-black text-blue-300 uppercase tracking-widest mb-2">Vendedor Responsável</span>
-                      <p className="text-sm font-black uppercase tracking-tight">{selectedProcess.vendedor_nome || 'N/A'}</p>
-                    </div>
+                  <div className="md:col-span-4 bg-[#0a0a2e] p-6 md:p-8 rounded-3xl md:rounded-[2.5rem] text-white flex flex-col justify-center shadow-2xl shadow-blue-900/30">
+                    <span className="text-[9px] font-black text-blue-300 uppercase tracking-widest mb-1 md:mb-2">Status</span>
+                    <h4 className="text-xl md:text-2xl font-black uppercase italic leading-none text-blue-400">{selectedProcess.status_atual}</h4>
                   </div>
                 </div>
 
-                {/* Checklist de Documentação */}
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between px-2">
-                    <div className="flex items-center gap-3">
-                      <div className="size-10 bg-slate-50 rounded-xl flex items-center justify-center shadow-sm">
-                        <FileText size={20} className="text-blue-600" />
+                {/* Grid Duplo para Mobile e Desktop */}
+                <div className="flex flex-col xl:flex-row gap-6 md:gap-10 h-auto xl:h-[600px]">
+                  {/* Checklist de Documentação */}
+                  <div className="flex-1 space-y-4 md:space-y-6">
+                    <div className="flex items-center justify-between px-2">
+                      <div className="flex items-center gap-3">
+                        <div className="size-8 md:size-10 bg-slate-50 rounded-xl flex items-center justify-center shadow-sm">
+                          <FileText size={18} className="text-blue-600" />
+                        </div>
+                        <h4 className="text-sm md:text-lg font-black text-[#0a0a2e] uppercase tracking-tighter italic whitespace-nowrap">Documentos</h4>
                       </div>
-                      <h4 className="text-lg font-black text-[#0a0a2e] uppercase tracking-tighter italic">Checklist de Documentos</h4>
+                      <div className="bg-blue-50 px-3 md:px-4 py-1.5 rounded-full border border-blue-100 shrink-0">
+                        <span className="text-[8px] md:text-[10px] font-black text-blue-600 uppercase tracking-widest">
+                          {selectedProcess.documentos_enviados?.length || 0}/{selectedProcess.pendencias_iniciais?.length || 0} OK
+                        </span>
+                      </div>
                     </div>
-                    <div className="bg-blue-50 px-4 py-1.5 rounded-full border border-blue-100">
-                      <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">
-                        {selectedProcess.documentos_enviados?.length || 0} / {selectedProcess.pendencias_iniciais?.length || 0} ENVIADOS
-                      </span>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {selectedProcess.pendencias_iniciais?.map((docKey) => {
-                      const isEnviado = selectedProcess.documentos_enviados?.includes(docKey);
-                      return (
-                        <div 
-                          key={docKey}
-                          className={`flex items-center justify-between p-6 rounded-[1.8rem] border transition-all ${
-                            isEnviado 
-                              ? 'bg-emerald-50 border-emerald-100 shadow-sm' 
-                              : 'bg-slate-50 border-slate-100'
-                          }`}
-                        >
-                          <div className="flex items-center gap-4">
-                            <div className={`size-12 rounded-2xl flex items-center justify-center shadow-sm ${
-                              isEnviado ? 'bg-white text-emerald-500' : 'bg-white text-slate-300'
-                            }`}>
-                              {isEnviado ? <CheckCircle size={20} /> : <Clock size={20} />}
+                    <div className="grid grid-cols-1 gap-3 md:gap-4 overflow-y-visible xl:overflow-y-auto pr-0 xl:pr-4 custom-scrollbar">
+                      {selectedProcess.pendencias_iniciais?.map((docKey) => {
+                        const isEnviado = selectedProcess.documentos_enviados?.includes(docKey);
+                        return (
+                          <div 
+                            key={docKey}
+                            className={`flex items-center justify-between p-4 md:p-6 rounded-2xl md:rounded-[1.8rem] border transition-all ${
+                              isEnviado 
+                                ? 'bg-emerald-50 border-emerald-100 shadow-sm' 
+                                : 'bg-slate-50 border-slate-100'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3 md:gap-4 min-w-0">
+                              <div className={`size-10 md:size-12 rounded-xl md:rounded-2xl flex items-center justify-center shadow-sm shrink-0 ${
+                                isEnviado ? 'bg-white text-emerald-500' : 'bg-white text-slate-300'
+                              }`}>
+                                {isEnviado ? <CheckCircle className="size-5 md:size-6" /> : <Clock className="size-5 md:size-6" />}
+                              </div>
+                              <span className={`text-[10px] md:text-[11px] font-black uppercase tracking-tight truncate ${
+                                isEnviado ? 'text-emerald-700' : 'text-slate-400'
+                              }`}>
+                                {requirementsConfig.document_labels[docKey] || docKey}
+                              </span>
                             </div>
-                            <span className={`text-[11px] font-black uppercase tracking-tight ${
-                              isEnviado ? 'text-emerald-700' : 'text-slate-400'
-                            }`}>
-                              {requirementsConfig.document_labels[docKey] || docKey}
-                            </span>
-                          </div>
                           {isEnviado && (
                             <div className="flex gap-2">
                               <a 
@@ -738,13 +917,15 @@ export const OperationalView: React.FC = () => {
                               >
                                 <ExternalLink size={16} />
                               </a>
-                              <button 
-                                onClick={() => handleAbrirPendencia(selectedProcess)}
-                                className="size-10 bg-white text-rose-600 hover:bg-rose-600 hover:text-white rounded-xl transition-all shadow-sm flex items-center justify-center border border-rose-100"
-                                title="Reprovar / Abrir Pendência"
-                              >
-                                <XCircle size={16} />
-                              </button>
+                              {isAdm && (
+                                <button 
+                                  onClick={() => handleAbrirPendencia(selectedProcess)}
+                                  className="size-10 bg-white text-rose-600 hover:bg-rose-600 hover:text-white rounded-xl transition-all shadow-sm flex items-center justify-center border border-rose-100"
+                                  title="Reprovar / Abrir Pendência"
+                                >
+                                  <XCircle size={16} />
+                                </button>
+                              )}
                             </div>
                           )}
                         </div>
@@ -754,7 +935,7 @@ export const OperationalView: React.FC = () => {
                 </div>
 
                 {/* Dados da Ficha */}
-                <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+                <div className="flex-1 overflow-y-visible xl:overflow-y-auto p-0 xl:p-8 custom-scrollbar">
                   <SmartFicha 
                     processos={[selectedProcess]} 
                     clienteDados={selectedClient || { 
@@ -767,40 +948,43 @@ export const OperationalView: React.FC = () => {
                     }} 
                     onUpdate={async () => {
                       setSelectedProcess(null);
-                      const procs = await listarTodosProcessos();
+                      const procs = await listarTodosProcessos(profile || undefined);
                       setProcessos(procs);
                     }} 
                   />
                 </div>
               </div>
+            </div>
 
-              <div className="p-10 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row justify-end gap-4">
+            <div className="p-6 md:p-10 bg-slate-50/50 border-t border-slate-100 flex flex-wrap justify-center sm:justify-end gap-3 md:gap-4 shrink-0">
                 <button 
                   onClick={() => setSelectedProcess(null)}
-                  className="px-10 py-5 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-[#0a0a2e] transition-all"
+                  className="px-6 md:px-10 py-4 md:py-5 rounded-2xl text-[9px] md:text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-[#0a0a2e] transition-all"
                 >
-                  Fechar Auditoria
+                  Fechar
                 </button>
-                {!isProcessReady(selectedProcess) && (
+                {!isProcessReady(selectedProcess) && isAdm && (
                   <button 
                     onClick={() => handleNotificarPendencias(selectedProcess)}
-                    className="px-10 py-5 bg-amber-50 text-amber-600 border border-amber-100 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-amber-100 shadow-sm transition-all flex items-center justify-center gap-3"
+                    className="px-6 md:px-10 py-4 md:py-5 bg-amber-50 text-amber-600 border border-amber-100 rounded-2xl text-[9px] md:text-[10px] font-black uppercase tracking-widest hover:bg-amber-100 shadow-sm transition-all flex items-center justify-center gap-2"
                   >
-                    <AlertTriangle size={16} />
-                    Cobrar Pendências
+                    <AlertTriangle size={14} />
+                    Cobrar
                   </button>
                 )}
                 <button 
                   onClick={() => handleDownloadPDF(selectedProcess)}
                   disabled={generatingPdf}
-                  className="px-10 py-5 bg-white border border-slate-100 text-[#0a0a2e] rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 shadow-sm transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+                  className="px-6 md:px-10 py-4 md:py-5 bg-white border border-slate-100 text-[#0a0a2e] rounded-2xl text-[9px] md:text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                 >
-                  {generatingPdf ? <Loader2 className="animate-spin" size={16} /> : <FileDown size={16} />}
-                  Baixar Ficha Técnica
+                  {generatingPdf ? <Loader2 className="animate-spin" size={14} /> : <FileDown size={14} />}
+                  Ficha Técnica
                 </button>
-                <button className="px-10 py-5 bg-[#0a0a2e] text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:scale-105 active:scale-95 shadow-2xl shadow-blue-900/30 transition-all">
-                  Gerar Protocolo Final
-                </button>
+                {isAdm && (
+                  <button className="px-6 md:px-10 py-4 md:py-5 bg-[#0a0a2e] text-white rounded-2xl text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] hover:scale-105 active:scale-95 shadow-2xl shadow-blue-900/30 transition-all">
+                    Protocolo Final
+                  </button>
+                )}
               </div>
             </motion.div>
           </div>

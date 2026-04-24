@@ -43,7 +43,7 @@ export const Header: React.FC<HeaderProps> = ({
   selectedClientName
 }) => {
   return (
-    <header className="h-20 bg-white border-b border-slate-200 px-4 md:px-8 flex items-center justify-between sticky top-0 z-30">
+    <header className="h-20 bg-white border-b border-slate-200 px-4 sm:px-6 md:px-8 flex items-center justify-between sticky top-0 z-30">
       
       {/* LADO ESQUERDO: Botão Menu + Título */}
       <div className="flex items-center gap-3">

@@ -1,5 +1,5 @@
 import { jsPDF } from "jspdf";
-import "jspdf-autotable";
+import autoTable from "jspdf-autotable";
 import { FIELD_LABELS, DOCUMENT_LABELS } from "../constants/processRequirements";
 
 export const gerarDocumentoProcesso = (processo: any, cliente: any, modelo: any) => {
@@ -33,13 +33,13 @@ export const gerarDocumentoProcesso = (processo: any, cliente: any, modelo: any)
   if (!camposParaExibir.includes('nome')) dadosTabela.unshift(['NOME', cliente.nome || processo.cliente_nome]);
   if (!camposParaExibir.includes('documento')) dadosTabela.unshift(['CPF/CNPJ', cliente.documento || processo.cliente_cpf_cnpj]);
 
-  (doc as any).autoTable({
+  autoTable(doc, {
     startY: 50,
     head: [['Campo', 'Informação']],
     body: dadosTabela,
     theme: 'striped',
-    headStyles: { fillStyle: corPrimaria, textColor: [255, 255, 255] },
-    alternateRowStyles: { fillStyle: [245, 245, 250] }
+    headStyles: { fillColor: corPrimaria, textColor: [255, 255, 255] },
+    alternateRowStyles: { fillColor: [245, 245, 250] }
   });
 
   // --- CHECKLIST DE DOCUMENTOS ---
@@ -55,12 +55,12 @@ export const gerarDocumentoProcesso = (processo: any, cliente: any, modelo: any)
     docsEnviados.includes(d) ? "CONCLUÍDO" : "PENDENTE"
   ]);
 
-  (doc as any).autoTable({
+  autoTable(doc, {
     startY: finalY + 5,
     head: [['Documento Exigido', 'Status de Entrega']],
     body: docsTabela,
     theme: 'grid',
-    headStyles: { fillStyle: "#10b981", textColor: [255, 255, 255] } // Verde para documentos
+    headStyles: { fillColor: "#10b981", textColor: [255, 255, 255] } // Verde para documentos
   });
 
   // --- RODAPÉ ---

@@ -30,6 +30,8 @@ export const SmartFicha: React.FC<SmartFichaProps> = ({ processos, clienteDados,
   const [loadingReqs, setLoadingReqs] = useState(true);
   const [requestingHelp, setRequestingHelp] = useState(false);
 
+  const processIds = processos.map(p => p.id).join(',');
+
   useEffect(() => {
     const carregarRequisitos = async () => {
       setLoadingReqs(true);
@@ -52,18 +54,20 @@ export const SmartFicha: React.FC<SmartFichaProps> = ({ processos, clienteDados,
               modelo.campos.forEach(c => todosCampos.add(c));
               modelo.documentos.forEach(d => todosDocs.add(d));
             } else {
-              // 3. Tenta buscar na coleção de serviços (Fábrica)
-              const serviceSnap = await getDoc(doc(db, 'services', processo.servico_id));
-              if (serviceSnap.exists()) {
-                const serviceData = serviceSnap.data();
-                if (serviceData.requisitos_campos) serviceData.requisitos_campos.forEach((c: string) => todosCampos.add(c));
-                if (serviceData.requisitos_documentos) serviceData.requisitos_documentos.forEach((d: string) => todosDocs.add(d));
-              } else {
-                // 4. Fallback para estático se não existir no banco
-                const fallback = PROCESS_REQUIREMENTS[processo.servico_id];
-                if (fallback) {
-                  fallback.campos.forEach(c => todosCampos.add(c));
-                  fallback.documentos.forEach(d => todosDocs.add(d));
+              // 3. Tenta buscar na coleção de serviços (Fábrica) se servico_id existir
+              if (processo.servico_id) {
+                const serviceSnap = await getDoc(doc(db, 'services', processo.servico_id));
+                if (serviceSnap.exists()) {
+                  const serviceData = serviceSnap.data();
+                  if (serviceData.requisitos_campos) serviceData.requisitos_campos.forEach((c: string) => todosCampos.add(c));
+                  if (serviceData.requisitos_documentos) serviceData.requisitos_documentos.forEach((d: string) => todosDocs.add(d));
+                } else {
+                  // 4. Fallback para estático se não existir no banco
+                  const fallback = PROCESS_REQUIREMENTS[processo.servico_id];
+                  if (fallback) {
+                    fallback.campos.forEach(c => todosCampos.add(c));
+                    fallback.documentos.forEach(d => todosDocs.add(d));
+                  }
                 }
               }
             }
@@ -84,7 +88,8 @@ export const SmartFicha: React.FC<SmartFichaProps> = ({ processos, clienteDados,
     if (processos.length > 0) {
       carregarRequisitos();
     }
-  }, [processos]);
+  }, [processIds]);
+
 
   const handleFieldChange = (campo: string, valor: string) => {
     setFormData((prev: any) => ({ ...prev, [campo]: valor }));
@@ -259,7 +264,18 @@ export const SmartFicha: React.FC<SmartFichaProps> = ({ processos, clienteDados,
     ...requisitosDinamicos.campos,
     ...(!processos[0]?.cliente_cpf_cnpj ? ['cpf'] : []),
     ...(!processos[0]?.data_nascimento ? ['data_nascimento'] : [])
-  ])).filter(c => !clienteDados[c] || (c === 'cpf' && !processos[0]?.cliente_cpf_cnpj) || (c === 'data_nascimento' && !processos[0]?.data_nascimento));
+  ])).filter(c => {
+    // Se não tem no processo, queremos que apareça (mesmo que tenha no cliente, para forçar o sync se o ADM desejar)
+    const jaTemNoProcesso = 
+      (c === 'cpf' && !!processos[0]?.cliente_cpf_cnpj) || 
+      (c === 'data_nascimento' && !!processos[0]?.data_nascimento) || 
+      (requisitosDinamicos.campos.includes(c) && !processos[0]?.dados_faltantes?.includes(c));
+    
+    // Se o analista/admin está vendo, queremos que ele possa editar se faltar no processo 
+    // ou se ele quiser garantir a consistência
+    return !jaTemNoProcesso;
+  });
+
   const documentosFaltantes = requisitosDinamicos.documentos;
 
   if (loadingReqs) {
@@ -291,11 +307,10 @@ export const SmartFicha: React.FC<SmartFichaProps> = ({ processos, clienteDados,
         <div className="size-10 md:size-12 rounded-xl md:rounded-2xl bg-white flex items-center justify-center shrink-0 shadow-sm">
           <AlertCircle className="text-blue-600 size-5 md:size-6" />
         </div>
-        <div>
-          <h3 className="text-xs md:text-sm font-black text-blue-900 uppercase italic">Formulário de Auto-preenchimento</h3>
-          <p className="text-[10px] md:text-xs font-medium text-blue-700 leading-relaxed">
-            Identificamos que faltam algumas informações para darmos andamento ao seu processo. 
-            Por favor, complete os campos abaixo.
+        <div className="min-w-0">
+          <h3 className="text-[10px] md:text-sm font-black text-blue-900 uppercase italic truncate">Formulário de Auto-preenchimento</h3>
+          <p className="text-[9px] md:text-xs font-medium text-blue-700 leading-relaxed">
+            Identificamos que faltam informações para o processo. Complete os campos abaixo.
           </p>
         </div>
       </div>
@@ -307,10 +322,14 @@ export const SmartFicha: React.FC<SmartFichaProps> = ({ processos, clienteDados,
             <div key={campo} className="space-y-1">
               <label className="text-[8px] md:text-[9px] font-black text-slate-400 uppercase ml-2">{requirementsConfig.field_labels[campo] || campo.replace(/_/g, ' ')}</label>
               <input 
-                className="w-full bg-slate-50 border-none rounded-xl p-2.5 md:p-3 text-xs md:text-sm focus:ring-2 focus:ring-blue-900/10"
+                className="w-full bg-slate-50 border-none rounded-xl p-2.5 md:p-3 text-[10px] md:text-sm focus:ring-2 focus:ring-blue-900/10 placeholder:text-slate-300"
                 placeholder={`Preencher ${requirementsConfig.field_labels[campo] || campo}...`}
                 onChange={(e) => handleFieldChange(campo, e.target.value)}
-                value={formData[campo] !== undefined ? formData[campo] : (clienteDados[campo] || '')}
+                value={formData[campo] !== undefined ? formData[campo] : (
+                  campo === 'cpf' ? (clienteDados.cpf || clienteDados.documento || '') :
+                  campo === 'data_nascimento' ? (clienteDados.data_nascimento || '') :
+                  (clienteDados[campo] || '')
+                )}
               />
             </div>
           ))}
@@ -318,26 +337,28 @@ export const SmartFicha: React.FC<SmartFichaProps> = ({ processos, clienteDados,
       )}
 
       {/* Secção de Documentos */}
-      <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
-        {documentosFaltantes.map(docLabel => (
-          <FileUploader 
-            key={docLabel} 
-            label={requirementsConfig.document_labels[docLabel] || docLabel} 
-            status={clienteDados[docLabel] ? 'resolvido' : 'pendente'}
-            existingUrl={clienteDados[docLabel]}
-            isUploading={uploading === docLabel}
-            onUpload={(file) => handleFileUpload(docLabel, file)}
-          />
-        ))}
-      </div>
+      {documentosFaltantes.length > 0 && (
+        <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+          {documentosFaltantes.map(docLabel => (
+            <FileUploader 
+              key={docLabel} 
+              label={requirementsConfig.document_labels[docLabel] || docLabel} 
+              status={clienteDados[docLabel] ? 'resolvido' : 'pendente'}
+              existingUrl={clienteDados[docLabel]}
+              isUploading={uploading === docLabel}
+              onUpload={(file) => handleFileUpload(docLabel, file)}
+            />
+          ))}
+        </div>
+      )}
 
-      <div className="flex flex-col sm:flex-row gap-3">
+      <div className="flex flex-col sm:flex-row gap-3 pt-4">
         <button 
           onClick={submitFicha}
           disabled={submitting || Object.keys(formData).length === 0}
-          className="flex-1 bg-blue-900 text-white py-3.5 md:py-4 rounded-xl md:rounded-2xl font-black uppercase text-[10px] md:text-xs tracking-widest hover:bg-blue-800 shadow-xl disabled:opacity-50 transition-all"
+          className="flex-1 bg-[#0a0a2e] text-white py-3.5 md:py-4 rounded-xl md:rounded-2xl font-black uppercase text-[10px] md:text-xs tracking-widest hover:bg-slate-800 shadow-xl disabled:opacity-50 transition-all"
         >
-          {submitting ? 'Salvando...' : 'Atualizar Ficha e Resolver Pendências'}
+          {submitting ? 'Salvando...' : 'Salvar Ficha'}
         </button>
         
         <button 
@@ -346,7 +367,7 @@ export const SmartFicha: React.FC<SmartFichaProps> = ({ processos, clienteDados,
           className="px-6 py-3.5 md:py-4 bg-slate-50 text-slate-400 hover:bg-slate-100 rounded-xl md:rounded-2xl font-black uppercase text-[9px] md:text-[10px] tracking-widest transition-all flex items-center justify-center gap-2"
         >
           {requestingHelp ? <RefreshCw className="animate-spin" size={14} /> : <HelpCircle size={14} />}
-          Solicitar Ajuda
+          Ajuda
         </button>
       </div>
     </div>
