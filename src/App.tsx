@@ -106,27 +106,34 @@ const RootRedirect: React.FC = () => {
 
 const App: React.FC = () => {
   const hostname = window.location.hostname.toLowerCase();
-  // Detecta se estamos no subdomínio de diagnóstico (diagnostico.72hrs.online ou variações)
+  
+  // Detect subdomains for routing
   const isConsultaDomain = hostname.startsWith('consulta.');
-  const isSaasDomain = !isConsultaDomain && (
+  const isIndicaDomain = hostname.startsWith('indica.');
+  const isDiagnosticoDomain = hostname.startsWith('diagnostico.');
+  const isAppDomain = hostname.startsWith('app.');
+
+  const isSaasDomain = !isConsultaDomain && !isIndicaDomain && !isDiagnosticoDomain && !isAppDomain && (
                        hostname.includes('diagnostico') || 
                        hostname.includes('diagnóstico') || 
                        hostname.includes('xn--diagnstico') ||
                        hostname.includes('72h.online') ||
                        hostname.includes('72hrs.online') ||
-                       hostname.includes('run.app') || // Adicionado para ambiente de desenvolvimento
-                       hostname.includes('localhost') // Adicionado para ambiente local
+                       hostname.includes('run.app') || 
+                       hostname.includes('localhost')
   );
 
   return (
     <Suspense fallback={<LoadingScreen />}>
       <Routes>
-        {/* Rotas Públicas (Acessíveis sem login) */}
-        {/* Se estiver no domínio do SaaS, a raiz é a Landing Page */}
-        {isSaasDomain && <Route path="/" element={<SaaSLandingPage />} />}
-        
-        {/* Se estiver no domínio de consulta, a raiz é o PublicPortal */}
+        {/* Subdomain Specific Routes */}
         {isConsultaDomain && <Route path="/" element={<PublicPortal />} />}
+        {isIndicaDomain && <Route path="/" element={<ClubeMarketingView />} />}
+        {isDiagnosticoDomain && <Route path="/" element={<SaaSLandingPage />} />}
+        
+        {/* Rotas Públicas */}
+        <Route path="/login" element={<LoginView />} />
+        {isAppDomain && <Route path="/" element={<LoginView />} />}
         
         <Route path="/diagnostico" element={<SaaSLandingPage />} />
         <Route path="/vendas/p/:slug" element={<ProposalLandingPage />} />

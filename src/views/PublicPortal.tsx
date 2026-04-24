@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { formatDate } from '../lib/dateUtils';
 import { motion, AnimatePresence } from 'motion/react';
-import { Search, Gift, CheckCircle2, AlertCircle, ArrowRight, Shield, ShieldCheck, Play, User, Clock, Wallet, Bell, AlertTriangle, Trophy, Star, AlertOctagon, ShieldAlert, Zap, MessageCircle, FileText, Share2, ChevronRight, Info, Calendar } from 'lucide-react';
+import { Search, Gift, CheckCircle2, AlertCircle, ArrowRight, Shield, ShieldCheck, Play, User, Clock, Wallet, Bell, AlertTriangle, Trophy, Star, AlertOctagon, ShieldAlert, Zap, MessageCircle, FileText, Share2, ChevronRight, Info, Calendar, UserPlus } from 'lucide-react';
 import { ClubePromoBanner } from '../components/GSA/ClubePromoBanner';
 import { consultaPublicaProcesso, registrarIndicacaoPublica, listarMinhasIndicacoesPublicas, listarPendenciasPublicas, listarNotificacoesPublicas, registrarNovidadePublica } from '../services/publicService';
 import { SmartFicha } from '../components/GSA/SmartFicha';
@@ -402,19 +402,20 @@ export const PublicPortal = ({ previewConfig }: { previewConfig?: PublicPortalCo
                           required
                         />
                       </div>
-                      <div className="flex flex-col sm:flex-row gap-4">
-                        <input 
-                          placeholder="E-mail (Opcional)" 
-                          className="flex-1 bg-slate-50 border border-slate-200 rounded-2xl p-5 text-sm font-bold focus:ring-4 ring-blue-500/10 outline-none"
-                          value={newsEmail}
-                          onChange={e => setNewsEmail(e.target.value)}
-                        />
+                      <div className="sm:col-span-2 flex flex-col sm:flex-row gap-4">
                         <button 
                           type="submit"
                           disabled={newsLoading}
-                          className="flex-1 bg-[#0a0a2e] text-white py-5 px-8 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-black transition-all shadow-xl disabled:opacity-50"
+                          className="flex-[3] bg-[#0a0a2e] text-white py-5 px-8 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-black transition-all shadow-xl disabled:opacity-50"
                         >
                           {newsLoading ? 'Inscrevendo...' : 'Cadastrar na Lista VIP'}
+                        </button>
+                        <button 
+                          type="button"
+                          onClick={() => window.open('https://chat.whatsapp.com/ExempleGroupGSA', '_blank')}
+                          className="flex-[2] bg-emerald-500 text-white py-5 px-8 rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl hover:bg-emerald-600 transition-all flex items-center justify-center gap-2"
+                        >
+                          <MessageCircle size={18} /> Nossa Comunidade
                         </button>
                       </div>
                     </form>
@@ -581,33 +582,33 @@ export const PublicPortal = ({ previewConfig }: { previewConfig?: PublicPortalCo
                         </button>
                       </div>
                       <div className="space-y-4">
-                        <p className="text-center font-black text-xs uppercase tracking-widest text-blue-300">Ou indique diretamente:</p>
-                        <input 
-                          placeholder="Nome do Amigo" 
-                          className="w-full bg-white/10 border-none rounded-xl p-4 text-sm placeholder:text-white/30 text-white"
-                          value={nomeAmigo}
-                          onChange={e => setNomeAmigo(e.target.value)}
-                        />
-                        <div className="flex gap-2">
+                        <p className="text-center font-black text-xs uppercase tracking-widest text-blue-300">Indicação Premium:</p>
+                        <div className="space-y-3">
                           <input 
-                            placeholder="WhatsApp" 
-                            className="flex-1 bg-white/10 border-none rounded-xl p-4 text-sm placeholder:text-white/30 text-white"
+                            placeholder="Nome do Amigo" 
+                            className="w-full bg-white/10 border border-white/20 rounded-xl p-4 text-sm placeholder:text-white/30 text-white outline-none focus:border-blue-500 transition-all"
+                            value={nomeAmigo}
+                            onChange={e => setNomeAmigo(e.target.value)}
+                          />
+                          <input 
+                            placeholder="WhatsApp do Amigo" 
+                            className="w-full bg-white/10 border border-white/20 rounded-xl p-4 text-sm placeholder:text-white/30 text-white outline-none focus:border-blue-500 transition-all"
                             value={whatsAmigo}
                             onChange={e => setWhatsAmigo(e.target.value)}
                           />
+                          <input 
+                            placeholder="E-mail (Opcional)" 
+                            className="w-full bg-white/10 border border-white/20 rounded-xl p-4 text-sm placeholder:text-white/30 text-white outline-none focus:border-blue-500 transition-all"
+                            value={emailAmigo}
+                            onChange={e => setEmailAmigo(e.target.value)}
+                          />
                           <button 
                             onClick={handleIndicar}
-                            className="bg-yellow-400 text-blue-900 px-6 rounded-xl font-black text-xs uppercase hover:bg-yellow-300 transition-colors"
+                            className="w-full bg-yellow-400 text-blue-900 py-4 rounded-xl font-black text-xs uppercase hover:bg-yellow-300 transition-all shadow-lg shadow-yellow-400/20 flex items-center justify-center gap-2"
                           >
-                            Convidar
+                            <UserPlus size={16} /> Enviar Indicação Premium
                           </button>
                         </div>
-                        <input 
-                          placeholder="E-mail (Opcional)" 
-                          className="w-full bg-white/10 border-none rounded-xl p-4 text-sm placeholder:text-white/30 text-white"
-                          value={emailAmigo}
-                          onChange={e => setEmailAmigo(e.target.value)}
-                        />
                       </div>
                     </div>
                   </div>
