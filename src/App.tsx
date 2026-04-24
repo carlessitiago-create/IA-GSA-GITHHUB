@@ -108,15 +108,12 @@ const App: React.FC = () => {
   const hostname = window.location.hostname.toLowerCase();
   
   // Detect subdomains for routing
-  const isConsultaDomain = hostname.startsWith('consulta.');
-  const isIndicaDomain = hostname.startsWith('indica.');
-  const isDiagnosticoDomain = hostname.startsWith('diagnostico.');
-  const isAppDomain = hostname.startsWith('app.');
+  const isConsultaDomain = hostname.includes('consulta.72hrs.online');
+  const isIndicaDomain = hostname.includes('indica.72hrs.online');
+  const isDiagnosticoDomain = hostname.includes('diagnostico.72hrs.online') || hostname.includes('xn--diagnstico-ybb.72hrs.online');
+  const isAppDomain = hostname.includes('app.72hrs.online');
 
-  const isSaasDomain = !isConsultaDomain && !isIndicaDomain && !isDiagnosticoDomain && !isAppDomain && (
-                       hostname.includes('diagnostico') || 
-                       hostname.includes('diagnóstico') || 
-                       hostname.includes('xn--diagnstico') ||
+  const isSaasHome = !isConsultaDomain && !isIndicaDomain && !isDiagnosticoDomain && !isAppDomain && (
                        hostname.includes('72h.online') ||
                        hostname.includes('72hrs.online') ||
                        hostname.includes('run.app') || 
@@ -130,10 +127,13 @@ const App: React.FC = () => {
         {isConsultaDomain && <Route path="/" element={<PublicPortal />} />}
         {isIndicaDomain && <Route path="/" element={<ClubeMarketingView />} />}
         {isDiagnosticoDomain && <Route path="/" element={<SaaSLandingPage />} />}
+        {isAppDomain && <Route path="/" element={<LoginView />} />}
         
         {/* Rotas Públicas */}
         <Route path="/login" element={<LoginView />} />
-        {isAppDomain && <Route path="/" element={<LoginView />} />}
+        
+        {/* Environment-specific home redirection */}
+        {isSaasHome && <Route path="/" element={<SaaSLandingPage />} />}
         
         <Route path="/diagnostico" element={<SaaSLandingPage />} />
         <Route path="/vendas/p/:slug" element={<ProposalLandingPage />} />

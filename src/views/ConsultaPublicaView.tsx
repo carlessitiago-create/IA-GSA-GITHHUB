@@ -5,7 +5,7 @@ import { Search, FileText, Clock, CheckCircle, AlertCircle, User, Calendar, Exte
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useAuth } from '../components/AuthContext';
-import { getPublicOrigin } from '../lib/urlUtils';
+import { getIndicaOrigin, getConsultaOrigin } from '../lib/urlUtils';
 import { SmartFicha } from '../components/GSA/SmartFicha';
 import { motion, AnimatePresence } from 'motion/react';
 import Swal from 'sweetalert2';
@@ -30,7 +30,7 @@ export function ConsultaPublicaView() {
     .reduce((sum, ind) => sum + (ind.bonus_valor || 0), 0);
 
   const shareViaWhatsApp = () => {
-    const link = `${getPublicOrigin()}?ref=${searchTerm}`;
+    const link = `${getIndicaOrigin()}?ref=${searchTerm}`;
     const text = `Olá! Estou participando do portal GSA e recomendo. Use meu link para conhecer os serviços e ganhar bônus: ${link}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
   };
@@ -120,11 +120,11 @@ export function ConsultaPublicaView() {
             <p className="text-xs text-blue-700 mt-1">Este painel é para uso interno e consulta rápida. Seus clientes devem acessar o portal público oficial pelo link:</p>
             <div className="mt-3 flex items-center gap-3">
               <code className="bg-white px-3 py-1.5 rounded-lg border border-blue-200 text-xs text-blue-600 font-mono">
-                {getPublicOrigin()}
+                {getConsultaOrigin()}
               </code>
               <button 
                 onClick={() => {
-                  navigator.clipboard.writeText(getPublicOrigin());
+                  navigator.clipboard.writeText(getConsultaOrigin());
                   Swal.fire('Copiado!', 'Link encaminhado para a área de transferência.', 'success');
                 }}
                 className="text-[10px] font-black uppercase text-blue-600 hover:underline"
@@ -293,7 +293,7 @@ export function ConsultaPublicaView() {
                         <div className="space-y-4">
                           <button 
                             onClick={() => {
-                              navigator.clipboard.writeText(`${getPublicOrigin()}?ref=${searchTerm}`);
+                              navigator.clipboard.writeText(`${getIndicaOrigin()}?ref=${searchTerm}`);
                               Swal.fire('Link Copiado!', 'Compartilhe com seus amigos!', 'success');
                             }}
                             className="w-full p-6 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-3 hover:bg-blue-500 transition-all shadow-xl hover:shadow-blue-500/20"

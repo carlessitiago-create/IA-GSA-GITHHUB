@@ -10,7 +10,7 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { PublicPortalConfig } from '../services/configService';
 import { formatDocument } from '../utils/validators';
-import { getPublicOrigin } from '../lib/urlUtils';
+import { getIndicaOrigin } from '../lib/urlUtils';
 import Swal from 'sweetalert2';
 import { gerarRelatorioStatus } from '../services/statusPdfService';
 import { ServiceData, listarServicosAtivos } from '../services/serviceFactory';
@@ -162,7 +162,7 @@ export const PublicPortal = ({ previewConfig }: { previewConfig?: PublicPortalCo
   };
 
   const shareViaWhatsApp = () => {
-    const link = `${getPublicOrigin()}?ref=${documento}`;
+    const link = `${getIndicaOrigin()}?ref=${documento}`;
     const text = `Olá! Estou participando do portal GSA e recomendo. Use meu link para conhecer os serviços e ganhar bônus: ${link}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
   };
@@ -567,7 +567,7 @@ export const PublicPortal = ({ previewConfig }: { previewConfig?: PublicPortalCo
                       <div className="space-y-4">
                         <button 
                           onClick={() => {
-                            navigator.clipboard.writeText(`${getPublicOrigin()}?ref=${documento}`);
+                            navigator.clipboard.writeText(`${getIndicaOrigin()}?ref=${documento}`);
                             Swal.fire('Link Copiado!', 'Compartilhe com seus amigos!', 'success');
                           }}
                           className="w-full p-6 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 hover:bg-blue-500 transition-all shadow-xl hover:shadow-blue-500/20"

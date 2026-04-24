@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { getSaasConfig, SaasConfig, updateSaasConfig } from '../../services/configService';
-import { getSaasOrigin } from '../../lib/urlUtils';
+import { getDiagnosticoOrigin } from '../../lib/urlUtils';
 import { Settings, Link, Info, Save, CheckCircle, DollarSign } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -12,7 +12,7 @@ export const AdminSaasSettings: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  const saasUrl = getSaasOrigin();
+  const saasUrl = getDiagnosticoOrigin();
   const displayUrl = saasUrl.replace('https://', '');
 
   useEffect(() => {
