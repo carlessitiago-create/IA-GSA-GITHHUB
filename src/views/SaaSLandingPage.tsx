@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { doc, onSnapshot } from 'firebase/firestore';
 import confetti from 'canvas-confetti';
 import { db } from '../firebase';
@@ -33,6 +33,9 @@ import { motion, AnimatePresence } from 'motion/react';
 
 const SaaSLandingPage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const refCode = searchParams.get('ref');
+  
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState({ nome: '', preco: 0 });
   const [loading, setLoading] = useState(false);
@@ -137,7 +140,7 @@ const SaaSLandingPage: React.FC = () => {
       // 1. Cadastra o Lead
       const novoCliente = await cadastrarCliente({
         ...leadData,
-        especialista_id: "SaaS_GSA_IA"
+        especialista_id: refCode || "SaaS_GSA_IA"
       });
 
       if (!novoCliente || !novoCliente.id) {

@@ -108,10 +108,13 @@ const App: React.FC = () => {
   const hostname = window.location.hostname.toLowerCase();
   
   // Detect subdomains for routing
-  const isConsultaDomain = hostname.includes('consulta.72hrs.online');
-  const isIndicaDomain = hostname.includes('indica.72hrs.online');
-  const isDiagnosticoDomain = hostname.includes('diagnostico.72hrs.online') || hostname.includes('xn--diagnstico-ybb.72hrs.online');
-  const isAppDomain = hostname.includes('app.72hrs.online');
+  const isConsultaDomain = hostname.includes('consulta.72hrs.online') || hostname.includes('consulta.72h.online');
+  const isIndicaDomain = hostname.includes('indica.72hrs.online') || hostname.includes('indica.72h.online');
+  const isDiagnosticoDomain = hostname.includes('diagnostico.72hrs.online') || 
+                               hostname.includes('diagnostico.72h.online') || 
+                               hostname.includes('xn--diagnstico-ybb.72hrs.online') ||
+                               hostname.includes('xn--diagnstico-ybb.72h.online');
+  const isAppDomain = hostname.includes('app.72hrs.online') || hostname.includes('app.72h.online');
 
   const isSaasHome = !isConsultaDomain && !isIndicaDomain && !isDiagnosticoDomain && !isAppDomain && (
                        hostname.includes('72h.online') ||
@@ -125,7 +128,7 @@ const App: React.FC = () => {
       <Routes>
         {/* Subdomain Specific Routes */}
         {isConsultaDomain && <Route path="/" element={<PublicPortal />} />}
-        {isIndicaDomain && <Route path="/" element={<ClubeMarketingView />} />}
+        {isIndicaDomain && <Route path="/" element={<SaaSLandingPage />} />}
         {isDiagnosticoDomain && <Route path="/" element={<SaaSLandingPage />} />}
         {isAppDomain && <Route path="/" element={<LoginView />} />}
         
