@@ -112,9 +112,14 @@ const App: React.FC = () => {
   const isIndicaDomain = hostname.includes('indica.72hrs.online') || hostname.includes('indica.72h.online');
   const isDiagnosticoDomain = hostname.includes('diagnostico.72hrs.online') || 
                                hostname.includes('diagnostico.72h.online') || 
+                               hostname.includes('diagnóstico.72hrs.online') || 
+                               hostname.includes('diagnóstico.72h.online') || 
                                hostname.includes('xn--diagnstico-ybb.72hrs.online') ||
                                hostname.includes('xn--diagnstico-ybb.72h.online');
-  const isAppDomain = hostname.includes('app.72hrs.online') || hostname.includes('app.72h.online');
+  const isAppDomain = hostname.includes('app.72hrs.online') || 
+                      hostname.includes('app.72h.online') ||
+                      hostname.includes('aplicativo.72hrs.online') ||
+                      hostname.includes('aplicativo.72h.online');
 
   const isSaasHome = !isConsultaDomain && !isIndicaDomain && !isDiagnosticoDomain && !isAppDomain && (
                        hostname.includes('72h.online') ||

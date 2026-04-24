@@ -11,7 +11,11 @@ const getBaseDomain = () => {
 
 export const getConsultaOrigin = () => `https://consulta.${getBaseDomain()}`;
 export const getIndicaOrigin = () => `https://indica.${getBaseDomain()}`;
-export const getAppOrigin = () => `https://app.${getBaseDomain()}`;
+export const getAppOrigin = () => {
+  const hostname = window.location.hostname.toLowerCase();
+  const sub = hostname.includes('aplicativo') ? 'aplicativo' : 'app';
+  return `https://${sub}.${getBaseDomain()}`;
+};
 export const getDiagnosticoOrigin = () => `https://diagnostico.${getBaseDomain()}`;
 
 export const getPublicOrigin = () => getConsultaOrigin();
