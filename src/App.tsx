@@ -131,17 +131,18 @@ const App: React.FC = () => {
   return (
     <Suspense fallback={<LoadingScreen />}>
       <Routes>
-        {/* Subdomain Specific Routes */}
-        {isConsultaDomain && <Route path="/" element={<PublicPortal />} />}
-        {isIndicaDomain && <Route path="/" element={<SaaSLandingPage />} />}
-        {isDiagnosticoDomain && <Route path="/" element={<SaaSLandingPage />} />}
-        {isAppDomain && <Route path="/" element={<LoginView />} />}
-        
-        {/* Rotas Públicas */}
-        <Route path="/login" element={<LoginView />} />
+        {/* Combined Root Route based on domains */}
+        <Route path="/" element={
+          isConsultaDomain ? <PublicPortal /> :
+          (isIndicaDomain || isDiagnosticoDomain) ? <SaaSLandingPage /> :
+          isSaasHome ? <SaaSLandingPage /> :
+          <ProtectedRoute><RootRedirect /></ProtectedRoute>
+        } />
         
         {/* Environment-specific home redirection */}
-        {isSaasHome && <Route path="/" element={<SaaSLandingPage />} />}
+        {/* Removed duplicate root routes to prevent conflicts */}
+        
+        <Route path="/login" element={<LoginView />} />
         
         <Route path="/diagnostico" element={<SaaSLandingPage />} />
         <Route path="/vendas/p/:slug" element={<ProposalLandingPage />} />
@@ -153,12 +154,11 @@ const App: React.FC = () => {
 
         {/* Rotas Protegidas (Exigem login e status OK) */}
         <Route element={<ProtectedRoute />}>
-          {/* Redirecionamento Inicial */}
-          <Route path="/" element={<RootRedirect />} />
+          {/* Note: RootRedirect was moved to the combined root path above, but we keep the dashboard routes here */}
           
             {/* Layout Unificado para Dashboard / Gestão / Portal */}
             <Route element={<DashboardLayout />}>
-              <Route path="/" element={<RootRedirect />} />
+              {/* Removed duplicate RootRedirect here */}
               
               {/* Rotas Administrativas Diretas */}
               <Route path="/financeiro" element={<DashboardFinanceiro />} />

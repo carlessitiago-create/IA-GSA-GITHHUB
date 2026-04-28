@@ -336,7 +336,11 @@ export const ProposalLandingPage: React.FC = () => {
               <div className="relative aspect-video rounded-3xl overflow-hidden shadow-2xl bg-slate-900 group border-4 border-white">
                 {showcase.videoId ? (
                   <iframe
-                    src={`https://www.youtube.com/embed/${showcase.videoId}?autoplay=0&rel=0`}
+                    src={`https://www.youtube.com/embed/${(() => {
+                      const id = showcase.videoId;
+                      const match = id.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+                      return match ? match[1] : id;
+                    })()}?autoplay=0&rel=0`}
                     title={showcase.titulo}
                     className="w-full h-full"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"

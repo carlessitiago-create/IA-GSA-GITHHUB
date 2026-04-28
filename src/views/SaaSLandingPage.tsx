@@ -597,7 +597,11 @@ const SaaSLandingPage: React.FC = () => {
           >
             {config?.vsl_youtube_id ? (
               <iframe
-                src={`https://www.youtube.com/embed/${config.vsl_youtube_id}?autoplay=0&rel=0`}
+                src={`https://www.youtube.com/embed/${(() => {
+                  const id = config.vsl_youtube_id;
+                  const match = id.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+                  return match ? match[1] : id;
+                })()}?autoplay=0&rel=0`}
                 title="VSL GSA Diagnóstico"
                 className="w-full h-full"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
