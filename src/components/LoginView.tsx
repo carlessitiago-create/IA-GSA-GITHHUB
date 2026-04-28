@@ -4,9 +4,10 @@ import Swal from "sweetalert2";
 import { ConsultaPublicaView } from "../views/ConsultaPublicaView";
 import { Search, X, Shield, Mail, Lock, User, CreditCard, Calendar, Phone, ArrowLeft } from "lucide-react";
 import { motion, AnimatePresence } from 'motion/react';
+import { useNavigate } from 'react-router-dom';
 
 const LoginView: React.FC = () => {
-  const { login, loginWithEmail, registerWithEmail, forgotPassword } = useAuth();
+  const { user, login, loginWithEmail, registerWithEmail, forgotPassword } = useAuth();
   const [isRegistering, setIsRegistering] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -16,6 +17,26 @@ const LoginView: React.FC = () => {
   const [telefone, setTelefone] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPublicSearch, setShowPublicSearch] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Redireciona se for domínio público para evitar tela de login indevida
+    const hostname = window.location.hostname.toLowerCase();
+    const isPublicDomain = hostname.includes('consulta.72h') || 
+                           hostname.includes('indica.72h') || 
+                           hostname.includes('diagnostico.72h') ||
+                           hostname.includes('diagnóstico.72h') ||
+                           hostname.includes('xn--diagnstico-ybb.72h');
+    if (isPublicDomain) {
+      navigate('/', { replace: true });
+      return;
+    }
+
+    // Se já estiver logado, redireciona para a home
+    if (user) {
+      navigate('/', { replace: true });
+    }
+  }, [navigate, user]);
 
   // Lógica para Login ou Registro
   const handleSubmit = async (e: React.FormEvent) => {

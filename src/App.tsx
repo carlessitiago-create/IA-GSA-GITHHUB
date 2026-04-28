@@ -42,26 +42,19 @@ const VendaEmMassaView = lazy(() => import("./views/VendaEmMassaView").then(m =>
 import { PendingApproval, AccountRefused, AccountSuspended, CompleteProfile } from "./components/Auth";
 
 // 1. Componente ProtectedRoute para lidar com a verificação de status
-const ProtectedRoute: React.FC = () => {
+const ProtectedRoute: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const { user, profile, loading, logout } = useAuth();
 
   if (loading) {
     return <LoadingScreen />;
   }
 
-  // Se estiver no domínio do SaaS e na raiz, não exige login aqui (será tratado nas rotas)
-  // Mas se tentar acessar uma rota interna, o login ainda é necessário
-  
-  // Se não estiver logado, redireciona para login (ou renderiza LoginView)
+  // Se não estiver logado, redireciona para login explicitamente
   if (!user) {
-    return (
-      <Suspense fallback={<LoadingScreen />}>
-        <LoginView />
-      </Suspense>
-    );
+    return <Navigate to="/login" replace />;
   }
 
-  // Se o usuário está logado mas o perfil ainda não carregou (e não estamos em loading global)
+  // Se o usuário está logado mas o perfil ainda não carregou
   if (user && !profile) {
     return <LoadingScreen />;
   }
@@ -84,8 +77,8 @@ const ProtectedRoute: React.FC = () => {
     return <AccountSuspended status="SUSPENSO" onLogout={logout} />;
   }
 
-  // Se tudo estiver OK, renderiza as rotas filhas via Outlet
-  return <Outlet />;
+  // Se tudo estiver OK, renderiza children se fornecido, ou as rotas filhas via Outlet
+  return children ? <>{children}</> : <Outlet />;
 };
 
 // 2. Componente de Redirecionamento Inicial baseado no nível do usuário

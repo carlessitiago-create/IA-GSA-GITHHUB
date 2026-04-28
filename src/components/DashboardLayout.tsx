@@ -6,7 +6,7 @@ import { useAuth } from './AuthContext';
 import { LoadingScreen } from './LoadingScreen';
 import { collection, query, where, onSnapshot, orderBy, getDocs, updateDoc, doc, or } from 'firebase/firestore';
 import { db } from '../firebase';
-import { confirmarTransacao, marcarFaturaVencida } from '../services/financialService';
+import { confirmarTransacao, marcarFaturaVencida, atualizarInfosFatura } from '../services/financialService';
 import { sendNotification, AppNotification, markAsRead, listenToNotifications, playNotificationSound } from '../services/notificationService';
 import { listarTodosUsuarios } from '../services/userService';
 import Swal from 'sweetalert2';
@@ -301,6 +301,7 @@ export const DashboardLayout: React.FC = () => {
     setTransactionReceipt,
     currentProfile: profile,
     marcarFaturaVencida,
+    atualizarInfosFatura,
     totalPending,
     totalOpenInvoices,
     processes,

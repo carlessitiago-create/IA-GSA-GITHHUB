@@ -763,3 +763,53 @@ export async function marcarFaturaVencida(vendaId: string, diasAtraso: number) {
     throw error;
   }
 }
+
+/**
+ * Atualiza o status de uma fatura e registra o motivo e dias de atraso se aplicável.
+ */
+export async function atualizarInfosFatura(vendaId: string, novoStatus: string, motivo: string, diasAtraso: number = 0) {
+  try {
+    const saleRef = doc(db, 'sales', vendaId);
+    const saleSnap = await getDoc(saleRef);
+    if (!saleSnap.exists()) throw new Error('Venda não encontrada');
+    const saleData = saleSnap.data();
+
+    // 1. Atualiza a venda
+    await updateDoc(saleRef, {
+      status_pagamento: novoStatus,
+      fatura_motivo: motivo,
+      dias_atraso: diasAtraso,
+      ultima_atualizacao: serverTimestamp()
+    });
+
+    if (novoStatus === 'Vencida') {
+      // Notifica o Cliente
+      await sendNotification({
+        usuario_id: saleData.cliente_id,
+        titulo: "⚠️ Alerta de Pagamento Pendente",
+        mensagem: `Atenção: A fatura do serviço ${saleData.servico_nome} está vencida. Motivo do nosso financeiro: ${motivo}`,
+        tipo: 'FINANCIAL'
+      });
+      // Notifica o Vendedor
+      if (saleData.vendedor_id) {
+        await sendNotification({
+          usuario_id: saleData.vendedor_id,
+          titulo: "🚨 Fatura Vencida (Alerta de Inadimplência)",
+          mensagem: `A fatura do cliente ${saleData.cliente_nome} foi marcada como Vencida pelo financeiro. Motivo: ${motivo}`,
+          tipo: 'FINANCIAL'
+        });
+      }
+    } else if (novoStatus === 'Paga') {
+      await sendNotification({
+        usuario_id: saleData.cliente_id,
+        titulo: "✅ Pagamento Confirmado",
+        mensagem: `Agradecemos, a fatura do serviço ${saleData.servico_nome} foi confirmada.`,
+        tipo: 'FINANCIAL'
+      });
+    }
+
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, 'sales');
+    throw error;
+  }
+}
