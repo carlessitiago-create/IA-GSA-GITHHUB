@@ -1,0 +1,340 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data;
+    }
+
+    function getRole() {
+      return exists(/databases/$(database)/documents/usuarios/$(request.auth.uid)) 
+        ? get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.nivel 
+        : 'GUEST';
+    }
+
+    function isVisible(data) {
+      return isAuthenticated() && data.get('visibilidade_uids', []).hasAny([request.auth.uid]);
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        (request.auth.token.email in ["carlessitiago@gmail.com", "nomelimpo.gsa@gmail.com", "atende.gsa@gmail.com"]) ||
+        getRole() in ['ADM_MASTER', 'ADM_GERENTE', 'ADM_ANALISTA']
+      );
+    }
+
+    function isMaster() {
+      return isAuthenticated() && (
+        (request.auth.token.email == "carlessitiago@gmail.com") ||
+        getRole() == 'ADM_MASTER'
+      );
+    }
+
+    function isGerente() {
+      return isAuthenticated() && getRole() == 'ADM_GERENTE';
+    }
+
+    function isAnalista() {
+      return isAuthenticated() && getRole() == 'ADM_ANALISTA';
+    }
+
+    function isGestor() {
+      return isAuthenticated() && getRole() == 'GESTOR';
+    }
+
+    function isVendedor() {
+      return isAuthenticated() && getRole() == 'VENDEDOR';
+    }
+
+    function isCliente() {
+      return isAuthenticated() && getRole() == 'CLIENTE';
+    }
+
+    function isDocGestor(data) {
+      return isGestor() && (request.auth.uid == data.id_superior || request.auth.uid == data.gestor_id || request.auth.uid == data.managerId);
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    // Usuarios
+    match /usuarios/{userId} {
+      allow read: if isAuthenticated() || (resource.data.data_nascimento != null && (resource.data.documento != null || resource.data.cpf != null));
+      // Admins can create anything; Users can create themselves; Sellers/Hierarchy can create their clients.
+      allow create: if isAuthenticated() && (isAdmin() || isOwner(userId) || (request.resource.data.nivel == 'CLIENTE' && request.resource.data.id_superior == request.auth.uid));
+      allow update: if isAuthenticated() && (isAdmin() || isOwner(userId) || (request.resource.data.nivel == 'CLIENTE' && request.resource.data.id_superior == request.auth.uid));
+      allow delete: if isMaster();
+    }
+
+    // Platform Config (Configurações Globais e Portal Público)
+    match /platform_config/{configId} {
+      allow read: if true; // Público para o portal de consulta
+      allow write: if isMaster();
+    }
+
+    // Status History (Histórico de Status de Processos)
+    match /status_history/{historyId} {
+      allow read: if isAuthenticated() && (isAdmin() || isVisible(resource.data));
+      allow write: if isAdmin();
+    }
+
+    // Leads (Indicações de Vendas)
+    match /leads/{leadId} {
+      allow read: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor());
+      allow create: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor());
+      allow update: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor());
+      allow delete: if isMaster();
+    }
+
+    // Blocked Numbers (Blacklist)
+    match /blocked_numbers/{numberId} {
+      allow read: if isAuthenticated() && isAdmin();
+      allow write: if isAdmin();
+    }
+
+    // Conflict Logs (Radar de Conflitos)
+    match /conflict_logs/{logId} {
+      allow read: if isAuthenticated() && isAdmin();
+      allow write: if isAuthenticated(); // Permitir escrita automática ao detectar conflito
+    }
+
+    // Pendency Audit Logs (Logs de Interação em Pendências)
+    match /pendency_audit_logs/{logId} {
+      allow read: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor() || isCliente());
+      allow write: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor() || isCliente());
+    }
+
+    // Proposals (Propostas Comerciais)
+    match /proposals/{proposalId} {
+      allow read: if true; // Público para visualização de propostas via link
+      allow create: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor());
+      allow update: if (isAuthenticated() && (isAdmin() || isGestor() || isVendedor())) || 
+                    (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['visualizacoes'])) ||
+                    (resource.data.status == 'ABERTA' && request.resource.data.status in ['ACEITA', 'PAGA'] && 
+                     request.resource.data.diff(resource.data).affectedKeys().hasAny(['status', 'lead_cpf', 'lead_whatsapp', 'updatedAt', 'lead_nome']));
+      allow delete: if isMaster();
+    }
+
+    // Reward Requests (Resgates do Clube)
+    match /reward_requests/{requestId} {
+      allow read: if isAuthenticated() && (isAdmin() || isOwner(resource.data.userId));
+      allow create: if isAuthenticated();
+      allow update: if isAdmin();
+      allow delete: if isMaster();
+    }
+
+    // Points History / Transactions
+    match /points_history/{historyId} {
+      allow read: if isAuthenticated() && (isAdmin() || isOwner(resource.data.userId));
+      allow write: if isAdmin();
+    }
+    match /point_transactions/{transId} {
+      allow read: if isAuthenticated() && (isAdmin() || isOwner(resource.data.userId));
+      allow write: if isAdmin();
+    }
+
+    // Club Rules & Rewards
+    match /club_rules/{ruleId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /club_rewards/{rewardId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Process Models
+    match /process_models/{modelId} {
+      allow read: if isAuthenticated() && isAdmin();
+      allow write: if isAdmin();
+    }
+
+    // Servicos (Fábrica de Serviços)
+    match /services/{serviceId} {
+      allow read: if true; // Público para vitrine e propostas
+      allow write: if isAdmin();
+    }
+
+    // Clients (Clientes e Trava de Carteira)
+    match /clients/{clientId} {
+      allow read: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor() || isOwner(resource.data.especialista_id) || isVisible(resource.data))
+                  || (resource.data.data_nascimento != null && (resource.data.documento != null || resource.data.cpf != null));
+      allow create: if (isAuthenticated() && (isAdmin() || isGestor() || isVendedor())) || 
+                    (request.resource.data.especialista_id == "SaaS_GSA_IA");
+      allow update: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor() || isOwner(resource.data.especialista_id) || isVisible(resource.data));
+      allow delete: if isMaster();
+    }
+
+    // Documento Locks (Trava de CPF/CNPJ)
+    match /documento_locks/{docId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor());
+      allow update, delete: if isMaster();
+    }
+
+    // Order Process
+    match /order_processes/{processId} {
+      allow read: if (isAuthenticated() && (
+        isAdmin() || 
+        isVisible(resource.data) ||
+        isDocGestor(resource.data) || 
+        isOwner(resource.data.vendedor_id) || 
+        isOwner(resource.data.vendedorId) || 
+        isOwner(resource.data.cliente_id) ||
+        isOwner(resource.data.clienteId)
+      )) || (
+        resource.data.data_nascimento != null && (resource.data.protocolo != null || resource.data.cliente_cpf_cnpj != null)
+      );
+      allow create: if (isAuthenticated() && (isAdmin() || isGestor() || isVendedor())) || 
+                    (request.resource.data.origem == 'PROPOSTA_PUBLICA');
+      allow update: if isAuthenticated() && (
+        isAdmin() || 
+        isDocGestor(resource.data) || 
+        isOwner(resource.data.vendedor_id) || 
+        isOwner(resource.data.vendedorId)
+      );
+      allow delete: if isMaster();
+    }
+
+    // Pendencias (Workflow de Pendências)
+    match /pendencies/{pendId} {
+      allow read: if (isAuthenticated() && (
+        isAdmin() || 
+        isDocGestor(resource.data) || 
+        isOwner(resource.data.vendedor_id) || 
+        isOwner(resource.data.vendedorId) || 
+        isOwner(resource.data.cliente_id) ||
+        isOwner(resource.data.clienteId)
+      )) || (resource.data.cliente_id != null || resource.data.processo_id != null);
+      allow create: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor());
+      allow update: if isAuthenticated() && (
+        isAdmin() || 
+        isDocGestor(resource.data) || 
+        isOwner(resource.data.vendedor_id) || 
+        isOwner(resource.data.vendedorId) || 
+        isCliente()
+      );
+      allow delete: if isMaster();
+    }
+
+    // Wallets (Financeiro)
+    match /wallets/{walletId} {
+      allow read: if isAuthenticated() && (isAdmin() || isDocGestor(resource.data) || isOwner(resource.data.cliente_id) || isOwner(resource.data.userId));
+      allow write: if isAdmin();
+    }
+
+    // Financial Transactions
+    match /financial_transactions/{transId} {
+      allow read: if isAuthenticated() && (
+        isAdmin() || 
+        isDocGestor(resource.data) || 
+        isOwner(resource.data.vendedor_id) || 
+        isOwner(resource.data.vendedorId) || 
+        isOwner(resource.data.cliente_id) ||
+        isOwner(resource.data.clienteId)
+      );
+      allow create: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor());
+      allow update, delete: if isMaster();
+    }
+
+    // Sales
+    match /sales/{saleId} {
+      allow read: if isAuthenticated() && (
+        isAdmin() || 
+        isDocGestor(resource.data) || 
+        isOwner(resource.data.vendedor_id) || 
+        isOwner(resource.data.vendedorId) || 
+        isOwner(resource.data.cliente_id) ||
+        isOwner(resource.data.clienteId)
+      );
+      allow create: if (isAuthenticated() && (isAdmin() || isGestor() || isVendedor())) ||
+                    (request.resource.data.origem == 'SAAS_LANDING_PAGE');
+      allow update: if isAuthenticated() && (
+        isAdmin() || 
+        isDocGestor(resource.data) || 
+        isOwner(resource.data.vendedor_id) || 
+        isOwner(resource.data.vendedorId)
+      );
+      allow delete: if isMaster();
+    }
+
+    // Bulk Sales Batches (Lotes de Venda em Massa)
+    match /bulk_sales_batches/{batchId} {
+      allow read: if isAuthenticated() && (
+        isAdmin() || 
+        isGestor() || 
+        isOwner(resource.data.vendedor_id)
+      );
+      allow create: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor());
+      allow update: if isAuthenticated() && (isAdmin() || isGestor() || isOwner(resource.data.vendedor_id));
+      allow delete: if isMaster();
+    }
+
+    // Notifications
+    match /notifications/{notifId} {
+      allow read: if (isAuthenticated() && (isOwner(resource.data.usuario_id) || isVisible(resource.data) || (resource.data.targetRole != null && getRole() == resource.data.targetRole)))
+                  || (resource.data.usuario_id != null);
+      allow create: if true; // Permitir criação pública para notificações de aceite de proposta
+      allow update: if isAuthenticated() && (isOwner(resource.data.usuario_id) || isVisible(resource.data));
+      allow delete: if isAuthenticated() && (isOwner(resource.data.usuario_id) || isVisible(resource.data));
+    }
+
+    // Referrals (Indicações)
+    match /referrals/{refId} {
+      allow read: if (isAuthenticated() && (isAdmin() || isDocGestor(resource.data) || isOwner(resource.data.cliente_origem_id) || isOwner(resource.data.vendedor_id)))
+                  || (resource.data.cliente_origem_id != null);
+      allow create: if true; // Permitir criação pública (necessário para indicações via vitrine)
+      allow update: if isAuthenticated() && (isAdmin() || isDocGestor(resource.data) || isOwner(resource.data.vendedor_id));
+      allow delete: if isMaster();
+    }
+
+    // Showcase Services (Vitrine)
+    match /showcase_services/{serviceId} {
+      allow read: if true; // Público para vitrine
+      allow write: if isAdmin();
+    }
+
+    // Showcase Leads (Pedidos de Orçamento da Vitrine)
+    match /showcase_leads/{leadId} {
+      allow read: if isAuthenticated() && (isAdmin() || isDocGestor(resource.data) || isOwner(resource.data.cliente_id) || isOwner(resource.data.vendedor_id));
+      allow create: if true; // Permitir criação pública para leads da vitrine
+      allow update: if isAuthenticated() && (isAdmin() || isDocGestor(resource.data) || isOwner(resource.data.vendedor_id) || isOwner(resource.data.cliente_id));
+      allow delete: if isMaster();
+    }
+
+    // Tickets & Messages
+    match /tickets/{ticketId} {
+      allow read: if isAuthenticated() && (isAdmin() || isDocGestor(resource.data) || isOwner(resource.data.clientId) || isOwner(resource.data.sellerId));
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && (isAdmin() || isDocGestor(resource.data) || isOwner(resource.data.clientId) || isOwner(resource.data.sellerId));
+      allow delete: if isMaster();
+
+      match /messages/{msgId} {
+        allow read: if isAuthenticated() && (isAdmin() || isDocGestor(get(/databases/$(database)/documents/tickets/$(ticketId)).data) || isOwner(get(/databases/$(database)/documents/tickets/$(ticketId)).data.clientId) || isOwner(get(/databases/$(database)/documents/tickets/$(ticketId)).data.sellerId));
+        allow create: if isAuthenticated();
+      }
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if isMaster();
+    }
+  }
+}

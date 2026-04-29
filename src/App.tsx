@@ -154,7 +154,7 @@ const App: React.FC = () => {
     <Suspense fallback={<LoadingScreen />}>
       {/* Roteador Debug Banner - TOP FORCE */}
       <div className="fixed top-0 left-0 w-full bg-red-600 text-white text-[10px] py-1 text-center font-bold z-[10000] pointer-events-none uppercase">
-        Versão Ativa: {new Date().toISOString()} | Host: {hostname} | Diag: {isDiagnosticoDomain ? 'SIM' : 'NÃO'}
+        Versão Ativa: 2026-04-29 17:00 | Host: {hostname} | Diag: {isDiagnosticoDomain ? 'SIM' : 'NÃO'}
       </div>
       {/* Roteador Debug Banner - BOTTOM */}
       <div className="fixed bottom-0 left-0 bg-black/80 text-[8px] text-white p-1 z-[9999] pointer-events-none font-mono">

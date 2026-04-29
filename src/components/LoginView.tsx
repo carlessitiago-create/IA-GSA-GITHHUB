@@ -47,19 +47,21 @@ const LoginView: React.FC = () => {
       }
     } catch (error: any) {
       console.error("Erro na autenticação:", error);
-      let mensagem = error.message || "Ocorreu um erro inesperado.";
+      let mensagem = `Erro (${error.code || 'Desconhecido'}): Ocorreu um erro inesperado.`;
       
-      // Tradução de erros comuns do Firebase se não vierem formatados do Context
+      // Tradução de erros comuns do Firebase
       if (error.code === "auth/user-not-found" || error.code === "auth/invalid-credential") {
-        mensagem = "E-mail ou senha incorretos.";
+        mensagem = "E-mail ou senha incorretos. Verifique seus dados e tente novamente.";
       } else if (error.code === "auth/wrong-password") {
-        mensagem = "Senha incorreta.";
+        mensagem = "Senha incorreta. Se esqueceu sua senha, use o link de recuperação.";
       } else if (error.code === "auth/email-already-in-use") {
-        mensagem = "Este e-mail já está em uso por outro usuário.";
+        mensagem = "Este e-mail já está em uso por outro usuário. Tente fazer login ou use outro e-mail.";
       } else if (error.code === "auth/weak-password") {
         mensagem = "A senha deve ter pelo menos 6 caracteres.";
       } else if (error.code === "auth/network-request-failed") {
-        mensagem = "Falha na conexão com os servidores. Verifique sua internet ou tente abrir o app em uma nova aba.";
+        mensagem = "Falha na conexão com os servidores. Verifique sua internet ou tente abrir o app em uma nova aba fora do Instagram/WhatsApp.";
+      } else if (error.code === "auth/too-many-requests") {
+        mensagem = "Muitas tentativas de login bloqueadas temporariamente por segurança. Tente novamente em alguns minutos.";
       }
 
       Swal.fire({
@@ -67,13 +69,7 @@ const LoginView: React.FC = () => {
         title: isRegistering ? "Erro no Cadastro" : "Erro no Acesso",
         text: mensagem,
         confirmButtonColor: "#0a0a2e",
-        footer: error.code === "auth/network-request-failed" ? `
-          <div class="text-center">
-            <button onclick="window.open(window.location.href, '_blank')" class="bg-blue-600 text-white text-[10px] py-2 px-4 rounded-lg font-bold shadow-sm">
-              ABRIR EM NOVA ABA
-            </button>
-          </div>
-        ` : null
+        footer: '<p class="text-[10px] text-slate-400">Dica: Tente abrir o endereço no Chrome ou Safari se estiver no celular.</p>'
       });
     } finally {
       setLoading(false);
@@ -214,7 +210,7 @@ const LoginView: React.FC = () => {
           <div className="size-16 bg-[#0a0a2e] rounded-2xl flex items-center justify-center shadow-xl mb-4">
             <Shield className="text-white w-8 h-8" />
           </div>
-          <h1 className="text-3xl font-black text-slate-800 tracking-tighter italic">GSA Diagnóstico (LOGIN_VIEW_JSX)</h1>
+          <h1 className="text-3xl font-black text-slate-800 tracking-tighter italic">GSA Diagnóstico</h1>
           <p className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.3em] mt-2">
             {isRegistering ? 'Criação de Conta Segura' : 'Gestão e Processos'}
           </p>
