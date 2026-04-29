@@ -7,6 +7,23 @@
   </head>
   <body class="bg-slate-900">
     <div id="root"></div>
+    <script>
+      // Force unregister all service workers and clear cache to fix routing issues
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+          for(var registration of registrations) {
+            registration.unregister();
+            console.log('SW Unregistered via index.html');
+          }
+        });
+      }
+      // Optional: Clear cache
+      if ('caches' in window) {
+        caches.keys().then(function(names) {
+          for (var name of names) caches.delete(name);
+        });
+      }
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
