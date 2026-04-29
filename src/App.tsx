@@ -39,141 +39,82 @@ const ClientWalletView = lazy(() => import("./components/GSA/ClientWalletView").
 const TabelaCustasView = lazy(() => import("./views/TabelaCustasView").then(m => ({ default: m.TabelaCustasView })));
 const VendaEmMassaView = lazy(() => import("./views/VendaEmMassaView").then(m => ({ default: m.VendaEmMassaView })));
 
-// Auth Components (Keeping them non-lazy for now as they are small and critical)
+// Auth Components
 import { PendingApproval, AccountRefused, AccountSuspended, CompleteProfile } from "./components/Auth";
 
-// 1. Componente ProtectedRoute para lidar com a verificação de status
+// 1. Guardião das Rotas Privadas
 const ProtectedRoute: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const { user, profile, loading, logout } = useAuth();
 
-  if (loading) {
-    return <LoadingScreen />;
-  }
+  if (loading) return <LoadingScreen />;
+  if (!user) return <Navigate to="/login" replace />;
+  if (user && !profile) return <LoadingScreen />;
+  if (profile && !profile.cpf) return <CompleteProfile profile={profile} />;
 
-  // Se não estiver logado, redireciona para login explicitamente
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
+  if (profile?.status_conta === 'PENDENTE') return <PendingApproval profile={profile} onLogout={logout} />;
+  if (profile?.status_conta === 'RECUSADO') return <AccountRefused onLogout={logout} />;
+  if (profile?.status_conta === 'SUSPENSO') return <AccountSuspended status="SUSPENSO" onLogout={logout} />;
 
-  // Se o usuário está logado mas o perfil ainda não carregou
-  if (user && !profile) {
-    return <LoadingScreen />;
-  }
-
-  // Se o perfil não existe ou está incompleto (sem CPF), força completar perfil
-  if (profile && !profile.cpf) {
-    return <CompleteProfile profile={profile} />;
-  }
-
-  // Verificação de Status da Conta
-  if (profile?.status_conta === 'PENDENTE') {
-    return <PendingApproval profile={profile} onLogout={logout} />;
-  }
-
-  if (profile?.status_conta === 'RECUSADO') {
-    return <AccountRefused onLogout={logout} />;
-  }
-
-  if (profile?.status_conta === 'SUSPENSO') {
-    return <AccountSuspended status="SUSPENSO" onLogout={logout} />;
-  }
-
-  // Se tudo estiver OK, renderiza children se fornecido, ou as rotas filhas via Outlet
   return children ? <>{children}</> : <Outlet />;
 };
 
-// 2. Componente de Redirecionamento Inicial baseado no nível do usuário
+// 2. Redirecionamento após login (Painel Administrativo vs Portal Cliente)
 const RootRedirect: React.FC = () => {
   const { profile } = useAuth();
-  const nivel = profile?.nivel;
+  const isAdm = ["ADM_MASTER", "ADM_GERENTE", "ADM_ANALISTA", "GESTOR", "VENDEDOR"].includes(profile?.nivel || "");
+  return <Navigate to={isAdm ? "/financeiro" : "/clube_pontos"} replace />;
+};
 
-  const isAdm = nivel === "ADM_MASTER" || nivel === "ADM_GERENTE" || nivel === "ADM_ANALISTA" || nivel === "GESTOR" || nivel === "VENDEDOR";
+// 3. NOVO: Gerenciador Inteligente da Rota Raiz (Resolve o problema de domínio)
+const DynamicRoot: React.FC = () => {
+  const { user, loading } = useAuth();
+  const hostname = window.location.hostname.toLowerCase();
 
-  if (isAdm) {
-    // Redireciona para a aba padrão do Dashboard Administrativo
-    return <Navigate to="/financeiro" replace />;
+  if (loading) return <LoadingScreen />;
+
+  // Se o usuário está logado, ele SEMPRE vai pro painel, não importa o domínio.
+  if (user) return <RootRedirect />;
+
+  // --- REGRAS PARA QUEM NÃO ESTÁ LOGADO ---
+  
+  // A. Se estiver tentando acessar diretamente o subdomínio do App (força login)
+  if (hostname.includes('app.') || hostname.includes('aplicativo.') || hostname.includes('firebaseapp.com')) {
+    return <Navigate to="/login" replace />;
   }
 
-  // Redireciona para a aba padrão do Portal do Cliente
-  return <Navigate to="/clube_pontos" replace />;
+  // B. Subdomínios Públicos Específicos
+  if (hostname.includes('diagnostico') || hostname.includes('indica') || hostname.includes('xn--diagnstico-ybb')) {
+    return <SaaSLandingPage />;
+  }
+  if (hostname.includes('consulta')) {
+    return <PublicPortal />;
+  }
+
+  // C. Domínio Principal Público Padrão (ex: 72hrs.online)
+  return <SaaSLandingPage />;
 };
 
 const App: React.FC = () => {
-  const hostname = window.location.hostname.toLowerCase();
-  const path = window.location.pathname.toLowerCase();
   
-  // Detect subdomains for routing
-  const isConsultaDomain = hostname.includes('consulta.72hrs.online') || hostname.includes('consulta.72h.online');
-  const isIndicaDomain = hostname.includes('indica.72hrs.online') || hostname.includes('indica.72h.online');
-  const isDiagnosticoDomain = hostname.includes('diagnostico.72hrs.online') || 
-                               hostname.includes('diagnostico.72h.online') || 
-                               hostname.includes('diagnóstico.72hrs.online') || 
-                               hostname.includes('diagnóstico.72h.online') || 
-                               hostname.includes('xn--diagnstico-ybb.72hrs.online') ||
-                               hostname.includes('xn--diagnstico-ybb.72h.online') ||
-                               path.startsWith('/diagnostico');
-
-  const isAppDomain = hostname.includes('app.72hrs.online') || 
-                      hostname.includes('app.72h.online') ||
-                      hostname.includes('aplicativo.72hrs.online') ||
-                      hostname.includes('aplicativo.72h.online') ||
-                      hostname.includes('gsa-diagnostico.web.app') ||
-                      hostname.includes('firebaseapp.com');
-
-  const isSaasHome = !isConsultaDomain && !isIndicaDomain && !isDiagnosticoDomain && !isAppDomain && (
-                       hostname === '72h.online' ||
-                       hostname === '72hrs.online' ||
-                       hostname.includes('www.72h.online') ||
-                       hostname.includes('www.72hrs.online') ||
-                       hostname.includes('run.app') || 
-                       hostname.includes('localhost')
-  );
-
   useEffect(() => {
-    console.log("App: Routing Engine - Hostname:", hostname);
-    console.log("App: Routing Flags:", { 
-      isConsulta: isConsultaDomain, 
-      isIndicaDomain, 
-      isDiagnostico: isDiagnosticoDomain, 
-      isApp: isAppDomain, 
-      isSaasHome: isSaasHome 
-    });
-
-    // FORCE CLEAR SERVICE WORKERS AND CACHE
+    // Matador agressivo de Service Workers para evitar caches zumbis
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then((registrations) => {
-        for (const registration of registrations) {
-          registration.unregister();
-          console.log("Service Worker uninstalled to fix routing cache.");
-        }
+        registrations.forEach(r => r.unregister());
       });
     }
-  }, [hostname, isConsultaDomain, isIndicaDomain, isDiagnosticoDomain, isAppDomain, isSaasHome]);
+  }, []);
 
   return (
     <Suspense fallback={<LoadingScreen />}>
-      {/* Roteador Debug Banner - TOP FORCE */}
-      <div className="fixed top-0 left-0 w-full bg-red-600 text-white text-[10px] py-1 text-center font-bold z-[10000] pointer-events-none uppercase">
-        Versão Ativa: 2026-04-29 17:00 | Host: {hostname} | Diag: {isDiagnosticoDomain ? 'SIM' : 'NÃO'}
-      </div>
-      {/* Roteador Debug Banner - BOTTOM */}
-      <div className="fixed bottom-0 left-0 bg-black/80 text-[8px] text-white p-1 z-[9999] pointer-events-none font-mono">
-        Host: {hostname} | Path: {path} | Diag: {isDiagnosticoDomain ? 'YES' : 'NO'} | SaasHome: {isSaasHome ? 'YES' : 'NO'}
-      </div>
       <Routes>
-        {/* Rotas Públicas Prioritárias */}
+        
+        {/* Rota Raiz (/) -> O DynamicRoot decide qual página exibir baseado no domínio */}
+        <Route path="/" element={<DynamicRoot />} />
+        
+        {/* ROTAS 100% PÚBLICAS (Fora de validações de usuário) */}
         <Route path="/diagnostico/*" element={<SaaSLandingPage />} />
         <Route path="/consulta/*" element={<PublicPortal />} />
-        
-        {/* Combined Root Route based on domains */}
-        <Route path="/" element={
-          isConsultaDomain ? <PublicPortal /> :
-          (isIndicaDomain || isDiagnosticoDomain) ? <SaaSLandingPage /> :
-          isSaasHome ? <SaaSLandingPage /> :
-          <ProtectedRoute><RootRedirect /></ProtectedRoute>
-        } />
-        
-        {/* Rotas Públicas Secundárias */}
         <Route path="/login" element={<LoginView />} />
         <Route path="/vendas/p/:slug" element={<ProposalLandingPage />} />
         <Route path="/p/:slug" element={<ProposalLandingPage />} />
@@ -181,9 +122,8 @@ const App: React.FC = () => {
         <Route path="/vitrine-publica/*" element={<VitrinePublicaView />} />
         <Route path="/vendas/*" element={<VitrinePublicaView />} />
 
-        {/* Rotas Protegidas */}
+        {/* ROTAS PRIVADAS (Sistema) -> Protegidas pelo Guardião */}
         <Route element={<ProtectedRoute />}>
-          {/* Layout Unificado para Dashboard / Gestão / Portal */}
           <Route element={<DashboardLayout />}>
             <Route path="/financeiro" element={<DashboardFinanceiro />} />
             <Route path="/equipe" element={<GestaoEquipeView />} />
@@ -218,31 +158,11 @@ const App: React.FC = () => {
           </Route>
         </Route>
 
-        {/* Fallback para rotas não encontradas */}
-        <Route path="*" element={<LoggingRedirects />} />
+        {/* Trata links quebrados enviando gentilmente para o começo */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>
   );
 };
-
-const LoggingRedirects = () => {
-    useEffect(() => {
-        console.error("Rota não encontrada:", window.location.pathname);
-    }, []);
-    return (
-        <div className="min-h-screen flex items-center justify-center bg-[#0a0a2e] text-white p-4">
-            <div className="text-center">
-                <h1 className="text-4xl font-bold mb-4">Página não encontrada</h1>
-                <p className="mb-6">A página que você tentou acessar não existe ou houve um erro de conexão.</p>
-                <button 
-                  onClick={() => window.location.href = '/'}
-                  className="bg-blue-600 px-6 py-3 rounded-lg font-bold"
-                >
-                    Voltar para Home
-                </button>
-            </div>
-        </div>
-    );
-}
 
 export default App;
