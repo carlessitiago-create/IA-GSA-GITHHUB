@@ -57,39 +57,27 @@ const ProtectedRoute: React.FC<{ children?: React.ReactNode }> = ({ children }) 
   return children ? <>{children}</> : <Outlet />;
 };
 
-// 2. Componente Raiz para Domínios
-const DomainRoot: React.FC = () => {
+// 2. Componente Raiz para redirecionar quem já fez login
+const AppRoot: React.FC = () => {
   const { user, profile, loading } = useAuth();
-  const hostname = window.location.hostname.toLowerCase();
-
   if (loading) return <LoadingScreen />;
-
-  // Se a pessoa acessou o domínio raiz e já está logada, manda pro painel
+  
+  // Se entrou na raiz (app.72hrs.online) e tem usuário, manda pro painel
   if (user) {
     const isAdm = ["ADM_MASTER", "ADM_GERENTE", "ADM_ANALISTA", "GESTOR", "VENDEDOR"].includes(profile?.nivel || "");
     return <Navigate to={isAdm ? "/financeiro" : "/clube_pontos"} replace />;
   }
-
-  // --- REGRAS ESTÁTICAS DE DOMÍNIO PÚBLICO ---
-  if (hostname.includes('diagnostico') || hostname.includes('indica') || hostname.includes('xn--diagnstico-ybb')) {
-    return <SaaSLandingPage />;
-  }
-  if (hostname.includes('consulta')) {
-    return <PublicPortal />;
-  }
-  if (hostname.includes('app.') || hostname.includes('aplicativo.') || hostname.includes('firebaseapp.com')) {
-    return <Navigate to="/login" replace />;
-  }
-
-  // Se não bater nada (ex: 72hrs.online principal), mostra a página de vendas SaaS
-  return <SaaSLandingPage />;
+  
+  // Se não tem login e tentou acessar a raiz do app, força o login
+  return <Navigate to="/login" replace />;
 };
 
 const App: React.FC = () => {
-  
+  const hostname = window.location.hostname.toLowerCase();
+  const path = window.location.pathname.toLowerCase();
+
   useEffect(() => {
-    console.log("🚀 VERSÃO BLINDADA ATIVA - Roteamento iniciado");
-    // Destrói Service Workers antigos que prendem a tela
+    // Remove Service Workers presos no navegador para limpar o cache permanentemente
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then((registrations) => {
         registrations.forEach(r => r.unregister());
@@ -97,15 +85,46 @@ const App: React.FC = () => {
     }
   }, []);
 
+  // ========================================================================
+  // 🚀 BLOQUEIO ABSOLUTO: ISOLANDO OS DOMÍNIOS ANTES DO REACT ROUTER
+  // ========================================================================
+  
+  // 1. Domínio de DIAGNÓSTICO: Ignora rotas e exibe Landing Page diretamente
+  if (hostname.includes('diagnostico') || hostname.includes('indica') || hostname.includes('xn--diagnstico-ybb')) {
+    return (
+      <Suspense fallback={<LoadingScreen />}>
+        <SaaSLandingPage />
+      </Suspense>
+    );
+  }
+
+  // 2. Domínio de CONSULTA: Ignora rotas e exibe Portal de Consulta Pública
+  if (hostname.includes('consulta')) {
+    return (
+      <Suspense fallback={<LoadingScreen />}>
+        <PublicPortal />
+      </Suspense>
+    );
+  }
+
+  // 3. Domínio PRINCIPAL na raiz (ex: 72hrs.online/): Exibe Landing Page
+  if ((hostname === '72h.online' || hostname === '72hrs.online' || hostname === 'www.72h.online' || hostname === 'www.72hrs.online') && path === '/') {
+     return (
+      <Suspense fallback={<LoadingScreen />}>
+        <SaaSLandingPage />
+      </Suspense>
+    );
+  }
+
+  // ========================================================================
+  // 🔒 SISTEMA PRINCIPAL (App, Painel e Login explícito)
+  // ========================================================================
   return (
     <Suspense fallback={<LoadingScreen />}>
       <Routes>
-        {/* == ROTAS TOTALMENTE PÚBLICAS (NÃO PASSAM PELO AUTH) == */}
-        <Route path="/diagnostico" element={<SaaSLandingPage />} />
-        <Route path="/diagnostico/*" element={<SaaSLandingPage />} />
-        <Route path="/consulta" element={<PublicPortal />} />
-        <Route path="/consulta/*" element={<PublicPortal />} />
+        <Route path="/" element={<AppRoot />} />
         
+        {/* O Login só é acionado se digitado explicitamente (/login) ou caso não tenha sessão nas rotas abaixo */}
         <Route path="/login" element={<LoginView />} />
         <Route path="/vendas/p/:slug" element={<ProposalLandingPage />} />
         <Route path="/p/:slug" element={<ProposalLandingPage />} />
@@ -113,10 +132,7 @@ const App: React.FC = () => {
         <Route path="/vitrine-publica/*" element={<VitrinePublicaView />} />
         <Route path="/vendas/*" element={<VitrinePublicaView />} />
 
-        {/* == GERENCIADOR DE DOMÍNIOS (Para acessos na raiz "/") == */}
-        <Route path="/" element={<DomainRoot />} />
-
-        {/* == ROTAS PRIVADAS (EXIGEM LOGIN) == */}
+        {/* == ROTAS PROTEGIDAS (Exigem Autenticação) == */}
         <Route element={<ProtectedRoute />}>
           <Route element={<DashboardLayout />}>
             <Route path="/financeiro" element={<DashboardFinanceiro />} />
@@ -142,7 +158,7 @@ const App: React.FC = () => {
             <Route path="/admin_clube_settings" element={<DashboardView view="admin_clube_settings" />} />
             <Route path="/configuracoes-notificacoes" element={<AdminNotificationSettingsView />} />
 
-            {/* Rotas Portal do Cliente Diretas */}
+            {/* Rotas Portal do Cliente */}
             <Route path="/clube_pontos" element={<ClubePontosView />} />
             <Route path="/vitrine-cliente" element={<VitrineView />} />
             <Route path="/clube-cliente" element={<ClubeMarketingView />} />
@@ -152,7 +168,7 @@ const App: React.FC = () => {
           </Route>
         </Route>
 
-        {/* Fallback de erro */}
+        {/* Links não encontrados jogam gentilmente para o começo do App */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>
