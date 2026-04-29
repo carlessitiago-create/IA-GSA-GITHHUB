@@ -39,10 +39,9 @@ const ClientWalletView = lazy(() => import("./components/GSA/ClientWalletView").
 const TabelaCustasView = lazy(() => import("./views/TabelaCustasView").then(m => ({ default: m.TabelaCustasView })));
 const VendaEmMassaView = lazy(() => import("./views/VendaEmMassaView").then(m => ({ default: m.VendaEmMassaView })));
 
-// Auth Components
 import { PendingApproval, AccountRefused, AccountSuspended, CompleteProfile } from "./components/Auth";
 
-// 1. Guardião das Rotas Privadas
+// 1. Guardião Estrito (SÓ É ACIONADO SE A ROTA FOR PRIVADA)
 const ProtectedRoute: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const { user, profile, loading, logout } = useAuth();
 
@@ -58,46 +57,39 @@ const ProtectedRoute: React.FC<{ children?: React.ReactNode }> = ({ children }) 
   return children ? <>{children}</> : <Outlet />;
 };
 
-// 2. Redirecionamento após login (Painel Administrativo vs Portal Cliente)
-const RootRedirect: React.FC = () => {
-  const { profile } = useAuth();
-  const isAdm = ["ADM_MASTER", "ADM_GERENTE", "ADM_ANALISTA", "GESTOR", "VENDEDOR"].includes(profile?.nivel || "");
-  return <Navigate to={isAdm ? "/financeiro" : "/clube_pontos"} replace />;
-};
-
-// 3. NOVO: Gerenciador Inteligente da Rota Raiz (Resolve o problema de domínio)
-const DynamicRoot: React.FC = () => {
-  const { user, loading } = useAuth();
+// 2. Componente Raiz para Domínios
+const DomainRoot: React.FC = () => {
+  const { user, profile, loading } = useAuth();
   const hostname = window.location.hostname.toLowerCase();
 
   if (loading) return <LoadingScreen />;
 
-  // Se o usuário está logado, ele SEMPRE vai pro painel, não importa o domínio.
-  if (user) return <RootRedirect />;
-
-  // --- REGRAS PARA QUEM NÃO ESTÁ LOGADO ---
-  
-  // A. Se estiver tentando acessar diretamente o subdomínio do App (força login)
-  if (hostname.includes('app.') || hostname.includes('aplicativo.') || hostname.includes('firebaseapp.com')) {
-    return <Navigate to="/login" replace />;
+  // Se a pessoa acessou o domínio raiz e já está logada, manda pro painel
+  if (user) {
+    const isAdm = ["ADM_MASTER", "ADM_GERENTE", "ADM_ANALISTA", "GESTOR", "VENDEDOR"].includes(profile?.nivel || "");
+    return <Navigate to={isAdm ? "/financeiro" : "/clube_pontos"} replace />;
   }
 
-  // B. Subdomínios Públicos Específicos
+  // --- REGRAS ESTÁTICAS DE DOMÍNIO PÚBLICO ---
   if (hostname.includes('diagnostico') || hostname.includes('indica') || hostname.includes('xn--diagnstico-ybb')) {
     return <SaaSLandingPage />;
   }
   if (hostname.includes('consulta')) {
     return <PublicPortal />;
   }
+  if (hostname.includes('app.') || hostname.includes('aplicativo.') || hostname.includes('firebaseapp.com')) {
+    return <Navigate to="/login" replace />;
+  }
 
-  // C. Domínio Principal Público Padrão (ex: 72hrs.online)
+  // Se não bater nada (ex: 72hrs.online principal), mostra a página de vendas SaaS
   return <SaaSLandingPage />;
 };
 
 const App: React.FC = () => {
   
   useEffect(() => {
-    // Matador agressivo de Service Workers para evitar caches zumbis
+    console.log("🚀 VERSÃO BLINDADA ATIVA - Roteamento iniciado");
+    // Destrói Service Workers antigos que prendem a tela
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then((registrations) => {
         registrations.forEach(r => r.unregister());
@@ -108,13 +100,12 @@ const App: React.FC = () => {
   return (
     <Suspense fallback={<LoadingScreen />}>
       <Routes>
-        
-        {/* Rota Raiz (/) -> O DynamicRoot decide qual página exibir baseado no domínio */}
-        <Route path="/" element={<DynamicRoot />} />
-        
-        {/* ROTAS 100% PÚBLICAS (Fora de validações de usuário) */}
+        {/* == ROTAS TOTALMENTE PÚBLICAS (NÃO PASSAM PELO AUTH) == */}
+        <Route path="/diagnostico" element={<SaaSLandingPage />} />
         <Route path="/diagnostico/*" element={<SaaSLandingPage />} />
+        <Route path="/consulta" element={<PublicPortal />} />
         <Route path="/consulta/*" element={<PublicPortal />} />
+        
         <Route path="/login" element={<LoginView />} />
         <Route path="/vendas/p/:slug" element={<ProposalLandingPage />} />
         <Route path="/p/:slug" element={<ProposalLandingPage />} />
@@ -122,7 +113,10 @@ const App: React.FC = () => {
         <Route path="/vitrine-publica/*" element={<VitrinePublicaView />} />
         <Route path="/vendas/*" element={<VitrinePublicaView />} />
 
-        {/* ROTAS PRIVADAS (Sistema) -> Protegidas pelo Guardião */}
+        {/* == GERENCIADOR DE DOMÍNIOS (Para acessos na raiz "/") == */}
+        <Route path="/" element={<DomainRoot />} />
+
+        {/* == ROTAS PRIVADAS (EXIGEM LOGIN) == */}
         <Route element={<ProtectedRoute />}>
           <Route element={<DashboardLayout />}>
             <Route path="/financeiro" element={<DashboardFinanceiro />} />
@@ -158,7 +152,7 @@ const App: React.FC = () => {
           </Route>
         </Route>
 
-        {/* Trata links quebrados enviando gentilmente para o começo */}
+        {/* Fallback de erro */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>
