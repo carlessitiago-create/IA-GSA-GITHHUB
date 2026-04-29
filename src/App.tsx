@@ -192,9 +192,22 @@ const App: React.FC = () => {
 
 const LoggingRedirects = () => {
     useEffect(() => {
-        console.log("Matched catch-all route at", window.location.pathname);
+        console.error("Rota não encontrada:", window.location.pathname);
     }, []);
-    return <Navigate to="/" replace />;
+    return (
+        <div className="min-h-screen flex items-center justify-center bg-[#0a0a2e] text-white p-4">
+            <div className="text-center">
+                <h1 className="text-4xl font-bold mb-4">Página não encontrada</h1>
+                <p className="mb-6">A página que você tentou acessar não existe ou houve um erro de conexão.</p>
+                <button 
+                  onClick={() => window.location.href = '/'}
+                  className="bg-blue-600 px-6 py-3 rounded-lg font-bold"
+                >
+                    Voltar para Home
+                </button>
+            </div>
+        </div>
+    );
 }
 
 export default App;
