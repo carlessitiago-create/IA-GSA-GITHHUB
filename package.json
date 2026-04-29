@@ -54,12 +54,14 @@
     "autoprefixer": "^10.4.21",
     "eslint": "^9.39.4",
     "eslint-plugin-react-hooks": "^7.0.1",
+    "extract-zip": "^2.0.1",
     "prettier": "^3.8.1",
     "tailwindcss": "^4.1.14",
     "ts-node": "^10.9.2",
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.0",
-    "vitest": "^4.1.1"
+    "vitest": "^4.1.1",
+    "yauzl": "^3.3.0"
   }
 }
