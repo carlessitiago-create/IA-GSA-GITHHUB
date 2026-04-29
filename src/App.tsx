@@ -1,4 +1,4 @@
-import React, { lazy, Suspense } from "react";
+import React, { lazy, Suspense, useEffect } from "react";
 import { Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "./components/AuthContext";
 import { LoadingScreen } from "./components/LoadingScreen";
@@ -100,6 +100,7 @@ const RootRedirect: React.FC = () => {
 
 const App: React.FC = () => {
   const hostname = window.location.hostname.toLowerCase();
+  const path = window.location.pathname.toLowerCase();
   
   // Detect subdomains for routing
   const isConsultaDomain = hostname.includes('consulta.72hrs.online') || hostname.includes('consulta.72h.online');
@@ -109,18 +110,35 @@ const App: React.FC = () => {
                                hostname.includes('diagnóstico.72hrs.online') || 
                                hostname.includes('diagnóstico.72h.online') || 
                                hostname.includes('xn--diagnstico-ybb.72hrs.online') ||
-                               hostname.includes('xn--diagnstico-ybb.72h.online');
+                               hostname.includes('xn--diagnstico-ybb.72h.online') ||
+                               path.startsWith('/diagnostico');
+
   const isAppDomain = hostname.includes('app.72hrs.online') || 
                       hostname.includes('app.72h.online') ||
                       hostname.includes('aplicativo.72hrs.online') ||
-                      hostname.includes('aplicativo.72h.online');
+                      hostname.includes('aplicativo.72h.online') ||
+                      hostname.includes('gsa-diagnostico.web.app') ||
+                      hostname.includes('firebaseapp.com');
 
   const isSaasHome = !isConsultaDomain && !isIndicaDomain && !isDiagnosticoDomain && !isAppDomain && (
-                       hostname.includes('72h.online') ||
-                       hostname.includes('72hrs.online') ||
+                       hostname === '72h.online' ||
+                       hostname === '72hrs.online' ||
+                       hostname.includes('www.72h.online') ||
+                       hostname.includes('www.72hrs.online') ||
                        hostname.includes('run.app') || 
                        hostname.includes('localhost')
   );
+
+  useEffect(() => {
+    console.log("App: Routing Engine - Hostname:", hostname);
+    console.log("App: Routing Flags:", { 
+      isConsulta: isConsultaDomain, 
+      isIndica: isIndicaDomain, 
+      isDiagnostico: isDiagnosticoDomain, 
+      isApp: isAppDomain, 
+      isSaasHome: isSaasHome 
+    });
+  }, [hostname, isConsultaDomain, isIndicaDomain, isDiagnosticoDomain, isAppDomain, isSaasHome]);
 
   return (
     <Suspense fallback={<LoadingScreen />}>
