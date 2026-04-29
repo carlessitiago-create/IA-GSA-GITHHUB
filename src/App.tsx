@@ -125,7 +125,6 @@ const App: React.FC = () => {
   return (
     <Suspense fallback={<LoadingScreen />}>
       <Routes>
-        <Route path="*" element={<LoggingRedirects />} />
         {/* Combined Root Route based on domains */}
         <Route path="/" element={
           isConsultaDomain ? <PublicPortal /> :
@@ -190,6 +189,7 @@ const App: React.FC = () => {
         </Route>
 
         {/* Fallback para rotas não encontradas */}
+        <Route path="*" element={<LoggingRedirects />} />
       </Routes>
     </Suspense>
   );
