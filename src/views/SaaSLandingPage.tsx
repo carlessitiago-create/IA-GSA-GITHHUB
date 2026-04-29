@@ -53,6 +53,7 @@ const SaaSLandingPage: React.FC = () => {
 
   // Carrega as configurações do SaaS
   useEffect(() => {
+    console.log("SaaSLandingPage: Component Mounted - Path:", window.location.pathname);
     getSaasConfig().then(setConfig).catch(err => console.error("Erro ao carregar config SaaS:", err));
   }, []);
 

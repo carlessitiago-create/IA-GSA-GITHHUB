@@ -133,16 +133,34 @@ const App: React.FC = () => {
     console.log("App: Routing Engine - Hostname:", hostname);
     console.log("App: Routing Flags:", { 
       isConsulta: isConsultaDomain, 
-      isIndica: isIndicaDomain, 
+      isIndicaDomain, 
       isDiagnostico: isDiagnosticoDomain, 
       isApp: isAppDomain, 
       isSaasHome: isSaasHome 
     });
+
+    // FORCE CLEAR SERVICE WORKERS AND CACHE
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        for (const registration of registrations) {
+          registration.unregister();
+          console.log("Service Worker uninstalled to fix routing cache.");
+        }
+      });
+    }
   }, [hostname, isConsultaDomain, isIndicaDomain, isDiagnosticoDomain, isAppDomain, isSaasHome]);
 
   return (
     <Suspense fallback={<LoadingScreen />}>
+      {/* Roteador Debug Banner */}
+      <div className="fixed bottom-0 left-0 bg-black/80 text-[8px] text-white p-1 z-[9999] pointer-events-none font-mono">
+        Host: {hostname} | Path: {path} | Diag: {isDiagnosticoDomain ? 'YES' : 'NO'} | SaasHome: {isSaasHome ? 'YES' : 'NO'}
+      </div>
       <Routes>
+        {/* Rotas Públicas Prioritárias */}
+        <Route path="/diagnostico/*" element={<SaaSLandingPage />} />
+        <Route path="/consulta/*" element={<PublicPortal />} />
+        
         {/* Combined Root Route based on domains */}
         <Route path="/" element={
           isConsultaDomain ? <PublicPortal /> :
@@ -151,15 +169,10 @@ const App: React.FC = () => {
           <ProtectedRoute><RootRedirect /></ProtectedRoute>
         } />
         
-        {/* Environment-specific home redirection */}
-        {/* Removed duplicate root routes to prevent conflicts */}
-        
-        {/* Rotas Públicas */}
+        {/* Rotas Públicas Secundárias */}
         <Route path="/login" element={<LoginView />} />
-        <Route path="/diagnostico/*" element={<SaaSLandingPage />} />
         <Route path="/vendas/p/:slug" element={<ProposalLandingPage />} />
         <Route path="/p/:slug" element={<ProposalLandingPage />} />
-        <Route path="/consulta/*" element={<PublicPortal />} />
         <Route path="/cp/*" element={<PublicPortal />} />
         <Route path="/vitrine-publica/*" element={<VitrinePublicaView />} />
         <Route path="/vendas/*" element={<VitrinePublicaView />} />
