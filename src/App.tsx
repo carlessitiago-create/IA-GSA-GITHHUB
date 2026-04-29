@@ -136,56 +136,51 @@ const App: React.FC = () => {
         {/* Environment-specific home redirection */}
         {/* Removed duplicate root routes to prevent conflicts */}
         
+        {/* Rotas Públicas */}
         <Route path="/login" element={<LoginView />} />
-        
-        <Route path="/diagnostico" element={<SaaSLandingPage />} />
+        <Route path="/diagnostico/*" element={<SaaSLandingPage />} />
         <Route path="/vendas/p/:slug" element={<ProposalLandingPage />} />
         <Route path="/p/:slug" element={<ProposalLandingPage />} />
-        <Route path="/consulta" element={<PublicPortal />} />
-        <Route path="/cp" element={<PublicPortal />} />
-        <Route path="/vitrine-publica" element={<VitrinePublicaView />} />
-        <Route path="/vendas" element={<VitrinePublicaView />} />
+        <Route path="/consulta/*" element={<PublicPortal />} />
+        <Route path="/cp/*" element={<PublicPortal />} />
+        <Route path="/vitrine-publica/*" element={<VitrinePublicaView />} />
+        <Route path="/vendas/*" element={<VitrinePublicaView />} />
 
-        {/* Rotas Protegidas (Exigem login e status OK) */}
+        {/* Rotas Protegidas */}
         <Route element={<ProtectedRoute />}>
-          {/* Note: RootRedirect was moved to the combined root path above, but we keep the dashboard routes here */}
-          
-            {/* Layout Unificado para Dashboard / Gestão / Portal */}
-            <Route element={<DashboardLayout />}>
-              {/* Removed duplicate RootRedirect here */}
-              
-              {/* Rotas Administrativas Diretas */}
-              <Route path="/financeiro" element={<DashboardFinanceiro />} />
-              <Route path="/equipe" element={<GestaoEquipeView />} />
-              <Route path="/inteligencia" element={<IntelligenceDashboardView />} />
-              <Route path="/vendas-internas" element={<VendasPDVView />} />
-              <Route path="/venda-massa" element={<VendaEmMassaView />} />
-              <Route path="/leads" element={<LeadsCentralView />} />
-              <Route path="/operacional" element={<OperationalView />} />
-              <Route path="/pendencias" element={<PendencyList />} />
-              <Route path="/auditoria" element={<AuditoriaProcesso />} />
-              <Route path="/clube" element={<MyClubView />} />
-              <Route path="/custas" element={<TabelaCustasView />} />
-              <Route path="/consulta-interna" element={<ConsultaPublicaView />} />
-              <Route path="/suporte" element={<SupportModule />} />
-              <Route path="/fabrica" element={<ServiceFactoryView />} />
-              <Route path="/perfil" element={<ProfileView />} />
-              <Route path="/vitrine" element={<VitrineView />} />
-              <Route path="/conversao" element={<ConversionDashboardView />} />
-              <Route path="/processos" element={<ProcessModelsManager />} />
-              <Route path="/dashboard" element={<DashboardView />} />
-              <Route path="/saas-settings" element={<DashboardView view="saas_settings" />} />
-              <Route path="/admin_clube_settings" element={<DashboardView view="admin_clube_settings" />} />
-              <Route path="/configuracoes-notificacoes" element={<AdminNotificationSettingsView />} />
+          {/* Layout Unificado para Dashboard / Gestão / Portal */}
+          <Route element={<DashboardLayout />}>
+            <Route path="/financeiro" element={<DashboardFinanceiro />} />
+            <Route path="/equipe" element={<GestaoEquipeView />} />
+            <Route path="/inteligencia" element={<IntelligenceDashboardView />} />
+            <Route path="/vendas-internas" element={<VendasPDVView />} />
+            <Route path="/venda-massa" element={<VendaEmMassaView />} />
+            <Route path="/leads" element={<LeadsCentralView />} />
+            <Route path="/operacional" element={<OperationalView />} />
+            <Route path="/pendencias" element={<PendencyList />} />
+            <Route path="/auditoria" element={<AuditoriaProcesso />} />
+            <Route path="/clube" element={<MyClubView />} />
+            <Route path="/custas" element={<TabelaCustasView />} />
+            <Route path="/consulta-interna" element={<ConsultaPublicaView />} />
+            <Route path="/suporte" element={<SupportModule />} />
+            <Route path="/fabrica" element={<ServiceFactoryView />} />
+            <Route path="/perfil" element={<ProfileView />} />
+            <Route path="/vitrine" element={<VitrineView />} />
+            <Route path="/conversao" element={<ConversionDashboardView />} />
+            <Route path="/processos" element={<ProcessModelsManager />} />
+            <Route path="/dashboard" element={<DashboardView />} />
+            <Route path="/saas-settings" element={<DashboardView view="saas_settings" />} />
+            <Route path="/admin_clube_settings" element={<DashboardView view="admin_clube_settings" />} />
+            <Route path="/configuracoes-notificacoes" element={<AdminNotificationSettingsView />} />
 
-              {/* Rotas Portal do Cliente Diretas */}
-              <Route path="/clube_pontos" element={<ClubePontosView />} />
-              <Route path="/vitrine-cliente" element={<VitrineView />} />
-              <Route path="/clube-cliente" element={<ClubeMarketingView />} />
-              <Route path="/processos-cliente" element={<ClientProcessesView />} />
-              <Route path="/carteira" element={<ClientWalletView />} />
-              <Route path="/perfil-cliente" element={<ProfileView />} />
-            </Route>
+            {/* Rotas Portal do Cliente Diretas */}
+            <Route path="/clube_pontos" element={<ClubePontosView />} />
+            <Route path="/vitrine-cliente" element={<VitrineView />} />
+            <Route path="/clube-cliente" element={<ClubeMarketingView />} />
+            <Route path="/processos-cliente" element={<ClientProcessesView />} />
+            <Route path="/carteira" element={<ClientWalletView />} />
+            <Route path="/perfil-cliente" element={<ProfileView />} />
+          </Route>
         </Route>
 
         {/* Fallback para rotas não encontradas */}
