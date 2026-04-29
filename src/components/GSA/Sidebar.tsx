@@ -4,7 +4,7 @@ import {
   Shield, Users, PlusCircle, LayoutDashboard, History, Settings, 
   Package, DollarSign, TrendingUp, Bell, ClipboardList, Gift, 
   ShoppingBag, LogOut, ChevronRight, Activity, AlertTriangle, X,
-  Factory, Trophy, Search, User
+  Factory, Trophy, Search, User, Mail
 } from 'lucide-react';
 
 
@@ -96,6 +96,7 @@ export function Sidebar({ currentProfile, logout, onClose }: any) {
             <MenuItem to="equipe" icon={Users} label="Gestão de Equipe" />
             <MenuItem to="inteligencia" icon={LayoutDashboard} label="Inteligência" />
             <MenuItem to="conversao" icon={TrendingUp} label="Conversão" />
+            <MenuItem to="configuracoes-notificacoes" icon={Mail} label="E-MAIS E PERMISSÕES" color="text-yellow-500" />
           </div>
         )}
 

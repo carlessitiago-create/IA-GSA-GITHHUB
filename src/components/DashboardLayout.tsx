@@ -347,10 +347,10 @@ export const DashboardLayout: React.FC = () => {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden w-full">
+      <div className="flex-1 flex flex-col h-screen overflow-hidden w-full bg-slate-50">
         <Header {...headerProps} />
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 bg-slate-50/50">
-          <div className="max-w-[1600px] mx-auto">
+        <main className="flex-1 overflow-y-auto px-6 py-8 sm:px-8 sm:py-10 md:px-12 md:py-14">
+          <div className="max-w-[1700px] mx-auto w-full">
             <Outlet context={contextProps} />
           </div>
         </main>

@@ -2,13 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { collection, query, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import GerenciarUsuarios from '../components/Admin/GerenciarUsuarios';
-import { User, Shield, Eye, UserPlus, Search, Users, Edit3, MoreVertical, X } from 'lucide-react';
+import { User, Shield, Eye, UserPlus, Search, Users, Edit3, MoreVertical, X, Mail } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { useAuth, UserProfile } from '../components/AuthContext';
 import { motion, AnimatePresence } from 'motion/react';
+import { useNavigate } from 'react-router-dom';
 
 export function GestaoEquipeView() {
   const { profile, simulateUser } = useAuth();
+  const navigate = useNavigate();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddUser, setShowAddUser] = useState(false);
@@ -122,23 +124,30 @@ export function GestaoEquipeView() {
           </p>
         </div>
 
-        <button 
-          onClick={() => {
-            if (showAddUser) {
-              setShowAddUser(false);
-              setUserToEdit(null);
-            } else {
-              setShowAddUser(true);
-            }
-          }}
-          className="relative z-10 w-full lg:w-auto bg-[#0a0a2e] text-white px-6 sm:px-12 py-4 sm:py-6 rounded-xl sm:rounded-[2rem] font-black text-[9px] sm:text-xs uppercase tracking-[0.3em] flex items-center justify-center gap-2 sm:gap-4 hover:scale-105 active:scale-95 transition-all shadow-2xl shadow-blue-900/30 group"
-        >
-          {showAddUser ? (
-            <><X size={18} className="group-hover:rotate-90 transition-transform" /> CANCELAR</>
-          ) : (
-            <><UserPlus size={18} className="group-hover:scale-110 transition-transform" /> {profile?.nivel === 'VENDEDOR' ? 'NOVO CLIENTE' : 'ADICIONAR'}</>
-          )}
-        </button>
+          <button 
+            onClick={() => navigate('/configuracoes-notificacoes')}
+            className="relative z-10 w-full lg:w-auto bg-amber-500 text-white px-6 sm:px-8 py-4 sm:py-6 rounded-xl sm:rounded-[2rem] font-black text-[9px] sm:text-xs uppercase tracking-[0.3em] flex items-center justify-center gap-2 sm:gap-4 hover:scale-105 active:scale-95 transition-all shadow-2xl shadow-amber-900/30 group"
+          >
+            <Mail size={18} className="group-hover:scale-110 transition-transform" /> NOTIFICAÇÕES
+          </button>
+          
+          <button 
+            onClick={() => {
+              if (showAddUser) {
+                setShowAddUser(false);
+                setUserToEdit(null);
+              } else {
+                setShowAddUser(true);
+              }
+            }}
+            className="relative z-10 w-full lg:w-auto bg-[#0a0a2e] text-white px-6 sm:px-12 py-4 sm:py-6 rounded-xl sm:rounded-[2rem] font-black text-[9px] sm:text-xs uppercase tracking-[0.3em] flex items-center justify-center gap-2 sm:gap-4 hover:scale-105 active:scale-95 transition-all shadow-2xl shadow-blue-900/30 group"
+          >
+            {showAddUser ? (
+              <><X size={18} className="group-hover:rotate-90 transition-transform" /> CANCELAR</>
+            ) : (
+              <><UserPlus size={18} className="group-hover:scale-110 transition-transform" /> {profile?.nivel === 'VENDEDOR' ? 'NOVO CLIENTE' : 'ADICIONAR'}</>
+            )}
+          </button>
       </div>
 
       <AnimatePresence mode="wait">

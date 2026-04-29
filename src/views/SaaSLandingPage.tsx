@@ -21,6 +21,9 @@ import {
   Target,
   AlertTriangle,
   TrendingUp,
+  TrendingDown,
+  ThumbsDown,
+  ShieldX,
   Gift,
   DollarSign,
   Check,
@@ -546,45 +549,41 @@ const SaaSLandingPage: React.FC = () => {
       </div>
 
       {/* HERO SECTION */}
-      <section className="relative pt-12 pb-16 px-6 overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full -z-10">
-          <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-blue-600/20 blur-[150px] rounded-full animate-pulse"></div>
-          <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-green-600/20 blur-[150px] rounded-full animate-pulse" style={{ animationDelay: '2s' }}></div>
-          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.03]"></div>
-        </div>
+      <section className="relative pt-24 pb-20 px-6">
+        {/* Background Decorative Elements */}
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-600/10 via-transparent to-transparent opacity-50"></div>
 
-        <div className="max-w-6xl mx-auto text-center space-y-8">
+        <div className="max-w-5xl mx-auto text-center space-y-12">
+          {/* Badge */}
           <motion.div 
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="inline-flex items-center gap-3 px-6 py-2 bg-white/5 backdrop-blur-md rounded-full border border-white/10 shadow-2xl"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="inline-flex items-center gap-3 px-6 py-2 bg-slate-900/50 backdrop-blur-md rounded-full border border-white/10 shadow-lg"
           >
             <div className="size-2 bg-green-500 rounded-full animate-ping"></div>
-            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-300">
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-300">
               Tecnologia GSA-IA Ativada
             </span>
           </motion.div>
 
+          {/* Heading */}
           <div className="space-y-6">
             <motion.h1 
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, ease: "easeOut" }}
-              className="text-4xl sm:text-6xl md:text-8xl font-black uppercase tracking-tighter leading-[0.9] text-white"
+              transition={{ duration: 0.6 }}
+              className="text-5xl sm:text-6xl md:text-8xl font-black uppercase tracking-tighter leading-[0.9] text-white"
             >
               DESCUBRA O QUE <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-500">BLOQUEIA SEU CRÉDITO</span> <br />
-              <span className="text-xl sm:text-2xl md:text-5xl opacity-50 tracking-normal font-bold">(ANTES QUE SEJA TARDE)</span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-500">BLOQUEIA SEU CRÉDITO</span>
             </motion.h1>
-
             <motion.p 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3, duration: 0.8 }}
-              className="text-lg md:text-2xl text-slate-400 max-w-3xl mx-auto font-medium leading-relaxed"
+              transition={{ delay: 0.2, duration: 0.6 }}
+              className="text-xl text-slate-400 max-w-2xl mx-auto font-medium"
             >
-              Você pode estar sendo recusado pelos bancos mesmo sem saber o motivo real. <br className="hidden md:block" />
-              Nossa IA revela o que o sistema esconde de você.
+              Nossa IA revela o que o sistema esconde de você. Descubra como ser aprovado rapidamente.
             </motion.p>
           </div>
 
@@ -592,8 +591,8 @@ const SaaSLandingPage: React.FC = () => {
           <motion.div 
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5, duration: 0.8 }}
-            className="max-w-5xl mx-auto aspect-video bg-slate-900 rounded-3xl md:rounded-[3rem] border border-white/10 shadow-[0_50px_100px_rgba(0,0,0,0.5)] overflow-hidden relative group"
+            transition={{ delay: 0.3, duration: 0.6 }}
+            className="max-w-4xl mx-auto aspect-video bg-slate-900 rounded-3xl border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden relative group"
           >
             {config?.vsl_youtube_id ? (
               <iframe
@@ -614,9 +613,9 @@ const SaaSLandingPage: React.FC = () => {
                   <motion.div 
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
-                    className="size-24 bg-green-500 rounded-full flex items-center justify-center shadow-[0_0_50px_rgba(34,197,94,0.4)] group-hover:bg-green-400 transition-all"
+                    className="size-20 bg-green-500 rounded-full flex items-center justify-center shadow-[0_0_50px_rgba(34,197,94,0.4)] group-hover:bg-green-400 transition-all"
                   >
-                    <PlayCircle className="text-slate-900 size-12 fill-slate-900/20" />
+                    <PlayCircle className="text-slate-900 size-10 fill-slate-900/20" />
                   </motion.div>
                 </div>
                 <img 
@@ -625,41 +624,23 @@ const SaaSLandingPage: React.FC = () => {
                   alt="VSL Preview"
                   referrerPolicy="no-referrer"
                 />
-                <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2">
-                  <div className="flex gap-1">
-                    {[1,2,3,4,5].map(i => <Star key={i} size={12} className="text-yellow-500 fill-yellow-500" />)}
-                  </div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white/60">
-                    ASSISTA E ENTENDA O SISTEMA
-                  </p>
-                </div>
               </div>
             )}
           </motion.div>
 
-          <motion.div 
+          {/* Call to Action Button */}
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7 }}
-            className="pt-12"
+            transition={{ delay: 0.4, duration: 0.6 }}
           >
             <button 
               onClick={() => document.getElementById('ofertas')?.scrollIntoView({ behavior: 'smooth' })}
-              className="bg-gradient-to-r from-green-500 to-emerald-600 text-slate-900 px-8 py-6 sm:px-16 sm:py-8 rounded-2xl sm:rounded-[2rem] font-black uppercase text-sm sm:text-base tracking-[0.2em] shadow-[0_20px_50px_rgba(34,197,94,0.3)] hover:scale-105 active:scale-95 transition-all flex items-center gap-4 mx-auto group"
+              className="group bg-gradient-to-r from-green-500 to-emerald-600 text-slate-950 px-10 py-5 rounded-2xl font-black uppercase text-lg tracking-widest hover:scale-105 transition-all flex items-center gap-3 mx-auto shadow-[0_20px_40px_-10px_rgba(34,197,94,0.3)]"
             >
-              QUERO MEU DIAGNÓSTICO AGORA 
-              <ArrowRight size={24} className="group-hover:translate-x-2 transition-transform" />
+              Quero meu diagnóstico agora 
+              <ArrowRight className="group-hover:translate-x-1 transition-transform" />
             </button>
-            <div className="mt-6 flex items-center justify-center gap-6 text-slate-500">
-              <div className="flex items-center gap-2">
-                <ShieldCheck size={16} />
-                <span className="text-[10px] font-bold uppercase tracking-widest">Ambiente Seguro</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Zap size={16} />
-                <span className="text-[10px] font-bold uppercase tracking-widest">Resultado Imediato</span>
-              </div>
-            </div>
           </motion.div>
         </div>
       </section>
@@ -678,32 +659,43 @@ const SaaSLandingPage: React.FC = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
-              { text: "Não é só “nome sujo”", icon: XCircle, color: "text-red-500" },
-              { text: "Não é só “score baixo”", icon: XCircle, color: "text-red-500" },
-              { text: "Não é só “falta de limite”", icon: XCircle, color: "text-red-500" }
+              { 
+                text: "Não é só “nome sujo”", 
+                subtext: "O problema pode estar em algoritmos de risco ocultos que você nem imagina.",
+                icon: ShieldX 
+              },
+              { 
+                text: "Não é só “score baixo”", 
+                subtext: "Score é apenas o reflexo, não a causa da sua negativa bancária.",
+                icon: TrendingDown 
+              },
+              { 
+                text: "Não é só “falta de limite”", 
+                subtext: "O sistema pode estar bloqueando você preventivamente por dados desencontrados.",
+                icon: ThumbsDown 
+              }
             ].map((item, i) => (
               <motion.div 
                 key={i} 
                 whileHover={{ y: -8, scale: 1.02 }}
-                className="relative group bg-gradient-to-b from-slate-800/40 to-slate-900/60 backdrop-blur-xl p-10 rounded-[2.5rem] border border-white/10 flex flex-col items-center gap-6 shadow-2xl overflow-hidden"
+                className="relative group bg-gradient-to-b from-slate-800/60 to-slate-950/80 backdrop-blur-2xl p-10 rounded-[2.5rem] border border-white/5 flex flex-col items-center gap-6 shadow-2xl overflow-hidden"
               >
-                {/* Inner Glow Effect */}
-                <div className="absolute inset-0 bg-gradient-to-tr from-red-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                <div className="absolute inset-0 bg-gradient-to-tr from-green-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                 
                 <div className="relative z-10">
-                  <div className="size-20 bg-red-500/10 rounded-3xl flex items-center justify-center mb-2 border border-red-500/20 shadow-[0_0_20px_rgba(239,68,68,0.1)] group-hover:shadow-[0_0_30px_rgba(239,68,68,0.2)] transition-all">
-                    <item.icon className="text-red-500 drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]" size={40} />
-                  </div>
+                  <item.icon className="size-24 text-red-500 drop-shadow-[0_0_15px_rgba(239,68,68,0.5)]" />
                 </div>
 
-                <div className="text-center relative z-10">
-                  <span className="text-[10px] font-black text-red-500/60 uppercase tracking-[0.3em] mb-2 block">Mito Comum</span>
+                <div className="text-center relative z-10 space-y-2">
                   <p className="text-xl font-black uppercase tracking-tighter text-white leading-tight">
                     {item.text}
                   </p>
+                  <p className="text-slate-400 text-sm font-medium leading-relaxed">
+                    {item.subtext}
+                  </p>
                 </div>
                 
-                <div className="w-12 h-1 bg-red-500/20 rounded-full group-hover:w-20 transition-all duration-500"></div>
+                <div className="w-12 h-1 bg-green-500/30 rounded-full group-hover:w-20 transition-all duration-500"></div>
               </motion.div>
             ))}
           </div>

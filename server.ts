@@ -5,6 +5,7 @@ import fs from 'fs';
 import { createServer as createViteServer } from 'vite';
 import admin from 'firebase-admin';
 import { getFirestore, FieldValue, Timestamp } from 'firebase-admin/firestore';
+import nodemailer from 'nodemailer';
 
 // Global references
 let firebaseApp: admin.app.App;
@@ -50,6 +51,31 @@ async function startServer() {
 
   app.use(cors({ origin: true }));
   app.use(express.json());
+
+  app.post("/api/send-email", async (req, res) => {
+    const { to, subject, text, html } = req.body;
+    const host = process.env.SMTP_HOST;
+    const port = parseInt(process.env.SMTP_PORT || '587');
+    const user = process.env.SMTP_USER;
+    const pass = process.env.SMTP_PASS;
+    const from = process.env.FROM_EMAIL;
+    if (!host || !port || !user || !pass || !from) {
+        return res.status(500).json({ error: "SMTP configuration missing" });
+    }
+    const transporter = nodemailer.createTransport({
+        host,
+        port,
+        secure: port === 465, // true for 465, false for other ports
+        auth: { user, pass },
+    });
+    try {
+        await transporter.sendMail({ from, to, subject, text, html });
+        res.json({ success: true });
+    } catch (e) {
+        console.error("Email error:", e);
+        res.status(500).json({ error: "Failed to send email" });
+    }
+  });
 
   // --- BEGIN DIRECT ADMIN API ---
   // Administrative API endpoints removed in favor of client-side operations (writeBatch)

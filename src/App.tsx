@@ -30,6 +30,7 @@ const ProcessModelsManager = lazy(() => import("./components/GSA/ProcessModelsMa
 const DashboardView = lazy(() => import("./views/DashboardView").then(m => ({ default: m.DashboardView })));
 const ConversionDashboardView = lazy(() => import("./views/ConversionDashboardView").then(m => ({ default: m.ConversionDashboardView })));
 const VitrineView = lazy(() => import("./components/GSA/VitrineView").then(m => ({ default: m.VitrineView })));
+const AdminNotificationSettingsView = lazy(() => import("./views/AdminNotificationSettingsView"));
 const ConsultaPublicaView = lazy(() => import("./views/ConsultaPublicaView").then(m => ({ default: m.ConsultaPublicaView })));
 const ClubePontosView = lazy(() => import("./views/ClubePontosView").then(m => ({ default: m.ClubePontosView })));
 const ClubeMarketingView = lazy(() => import("./views/ClubeMarketingView").then(m => ({ default: m.ClubeMarketingView })));
@@ -175,6 +176,7 @@ const App: React.FC = () => {
               <Route path="/dashboard" element={<DashboardView />} />
               <Route path="/saas-settings" element={<DashboardView view="saas_settings" />} />
               <Route path="/admin_clube_settings" element={<DashboardView view="admin_clube_settings" />} />
+              <Route path="/configuracoes-notificacoes" element={<AdminNotificationSettingsView />} />
 
               {/* Rotas Portal do Cliente Diretas */}
               <Route path="/clube_pontos" element={<ClubePontosView />} />

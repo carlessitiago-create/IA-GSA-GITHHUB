@@ -24,7 +24,8 @@ import {
   MousePointerClick,
   Gift,
   Trophy,
-  EyeOff
+  EyeOff,
+  Mail
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -74,6 +75,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ view, setView, currentProfile,
     { id: 'conversao', label: 'CONVERSÃO', icon: <BarChart3 className="size-5" />, group: 'ENGENHARIA', roles: ['ADM_MASTER', 'GESTOR'] },
     { id: 'saas_settings', label: 'CONFIG. SAAS', icon: <Settings className="size-5" />, group: 'ENGENHARIA', color: 'text-emerald-500', roles: ['ADM_MASTER', 'ADM_GERENTE', 'ADM_ANALISTA'] },
     { id: 'admin_clube_settings', label: 'CONFIG. CLUBE', icon: <Gift className="size-5" />, group: 'ENGENHARIA', roles: ['ADM_MASTER', 'ADM_GERENTE', 'ADM_ANALISTA'] },
+    { id: 'configuracoes-notificacoes', label: 'E-MAIS E PERMISSÕES', icon: <Mail className="size-5" />, group: 'ENGENHARIA', roles: ['ADM_MASTER'] },
     
     { id: 'consulta-interna', label: 'CONSULTA PÚBLICA', icon: <Search className="size-5" />, group: 'SISTEMA' },
     { id: 'suporte', label: 'SUPORTE', icon: <MessageSquare className="size-5" />, group: 'SISTEMA' },
@@ -90,7 +92,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ view, setView, currentProfile,
   ];
 
   const menuItems = isAdm 
-    ? admItems.filter(item => !item.roles || item.roles.includes(currentProfile?.nivel))
+    ? admItems.filter(item => !item.roles || item.roles.includes(currentProfile?.nivel) || item.roles.includes(currentProfile?.nivel?.replace(' ', '_')))
     : clientItems;
 
   const groups = isAdm 
