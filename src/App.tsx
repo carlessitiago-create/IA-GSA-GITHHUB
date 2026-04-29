@@ -96,13 +96,13 @@ const App: React.FC = () => {
   // 1. Domínio de DIAGNÓSTICO ou INDICA (Subdomínios Públicos)
   const normalizedHostname = hostname.toLowerCase();
   const isPublicSubdomain = 
-    normalizedHostname.includes('diagnostico') || 
+    (normalizedHostname.includes('diagnostico') || 
     normalizedHostname.includes('indica') || 
     normalizedHostname.includes('xn--diagnstico-ybb') ||
     normalizedHostname.includes('consulta') ||
     normalizedHostname.startsWith('diagnostico.') ||
     normalizedHostname.startsWith('indica.') ||
-    normalizedHostname.startsWith('consulta.');
+    normalizedHostname.startsWith('consulta.')) && (path === '/' || path === '');
 
   if (isPublicSubdomain) {
     // Escolhe qual portal exibir baseado na palavra-chave do subdomínio
@@ -141,6 +141,7 @@ const App: React.FC = () => {
         
         {/* O Login só é acionado se digitado explicitamente (/login) ou caso não tenha sessão nas rotas abaixo */}
         <Route path="/login" element={<LoginView />} />
+        <Route path="/consulta" element={<PublicPortal />} />
         <Route path="/vendas/p/:slug" element={<ProposalLandingPage />} />
         <Route path="/p/:slug" element={<ProposalLandingPage />} />
         <Route path="/cp/*" element={<PublicPortal />} />
