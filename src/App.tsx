@@ -76,6 +76,10 @@ const App: React.FC = () => {
   const hostname = window.location.hostname.toLowerCase();
   const path = window.location.pathname.toLowerCase();
 
+  // FORCED LOGGING - Will definitely appear in console
+  console.log("CRITICAL: GSA App Hostname detected:", hostname);
+
+
   useEffect(() => {
     // Remove Service Workers presos no navegador para limpar o cache permanentemente
     if ('serviceWorker' in navigator) {
@@ -89,26 +93,37 @@ const App: React.FC = () => {
   // 🚀 BLOQUEIO ABSOLUTO: ISOLANDO OS DOMÍNIOS ANTES DO REACT ROUTER
   // ========================================================================
   
-  // 1. Domínio de DIAGNÓSTICO: Ignora rotas e exibe Landing Page diretamente
-  if (hostname.includes('diagnostico') || hostname.includes('indica') || hostname.includes('xn--diagnstico-ybb')) {
+  // 1. Domínio de DIAGNÓSTICO ou INDICA (Subdomínios Públicos)
+  const normalizedHostname = hostname.toLowerCase();
+  const isPublicSubdomain = 
+    normalizedHostname.includes('diagnostico') || 
+    normalizedHostname.includes('indica') || 
+    normalizedHostname.includes('xn--diagnstico-ybb') ||
+    normalizedHostname.includes('consulta') ||
+    normalizedHostname.startsWith('diagnostico.') ||
+    normalizedHostname.startsWith('indica.') ||
+    normalizedHostname.startsWith('consulta.');
+
+  if (isPublicSubdomain) {
+    // Escolhe qual portal exibir baseado na palavra-chave do subdomínio
+    const isConsulta = normalizedHostname.includes('consulta');
+    
     return (
       <Suspense fallback={<LoadingScreen />}>
-        <SaaSLandingPage />
+        {isConsulta ? <PublicPortal /> : <SaaSLandingPage />}
       </Suspense>
     );
   }
 
-  // 2. Domínio de CONSULTA: Ignora rotas e exibe Portal de Consulta Pública
-  if (hostname.includes('consulta')) {
-    return (
-      <Suspense fallback={<LoadingScreen />}>
-        <PublicPortal />
-      </Suspense>
-    );
-  }
+  // 2. Domínio PRINCIPAL na raiz (ex: 72hrs.online/): Exibe Landing Page
+  const isMainDomainRoot = (
+    hostname === '72h.online' || 
+    hostname === '72hrs.online' || 
+    hostname === 'www.72h.online' || 
+    hostname === 'www.72hrs.online'
+  ) && path === '/';
 
-  // 3. Domínio PRINCIPAL na raiz (ex: 72hrs.online/): Exibe Landing Page
-  if ((hostname === '72h.online' || hostname === '72hrs.online' || hostname === 'www.72h.online' || hostname === 'www.72hrs.online') && path === '/') {
+  if (isMainDomainRoot) {
      return (
       <Suspense fallback={<LoadingScreen />}>
         <SaaSLandingPage />
@@ -134,6 +149,9 @@ const App: React.FC = () => {
 
         {/* == ROTAS PROTEGIDAS (Exigem Autenticação) == */}
         <Route element={<ProtectedRoute />}>
+          {/* Rota de Visualização da Landing Page (Sem Sidebar) */}
+          <Route path="/diagnostico" element={<SaaSLandingPage />} />
+
           <Route element={<DashboardLayout />}>
             <Route path="/financeiro" element={<DashboardFinanceiro />} />
             <Route path="/equipe" element={<GestaoEquipeView />} />

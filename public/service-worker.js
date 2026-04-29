@@ -1,19 +1,11 @@
-self.addEventListener('install', function(e) {
-  self.skipWaiting();
+self.addEventListener('install', (event) => {
+  event.waitUntil(self.skipWaiting());
 });
 
-self.addEventListener('activate', function(e) {
-  e.waitUntil(
-    self.registration.unregister()
-      .then(function() {
-        return self.clients.matchAll();
-      })
-      .then(function(clients) {
-        clients.forEach(client => client.navigate(client.url));
-      })
-  );
+self.addEventListener('activate', (event) => {
+  event.waitUntil(self.clients.claim());
 });
 
-self.addEventListener('fetch', function(e) {
-  // Do nothing. Or skip intercept.
+self.addEventListener('fetch', (event) => {
+  // Let the browser handle the fetch normally
 });

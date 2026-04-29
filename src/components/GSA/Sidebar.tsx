@@ -14,10 +14,12 @@ export function Sidebar({ currentProfile, logout, onClose }: any) {
 
   const isActive = (path: string) => location.pathname === `/${path}`;
 
-  const MenuItem = ({ to, icon: Icon, label, color = "text-slate-400" }: any) => (
+  const MenuItem = ({ to, icon: Icon, label, color = "text-slate-400", blank = false }: any) => (
     <Link
       to={`/${to}`}
       onClick={onClose}
+      target={blank ? "_blank" : undefined}
+      rel={blank ? "noopener noreferrer" : undefined}
       className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${
         isActive(to) 
           ? 'bg-[#0a0a2e] text-white shadow-lg shadow-blue-900/20' 
@@ -90,7 +92,7 @@ export function Sidebar({ currentProfile, logout, onClose }: any) {
             <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Engenharia</p>
             <MenuItem to="saas-settings" icon={Settings} label="Configurações SaaS" color="text-blue-500" />
             <MenuItem to="admin_clube_settings" icon={Gift} label="Configurações do Clube" color="text-purple-500" />
-            <MenuItem to="diagnostico" icon={LayoutDashboard} label="Landing Page SaaS" color="text-green-500" />
+            <MenuItem to="diagnostico" icon={LayoutDashboard} label="Landing Page SaaS" color="text-green-500" blank={true} />
             <MenuItem to="fabrica" icon={Factory} label="Fábrica de Serviços" />
             <MenuItem to="processos" icon={ClipboardList} label="Modelos de Processos" />
             <MenuItem to="equipe" icon={Users} label="Gestão de Equipe" />

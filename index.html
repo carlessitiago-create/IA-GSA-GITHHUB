@@ -4,26 +4,36 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>GSA Diagnóstico</title>
-  </head>
-  <body class="bg-slate-900">
-    <div id="root"></div>
     <script>
-      // Force unregister all service workers and clear cache to fix routing issues
+      // AGGRESSIVE CLEANUP: Stop all interceptors before anything else loads
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(function(registrations) {
           for(var registration of registrations) {
             registration.unregister();
-            console.log('SW Unregistered via index.html');
+            console.log('SW Unregistered');
           }
         });
       }
-      // Optional: Clear cache
-      if ('caches' in window) {
-        caches.keys().then(function(names) {
-          for (var name of names) caches.delete(name);
-        });
+      // Force clear local storage and caches if we suspect a major routing loop
+      // Or simply clear them once to be sure
+      if (!localStorage.getItem('gsa_cache_cleared_v2')) {
+          localStorage.clear();
+          sessionStorage.clear();
+          if ('caches' in window) {
+            caches.keys().then(function(names) {
+              for (var name of names) caches.delete(name);
+            });
+          }
+          localStorage.setItem('gsa_cache_cleared_v2', 'true');
+          console.log('Caches cleared');
       }
     </script>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+  </head>
+  <body class="bg-slate-900">
+    <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
