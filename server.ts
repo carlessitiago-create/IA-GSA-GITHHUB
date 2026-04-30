@@ -93,7 +93,15 @@ async function startServer() {
     const __dirname = path.resolve();
     const distPath = path.join(__dirname, 'dist');
     app.use(express.static(distPath));
-    app.get('*all', (req, res) => res.sendFile(path.join(distPath, 'index.html')));
+    
+    // Catch-all para SPA: serve index.html para qualquer rota que não seja arquivo estático
+    app.use((req, res, next) => {
+      if (req.method === 'GET' && !req.path.startsWith('/api')) {
+        res.sendFile(path.join(distPath, 'index.html'));
+      } else {
+        next();
+      }
+    });
   }
 
   app.listen(PORT, "0.0.0.0", () => {

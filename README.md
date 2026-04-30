@@ -1,20 +1,26 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# GSA App
 
-# Run and deploy your AI Studio app
+## Executar localmente
 
-This contains everything you need to run your app locally.
+### Pré-requisitos:
+- Node.js (versão 18 ou superior)
 
-View your app in AI Studio: https://ai.studio/apps/2473fb05-836e-42bf-bfe7-6175607907dd
+### Passo a passo:
 
-## Run Locally
+1. **Instalar dependências:**
+   ```bash
+   npm install
+   ```
 
-**Prerequisites:**  Node.js
+2. **Configuração de Variáveis de Ambiente:**
+   Crie um arquivo `.env.local` na raiz do projeto (ou copie o `.env.example`) e defina a sua chave de API do Gemini, além de outras variáveis de ambiente se necessário:
+   ```env
+   GEMINI_API_KEY=sua_chave_de_api_aqui
+   ```
 
+3. **Execute o aplicativo:**
+   ```bash
+   npm run dev
+   ```
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+Isso iniciará o servidor de desenvolvimento localmente, o qual você poderá visualizar no seu navegador (geralmente em `http://localhost:3000` ou similar).
