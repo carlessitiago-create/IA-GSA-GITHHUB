@@ -71,9 +71,9 @@ async function startServer() {
     try {
         await transporter.sendMail({ from, to, subject, text, html });
         res.json({ success: true });
-    } catch (e) {
+    } catch (e: any) {
         console.error("Email error:", e);
-        res.status(500).json({ error: "Failed to send email" });
+        res.status(500).json({ error: e.message || "Failed to send email" });
     }
   });
 
