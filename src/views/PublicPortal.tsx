@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
+import { useSmartNavigate } from '../utils/navigation';
 import { formatDate } from '../lib/dateUtils';
 import { motion, AnimatePresence } from 'motion/react';
 import { Search, Gift, CheckCircle2, AlertCircle, ArrowRight, Shield, ShieldCheck, Play, User, Clock, Wallet, Bell, AlertTriangle, Trophy, Star, AlertOctagon, ShieldAlert, Zap, MessageCircle, FileText, Share2, ChevronRight, Info, Calendar, UserPlus } from 'lucide-react';
@@ -8,7 +9,7 @@ import { consultaPublicaProcesso, registrarIndicacaoPublica, listarMinhasIndicac
 import { SmartFicha } from '../components/GSA/SmartFicha';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
-import { PublicPortalConfig } from '../services/configService';
+import { PublicPortalConfig, getPublicPortalConfig } from '../services/configService';
 import { formatDocument } from '../utils/validators';
 import { getIndicaOrigin } from '../lib/urlUtils';
 import Swal from 'sweetalert2';
@@ -17,7 +18,7 @@ import { ServiceData, listarServicosAtivos } from '../services/serviceFactory';
 
 export const PublicPortal = ({ previewConfig }: { previewConfig?: PublicPortalConfig }) => {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
+  const navigate = useSmartNavigate();
   const [step, setStep] = useState<'SEARCH' | 'RESULT'>('SEARCH');
   const [loading, setLoading] = useState(false);
   const [documento, setDocumento] = useState('');
@@ -41,16 +42,20 @@ export const PublicPortal = ({ previewConfig }: { previewConfig?: PublicPortalCo
   const [emailAmigo, setEmailAmigo] = useState('');
 
   useEffect(() => {
-    const fetchServices = async () => {
+    const fetchConfigAndServices = async () => {
       try {
+        if (!previewConfig) {
+          const cfg = await getPublicPortalConfig();
+          setConfig(cfg);
+        }
         const data = await listarServicosAtivos();
         setServicosVitrine(data);
       } catch (e) {
-        console.error("Erro ao carregar serviços:", e);
+        console.error("Erro ao carregar dados do portal:", e);
       }
     };
-    fetchServices();
-  }, []);
+    fetchConfigAndServices();
+  }, [previewConfig]);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -189,7 +194,7 @@ export const PublicPortal = ({ previewConfig }: { previewConfig?: PublicPortalCo
           <motion.button 
             whileHover={{ scale: 1.05, y: -2 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => navigate('/financeiro')}
+            onClick={() => navigate('/login')}
             className="group flex items-center gap-2 bg-white/10 backdrop-blur-xl border border-white/10 hover:border-blue-500/50 px-3 py-1.5 sm:px-6 sm:py-3 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.3)] hover:shadow-blue-500/20 transition-all cursor-pointer relative overflow-hidden"
           >
             <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -335,39 +340,41 @@ export const PublicPortal = ({ previewConfig }: { previewConfig?: PublicPortalCo
 
               {/* CLUBE DE PRÊMIOS PREVIEW */}
               <section className="max-w-7xl mx-auto px-4">
-                <div className="bg-gradient-to-br from-yellow-400 to-orange-500 rounded-[3.5rem] p-8 sm:p-16 text-[#0a0a2e] relative overflow-hidden flex flex-col md:flex-row items-center gap-12">
+                <div className="bg-gradient-to-br from-yellow-400 to-orange-500 rounded-[3.5rem] p-8 sm:p-16 text-[#0a0a2e] relative overflow-hidden flex flex-col items-center text-center gap-12">
                   <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
                     <Trophy size={300} />
                   </div>
                   
-                  <div className="relative z-10 text-center md:text-left space-y-6 flex-1">
-                    <div className="inline-flex items-center gap-2 bg-white/30 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/10">
+                  <div className="relative z-10 space-y-6 max-w-3xl">
+                    <div className="inline-flex items-center gap-2 bg-white/30 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/10 mx-auto">
                       <Star size={14} fill="currentColor" /> Benefício Exclusivo
                     </div>
-                    <h2 className="text-4xl sm:text-6xl font-black uppercase italic tracking-tighter leading-none">
+                    <h2 className="text-4xl sm:text-6xl font-black uppercase italic tracking-tighter leading-none mx-auto">
                       Elite de <br/> <span className="text-white">Prêmios!</span>
                     </h2>
-                    <p className="text-[#0a0a2e]/70 text-sm sm:text-lg font-bold uppercase italic leading-relaxed max-w-md">
+                    <p className="text-[#0a0a2e]/70 text-sm sm:text-lg font-bold uppercase italic leading-relaxed mx-auto">
                       Acumule pontos em cada interação, indique novos clientes e troque por vale-compras, PIX e recompensas exclusivas.
                     </p>
                     <button 
                       onClick={() => Swal.fire('Clube de Vantagens', 'Consulte o seu processo para ver seu saldo de pontos atual!', 'info')}
-                      className="px-12 py-5 bg-[#0a0a2e] text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-2xl hover:scale-105 transition-transform"
+                      className="px-12 py-5 bg-[#0a0a2e] text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-2xl hover:scale-105 transition-transform mx-auto"
                     >
                       Descobrir Prêmios
                     </button>
                   </div>
 
-                  <div className="flex-1 grid grid-cols-2 gap-4 relative z-10">
-                    {[
-                      { nome: 'Vale iFood', img: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&q=80&w=400' },
-                      { nome: 'Bônus PIX', img: 'https://images.unsplash.com/photo-1580519542036-c47de6196ba5?auto=format&fit=crop&q=80&w=400' },
-                    ].map((p, i) => (
-                      <div key={i} className="bg-white/20 backdrop-blur-md p-4 rounded-3xl border border-white/10">
-                        <img src={p.img} className="rounded-2xl w-full aspect-square object-cover mb-3" alt={p.nome} referrerPolicy="no-referrer" />
-                        <p className="text-[10px] font-bold text-center uppercase tracking-widest">{p.nome}</p>
-                      </div>
-                    ))}
+                  <div className="w-full relative z-10 mt-8">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 lg:gap-6">
+                      {(config?.premios && config.premios.length > 0 ? config.premios : [
+                        { nome: 'Vale iFood', img: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&q=80&w=400' },
+                        { nome: 'Bônus PIX', img: 'https://images.unsplash.com/photo-1580519542036-c47de6196ba5?auto=format&fit=crop&q=80&w=400' },
+                      ]).map((p, i) => (
+                        <div key={i} className="bg-white/20 backdrop-blur-md p-4 lg:p-6 rounded-3xl border border-white/10 flex flex-col items-center">
+                          <img src={p.img || 'https://via.placeholder.com/400'} className="rounded-2xl w-full aspect-square object-cover mb-4" alt={p.nome} referrerPolicy="no-referrer" />
+                          <p className="text-[10px] sm:text-xs font-black text-center uppercase tracking-widest">{p.nome}</p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </section>

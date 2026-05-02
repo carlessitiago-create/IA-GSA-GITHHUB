@@ -92,12 +92,14 @@ export function Sidebar({ currentProfile, logout, onClose }: any) {
             <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Engenharia</p>
             <MenuItem to="saas-settings" icon={Settings} label="Configurações SaaS" color="text-blue-500" />
             <MenuItem to="admin_clube_settings" icon={Gift} label="Configurações do Clube" color="text-purple-500" />
+            <MenuItem to="config_consulta" icon={LayoutDashboard} label="Configurações de Consulta" color="text-orange-500" />
             <MenuItem to="diagnostico" icon={LayoutDashboard} label="Landing Page SaaS" color="text-green-500" />
             <MenuItem to="fabrica" icon={Factory} label="Fábrica de Serviços" />
             <MenuItem to="processos" icon={ClipboardList} label="Modelos de Processos" />
             <MenuItem to="equipe" icon={Users} label="Gestão de Equipe" />
             <MenuItem to="inteligencia" icon={LayoutDashboard} label="Inteligência" />
             <MenuItem to="conversao" icon={TrendingUp} label="Conversão" />
+            <MenuItem to="gerenciador-notificacoes" icon={Mail} label="Monitoramento GSA" color="text-green-500" />
             <MenuItem to="configuracoes-notificacoes" icon={Mail} label="E-MAIS E PERMISSÕES" color="text-yellow-500" />
           </div>
         )}

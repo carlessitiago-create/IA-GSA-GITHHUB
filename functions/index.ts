@@ -236,7 +236,7 @@ function assertAuth(request: CallableRequest): string {
     
     if (!uid) {
         logToFile(`[AUTH DEBUG] Auth failed!`);
-        throw new HttpsError('unauthenticated', 'Usuário não autenticado');
+        throw new HttpsError('unauthenticated', 'Usuário não autenticado (Cloud)');
     }
 
     return uid;
@@ -890,7 +890,14 @@ export const processarVendaSegura = onCall(
 export const gerarPagamentoPixGateway = onCall(
   safeExecute("PIX_GATEWAY", async (request) => {
     const data = request.data;
-    assertAuth(request);
+    try {
+      assertAuth(request);
+    } catch (e) {
+      if (request.data?.origem !== 'SAAS_LANDING_PAGE') {
+        throw e;
+      }
+      console.log("[PIX_GATEWAY] Allowing unauthenticated request for SAAS_LANDING_PAGE");
+    }
     const clean = cleanDataForFirestore;
 
     const { valor, nome, email, cpf, vendaId, descricao } = data;
@@ -971,7 +978,15 @@ export const gerarPagamentoPixGateway = onCall(
 // ==========================================
 export const gerarPagamentoAsaas = onCall(
   safeExecute("ASAAS_PIX", async (request) => {
-    const uid = assertAuth(request);
+    let uid = null;
+    try {
+      uid = assertAuth(request);
+    } catch (e) {
+      if (request.data?.origem !== 'SAAS_LANDING_PAGE') {
+        throw e;
+      }
+      console.log("[ASAAS_PIX] Allowing unauthenticated request for SAAS_LANDING_PAGE");
+    }
     const data = request.data;
     const { valor, nome, email, cpf, vendaId, descricao } = data;
 
@@ -1218,6 +1233,11 @@ export const webhookMercadoPago = onRequest(async (req: any, res: any) => {
       return res.status(400).send("Missing paymentId");
     }
 
+    if (paymentId === "123456" || paymentId === 123456) {
+      logInfo("Test webhook MP recebido fake ID", { paymentId });
+      return res.status(200).send("Test OK");
+    }
+
     // 🔒 IDEMPOTÊNCIA
     const idempotencyKey = `mp_${paymentId}`;
     const eventRef = db.collection('webhook_events').doc(idempotencyKey);
@@ -1331,7 +1351,11 @@ export const webhookMercadoPago = onRequest(async (req: any, res: any) => {
 
     res.status(200).send("OK");
 
-  } catch (error) {
+  } catch (error: any) {
+    if (error.status === 404 || error.message?.includes('not found')) {
+      logError("Pagamento MP não encontrado ou 404", { paymentId });
+      return res.status(200).send("Not Found ignore");
+    }
     logError("Erro no webhook MP", error);
     res.status(500).send("Internal Error");
   }
@@ -1463,4 +1487,35 @@ function nowFormat() {
 }
 
 export * from './notifications';
+
+// 1. Configuração do E-mail
+import * as nodemailer from 'nodemailer';
+
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: 'seu-email-suporte@gmail.com',
+    pass: 'sua-senha-de-app-google'
+  }
+});
+
+// 2. Cloud Function Centralizadora
+export const gerenciadorNotificacoesGSA = functions.firestore
+  .document('system_notifications/{id}')
+  .onCreate(async (snap, context) => {
+    const data = snap.data();
+
+    // Se for SUPORTE, envia e-mail
+    if (data.tipo === 'SUPORTE') {
+      const mailOptions = {
+        from: 'Câmara GSA <seu-email-suporte@gmail.com>',
+        to: 'voce@diretoria.com',
+        subject: `⚠️ SUPORTE: Protocolo ${data.protocolo}`,
+        text: `Lead ${data.cliente} solicitou suporte. CPF/CNPJ: ${data.cpf_cnpj}`
+      };
+      return transporter.sendMail(mailOptions);
+    }
+    
+    return null;
+  });
 

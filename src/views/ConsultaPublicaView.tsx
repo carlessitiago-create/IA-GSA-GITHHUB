@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { collection, query, where, getDocs, getDoc, doc, orderBy, limit } from 'firebase/firestore';
+import React, { useState, useEffect } from 'react';
+import { collection, query, where, getDocs, getDoc, doc, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Search, FileText, Clock, CheckCircle, AlertCircle, User, Calendar, ExternalLink, Info, Eye, Gift, Trophy, Share2, Star, Shield, AlertTriangle, ArrowRight, MessageCircle } from 'lucide-react';
 import { format } from 'date-fns';
@@ -9,6 +9,7 @@ import { getIndicaOrigin, getConsultaOrigin } from '../lib/urlUtils';
 import { SmartFicha } from '../components/GSA/SmartFicha';
 import { motion, AnimatePresence } from 'motion/react';
 import Swal from 'sweetalert2';
+import confetti from 'canvas-confetti';
 import { ClubePromoBanner } from '../components/GSA/ClubePromoBanner';
 
 export function ConsultaPublicaView() {
@@ -28,6 +29,48 @@ export function ConsultaPublicaView() {
   const totalBonus = indicacoes
     .filter(ind => ind.status_indicacao === 'Concluido')
     .reduce((sum, ind) => sum + (ind.bonus_valor || 0), 0);
+
+  // Efeito para escutar mudanças no processo em tempo real
+  useEffect(() => {
+    if (results.length === 0) return;
+
+    const unsubs = results.map(proc => {
+      if (!proc.id) return () => {};
+      return onSnapshot(doc(db, 'order_processes', proc.id), (docSnap) => {
+        if (docSnap.exists()) {
+          const newData = { id: docSnap.id, ...docSnap.data() } as any;
+          setResults(prev => prev.map(p => {
+             if (p.id === docSnap.id) {
+               // Verifica transição de status para confete
+               const statusAnterior = p.status_atual;
+               const statusNovo = newData.status_atual;
+               if ((statusAnterior === 'Pendente' || statusAnterior === 'Aguardando Pagamento') && 
+                   (statusNovo !== 'Pendente' && statusNovo !== 'Aguardando Pagamento')) {
+                 confetti({
+                   particleCount: 150,
+                   spread: 100,
+                   origin: { y: 0.6 }
+                 });
+                 Swal.fire({
+                   title: 'Pagamento Confirmado!',
+                   text: 'Seu processo foi atualizado com sucesso.',
+                   icon: 'success',
+                   timer: 2500,
+                   showConfirmButton: false
+                 });
+               }
+               return { ...p, ...newData };
+             }
+             return p;
+          }));
+        }
+      });
+    });
+
+    return () => {
+      unsubs.forEach(unsub => unsub());
+    };
+  }, [results.map(r => r.id).join(',')]);
 
   const shareViaWhatsApp = () => {
     const link = `${getIndicaOrigin()}?ref=${searchTerm}`;
@@ -268,6 +311,36 @@ export function ConsultaPublicaView() {
                     )}
                   </div>
                 </div>
+
+                {/* STATUS DE PAGAMENTO / PROCESSAMENTO / AGUARDANDO */}
+                {(processo.status_atual === 'Pendente' || processo.status_atual === 'Aguardando Pagamento') && (
+                  <div className="bg-amber-50 p-8 sm:p-10 rounded-[3rem] border-2 border-amber-200 shadow-2xl flex flex-col md:flex-row items-center gap-8 text-center md:text-left animate-pulse-slow">
+                    <div className="size-20 bg-amber-400 rounded-full flex items-center justify-center shrink-0 shadow-xl shadow-amber-400/30">
+                       <div className="size-10 border-4 border-amber-900 border-t-transparent rounded-full animate-spin" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-3xl font-black text-amber-900 uppercase italic leading-none">Aguardando Compensação...</h3>
+                      <p className="text-amber-800 text-sm font-bold mt-3 leading-relaxed">
+                        Seu pagamento foi pré-identificado ou está em processamento pelos nossos gateways. 
+                        <strong> Esta tela atualizará sozinha assim que o banco confirmar.</strong>
+                      </p>
+                    </div>
+                    <div className="flex flex-col gap-3 shrink-0 w-full md:w-auto">
+                      <button 
+                        onClick={() => window.location.href = '/'}
+                        className="w-full md:w-auto px-8 py-4 bg-white text-red-600 rounded-2xl font-black uppercase tracking-widest text-[10px] border-2 border-red-100 hover:bg-red-50 transition-all shadow-lg text-center"
+                      >
+                        Refazer Pedido / Voltar
+                      </button>
+                      <button 
+                        onClick={() => window.open('https://wa.me/message/SEU_LINK', '_blank')} 
+                        className="w-full md:w-auto px-8 py-4 bg-amber-100 text-amber-900 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-amber-200 transition-all shadow-lg text-center"
+                      >
+                        Solicitar Suporte
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {/* HUB INDIQUE E GANHE (POLISHED) */}
                 <div className="bg-gradient-to-br from-blue-600 to-indigo-900 rounded-[3rem] p-1 shadow-2xl">

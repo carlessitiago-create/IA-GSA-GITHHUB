@@ -48,18 +48,28 @@ export default function AdminNotificationSettingsView() {
   }
 
   async function sendManualEmail() {
-    await fetch('/api/send-email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(manualEmail)
-    });
-    
-    // Log manually sent notification
-    await setDoc(doc(collection(db, 'sent_notifications')), {
-        ...manualEmail,
-        timestamp: new Date()
-    });
-    alert('Email enviado e registrado!');
+    try {
+      const response = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(manualEmail)
+      });
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro ao enviar e-mail');
+      }
+
+      // Log manually sent notification
+      await setDoc(doc(collection(db, 'sent_notifications')), {
+          ...manualEmail,
+          timestamp: new Date()
+      });
+      alert('Email enviado e registrado com sucesso!');
+    } catch (e: any) {
+      console.error(e);
+      alert('Erro: ' + (e.message || 'Falha ao enviar e-mail'));
+    }
   }
 
   if (loading) return <div className="text-white p-8">Carregando...</div>;

@@ -2,15 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { getSaasConfig, SaasConfig, updateSaasConfig } from '../../services/configService';
+import { wipeSystemData } from '../../services/wipeSystem';
 import { getDiagnosticoOrigin } from '../../lib/urlUtils';
 import { Settings, Link, Info, Save, CheckCircle, DollarSign } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import Swal from 'sweetalert2';
 
 export const AdminSaasSettings: React.FC = () => {
   const [config, setConfig] = useState<SaasConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
+  
+  const [isWiping, setIsWiping] = useState(false);
+  const [wipeProgress, setWipeProgress] = useState<string | null>(null);
 
   const saasUrl = getDiagnosticoOrigin();
   const displayUrl = saasUrl.replace('https://', '');
@@ -21,6 +26,36 @@ export const AdminSaasSettings: React.FC = () => {
       setLoading(false);
     });
   }, []);
+
+  const handleWipe = async () => {
+    const result = await Swal.fire({
+      title: 'Zerar Registros',
+      text: 'Isso apagará TODOS os leads, vendas, clientes e processos. O sistema voltará ao zero (mantendo configurações, usuários e APIs). ESSA AÇÃO NÃO PODE SER DESFEITA.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Sim, Zerar Tudo',
+      cancelButtonText: 'Cancelar'
+    });
+
+    if (result.isConfirmed) {
+      setIsWiping(true);
+      setWipeProgress('Iniciando...');
+      try {
+        await wipeSystemData((progressMsg) => {
+          setWipeProgress(progressMsg);
+        });
+        Swal.fire('Concluído', 'O sistema foi reiniciado com sucesso. A plataforma está pronta para operar.', 'success');
+      } catch (err) {
+        console.error(err);
+        Swal.fire('Erro', 'Ocorreu um erro ao limpar o sistema.', 'error');
+      } finally {
+        setIsWiping(false);
+        setWipeProgress(null);
+      }
+    }
+  };
 
   const handleSave = async () => {
     if (!config) return;
@@ -202,6 +237,36 @@ export const AdminSaasSettings: React.FC = () => {
                 className="w-full bg-slate-50 border-none rounded-2xl p-4 text-sm font-bold text-[#0a0a2e] focus:ring-2 focus:ring-blue-600 outline-none"
               />
             </div>
+
+            <div className="pt-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">
+                Instala o Píxel da Meta no teu site
+              </label>
+              <p className="text-[10px] text-slate-400 font-bold leading-relaxed mb-3">
+                O Píxel da Meta é um excerto de código que adicionas ao teu site ao copiar o código base.
+              </p>
+              <textarea 
+                value={config?.meta_pixel_code || ''}
+                onChange={(e) => setConfig(prev => prev ? { ...prev, meta_pixel_code: e.target.value } : null)}
+                placeholder="<!-- Meta Pixel Code -->\n<script>...</script>\n<!-- End Meta Pixel Code -->"
+                rows={5}
+                className="w-full bg-slate-50 border-none rounded-2xl p-4 text-xs font-mono text-[#0a0a2e] focus:ring-2 focus:ring-blue-600 outline-none"
+              />
+            </div>
+
+            <div className="pt-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Facebook Pixel ID (Opção Alternativa)</label>
+              <input 
+                type="text"
+                value={config?.facebook_pixel_id || ''}
+                onChange={(e) => setConfig(prev => prev ? { ...prev, facebook_pixel_id: e.target.value } : null)}
+                placeholder="123456789012345"
+                className="w-full bg-slate-50 border-none rounded-2xl p-4 text-sm font-bold text-[#0a0a2e] focus:ring-2 focus:ring-blue-600 outline-none"
+              />
+              <p className="text-[10px] text-slate-400 font-bold leading-relaxed uppercase mt-2">
+                O Pixel será ativado automaticamente na Landing Page. Tente usar o campo de código base acima primeiro, ou apenas informe o ID aqui.
+              </p>
+            </div>
           </div>
 
           <div className="pt-4 border-t border-slate-100">
@@ -329,6 +394,35 @@ export const AdminSaasSettings: React.FC = () => {
               />
             </div>
           </div>
+        </div>
+      </div>
+
+      <div className="pt-4 border-t border-slate-100 space-y-4">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="size-8 bg-red-50 rounded-xl flex items-center justify-center text-red-500">
+            <Info size={18} />
+          </div>
+          <h3 className="font-black text-red-600 uppercase italic tracking-tight">Área de Risco: Limpeza de Sistema</h3>
+        </div>
+        <div className="bg-red-50 p-6 rounded-[2rem] border border-red-100 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div>
+            <h4 className="font-black text-red-900 uppercase">Hard Reset</h4>
+            <p className="text-xs text-red-700/80 mt-1 max-w-md">
+              Apaga todos os registros transacionais (leads, vendas, processos, tickets, financeiro). Mantém apenas as configurações, APIs e usuários do sistema. Esta ação é irreversível.
+            </p>
+            {wipeProgress && (
+              <p className="text-xs font-bold text-red-600 mt-2 flex items-center gap-2">
+                <span className="animate-spin">⏳</span> {wipeProgress}
+              </p>
+            )}
+          </div>
+          <button 
+            onClick={handleWipe}
+            disabled={isWiping}
+            className="flex-shrink-0 bg-red-600 text-white font-black uppercase text-[10px] tracking-widest px-8 py-4 rounded-xl hover:bg-red-700 active:scale-95 transition-all disabled:opacity-50"
+          >
+            {isWiping ? 'Resetando...' : 'Zerar Registros'}
+          </button>
         </div>
       </div>
 

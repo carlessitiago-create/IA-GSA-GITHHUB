@@ -12,7 +12,7 @@ function handleFirebaseError(error: any, context: string): never {
   let errorMessage = `Falha técnica em ${context}.`;
   
   if (error?.message) {
-    errorMessage = error.message;
+    errorMessage = error.message + " (Frontend)";
   } else if (error?.details) {
     errorMessage = typeof error.details === 'string' ? error.details : JSON.stringify(error.details);
   } else if (typeof error === 'string') {
@@ -44,7 +44,7 @@ export async function processarVenda(
 ) {
   try {
     const processVenda = httpsCallable(functions, 'processVenda');
-    const result = await processVenda({ 
+    const result = await processVenda(cleanData({ 
       clienteId, 
       itens, 
       metodoPagamento, 
@@ -52,7 +52,7 @@ export async function processarVenda(
       clienteNome, 
       clienteDocumento, 
       dataNascimento 
-    });
+    }));
     return result.data as { saleId: string; protocolo: string; [key: string]: any };
   } catch (error) {
     return handleFirebaseError(error, "ProcessarVenda");

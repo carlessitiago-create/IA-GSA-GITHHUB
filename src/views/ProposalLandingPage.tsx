@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
+import { useSmartNavigate } from '../utils/navigation';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { getProposalBySlug, ProposalData, checkCpfOwnership, updateProposalStatus } from '../services/proposalService';
@@ -34,7 +35,7 @@ import Swal from 'sweetalert2';
 
 export const ProposalLandingPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
-  const navigate = useNavigate();
+  const navigate = useSmartNavigate();
   const [proposal, setProposal] = useState<ProposalData | null>(null);
   const [showcase, setShowcase] = useState<ShowcaseService | null>(null);
   const [loading, setLoading] = useState(true);
@@ -252,7 +253,7 @@ export const ProposalLandingPage: React.FC = () => {
         <motion.button 
           whileHover={{ scale: 1.05, y: -2 }}
           whileTap={{ scale: 0.95 }}
-          onClick={() => navigate('/financeiro')}
+          onClick={() => navigate('/login')}
           className="group flex items-center gap-2 bg-[#0a0a2e]/60 backdrop-blur-xl border border-white/10 hover:border-blue-500/50 px-4 py-2 sm:px-6 sm:py-3 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.3)] hover:shadow-blue-500/20 transition-all cursor-pointer relative overflow-hidden"
         >
           <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />

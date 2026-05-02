@@ -163,15 +163,16 @@ export async function cadastrarCliente(data: Omit<ClientData, 'data_entrada' | '
     if (!data.especialista_id || data.especialista_id === 'ADM' || data.especialista_id === 'SaaS_GSA_IA') {
       try {
         const { sendNotification } = await import('./notificationService');
-        const adminsSnapshot = await getDocs(query(collection(db, 'usuarios'), where('nivel', 'in', ['ADM_MASTER', 'ADM_GERENTE'])));
-        for (const adminDoc of adminsSnapshot.docs) {
-          await sendNotification({
-            usuario_id: adminDoc.id,
-            titulo: '🚨 Lead Órfão Capturado (SaaS)' + (aiScoreMsg ? ` 🔥` : ''),
-            mensagem: `O lead ${data.nome} se cadastrou através de uma Landing Page sem Vendedor. Atribua um especialista imediatamente!${aiScoreMsg}`,
-            tipo: 'NEW_LEAD'
-          });
-        }
+        // Ao invés de query a usuários (que falha sem Firebase Auth), mande via notificação com alvo de admin/gerente
+        // Para isso, a notificação com "targetRole" 'ADM_MASTER'  pode ser salva.
+        const notifDocRef = await addDoc(collection(db, 'notifications'), {
+           targetRole: 'ADM_MASTER',
+           titulo: '🚨 Lead Órfão Capturado (SaaS)' + (aiScoreMsg ? ` 🔥` : ''),
+           mensagem: `O lead ${data.nome} se cadastrou através de uma Landing Page sem Vendedor. Atribua um especialista imediatamente!${aiScoreMsg}`,
+           tipo: 'NEW_LEAD',
+           lida: false,
+           timestamp: serverTimestamp()
+        });
       } catch (err) {
         console.error("Failed to notify admins of orphan lead", err);
       }

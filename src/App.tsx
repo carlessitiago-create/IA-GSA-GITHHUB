@@ -1,9 +1,10 @@
 import React, { lazy, Suspense, useEffect } from "react";
-import { Routes, Route, Navigate, Outlet } from "react-router-dom";
+import { Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "./components/AuthContext";
 import { LoadingScreen } from "./components/LoadingScreen";
 import { DashboardLayout } from "./components/DashboardLayout";
 import { DashboardFinanceiro } from "./pages/DashboardFinanceiro";
+import { MAIN_DOMAINS } from "./utils/navigation";
 
 // Lazy Loading Views
 const LoginView = lazy(() => import("./components/LoginView"));
@@ -22,6 +23,7 @@ const LeadsCentralView = lazy(() => import("./components/GSA/LeadsCentralView").
 const OperationalView = lazy(() => import("./components/GSA/OperationalView").then(m => ({ default: m.OperationalView })));
 const PendencyList = lazy(() => import("./components/GSA/PendencyList").then(m => ({ default: m.PendencyList })));
 const AuditoriaProcesso = lazy(() => import("./components/GSA/AuditoriaProcesso").then(m => ({ default: m.AuditoriaProcesso })));
+const PortalSettingsView = lazy(() => import("./components/GSA/PortalSettingsView").then(m => ({ default: m.PortalSettingsView })));
 const MyClubView = lazy(() => import("./components/GSA/MyClubView").then(m => ({ default: m.MyClubView })));
 const SupportModule = lazy(() => import("./components/Support/SupportModule"));
 const ServiceFactoryView = lazy(() => import("./components/GSA/ServiceFactoryView").then(m => ({ default: m.ServiceFactoryView })));
@@ -38,6 +40,7 @@ const ClientProcessesView = lazy(() => import("./components/GSA/ClientProcessesV
 const ClientWalletView = lazy(() => import("./components/GSA/ClientWalletView").then(m => ({ default: m.ClientWalletView })));
 const TabelaCustasView = lazy(() => import("./views/TabelaCustasView").then(m => ({ default: m.TabelaCustasView })));
 const VendaEmMassaView = lazy(() => import("./views/VendaEmMassaView").then(m => ({ default: m.VendaEmMassaView })));
+const GerenciadorNotificacoesView = lazy(() => import("./views/GerenciadorNotificacoesView").then(m => ({ default: m.GerenciadorNotificacoesView })));
 
 import { PendingApproval, AccountRefused, AccountSuspended, CompleteProfile } from "./components/Auth";
 
@@ -62,52 +65,74 @@ const AppRoot: React.FC = () => {
   const { user, profile, loading } = useAuth();
   if (loading) return <LoadingScreen />;
   
-  // Se entrou na raiz (app.72hrs.online) e tem usuário, manda pro painel
+  // Se entrou na raiz e tem usuário, manda pro painel correspondente
   if (user) {
     const isAdm = ["ADM_MASTER", "ADM_GERENTE", "ADM_ANALISTA", "GESTOR", "VENDEDOR"].includes(profile?.nivel || "");
     return <Navigate to={isAdm ? "/financeiro" : "/clube_pontos"} replace />;
   }
   
-  // Se não tem login e tentou acessar a raiz do app, força o login
-  return <Navigate to="/login" replace />;
+  // Se não tem login e tentou acessar a raiz do app, exibe a landing page, em vez de forçar o login
+  return (
+    <Suspense fallback={<LoadingScreen />}>
+      <SaaSLandingPage />
+    </Suspense>
+  );
 };
 
 const App: React.FC = () => {
+  const location = useLocation();
   const hostname = window.location.hostname.toLowerCase();
-  const path = window.location.pathname.toLowerCase();
+  const path = location.pathname.toLowerCase();
 
   // FORCED LOGGING - Will definitely appear in console
-  console.log("CRITICAL: GSA App Hostname detected:", hostname);
+  console.log("CRITICAL: GSA App Hostname detected:", hostname, "Path:", path);
 
+  // SHORT-CIRCUIT DE SEGURANÇA PARA A LANDING PAGE ABRIR SEMPRE INDEPENDENTE DO DOMÍNIO OU LOGIN.
+  // Isso força com que app.72hrs.online/diagnostico sempre seja a landing page.
+  if (path === '/diagnostico' || path === '/diagnosticos' || path.startsWith('/diagnostico/')) {
+    return (
+      <Suspense fallback={<LoadingScreen />}>
+        <SaaSLandingPage />
+      </Suspense>
+    );
+  }
 
+  // 1. Definição de domínio de aplicação (Onde o login e painel residem)
+  const isAppDomain = hostname.startsWith('app.') || hostname.includes('localhost') || hostname.includes('ais-dev') || hostname.includes('ais-pre') || hostname.includes('run.app');
+  const isPublicSubdomain = !isAppDomain;
+
+  // AUTO-REDIRECT removido para permitir que os painéis funcionem mesmo em subdomínios como diagnostico.72hrs.online
+  // caso o cliente não tenha DNS configurado para app.72hrs.online
+  /*
   useEffect(() => {
-    // Remove Service Workers presos no navegador para limpar o cache permanentemente
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then((registrations) => {
-        registrations.forEach(r => r.unregister());
-      });
+    // Rotas consideradas "seguras" para domínios públicos
+    const isPublicPath = path === '/' || path === '' || path === '/consulta' || path.startsWith('/cp/') || path.startsWith('/diagnostico');
+
+    if (isPublicSubdomain && !isPublicPath) {
+      let targetDomain = MAIN_DOMAINS[0];
+      
+      if (hostname.includes('run.app')) {
+        targetDomain = hostname;
+      } else {
+        if (hostname.includes('app.')) {
+          targetDomain = hostname;
+        } else {
+          const baseDomain = MAIN_DOMAINS.find(d => hostname.endsWith(d.replace('app.', ''))) || '72hrs.online';
+          const cleanBase = baseDomain.replace('app.', '');
+          targetDomain = `app.${cleanBase}`;
+        }
+      }
+
+      const protocol = window.location.protocol;
+      console.log(`[AUTO-REDIRECT] ${hostname}${path} -> ${targetDomain}${path}`);
+      window.location.replace(`${protocol}//${targetDomain}${path}`);
     }
-  }, []);
+  }, [isPublicSubdomain, path, hostname]);
+  */
 
-  // ========================================================================
-  // 🚀 BLOQUEIO ABSOLUTO: ISOLANDO OS DOMÍNIOS ANTES DO REACT ROUTER
-  // ========================================================================
-  
-  // 1. Domínio de DIAGNÓSTICO ou INDICA (Subdomínios Públicos)
-  const normalizedHostname = hostname.toLowerCase();
-  const isPublicSubdomain = 
-    (normalizedHostname.includes('diagnostico') || 
-    normalizedHostname.includes('indica') || 
-    normalizedHostname.includes('xn--diagnstico-ybb') ||
-    normalizedHostname.includes('consulta') ||
-    normalizedHostname.startsWith('diagnostico.') ||
-    normalizedHostname.startsWith('indica.') ||
-    normalizedHostname.startsWith('consulta.')) && (path === '/' || path === '');
-
-  if (isPublicSubdomain) {
-    // Escolhe qual portal exibir baseado na palavra-chave do subdomínio
-    const isConsulta = normalizedHostname.includes('consulta');
-    
+  // Se estiver em domínio público e acessando a raiz ou consulta
+  if (isPublicSubdomain && (path === '/' || path === '' || path === '/consulta' || path.startsWith('/diagnostico'))) {
+    const isConsulta = hostname.includes('consulta') || path === '/consulta';
     return (
       <Suspense fallback={<LoadingScreen />}>
         {isConsulta ? <PublicPortal /> : <SaaSLandingPage />}
@@ -121,7 +146,7 @@ const App: React.FC = () => {
     hostname === '72hrs.online' || 
     hostname === 'www.72h.online' || 
     hostname === 'www.72hrs.online'
-  ) && path === '/';
+  ) && (path === '/' || path === '' || path.startsWith('/diagnostico'));
 
   if (isMainDomainRoot) {
      return (
@@ -131,9 +156,6 @@ const App: React.FC = () => {
     );
   }
 
-  // ========================================================================
-  // 🔒 SISTEMA PRINCIPAL (App, Painel e Login explícito)
-  // ========================================================================
   return (
     <Suspense fallback={<LoadingScreen />}>
       <Routes>
@@ -147,12 +169,12 @@ const App: React.FC = () => {
         <Route path="/cp/*" element={<PublicPortal />} />
         <Route path="/vitrine-publica/*" element={<VitrinePublicaView />} />
         <Route path="/vendas/*" element={<VitrinePublicaView />} />
+        <Route path="/diagnostico" element={<SaaSLandingPage />} />
+        <Route path="/diagnosticos" element={<SaaSLandingPage />} />
+        <Route path="/diagnostico/*" element={<SaaSLandingPage />} />
 
         {/* == ROTAS PROTEGIDAS (Exigem Autenticação) == */}
         <Route element={<ProtectedRoute />}>
-          {/* Rota de Visualização da Landing Page (Sem Sidebar) */}
-          <Route path="/diagnostico" element={<SaaSLandingPage />} />
-
           <Route element={<DashboardLayout />}>
             <Route path="/financeiro" element={<DashboardFinanceiro />} />
             <Route path="/equipe" element={<GestaoEquipeView />} />
@@ -175,7 +197,9 @@ const App: React.FC = () => {
             <Route path="/dashboard" element={<DashboardView />} />
             <Route path="/saas-settings" element={<DashboardView view="saas_settings" />} />
             <Route path="/admin_clube_settings" element={<DashboardView view="admin_clube_settings" />} />
+            <Route path="/config_consulta" element={<PortalSettingsView />} />
             <Route path="/configuracoes-notificacoes" element={<AdminNotificationSettingsView />} />
+            <Route path="/gerenciador-notificacoes" element={<GerenciadorNotificacoesView />} />
 
             {/* Rotas Portal do Cliente */}
             <Route path="/clube_pontos" element={<ClubePontosView />} />

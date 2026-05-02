@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
+import { useSmartNavigate } from '../utils/navigation';
 import { doc, onSnapshot } from 'firebase/firestore';
 import confetti from 'canvas-confetti';
+import Swal from 'sweetalert2';
 import { db } from '../firebase';
 import { cadastrarCliente } from '../services/leadService';
 import { processarVenda, registrarVendaManual } from '../services/vendaService';
@@ -35,9 +37,12 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 
 const SaaSLandingPage: React.FC = () => {
-  const navigate = useNavigate();
+  const hostname = window.location.hostname.toLowerCase();
+  const navigate = useSmartNavigate();
   const [searchParams] = useSearchParams();
   const refCode = searchParams.get('ref');
+  
+  const [isRedirecting, setIsRedirecting] = useState(false);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState({ nome: '', preco: 0 });
@@ -56,6 +61,68 @@ const SaaSLandingPage: React.FC = () => {
     console.log("SaaSLandingPage: Component Mounted - Path:", window.location.pathname);
     getSaasConfig().then(setConfig).catch(err => console.error("Erro ao carregar config SaaS:", err));
   }, []);
+
+  // Inicializa o Pixel do Facebook
+  useEffect(() => {
+    // 1. Tenta carregar o código base completo (Script da Meta)
+    if (config?.meta_pixel_code) {
+      const template = document.createElement('template');
+      template.innerHTML = config.meta_pixel_code.trim();
+      
+      Array.from(template.content.childNodes).forEach((node) => {
+        if (node.nodeType === 1 && node.nodeName === 'SCRIPT') {
+          const scriptElement = document.createElement('script');
+          const originalScript = node as HTMLScriptElement;
+          
+          if (originalScript.src) {
+             scriptElement.src = originalScript.src;
+          }
+          scriptElement.textContent = originalScript.textContent;
+          // Note: using innerHTML for scripts isn't reliable, we recreate script nodes
+          
+          Array.from(originalScript.attributes).forEach(attr => {
+             scriptElement.setAttribute(attr.name, attr.value);
+          });
+          
+          // Prevents duplicate scripts if react strict mode re-renders
+          if (!document.head.innerHTML.includes(scriptElement.textContent?.substring(0, 50) || 'fbq')) {
+             document.head.appendChild(scriptElement);
+          }
+        } else if (node.nodeType === 1 && node.nodeName === 'NOSCRIPT') {
+           if (!document.head.innerHTML.includes('noscript')) {
+             document.head.appendChild(node.cloneNode(true));
+           }
+        }
+      });
+    } 
+    // 2. Se não tem código base, tenta carregar só pelo ID
+    else if (config?.facebook_pixel_id) {
+      const pixelId = config.facebook_pixel_id;
+      
+      // Verifica se o pixel já foi inicializado
+      if (!(window as any).fbq) {
+        ;(function(f: any,b: any,e: any,v: any,n?: any,t?: any,s?: any) {
+          if(f.fbq) return;
+          n = f.fbq = function() {
+            n.callMethod ? n.callMethod.apply(n,arguments) : n.queue.push(arguments)
+          };
+          if(!f._fbq) f._fbq = n;
+          n.push = n;
+          n.loaded = !0;
+          n.version = '2.0';
+          n.queue = [];
+          t = b.createElement(e);
+          t.async = !0;
+          t.src = v;
+          s = b.getElementsByTagName(e)[0];
+          s.parentNode.insertBefore(t,s);
+        })(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
+        
+        (window as any).fbq('init', pixelId);
+        (window as any).fbq('track', 'PageView');
+      }
+    }
+  }, [config?.facebook_pixel_id, config?.meta_pixel_code]);
 
   // Efeito de Confetis ao Confirmar Pagamento
   useEffect(() => {
@@ -131,6 +198,21 @@ const SaaSLandingPage: React.FC = () => {
     setSelectedPlan({ nome, preco });
     setIsModalOpen(true);
     trackInitiateCheckout(nome, preco); // 🟢 Pixel: Iniciou checkout
+  };
+
+  const handleJaPaguei = () => {
+    Swal.fire({
+      title: 'Pagamento em Processamento',
+      text: 'Os bancos podem levar até 2 minutos para confirmar o PIX. Vamos levar-te para a Consulta Pública para acompanhares em tempo real.',
+      icon: 'info',
+      showCancelButton: false,
+      confirmButtonText: 'Ir para Consulta Pública',
+      confirmButtonColor: '#00C853'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        window.location.href = '/consulta'; 
+      }
+    });
   };
 
   const handleFinalizePurchase = async (leadData: { nome: string; documento: string; telefone: string; data_nascimento: string; email: string }) => {
@@ -231,72 +313,94 @@ const SaaSLandingPage: React.FC = () => {
         console.warn("Auto-fix do diag_credito falhou - ignorando:", autoFixErr);
       }
 
-      const result = await processarVenda(
-        novoCliente.id, 
-        [{ 
-            servicoId: "diag_credito", 
-            servicoNome: selectedPlan.nome, 
-            precoBase: selectedPlan.preco, 
-            precoVenda: selectedPlan.preco, 
-            prazoEstimadoDias: 1 
-        }],
-        'PIX',
-        undefined,
-        leadData.nome,
-        leadData.documento,
-        leadData.data_nascimento
-      );
+      try {
+        const result = await processarVenda(
+          novoCliente.id, 
+          [{ 
+              servicoId: "diag_credito", 
+              servicoNome: selectedPlan.nome, 
+              precoBase: selectedPlan.preco, 
+              precoVenda: selectedPlan.preco, 
+              prazoEstimadoDias: 1 
+          }],
+          'PIX',
+          undefined,
+          leadData.nome,
+          leadData.documento,
+          leadData.data_nascimento
+        );
 
-      console.log("Venda processada pelo backend:", result);
+        console.log("Venda processada pelo backend:", result);
 
-      if (!result || !result.saleId) {
-        throw new Error("A venda foi processada, mas o servidor não retornou um ID de venda válido.");
+        if (!result || !result.saleId) {
+          throw new Error("A venda foi processada, mas o servidor não retornou um ID de venda válido.");
+        }
+
+        // 3. Gera o pagamento no Gateway (Asaas / Mercado Pago)
+        let mpResult: any;
+        if (config?.gateway_ativo === 'ASAAS') {
+          console.log("Chamando gerarPagamentoAsaasFront...");
+          const { gerarPagamentoAsaasFront } = await import('../services/vendaService');
+          mpResult = await gerarPagamentoAsaasFront({
+            valor: selectedPlan.preco,
+            descricao: `Plano ${selectedPlan.nome}`,
+            email: leadData.email,
+            nome: leadData.nome,
+            cpf: leadData.documento,
+            clienteId: novoCliente.id,
+            vendaId: result.saleId
+          });
+        } else {
+          console.log("Chamando gerarPagamentoPixGateway (Mercado Pago)...");
+          const { gerarPagamentoPixGateway } = await import('../services/vendaService');
+          mpResult = await gerarPagamentoPixGateway({
+            valor: selectedPlan.preco,
+            descricao: `Plano ${selectedPlan.nome}`,
+            email: leadData.email,
+            nome: leadData.nome,
+            cpf: leadData.documento,
+            clienteId: novoCliente.id,
+            vendaId: result.saleId
+          });
+        }
+        
+        console.log("Pagamento gerado:", mpResult);
+
+        // Armazena info da venda para o próximo passo
+        const info = { 
+          id: result.saleId, 
+          protocolo: result.protocolo || result.saleId.substring(0, 8).toUpperCase(),
+          qrcode: mpResult.qr_code_base64,
+          copiaECola: mpResult.copy_paste,
+          gateway: config?.gateway_ativo || 'MERCADO_PAGO'
+        };
+        
+        setPixData(info);
+        
+        // 4. Sucesso: Fecha modal e mostra tela de pagamento
+        setIsModalOpen(false);
+        setShowPayment(true);
+      } catch (backendError: any) {
+        console.error("Falha na automação (Cloud Functions). Fallback para manual...", backendError);
+        const saleId = await registrarVendaManual(novoCliente.id, selectedPlan);
+        const links = config?.links_manuais || {
+          dividas: 'https://link-dividas.com',
+          bacen: 'https://link-bacen.com',
+          rating: 'https://link-rating.com',
+          master: 'https://link-master.com'
+        };
+
+        let linkFinal = links.master;
+        if (selectedPlan.nome === "Diagnóstico de Dívidas") linkFinal = links.dividas;
+        if (selectedPlan.nome === "Diagnóstico BACEN") linkFinal = links.bacen;
+        if (selectedPlan.nome === "Rating + Dívidas") linkFinal = links.rating;
+        if (selectedPlan.nome === "Consultoria Premium") linkFinal = links.master;
+
+        setManualRedirectLink(linkFinal);
+        setPixData({ id: saleId, protocolo: saleId.substring(0, 8).toUpperCase() });
+        setIsModalOpen(false);
+        setShowPayment(true);
       }
-
-      // 3. Gera o pagamento no Gateway (Asaas / Mercado Pago)
-      let mpResult: any;
-      if (config?.gateway_ativo === 'ASAAS') {
-        console.log("Chamando gerarPagamentoAsaasFront...");
-        const { gerarPagamentoAsaasFront } = await import('../services/vendaService');
-        mpResult = await gerarPagamentoAsaasFront({
-          valor: selectedPlan.preco,
-          descricao: `Plano ${selectedPlan.nome}`,
-          email: leadData.email,
-          nome: leadData.nome,
-          cpf: leadData.documento,
-          clienteId: novoCliente.id,
-          vendaId: result.saleId
-        });
-      } else {
-        console.log("Chamando gerarPagamentoPixGateway (Mercado Pago)...");
-        const { gerarPagamentoPixGateway } = await import('../services/vendaService');
-        mpResult = await gerarPagamentoPixGateway({
-          valor: selectedPlan.preco,
-          descricao: `Plano ${selectedPlan.nome}`,
-          email: leadData.email,
-          nome: leadData.nome,
-          cpf: leadData.documento,
-          clienteId: novoCliente.id,
-          vendaId: result.saleId
-        });
-      }
-      
-      console.log("Pagamento gerado:", mpResult);
-
-      // Armazena info da venda para o próximo passo
-      const info = { 
-        id: result.saleId, 
-        protocolo: result.protocolo || result.saleId.substring(0, 8).toUpperCase(),
-        qrcode: mpResult.qr_code_base64,
-        copiaECola: mpResult.copy_paste,
-        gateway: config?.gateway_ativo || 'MERCADO_PAGO'
-      };
-      
-      setPixData(info);
-      
-      // 4. Sucesso: Fecha modal e mostra tela de pagamento
-      setIsModalOpen(false);
-      setShowPayment(true);
       
     } catch (err: any) {
       console.error("Erro crítico no fluxo SaaS:", err);
@@ -509,7 +613,7 @@ const SaaSLandingPage: React.FC = () => {
 
           {/* Botão de Verificação */}
           <button 
-            onClick={() => navigate('/consulta')}
+            onClick={handleJaPaguei}
             className="w-full bg-green-500 text-slate-900 py-4 rounded-xl font-black hover:bg-green-400 transition transform active:scale-95 shadow-lg shadow-green-500/20"
           >
             JÁ PAGUEI, VER DIAGNÓSTICO
@@ -527,26 +631,40 @@ const SaaSLandingPage: React.FC = () => {
     <div className="bg-[#0f172a] text-white min-h-screen font-sans selection:bg-green-500/30 overflow-x-hidden">
       
       {/* Botão de Acesso Restrito (Premium Floating) */}
-      <div className="fixed top-4 right-4 sm:top-6 sm:right-6 z-[100]">
-        <button 
-          onClick={() => navigate('/financeiro')}
-          className="group flex items-center gap-2 bg-[#0a0a2e]/60 backdrop-blur-xl border border-white/10 hover:border-blue-500/50 px-4 py-2 sm:px-6 sm:py-3 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.3)] hover:shadow-blue-500/20 transition-all cursor-pointer relative overflow-hidden"
+      <div className="fixed top-4 right-4 sm:top-6 sm:right-6 z-[120]">
+        <motion.button 
+          whileHover={{ scale: 1.05, y: -2 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={(e) => {
+            e.preventDefault();
+            navigate('/login');
+          }}
+          disabled={isRedirecting}
+          className="group flex items-center gap-2 bg-[#0a0a2e]/80 backdrop-blur-xl border border-white/10 hover:border-blue-500/50 px-4 py-2 sm:px-6 sm:py-3 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] hover:shadow-blue-500/20 transition-all cursor-pointer relative overflow-hidden disabled:opacity-70"
         >
           {/* Inner Glow Effect */}
           <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           
           <div className="size-6 sm:size-8 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg group-hover:rotate-12 transition-transform">
-            <User className="size-3 sm:size-4" />
+            {isRedirecting ? (
+              <div className="size-3 sm:size-4 border-2 border-white/30 border-t-white animate-spin rounded-full" />
+            ) : (
+              <User className="size-3 sm:size-4" />
+            )}
           </div>
           
           <div className="text-left hidden sm:block">
-            <p className="text-[8px] font-black text-blue-400 uppercase tracking-widest leading-none mb-1">Acesso Restrito</p>
+            <p className="text-[8px] font-black text-blue-400 uppercase tracking-widest leading-none mb-1">
+              {isRedirecting ? 'Redirecionando...' : 'Acesso Restrito'}
+            </p>
             <p className="text-[10px] font-black text-white uppercase italic tracking-tight leading-none">Área do Cliente</p>
           </div>
-          <span className="text-[10px] font-black text-white uppercase italic tracking-tight sm:hidden">Entrar</span>
+          <span className="text-[10px] font-black text-white uppercase italic tracking-tight sm:hidden">
+            {isRedirecting ? '...' : 'Entrar'}
+          </span>
           
-          <ChevronRight className="size-3 sm:size-4 text-white/30 group-hover:translate-x-1 transition-transform ml-1 sm:ml-2" />
-        </button>
+          {!isRedirecting && <ChevronRight className="size-3 sm:size-4 text-white/30 group-hover:translate-x-1 transition-transform ml-1 sm:ml-2" />}
+        </motion.button>
       </div>
 
       {/* HERO SECTION */}
@@ -787,11 +905,18 @@ const SaaSLandingPage: React.FC = () => {
                 </p>
               </div>
 
-              <div className="bg-rose-500/10 border border-rose-500/20 py-3 px-8 rounded-full inline-flex items-center gap-4 shadow-xl">
-                <div className="size-3 bg-rose-500 rounded-full animate-pulse"></div>
-                <p className="text-rose-500 font-black text-[11px] md:text-xs tracking-[0.2em] uppercase">
-                  CONDIÇÃO PROMOCIONAL EXPIRA EM: <span className="font-mono">{formatTime(timeLeft)}</span>
-                </p>
+              <div className="relative bg-rose-600 border-4 border-rose-500 py-6 px-10 md:px-16 rounded-3xl w-full max-w-4xl flex items-center justify-center shadow-[0_0_50px_-10px_rgba(244,63,94,0.6)] transform transition-transform hover:scale-105 my-8 overflow-hidden group">
+                <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                <div className="relative z-10 flex flex-col md:flex-row items-center justify-center gap-4 text-center md:text-left">
+                  <div className="flex items-center justify-center relative">
+                    <div className="absolute size-6 md:size-8 bg-white/30 rounded-full animate-ping"></div>
+                    <div className="size-4 md:size-5 bg-white rounded-full shadow-[0_0_20px_rgba(255,255,255,1)]"></div>
+                  </div>
+                  <p className="text-white font-black text-lg md:text-2xl lg:text-3xl tracking-[0.1em] uppercase drop-shadow-xl leading-tight">
+                    Condição Promocional Expira em: <br className="md:hidden" />
+                    <span className="font-mono bg-black/30 px-5 py-2 rounded-xl inline-block mt-3 md:mt-0 md:ml-4 text-white font-bold">{formatTime(timeLeft)}</span>
+                  </p>
+                </div>
               </div>
             </div>
           </div>

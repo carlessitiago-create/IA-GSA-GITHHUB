@@ -63,11 +63,15 @@ export function listenToNotifications(userId: string, userRole: string, callback
 export async function sendNotification(notification: Omit<AppNotification, 'id' | 'timestamp' | 'lida'>) {
   try {
     const visibilidade_uids = [notification.usuario_id];
+    let toEmail = '';
+    let toName = 'Usuário';
     
     // Fetch user profile to get hierarchy if not provided or to ensure it's complete
     const userDoc = await getDoc(doc(db, 'usuarios', notification.usuario_id));
     if (userDoc.exists()) {
       const userData = userDoc.data();
+      toEmail = userData.email || '';
+      toName = userData.nome || 'Usuário';
       
       // If user is CLIENTE
       if (userData.nivel === 'CLIENTE') {
@@ -110,6 +114,31 @@ export async function sendNotification(notification: Omit<AppNotification, 'id' 
       lida: false,
       timestamp: serverTimestamp()
     });
+
+    // Envios de E-mail: Dispara notificação por e-mail para o usuário direto (se tiver e-mail)
+    if (toEmail) {
+      try {
+        await fetch('/api/send-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to: toEmail,
+            subject: notification.titulo,
+            html: `
+              <div style="font-family: sans-serif; padding: 20px; color: #333;">
+                <h2>Olá, ${toName}</h2>
+                <p>${notification.mensagem}</p>
+                <hr style="margin-top:20px; margin-bottom:20px; border:none; border-top:1px solid #eee;"/>
+                <p style="font-size: 12px; color: #999;">Esta é uma mensagem automática. Por favor, não responda.</p>
+              </div>
+            `
+          })
+        });
+      } catch (err) {
+        console.error('Falha ao enviar e-mail de notificação:', err);
+      }
+    }
+
   } catch (error) {
     handleFirestoreError(error, OperationType.CREATE, 'notifications');
   }

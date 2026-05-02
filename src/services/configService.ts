@@ -25,6 +25,7 @@ export interface PublicPortalConfig {
   contato_suporte: string;
   logo_url?: string;
   status_labels?: { [key: string]: string }; // De: "EM_ANALISE" Para: "Estamos analisando seus documentos"
+  premios?: { nome: string; img: string }[];
 }
 
 export interface SaasConfig {
@@ -39,6 +40,8 @@ export interface SaasConfig {
   mercado_pago_public_key?: string;
   mercado_pago_access_token?: string;
   asaas_key?: string;
+  facebook_pixel_id?: string;
+  meta_pixel_code?: string;
   instrucoes_checkout: string;
   vsl_youtube_id?: string;
 }

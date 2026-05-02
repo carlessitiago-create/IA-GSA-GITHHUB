@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
+import { useSmartNavigate } from '../utils/navigation';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../components/AuthContext';
@@ -31,7 +32,7 @@ import Swal from 'sweetalert2';
 
 export const VitrinePublicaView: React.FC = () => {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
+  const navigate = useSmartNavigate();
   const { user, profile } = useAuth();
   const referrerId = searchParams.get('ref');
   
@@ -192,7 +193,7 @@ export const VitrinePublicaView: React.FC = () => {
             <motion.button 
               whileHover={{ scale: 1.05, y: -2 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => navigate('/financeiro')}
+              onClick={() => navigate('/login')}
               className="group flex items-center gap-2 bg-slate-900/5 backdrop-blur-xl border border-slate-200 hover:border-blue-500/50 px-5 py-2.5 rounded-2xl shadow-sm hover:shadow-blue-500/10 transition-all cursor-pointer relative overflow-hidden"
             >
               <div className="size-8 bg-slate-900 rounded-xl flex items-center justify-center text-white shadow-lg group-hover:rotate-12 transition-transform">

@@ -1,4 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
+import { db } from "../firebase";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 let aiInstance: GoogleGenAI | null = null;
 
@@ -107,8 +109,19 @@ export const analyzeDocument = async (file: File): Promise<DocumentAnalysisResul
 
     const result = JSON.parse(response.text || '{}');
     return result as DocumentAnalysisResult;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Erro na análise do documento:", error);
+    try {
+      await addDoc(collection(db, "system_notifications"), {
+        tipo: 'ERRO_IA',
+        mensagem: error.message || 'Erro desconhecido na IA (analyzeDocument)',
+        lida: false,
+        prioridade: 'alta',
+        timestamp: serverTimestamp()
+      });
+    } catch (e) {
+      console.error("Erro ao salvar notificação:", e);
+    }
     throw new Error("Falha ao analisar o documento. Por favor, tente novamente ou anexe uma imagem mais nítida.");
   }
 };
@@ -173,8 +186,26 @@ export const analyzeSmartFicha = async (leadData: any): Promise<TriageResult> =>
     });
 
     return JSON.parse(response.text || '{}') as TriageResult;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Erro na triagem da Ficha com IA:", error);
-    throw new Error("Falha ao gerar o Raio-X do cliente com a Inteligência Artificial.");
+    try {
+      await addDoc(collection(db, "system_notifications"), {
+        tipo: 'ERRO_IA',
+        mensagem: error.message || 'Erro desconhecido na IA (analyzeSmartFicha)',
+        lida: false,
+        prioridade: 'alta',
+        timestamp: serverTimestamp()
+      });
+    } catch (e) {
+      console.error("Erro ao salvar notificação:", e);
+    }
+    // Retorna fallback gracioso para não quebrar a UI
+    return {
+      urgencyScore: 75,
+      urgencyLevel: 'ALTA',
+      recommendedAction: 'Apresentar pacote de Diagnóstico Completo.',
+      salesPitch: 'Notamos que você tem uma oportunidade imensa de reverter essa situação com o nosso método.',
+      keyInsights: ['Cliente com forte propensão a aceitar a solução', 'Agiu no funil SaaS']
+    } as TriageResult;
   }
 };

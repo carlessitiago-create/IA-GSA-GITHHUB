@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { getPublicPortalConfig, updatePublicPortalConfig, PublicPortalConfig } from '../../services/configService';
-import { Eye, Save, Palette, Shield, Copy, ExternalLink, User, Clock, Search } from 'lucide-react';
+import { Eye, Save, Palette, Shield, Copy, ExternalLink, User, Clock, Search, Plus, Trash2, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { PublicPortal } from '../../views/PublicPortal';
 import { getPublicOrigin } from '../../lib/urlUtils';
 import Swal from 'sweetalert2';
+import { uploadFile } from '../../services/uploadService';
 
 export const PortalSettingsView = () => {
   const [config, setConfig] = useState<PublicPortalConfig | null>(null);
+  const [isUploadingPrize, setIsUploadingPrize] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -23,6 +25,43 @@ export const PortalSettingsView = () => {
       Swal.fire('Sucesso', 'Portal atualizado com sucesso!', 'success');
     } catch (e) {
       Swal.fire('Erro', 'Falha ao salvar configurações', 'error');
+    }
+  };
+
+  const handleAddPrize = () => {
+    if (!config) return;
+    const currentPrizes = config.premios || [];
+    setConfig({
+      ...config,
+      premios: [...currentPrizes, { nome: 'Novo Prêmio', img: '' }]
+    });
+  };
+
+  const handleUpdatePrize = (index: number, key: 'nome'|'img', value: string) => {
+    if (!config || !config.premios) return;
+    const updated = [...config.premios];
+    updated[index] = { ...updated[index], [key]: value };
+    setConfig({ ...config, premios: updated });
+  };
+
+  const handleRemovePrize = (index: number) => {
+    if (!config || !config.premios) return;
+    const updated = config.premios.filter((_, i) => i !== index);
+    setConfig({ ...config, premios: updated });
+  };
+
+  const handlePrizeImageUpload = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingPrize(true);
+    try {
+      const url = await uploadFile(file, `portal_premios/${Date.now()}_${file.name}`);
+      handleUpdatePrize(index, 'img', url);
+    } catch(err) {
+      console.error(err);
+      Swal.fire('Erro no Upload', 'Falha ao enviar imagem. Verifique se o Firebase Storage está configurado e ativado no seu painel do Firebase.', 'error');
+    } finally {
+      setIsUploadingPrize(false);
     }
   };
 
@@ -114,6 +153,81 @@ export const PortalSettingsView = () => {
                 placeholder="https://youtube.com/..."
               />
             </div>
+          </div>
+        </div>
+
+        {/* CLUBE DE PRÊMIOS */}
+        <div className="pt-6 border-t border-slate-100 dark:border-slate-800 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-black text-slate-800 dark:text-white uppercase italic flex items-center gap-2">
+              <ImageIcon size={20} className="text-orange-500" /> Prêmios GSA
+            </h3>
+            <button 
+              onClick={handleAddPrize}
+              className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-colors"
+            >
+              <Plus size={14} /> Adicionar
+            </button>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {(config.premios || []).map((premio, i) => (
+              <div key={i} className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 space-y-3 relative group">
+                <button 
+                  onClick={() => handleRemovePrize(i)}
+                  className="absolute -top-2 -right-2 bg-red-500 text-white p-1.5 rounded-full hover:bg-red-600 z-10 shadow-md"
+                >
+                  <Trash2 size={12} />
+                </button>
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Nome do Prêmio</label>
+                  <input 
+                    type="text" 
+                    value={premio.nome}
+                    onChange={(e) => handleUpdatePrize(i, 'nome', e.target.value)}
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2 text-sm dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Imagem (Upload ou URL)</label>
+                  <div className="flex flex-col gap-2">
+                    <input 
+                      type="text" 
+                      value={premio.img || ''}
+                      onChange={(e) => handleUpdatePrize(i, 'img', e.target.value)}
+                      placeholder="https://..."
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2 text-xs font-mono dark:text-white"
+                    />
+                    <div className="flex items-center gap-2">
+                      {premio.img ? (
+                        <img src={premio.img} alt={premio.nome} className="w-10 h-10 rounded-lg object-cover bg-slate-200" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-lg bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-400">
+                          <ImageIcon size={16} />
+                        </div>
+                      )}
+                      <label className="flex-1 text-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2 text-xs text-slate-500 hover:bg-slate-50 cursor-pointer transition-colors relative overflow-hidden">
+                        {isUploadingPrize ? (
+                          <span className="flex items-center justify-center gap-2"><Loader2 size={12} className="animate-spin" /> Enviando...</span>
+                        ) : (
+                          <span>Procurar Arquivo...</span>
+                        )}
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          onChange={(e) => handlePrizeImageUpload(i, e)} 
+                          className="absolute inset-0 opacity-0 cursor-pointer" 
+                          disabled={isUploadingPrize}
+                        />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {(!config.premios || config.premios.length === 0) && (
+              <p className="text-xs text-slate-400 italic">Nenhum prêmio cadastrado. O portal usará valores padrão.</p>
+            )}
           </div>
         </div>
 
