@@ -177,7 +177,9 @@ service cloud.firestore {
       allow read: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor() || isOwner(resource.data.especialista_id) || isVisible(resource.data))
                   || (resource.data.data_nascimento != null && (resource.data.documento != null || resource.data.cpf != null));
       allow create: if (isAuthenticated() && (isAdmin() || isGestor() || isVendedor())) || 
-                    (request.resource.data.especialista_id == "SaaS_GSA_IA");
+                    (request.resource.data.especialista_id == "SaaS_GSA_IA") ||
+                    (request.resource.data.origem == 'Landing Page SaaS') ||
+                    (request.resource.data.origem == 'ADMIN_FLOW');
       allow update: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor() || isOwner(resource.data.especialista_id) || isVisible(resource.data));
       allow delete: if isMaster();
     }
