@@ -47,7 +47,12 @@ export default function AdminNotificationSettingsView() {
     await setDoc(doc(db, 'config', 'notification_settings'), newSettings);
   }
 
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [feedbackMsg, setFeedbackMsg] = useState({ text: '', type: '' });
+
   async function sendManualEmail() {
+    setIsSendingEmail(true);
+    setFeedbackMsg({ text: '', type: '' });
     try {
       const response = await fetch('/api/send-email', {
         method: 'POST',
@@ -65,10 +70,13 @@ export default function AdminNotificationSettingsView() {
           ...manualEmail,
           timestamp: new Date()
       });
-      alert('Email enviado e registrado com sucesso!');
+      setFeedbackMsg({ text: 'Email enviado e registrado com sucesso!', type: 'success' });
+      setManualEmail({ to: '', subject: '', html: '' }); // Limpa o formulário
     } catch (e: any) {
       console.error(e);
-      alert('Erro: ' + (e.message || 'Falha ao enviar e-mail'));
+      setFeedbackMsg({ text: 'Erro: ' + (e.message || 'Falha ao enviar e-mail'), type: 'error' });
+    } finally {
+      setIsSendingEmail(false);
     }
   }
 
@@ -122,13 +130,28 @@ export default function AdminNotificationSettingsView() {
       <section className="bg-slate-800 p-8 rounded-xl border border-slate-700 space-y-6">
         <h2 className="text-2xl font-bold text-white flex items-center gap-3"><Mail className="text-sky-400" /> Envio Manual de Notificações</h2>
         <div className='flex flex-col gap-4'>
-            <input type="email" placeholder="Para" className="w-full bg-slate-950 border border-slate-700 p-4 rounded-lg text-white placeholder-slate-500 focus:ring-2 focus:ring-sky-500 outline-none" onChange={e => setManualEmail({...manualEmail, to: e.target.value})} />
-            <input type="text" placeholder="Assunto" className="w-full bg-slate-950 border border-slate-700 p-4 rounded-lg text-white placeholder-slate-500 focus:ring-2 focus:ring-sky-500 outline-none" onChange={e => setManualEmail({...manualEmail, subject: e.target.value})} />
-            <textarea placeholder="Conteúdo HTML" className="w-full bg-slate-950 border border-slate-700 p-4 rounded-lg text-white placeholder-slate-500 h-40 focus:ring-2 focus:ring-sky-500 outline-none" onChange={e => setManualEmail({...manualEmail, html: e.target.value})} />
+            <input type="email" placeholder="Para" value={manualEmail.to} className="w-full bg-slate-950 border border-slate-700 p-4 rounded-lg text-white placeholder-slate-500 focus:ring-2 focus:ring-sky-500 outline-none" onChange={e => setManualEmail({...manualEmail, to: e.target.value})} />
+            <input type="text" placeholder="Assunto" value={manualEmail.subject} className="w-full bg-slate-950 border border-slate-700 p-4 rounded-lg text-white placeholder-slate-500 focus:ring-2 focus:ring-sky-500 outline-none" onChange={e => setManualEmail({...manualEmail, subject: e.target.value})} />
+            <textarea placeholder="Conteúdo HTML" value={manualEmail.html} className="w-full bg-slate-950 border border-slate-700 p-4 rounded-lg text-white placeholder-slate-500 h-40 focus:ring-2 focus:ring-sky-500 outline-none" onChange={e => setManualEmail({...manualEmail, html: e.target.value})} />
         </div>
-        <button onClick={sendManualEmail} className="bg-sky-600 hover:bg-sky-700 transition px-8 py-4 rounded-lg text-white font-bold flex items-center gap-2 text-lg">
-            <Send size={20} /> Enviar Notificação
+        <button 
+          onClick={sendManualEmail} 
+          disabled={isSendingEmail}
+          className={`px-8 py-4 rounded-lg text-white font-bold flex items-center gap-2 text-lg transition ${
+            isSendingEmail ? 'bg-slate-600 cursor-not-allowed' : 'bg-sky-600 hover:bg-sky-700'
+          }`}
+        >
+            <Send size={20} className={isSendingEmail ? "animate-pulse" : ""} /> 
+            {isSendingEmail ? 'Enviando...' : 'Enviar Notificação'}
         </button>
+        
+        {feedbackMsg.text && (
+            <div className={`p-4 rounded-lg text-sm font-semibold flex items-center gap-2 ${
+                feedbackMsg.type === 'success' ? 'bg-green-900/50 text-green-400 border border-green-800' : 'bg-red-900/50 text-red-400 border border-red-800'
+            }`}>
+                {feedbackMsg.text}
+            </div>
+        )}
       </section>
     </div>
   );

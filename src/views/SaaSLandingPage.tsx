@@ -64,36 +64,44 @@ const SaaSLandingPage: React.FC = () => {
 
   // Inicializa o Pixel do Facebook
   useEffect(() => {
+    // Função auxiliar para disparar o PageView com segurança
+    const dispararPageView = () => {
+      if (typeof (window as any).fbq === 'function') {
+        (window as any).fbq('track', 'PageView');
+      }
+    };
+
     // 1. Tenta carregar o código base completo (Script da Meta)
     if (config?.meta_pixel_code) {
-      const template = document.createElement('template');
-      template.innerHTML = config.meta_pixel_code.trim();
-      
-      Array.from(template.content.childNodes).forEach((node) => {
-        if (node.nodeType === 1 && node.nodeName === 'SCRIPT') {
-          const scriptElement = document.createElement('script');
-          const originalScript = node as HTMLScriptElement;
-          
-          if (originalScript.src) {
-             scriptElement.src = originalScript.src;
+      if (!document.head.innerHTML.includes('fbevents.js')) {
+        const template = document.createElement('template');
+        template.innerHTML = config.meta_pixel_code.trim();
+        
+        Array.from(template.content.childNodes).forEach((node) => {
+          if (node.nodeType === 1 && node.nodeName === 'SCRIPT') {
+            const scriptElement = document.createElement('script');
+            const originalScript = node as HTMLScriptElement;
+            
+            if (originalScript.src) {
+               scriptElement.src = originalScript.src;
+            }
+            scriptElement.textContent = originalScript.textContent;
+            
+            Array.from(originalScript.attributes).forEach(attr => {
+               scriptElement.setAttribute(attr.name, attr.value);
+            });
+            
+            document.head.appendChild(scriptElement);
+          } else if (node.nodeType === 1 && node.nodeName === 'NOSCRIPT') {
+             if (!document.head.innerHTML.includes('noscript')) {
+               document.head.appendChild(node.cloneNode(true));
+             }
           }
-          scriptElement.textContent = originalScript.textContent;
-          // Note: using innerHTML for scripts isn't reliable, we recreate script nodes
-          
-          Array.from(originalScript.attributes).forEach(attr => {
-             scriptElement.setAttribute(attr.name, attr.value);
-          });
-          
-          // Prevents duplicate scripts if react strict mode re-renders
-          if (!document.head.innerHTML.includes(scriptElement.textContent?.substring(0, 50) || 'fbq')) {
-             document.head.appendChild(scriptElement);
-          }
-        } else if (node.nodeType === 1 && node.nodeName === 'NOSCRIPT') {
-           if (!document.head.innerHTML.includes('noscript')) {
-             document.head.appendChild(node.cloneNode(true));
-           }
-        }
-      });
+        });
+      } else {
+        // Se já foi carregado via meta code, disparamos o page view na montagem desta página
+        dispararPageView();
+      }
     } 
     // 2. Se não tem código base, tenta carregar só pelo ID
     else if (config?.facebook_pixel_id) {
@@ -119,10 +127,12 @@ const SaaSLandingPage: React.FC = () => {
         })(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
         
         (window as any).fbq('init', pixelId);
-        (window as any).fbq('track', 'PageView');
       }
+      
+      // Sempre dispara PageView
+      dispararPageView();
     }
-  }, [config?.facebook_pixel_id, config?.meta_pixel_code]);
+  }, [config?.facebook_pixel_id, config?.meta_pixel_code, location.pathname]);
 
   // Efeito de Confetis ao Confirmar Pagamento
   useEffect(() => {
