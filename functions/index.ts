@@ -5,6 +5,7 @@ import * as admin from 'firebase-admin';
 import { getFirestore } from 'firebase-admin/firestore';
 import { MercadoPagoConfig, Payment } from 'mercadopago';
 import axios from 'axios';
+import * as nodemailer from 'nodemailer';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -1488,34 +1489,36 @@ function nowFormat() {
 
 export * from './notifications';
 
-// 1. Configuração do E-mail
-import * as nodemailer from 'nodemailer';
-
+// Configuração do motor de e-mail (SMTP)
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  service: 'gmail', 
   auth: {
-    user: 'seu-email-suporte@gmail.com',
-    pass: 'sua-senha-de-app-google'
+    user: 'teu-email@gmail.com', // Substitui pelo teu e-mail
+    pass: 'tua-senha-de-app'      // Substitui pela tua Senha de App Google
   }
 });
 
-// 2. Cloud Function Centralizadora
-export const gerenciadorNotificacoesGSA = functions.firestore
+// DOCUMENTAÇÃO: Função que monitoriza notificações e envia alertas de suporte
+export const processadorNotificacoesGSA = functions.firestore
   .document('system_notifications/{id}')
-  .onCreate(async (snap, context) => {
+  .onCreate(async (snap) => {
     const data = snap.data();
 
-    // Se for SUPORTE, envia e-mail
+    // Se for um pedido de suporte, envia e-mail imediato
     if (data.tipo === 'SUPORTE') {
       const mailOptions = {
-        from: 'Câmara GSA <seu-email-suporte@gmail.com>',
-        to: 'voce@diretoria.com',
-        subject: `⚠️ SUPORTE: Protocolo ${data.protocolo}`,
-        text: `Lead ${data.cliente} solicitou suporte. CPF/CNPJ: ${data.cpf_cnpj}`
+        from: 'Monitoramento GSA <teu-email@gmail.com>',
+        to: 'suporte@camaragsa.com.br',
+        subject: `⚠️ URGENTE: Suporte Solicitado - ${data.protocolo}`,
+        html: `
+          <h3>Novo Pedido de Suporte</h3>
+          <p><strong>Lead:</strong> ${data.cliente}</p>
+          <p><strong>Protocolo:</strong> ${data.protocolo}</p>
+          <p>O lead solicitou ajuda na tela de consulta pública.</p>
+        `
       };
       return transporter.sendMail(mailOptions);
     }
-    
     return null;
   });
 

@@ -9,7 +9,7 @@ interface Notificacao {
   timestamp: any;
 }
 
-export const GerenciadorNotificacoesView = () => {
+export const GerenciadorNotificacoes = () => {
   const [notificacoes, setNotificacoes] = useState<Notificacao[]>([]);
   const [filtro, setFiltro] = useState('TODAS');
 

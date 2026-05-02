@@ -40,7 +40,7 @@ const ClientProcessesView = lazy(() => import("./components/GSA/ClientProcessesV
 const ClientWalletView = lazy(() => import("./components/GSA/ClientWalletView").then(m => ({ default: m.ClientWalletView })));
 const TabelaCustasView = lazy(() => import("./views/TabelaCustasView").then(m => ({ default: m.TabelaCustasView })));
 const VendaEmMassaView = lazy(() => import("./views/VendaEmMassaView").then(m => ({ default: m.VendaEmMassaView })));
-const GerenciadorNotificacoesView = lazy(() => import("./views/GerenciadorNotificacoesView").then(m => ({ default: m.GerenciadorNotificacoesView })));
+const GerenciadorNotificacoesView = lazy(() => import("./views/GerenciadorNotificacoesView").then(m => ({ default: m.GerenciadorNotificacoes })));
 
 import { PendingApproval, AccountRefused, AccountSuspended, CompleteProfile } from "./components/Auth";
 
