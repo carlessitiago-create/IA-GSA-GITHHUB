@@ -169,32 +169,108 @@ export const IncluirVendaDireta = () => {
     };
 
     return (
-        <div className="p-4 border rounded shadow bg-white">
-            <h2 className="text-xl font-bold mb-4">Novo Cliente e Venda Administrativa</h2>
-            <input className="w-full p-2 mb-2 border rounded" placeholder="Nome do Cliente" value={nomeCliente} onChange={(e) => setNomeCliente(e.target.value)} />
-            <input className="w-full p-2 mb-2 border rounded" placeholder="CPF" value={cpfCliente} onChange={(e) => setCpfCliente(e.target.value)} />
-            <input type="date" className="w-full p-2 mb-2 border rounded" value={nascCliente} onChange={(e) => setNascCliente(e.target.value)} title="Data de Nascimento" />
+        <div className="p-6 bg-slate-800 rounded-2xl shadow-xl border border-slate-700">
+            <h2 className="text-2xl font-bold mb-6 text-white flex items-center gap-2">
+                Novo Cliente e Venda Administrativa
+            </h2>
             
-            <select className="w-full p-2 mb-2 border rounded" value={servicoId} onChange={(e) => setServicoId(e.target.value)}>
-                <option value="">Selecione o Serviço</option>
-                {servicos.map(s => <option key={s.id} value={s.id}>{s.nome}</option>)}
-            </select>
-            
-            <select className="w-full p-2 mb-2 border rounded" value={gestorId} onChange={(e) => setGestorId(e.target.value)}>
-                <option value="">Selecione o Gestor</option>
-                {gestores.map(g => <option key={g.id} value={g.id}>{g.nome}</option>)}
-            </select>
+            <div className="space-y-5">
+                <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">Nome Completo do Cliente</label>
+                    <input 
+                        className="w-full p-3 bg-slate-900 border border-slate-600 rounded-xl text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all placeholder:text-slate-500" 
+                        placeholder="Ex: João da Silva" 
+                        value={nomeCliente} 
+                        onChange={(e) => setNomeCliente(e.target.value)} 
+                    />
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-sm font-medium text-slate-300 mb-1">CPF do Cliente</label>
+                        <input 
+                            className="w-full p-3 bg-slate-900 border border-slate-600 rounded-xl text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all placeholder:text-slate-500" 
+                            placeholder="000.000.000-00" 
+                            value={cpfCliente} 
+                            onChange={(e) => setCpfCliente(e.target.value)} 
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-slate-300 mb-1">Data de Nascimento</label>
+                        <input 
+                            type="date" 
+                            className="w-full p-3 bg-slate-900 border border-slate-600 rounded-xl text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all" 
+                            value={nascCliente} 
+                            onChange={(e) => setNascCliente(e.target.value)} 
+                        />
+                    </div>
+                </div>
 
-            <select className="w-full p-2 mb-2 border rounded" value={vendedorId} onChange={(e) => setVendedorId(e.target.value)} disabled={!gestorId}>
-                <option value="">Sem Vendedor</option>
-                {vendedores.map(v => <option key={v.id} value={v.id}>{v.nome}</option>)}
-            </select>
-            
-            <input type="date" className="w-full p-2 mb-4 border rounded" value={dataServico} onChange={(e) => setDataServico(e.target.value)} />
-            
-            <button className="w-full bg-blue-600 text-white p-2 rounded" onClick={handleCreate} disabled={loading}>
-                {loading ? 'Criando...' : 'Cadastrar e Produzir'}
-            </button>
+                <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">Serviço Adquirido / A Produzir</label>
+                    <select 
+                        className="w-full p-3 bg-slate-900 border border-slate-600 rounded-xl text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all" 
+                        value={servicoId} 
+                        onChange={(e) => setServicoId(e.target.value)}
+                    >
+                        <option value="" className="text-slate-500">Selecione o Serviço...</option>
+                        {servicos.map(s => <option key={s.id} value={s.id}>{s.nome}</option>)}
+                    </select>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-sm font-medium text-slate-300 mb-1">Gestor de Vendas</label>
+                        <select 
+                            className="w-full p-3 bg-slate-900 border border-slate-600 rounded-xl text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all disabled:opacity-50" 
+                            value={gestorId} 
+                            onChange={(e) => setGestorId(e.target.value)}
+                        >
+                            <option value="">(Sem Gestor - Administrativo)</option>
+                            {gestores.map(g => <option key={g.id} value={g.id}>{g.nome}</option>)}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-slate-300 mb-1">Vendedor Associado</label>
+                        <select 
+                            className="w-full p-3 bg-slate-900 border border-slate-600 rounded-xl text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all disabled:opacity-50" 
+                            value={vendedorId} 
+                            onChange={(e) => setVendedorId(e.target.value)} 
+                            disabled={!gestorId}
+                        >
+                            <option value="">{gestorId ? 'Sem Vendedor Específico' : 'Selecione um Gestor primeiro...'}</option>
+                            {vendedores.map(v => <option key={v.id} value={v.id}>{v.nome}</option>)}
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">Data da Aprovação / Início</label>
+                    <input 
+                        type="date" 
+                        className="w-full p-3 bg-slate-900 border border-slate-600 rounded-xl text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all" 
+                        value={dataServico} 
+                        onChange={(e) => setDataServico(e.target.value)} 
+                    />
+                </div>
+                
+                <div className="pt-4">
+                    <button 
+                        className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl transition-all shadow-lg hover:shadow-blue-500/30 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" 
+                        onClick={handleCreate} 
+                        disabled={loading}
+                    >
+                        {loading && (
+                           <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                           </svg>
+                        )}
+                        {loading ? 'Processando e Criando Fila...' : 'Cadastrar Cliente e Iniciar Produção'}
+                    </button>
+                </div>
+            </div>
         </div>
     );
 };

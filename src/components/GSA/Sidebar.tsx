@@ -4,7 +4,7 @@ import {
   Shield, Users, PlusCircle, LayoutDashboard, History, Settings, 
   Package, DollarSign, TrendingUp, Bell, ClipboardList, Gift, 
   ShoppingBag, LogOut, ChevronRight, Activity, AlertTriangle, X,
-  Factory, Trophy, Search, User, Mail
+  Factory, Trophy, Search, User, Mail, UserPlus
 } from 'lucide-react';
 
 
@@ -58,13 +58,16 @@ export function Sidebar({ currentProfile, logout, onClose }: any) {
             {(role.startsWith('ADM') || currentProfile?.permissoes_venda === 'VAREJO' || currentProfile?.permissoes_venda === 'AMBOS' || !currentProfile?.permissoes_venda) && (
               <MenuItem to="vendas-internas" icon={PlusCircle} label="Nova Venda" />
             )}
+            {role.startsWith('ADM') && (
+              <MenuItem to="nova-venda-admin" icon={UserPlus} label="Novo Cliente e Venda Administrativa" color="text-indigo-400" />
+            )}
             {/* Atacado - Em Massa */}
             {(role.startsWith('ADM') || currentProfile?.permissoes_venda === 'ATACADO' || currentProfile?.permissoes_venda === 'AMBOS') && (
               <MenuItem to="venda-massa" icon={Package} label="Venda em Massa" color="text-indigo-400" />
             )}
             <MenuItem to="leads" icon={TrendingUp} label="Leads e Indicações" />
             <MenuItem to="vitrine" icon={ShoppingBag} label="Vitrine GSA" />
-            <MenuItem to="clube" icon={Gift} label={role.startsWith('ADM') ? "Clube de Pontos" : "Clube de Vantagens"} />
+            {role !== 'ADM_ANALISTA' && <MenuItem to="clube" icon={Gift} label={role.startsWith('ADM') ? "Clube de Pontos" : "Clube de Vantagens"} />}
           </div>
         )}
 
@@ -90,17 +93,17 @@ export function Sidebar({ currentProfile, logout, onClose }: any) {
         {(role.startsWith('ADM')) && (
           <div className="space-y-2">
             <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Engenharia</p>
-            <MenuItem to="saas-settings" icon={Settings} label="Configurações SaaS" color="text-blue-500" />
-            <MenuItem to="admin_clube_settings" icon={Gift} label="Configurações do Clube" color="text-purple-500" />
-            <MenuItem to="config_consulta" icon={LayoutDashboard} label="Configurações de Consulta" color="text-orange-500" />
+            {role !== 'ADM_ANALISTA' && <MenuItem to="saas-settings" icon={Settings} label="Configurações SaaS" color="text-blue-500" />}
+            {role !== 'ADM_ANALISTA' && <MenuItem to="admin_clube_settings" icon={Gift} label="Configurações do Clube" color="text-purple-500" />}
+            {role !== 'ADM_ANALISTA' && <MenuItem to="config_consulta" icon={LayoutDashboard} label="Configurações de Consulta" color="text-orange-500" />}
             <MenuItem to="diagnostico" icon={LayoutDashboard} label="Landing Page SaaS" color="text-green-500" />
-            <MenuItem to="fabrica" icon={Factory} label="Fábrica de Serviços" />
+            {role !== 'ADM_ANALISTA' && <MenuItem to="fabrica" icon={Factory} label="Fábrica de Serviços" />}
             <MenuItem to="processos" icon={ClipboardList} label="Modelos de Processos" />
             <MenuItem to="equipe" icon={Users} label="Gestão de Equipe" />
             <MenuItem to="inteligencia" icon={LayoutDashboard} label="Inteligência" />
             <MenuItem to="conversao" icon={TrendingUp} label="Conversão" />
             <MenuItem to="gerenciador-notificacoes" icon={Mail} label="Monitoramento GSA" color="text-green-500" />
-            <MenuItem to="configuracoes-notificacoes" icon={Mail} label="E-MAIS E PERMISSÕES" color="text-yellow-500" />
+            {role !== 'ADM_ANALISTA' && <MenuItem to="configuracoes-notificacoes" icon={Mail} label="E-MAIS E PERMISSÕES" color="text-yellow-500" />}
           </div>
         )}
 
@@ -117,7 +120,7 @@ export function Sidebar({ currentProfile, logout, onClose }: any) {
           <div className="space-y-2">
             <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Financeiro</p>
             <MenuItem to="financeiro" icon={DollarSign} label="Conciliação" color="text-emerald-500" />
-            {(role.startsWith('ADM') || role === 'GESTOR') && (
+            {(role === 'ADM_MASTER' || role === 'ADM_GERENTE' || role === 'GESTOR') && (
               <MenuItem to="custas" icon={DollarSign} label="Tabela de Custas" color="text-amber-500" />
             )}
           </div>
@@ -138,7 +141,7 @@ export function Sidebar({ currentProfile, logout, onClose }: any) {
         {/* CATEGORIA: SISTEMA */}
         <div className="space-y-2">
           <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Sistema</p>
-          <MenuItem to="consulta-interna" icon={Search} label="Consulta Pública" />
+          {role !== 'ADM_ANALISTA' && <MenuItem to="consulta-interna" icon={Search} label="Consulta Pública" />}
           <MenuItem to="suporte" icon={Bell} label="Suporte" />
           <MenuItem to="perfil" icon={User} label="Meu Perfil" />
         </div>

@@ -41,6 +41,7 @@ const ClientWalletView = lazy(() => import("./components/GSA/ClientWalletView").
 const TabelaCustasView = lazy(() => import("./views/TabelaCustasView").then(m => ({ default: m.TabelaCustasView })));
 const VendaEmMassaView = lazy(() => import("./views/VendaEmMassaView").then(m => ({ default: m.VendaEmMassaView })));
 const GerenciadorNotificacoesView = lazy(() => import("./views/GerenciadorNotificacoesView").then(m => ({ default: m.GerenciadorNotificacoes })));
+const NovaVendaAdminView = lazy(() => import("./views/NovaVendaAdminView").then(m => ({ default: m.NovaVendaAdminView })));
 
 import { PendingApproval, AccountRefused, AccountSuspended, CompleteProfile } from "./components/Auth";
 
@@ -181,6 +182,7 @@ const App: React.FC = () => {
             <Route path="/inteligencia" element={<IntelligenceDashboardView />} />
             <Route path="/vendas-internas" element={<VendasPDVView />} />
             <Route path="/venda-massa" element={<VendaEmMassaView />} />
+            <Route path="/nova-venda-admin" element={<NovaVendaAdminView />} />
             <Route path="/leads" element={<LeadsCentralView />} />
             <Route path="/operacional" element={<OperationalView />} />
             <Route path="/pendencias" element={<PendencyList />} />

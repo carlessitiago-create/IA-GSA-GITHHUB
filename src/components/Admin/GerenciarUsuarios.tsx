@@ -712,7 +712,7 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
         </button>
       </form>
       <div className="mt-8 pt-8 border-t">
-        {(currentAdminProfile?.nivel === 'ADM_MASTER' || currentAdminProfile?.nivel === 'ADM_GERENTE') && (
+        {(currentAdminProfile?.nivel === 'ADM_MASTER' || currentAdminProfile?.nivel === 'ADM_GERENTE' || currentAdminProfile?.nivel === 'ADM_ANALISTA') && (
             <IncluirVendaDireta />
         )}
       </div>
