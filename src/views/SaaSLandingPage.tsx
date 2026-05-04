@@ -394,7 +394,8 @@ const SaaSLandingPage: React.FC = () => {
             nome: leadData.nome,
             cpf: leadData.documento,
             clienteId: novoCliente.id,
-            vendaId: result.saleId
+            vendaId: result.saleId,
+            origem: 'SAAS_LANDING_PAGE'
           });
         } else {
           console.log("Chamando gerarPagamentoPixGateway (Mercado Pago)...");
@@ -406,7 +407,8 @@ const SaaSLandingPage: React.FC = () => {
             nome: leadData.nome,
             cpf: leadData.documento,
             clienteId: novoCliente.id,
-            vendaId: result.saleId
+            vendaId: result.saleId,
+            origem: 'SAAS_LANDING_PAGE'
           });
         }
         
@@ -427,7 +429,14 @@ const SaaSLandingPage: React.FC = () => {
         setIsModalOpen(false);
         setShowPayment(true);
       } catch (backendError: any) {
-        console.error("Falha na automação (Cloud Functions). Fallback para manual...", backendError);
+        console.error("Falha na automação (Cloud Functions).", backendError);
+        
+        // Se o modo for expressamente AUTOMÁTICO, não faz fallback silencioso, exibe o erro
+        if (config?.modo_pagamento === 'AUTOMATICO') {
+          throw backendError;
+        }
+
+        console.log("Fallback para manual...");
         const saleId = await registrarVendaManual(novoCliente.id, selectedPlan);
         const links = config?.links_manuais || {
           dividas: 'https://link-dividas.com',

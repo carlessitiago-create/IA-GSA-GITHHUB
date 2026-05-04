@@ -137,6 +137,7 @@ export async function gerarPagamentoPixGateway(data: {
   cpf: string;
   clienteId: string;
   vendaId: string;
+  origem?: string;
 }) {
   try {
     const { auth } = await import('../firebase');
