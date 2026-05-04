@@ -255,6 +255,22 @@ export const AdminSaasSettings: React.FC = () => {
             </div>
 
             <div className="pt-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">
+                Instala o Píxel do TikTok no teu site
+              </label>
+              <p className="text-[10px] text-slate-400 font-bold leading-relaxed mb-3">
+                O Píxel do TikTok é um excerto de código que adicionas ao teu site ao copiar o código base.
+              </p>
+              <textarea 
+                value={config?.tiktok_pixel_code || ''}
+                onChange={(e) => setConfig(prev => prev ? { ...prev, tiktok_pixel_code: e.target.value } : null)}
+                placeholder="<!-- TikTok Pixel Code -->\n<script>...</script>\n<!-- End TikTok Pixel Code -->"
+                rows={5}
+                className="w-full bg-slate-50 border-none rounded-2xl p-4 text-xs font-mono text-[#0a0a2e] focus:ring-2 focus:ring-blue-600 outline-none"
+              />
+            </div>
+
+            <div className="pt-2">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Facebook Pixel ID (Opção Alternativa)</label>
               <input 
                 type="text"

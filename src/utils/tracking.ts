@@ -4,6 +4,7 @@ declare global {
   interface Window {
     fbq?: any;
     gtag?: any;
+    ttq?: any;
   }
 }
 
@@ -21,12 +22,24 @@ export const trackInitiateCheckout = (plano: string, preco: number) => {
       items: [{ item_name: plano, price: preco }]
     });
   }
+  if (window.ttq) {
+    window.ttq.track('InitiateCheckout', {
+      contents: [{
+        content_name: plano,
+        price: preco,
+        quantity: 1
+      }],
+      value: preco,
+      currency: 'BRL'
+    });
+  }
 };
 
 // Dispara evento quando o lead preenche os dados e vai para o pagamento
 export const trackLeadCapture = () => {
   if (window.fbq) window.fbq('track', 'Lead');
   if (window.gtag) window.gtag('event', 'generate_lead');
+  if (window.ttq) window.ttq.track('SubmitForm');
 };
 
 // Dispara quando o pagamento é processado (ou gerado o PIX)
@@ -44,6 +57,17 @@ export const trackPurchase = (plano: string, preco: number) => {
       value: preco,
       currency: 'BRL',
       items: [{ item_name: plano, price: preco }]
+    });
+  }
+  if (window.ttq) {
+    window.ttq.track('CompletePayment', {
+      contents: [{
+        content_name: plano,
+        price: preco,
+        quantity: 1
+      }],
+      value: preco,
+      currency: 'BRL'
     });
   }
 };

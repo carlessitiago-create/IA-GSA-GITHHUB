@@ -134,6 +134,42 @@ const SaaSLandingPage: React.FC = () => {
     }
   }, [config?.facebook_pixel_id, config?.meta_pixel_code, location.pathname]);
 
+  // Inicializa o Pixel do TikTok
+  useEffect(() => {
+    if (config?.tiktok_pixel_code) {
+      if (!document.head.innerHTML.includes('ttq')) {
+        const template = document.createElement('template');
+        template.innerHTML = config.tiktok_pixel_code.trim();
+        
+        Array.from(template.content.childNodes).forEach((node) => {
+          if (node.nodeType === 1 && node.nodeName === 'SCRIPT') {
+            const scriptElement = document.createElement('script');
+            const originalScript = node as HTMLScriptElement;
+            
+            if (originalScript.src) {
+               scriptElement.src = originalScript.src;
+            }
+            scriptElement.textContent = originalScript.textContent;
+            
+            Array.from(originalScript.attributes).forEach(attr => {
+               scriptElement.setAttribute(attr.name, attr.value);
+            });
+            
+            document.head.appendChild(scriptElement);
+          } else if (node.nodeType === 1 && node.nodeName === 'NOSCRIPT') {
+             if (!document.head.innerHTML.includes('noscript')) {
+               document.head.appendChild(node.cloneNode(true));
+             }
+          }
+        });
+      } else {
+        if (typeof (window as any).ttq === 'object' && (window as any).ttq.page) {
+          (window as any).ttq.page();
+        }
+      }
+    }
+  }, [config?.tiktok_pixel_code, location.pathname]);
+
   // Efeito de Confetis ao Confirmar Pagamento
   useEffect(() => {
     if (paymentStatus === 'PAID') {
