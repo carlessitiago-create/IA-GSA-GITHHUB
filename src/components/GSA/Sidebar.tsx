@@ -98,7 +98,6 @@ export function Sidebar({ currentProfile, logout, onClose }: any) {
             {role !== 'ADM_ANALISTA' && <MenuItem to="config_consulta" icon={LayoutDashboard} label="Configurações de Consulta" color="text-orange-500" />}
             <MenuItem to="diagnostico" icon={LayoutDashboard} label="Landing Page SaaS" color="text-green-500" />
             {role !== 'ADM_ANALISTA' && <MenuItem to="fabrica" icon={Factory} label="Fábrica de Serviços" />}
-            <MenuItem to="processos" icon={ClipboardList} label="Modelos de Processos" />
             <MenuItem to="equipe" icon={Users} label="Gestão de Equipe" />
             <MenuItem to="inteligencia" icon={LayoutDashboard} label="Inteligência" />
             <MenuItem to="conversao" icon={TrendingUp} label="Conversão" />

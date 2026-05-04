@@ -195,7 +195,6 @@ const App: React.FC = () => {
             <Route path="/perfil" element={<ProfileView />} />
             <Route path="/vitrine" element={<VitrineView />} />
             <Route path="/conversao" element={<ConversionDashboardView />} />
-            <Route path="/processos" element={<ProcessModelsManager />} />
             <Route path="/dashboard" element={<DashboardView />} />
             <Route path="/saas-settings" element={<DashboardView view="saas_settings" />} />
             <Route path="/admin_clube_settings" element={<DashboardView view="admin_clube_settings" />} />

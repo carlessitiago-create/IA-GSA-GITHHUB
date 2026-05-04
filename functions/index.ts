@@ -483,8 +483,8 @@ export const processVenda = onCall(
 
       // Get model info
       let modeloId = servicoData?.modelo_id || '';
-      let pendenciasIniciais = servicoData?.documentos || [];
-      let dadosFaltantes = servicoData?.campos || [];
+      let pendenciasIniciais = servicoData?.requisitos_documentos || servicoData?.documentos || [];
+      let dadosFaltantes = servicoData?.requisitos_campos || servicoData?.campos || [];
 
       if (modeloId) {
         const modelSnap = await transaction.get(db.doc(`process_models/${modeloId}`));
@@ -866,8 +866,8 @@ export const processarVendaSegura = onCall(
           id_superior: user.id_superior || null,
           data_venda: admin.firestore.FieldValue.serverTimestamp(),
           modelo_id: servico.modelo_id || '',
-          pendencias_iniciais: servico.documentos || [],
-          dados_faltantes: servico.campos || [],
+          pendencias_iniciais: servico.requisitos_documentos || servico.documentos || [],
+          dados_faltantes: servico.requisitos_campos || servico.campos || [],
           visibilidade_uids
         }));
       }
@@ -1406,6 +1406,12 @@ export const registrarVendaAdministrativa = onCall(
                 throw new HttpsError('permission-denied', `Seu nível (${userData?.nivel || 'N/A'}) não permite esta operação.`);
             }
 
+            // Fetch the service to get its requirements
+            const servicoSnap = await db.collection('services').doc(servicoId).get();
+            const servicoData = servicoSnap.exists ? servicoSnap.data() : null;
+            const pendencias_iniciais = servicoData?.requisitos_documentos || servicoData?.documentos || [];
+            const dados_faltantes = servicoData?.requisitos_campos || servicoData?.campos || [];
+
             const safeVendedorId = vendedorId || uid;
             const timestamp = admin.firestore.FieldValue.serverTimestamp();
             const batch = db.batch();
@@ -1453,6 +1459,7 @@ export const registrarVendaAdministrativa = onCall(
                 protocolo,
                 venda_id: saleRef.id,
                 servico_id: servicoId,
+                servico_nome: servicoData?.nome_servico || 'Serviço',
                 cliente_id: clientRef.id,
                 cliente_nome: cliente.nome,
                 cliente_cpf_cnpj: cleanCPF,
@@ -1460,7 +1467,9 @@ export const registrarVendaAdministrativa = onCall(
                 status_atual: 'Ativo',
                 status_financeiro: 'PAGO',
                 data_execucao: dataServico,
-                data_venda: timestamp
+                data_venda: timestamp,
+                pendencias_iniciais,
+                dados_faltantes
             }));
 
             console.log(`[REGISTRAR_VENDA_ADMIN] Committing batch for ${cleanCPF}...`);
