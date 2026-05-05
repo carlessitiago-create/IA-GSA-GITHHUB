@@ -170,8 +170,11 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
       } else {
         // Criar novo usuário
         // TRUQUE: Criar um app secundário para não deslogar o ADM Master atual
-        const secondaryApp = initializeApp(firebaseConfig, "Secondary");
+        const secondaryApp = initializeApp(firebaseConfig, "Secondary" + Date.now());
         const secondaryAuth = getAuth(secondaryApp);
+        // Fix: Set persistence to memory so it doesn't overwrite the main user's session in IndexedDB
+        const { setPersistence, inMemoryPersistence } = await import('firebase/auth');
+        await setPersistence(secondaryAuth, inMemoryPersistence);
 
         // 1. Cria o usuário no Firebase Auth
         const userCredential = await createUserWithEmailAndPassword(secondaryAuth, email, password);

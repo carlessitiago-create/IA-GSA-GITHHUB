@@ -188,7 +188,8 @@ service cloud.firestore {
     match /documento_locks/{docId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor());
-      allow update, delete: if isMaster();
+      allow update: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor());
+      allow delete: if isMaster();
     }
 
     // Order Process
