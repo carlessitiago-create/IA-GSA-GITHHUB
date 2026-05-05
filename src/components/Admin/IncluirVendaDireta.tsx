@@ -24,6 +24,9 @@ export const IncluirVendaDireta = () => {
     const [vendedores, setVendedores] = useState<{id: string, nome: string}[]>([]);
     const [gestorId, setGestorId] = useState('');
     const [loading, setLoading] = useState(false);
+    const [temCnpj, setTemCnpj] = useState(false);
+    const [cnpjEmpresa, setCnpjEmpresa] = useState('');
+    const [nomeEmpresa, setNomeEmpresa] = useState('');
 
     useEffect(() => {
         const fetchData = async () => {
@@ -93,7 +96,8 @@ export const IncluirVendaDireta = () => {
 
             // 2. Criar Cliente
             const clientRef = doc(collection(db, 'clients'));
-            batch.set(clientRef, {
+            
+            const clientData: any = {
                 nome: nomeCliente,
                 nome_completo: nomeCliente,
                 documento: cleanCPF,
@@ -104,7 +108,15 @@ export const IncluirVendaDireta = () => {
                 created_at: timestamp,
                 timestamp: timestamp,
                 origem: 'ADMIN_MANUAL'
-            });
+            };
+
+            if (temCnpj) {
+                const cleanCNPJ = cnpjEmpresa.replace(/\D/g, '');
+                clientData.cnpj = cleanCNPJ;
+                clientData.nome_empresa = nomeEmpresa;
+            }
+
+            batch.set(clientRef, clientData);
 
             // 3. Trava de CPF
             const lockRef = doc(db, 'documento_locks', cleanCPF);
@@ -137,7 +149,8 @@ export const IncluirVendaDireta = () => {
 
             // 5. Criar Processo
             const processRef = doc(collection(db, 'order_processes'));
-            batch.set(processRef, {
+            
+            const processData: any = {
                 protocolo,
                 venda_id: saleRef.id,
                 servico_id: servicoId,
@@ -153,12 +166,20 @@ export const IncluirVendaDireta = () => {
                 status_financeiro: 'PAGO',
                 data_execucao: dataServico,
                 data_venda: timestamp
-            });
+            };
+
+            if (temCnpj) {
+                const cleanCNPJ = cnpjEmpresa.replace(/\D/g, '');
+                processData.cnpj = cleanCNPJ;
+                processData.nome_empresa = nomeEmpresa;
+            }
+
+            batch.set(processRef, processData);
 
             await batch.commit();
             
             Swal.fire('Sucesso', 'Cliente, Venda e Processo criados com sucesso!', 'success');
-            setNomeCliente(''); setCpfCliente(''); setNascCliente(''); setServicoId(''); setVendedorId(''); setGestorId(''); setDataServico('');
+            setNomeCliente(''); setCpfCliente(''); setNascCliente(''); setServicoId(''); setVendedorId(''); setGestorId(''); setDataServico(''); setCnpjEmpresa(''); setNomeEmpresa(''); setTemCnpj(false);
             
         } catch (error: any) {
             console.error('Erro ao processar venda administrativa:', error);
@@ -205,6 +226,42 @@ export const IncluirVendaDireta = () => {
                         />
                     </div>
                 </div>
+
+                <div className="flex items-center gap-2">
+                    <input 
+                        type="checkbox" 
+                        id="temCnpj" 
+                        checked={temCnpj} 
+                        onChange={(e) => setTemCnpj(e.target.checked)} 
+                        className="w-5 h-5 rounded border-slate-600 bg-slate-900 text-blue-600 focus:ring-blue-500"
+                    />
+                    <label htmlFor="temCnpj" className="text-sm font-medium text-slate-300 cursor-pointer">
+                        Vincular um CNPJ a este cliente (Opcional)
+                    </label>
+                </div>
+
+                {temCnpj && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-900/50 p-4 rounded-xl border border-slate-700">
+                        <div>
+                            <label className="block text-sm font-medium text-slate-300 mb-1">CNPJ</label>
+                            <input 
+                                className="w-full p-3 bg-slate-900 border border-slate-600 rounded-xl text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all placeholder:text-slate-500" 
+                                placeholder="00.000.000/0000-00" 
+                                value={cnpjEmpresa} 
+                                onChange={(e) => setCnpjEmpresa(e.target.value)} 
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-300 mb-1">Nome da Empresa (Razão Social)</label>
+                            <input 
+                                className="w-full p-3 bg-slate-900 border border-slate-600 rounded-xl text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all placeholder:text-slate-500" 
+                                placeholder="Ex: Empresa Silva Ltda" 
+                                value={nomeEmpresa} 
+                                onChange={(e) => setNomeEmpresa(e.target.value)} 
+                            />
+                        </div>
+                    </div>
+                )}
 
                 <div>
                     <label className="block text-sm font-medium text-slate-300 mb-1">Serviço Adquirido / A Produzir</label>
