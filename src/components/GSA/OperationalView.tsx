@@ -571,17 +571,17 @@ export const OperationalView: React.FC = () => {
                 {!ready && (
                   <div className="flex flex-wrap gap-1 md:gap-2 mt-1">
                     {!processo.cliente_cpf_cnpj && (
-                      <span className="text-[6px] sm:text-[7px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 uppercase tracking-tighter">Falta CPF</span>
+                      <span className="text-[6px] sm:text-[7px] font-bold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-100 uppercase tracking-tighter">Falta CPF</span>
                     )}
                     {!processo.data_nascimento && (
-                      <span className="text-[6px] sm:text-[7px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 uppercase tracking-tighter">Falta Nascimento</span>
+                      <span className="text-[6px] sm:text-[7px] font-bold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-100 uppercase tracking-tighter">Falta Nascimento</span>
                     )}
-                    {processo.dados_faltantes?.slice(0, 3).map(f => (
-                      <span key={f} className="text-[6px] sm:text-[7px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100 uppercase tracking-tighter truncate max-w-[80px]">Falta {f}</span>
+                    {processo.dados_faltantes?.map(f => (
+                      <span key={f} className="text-[6px] sm:text-[7px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 uppercase tracking-tighter truncate max-w-[120px]">Falta: {requirementsConfig.field_labels?.[f] || f.replace(/_/g, ' ')}</span>
                     ))}
-                    {processo.dados_faltantes && processo.dados_faltantes.length > 3 && (
-                      <span className="text-[6px] sm:text-[7px] font-bold text-blue-400 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-50">+{processo.dados_faltantes.length - 3}</span>
-                    )}
+                    {processo.pendencias_iniciais?.filter(d => !processo.documentos_enviados?.includes(d)).map(d => (
+                      <span key={d} className="text-[6px] sm:text-[7px] font-bold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-100 uppercase tracking-tighter truncate max-w-[120px]">Doc Pendente: {requirementsConfig.document_labels?.[d] || d.replace(/_/g, ' ')}</span>
+                    ))}
                   </div>
                 )}
 
