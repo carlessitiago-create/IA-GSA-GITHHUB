@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Activity, CheckCircle, Clock, Search, Filter, ChevronRight, User, Calendar, FileText, AlertCircle, X, ExternalLink, ShieldCheck, UserCheck, FileDown, Loader2, FolderOpen, AlertTriangle, XCircle, Trash2, Edit3 } from 'lucide-react';
 import { format } from 'date-fns';
 import { listarTodosProcessos, OrderProcess, atualizarStatusProcesso, abrirPendenciaCascata, excluirProcesso } from '../../services/orderService';
-import { auth } from '../../firebase';
+import { auth, db } from '../../firebase';
+import { doc, updateDoc } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'motion/react';
 import { gerarDocumentoProcesso } from '../../services/pdfGeneratorService';
 import { getClienteData } from '../../services/leadService';
@@ -351,6 +352,41 @@ export const OperationalView: React.FC = () => {
     fetchData();
   }, []);
 
+  const handleConfirmarRecebimentoManual = async (processo: OrderProcess, docKey: string) => {
+    const docLabel = requirementsConfig?.document_labels?.[docKey] || docKey.replace(/_/g, ' ');
+    const result = await Swal.fire({
+      title: 'Confirmar Recebimento',
+      text: `Deseja confirmar o recebimento do documento "${docLabel}" manualmente?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sim, Recebido',
+      cancelButtonText: 'Cancelar'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const currentDocs = processo.documentos_enviados || [];
+        if (!currentDocs.includes(docKey)) {
+          const updatedDocs = [...currentDocs, docKey];
+          await updateDoc(doc(db, 'order_processes', processo.id!), {
+            documentos_enviados: updatedDocs
+          });
+
+          // Atualizar o estado local
+          const updatedProcess = { ...processo, documentos_enviados: updatedDocs };
+          setProcessos(prev => prev.map(p => p.id === processo.id ? updatedProcess : p));
+          if (selectedProcess?.id === processo.id) {
+            setSelectedProcess(updatedProcess);
+          }
+
+          Swal.fire('Sucesso!', 'Documento confirmado.', 'success');
+        }
+      } catch (error: any) {
+        Swal.fire('Erro', 'Não foi possível confirmar: ' + error.message, 'error');
+      }
+    }
+  };
+
   const getProcessProgress = (processo: OrderProcess) => {
     const reqDocs = processo.pendencias_iniciais || [];
     if (reqDocs.length === 0) return 100;
@@ -688,7 +724,7 @@ export const OperationalView: React.FC = () => {
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="bg-white w-full max-w-5xl max-h-[95vh] md:max-h-[90vh] rounded-[2rem] md:rounded-[3.5rem] overflow-hidden shadow-2xl flex flex-col relative border border-slate-100"
+              className="bg-white w-full max-w-7xl md:max-w-[90vw] max-h-[95vh] rounded-[2rem] md:rounded-[3.5rem] overflow-hidden shadow-2xl flex flex-col relative border border-slate-100"
             >
               <button 
                 onClick={() => setSelectedProcess(null)}
@@ -866,9 +902,9 @@ export const OperationalView: React.FC = () => {
                 </div>
 
                 {/* Grid Duplo para Mobile e Desktop */}
-                <div className="flex flex-col xl:flex-row gap-6 md:gap-10 h-auto xl:h-[600px]">
+                <div className="flex flex-col lg:flex-row gap-6 md:gap-10 h-auto lg:h-[650px] min-h-0">
                   {/* Checklist de Documentação */}
-                  <div className="flex-1 space-y-4 md:space-y-6">
+                  <div className="w-full lg:w-[35%] flex flex-col space-y-4 md:space-y-6">
                     <div className="flex items-center justify-between px-2">
                       <div className="flex items-center gap-3">
                         <div className="size-8 md:size-10 bg-slate-50 rounded-xl flex items-center justify-center shadow-sm">
@@ -882,7 +918,7 @@ export const OperationalView: React.FC = () => {
                         </span>
                       </div>
                     </div>
-                    <div className="grid grid-cols-1 gap-3 md:gap-4 overflow-y-visible xl:overflow-y-auto pr-0 xl:pr-4 custom-scrollbar">
+                    <div className="flex-1 grid grid-cols-1 gap-3 md:gap-4 overflow-y-visible lg:overflow-y-auto pr-0 lg:pr-4 custom-scrollbar content-start">
                       {selectedProcess.pendencias_iniciais?.map((docKey) => {
                         const isEnviado = selectedProcess.documentos_enviados?.includes(docKey);
                         return (
@@ -906,7 +942,7 @@ export const OperationalView: React.FC = () => {
                                 {requirementsConfig?.document_labels?.[docKey] || docKey}
                               </span>
                             </div>
-                          {isEnviado && (
+                          {isEnviado ? (
                             <div className="flex gap-2">
                               <a 
                                 href={selectedClient?.[docKey]} 
@@ -927,6 +963,18 @@ export const OperationalView: React.FC = () => {
                                 </button>
                               )}
                             </div>
+                          ) : (
+                            isAdm ? (
+                              <button
+                                onClick={() => handleConfirmarRecebimentoManual(selectedProcess, docKey)}
+                                className="px-3 py-1.5 md:px-0 md:size-10 bg-white text-amber-500 hover:bg-amber-500 hover:text-white rounded-xl transition-all shadow-sm flex items-center justify-center border border-amber-100 shrink-0"
+                                title="Confirmar Recebimento Manualmente"
+                              >
+                                <CheckCircle size={16} className="md:hidden mr-1.5 shrink-0" />
+                                <span className="md:hidden text-[10px] uppercase font-bold tracking-widest">OK</span>
+                                <CheckCircle size={16} className="hidden md:block" />
+                              </button>
+                            ) : null
                           )}
                         </div>
                       );
@@ -935,7 +983,7 @@ export const OperationalView: React.FC = () => {
                 </div>
 
                 {/* Dados da Ficha */}
-                <div className="flex-1 overflow-y-visible xl:overflow-y-auto p-0 xl:p-8 custom-scrollbar">
+                <div className="w-full lg:w-[65%] flex flex-col overflow-y-visible lg:overflow-y-auto p-0 lg:p-4 lg:pl-10 custom-scrollbar">
                   <SmartFicha 
                     processos={[selectedProcess]} 
                     clienteDados={selectedClient || { 
@@ -951,6 +999,8 @@ export const OperationalView: React.FC = () => {
                       const procs = await listarTodosProcessos(profile || undefined);
                       setProcessos(procs);
                     }} 
+                    isAdm={isAdm}
+                    onConfirmManual={(docKey) => handleConfirmarRecebimentoManual(selectedProcess, docKey)}
                   />
                 </div>
               </div>

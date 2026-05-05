@@ -9,9 +9,11 @@ interface FileUploadProps {
   status: 'pendente' | 'resolvido';
   existingUrl?: string;
   isUploading?: boolean;
+  showManualConfirm?: boolean;
+  onConfirm?: () => void;
 }
 
-export const FileUploader = ({ label, onUpload, status, existingUrl, isUploading }: FileUploadProps) => {
+export const FileUploader = ({ label, onUpload, status, existingUrl, isUploading, showManualConfirm, onConfirm }: FileUploadProps) => {
   const [preview, setPreview] = useState<string | null>(existingUrl || null);
   const [file, setFile] = useState<File | null>(null);
 
@@ -46,11 +48,24 @@ export const FileUploader = ({ label, onUpload, status, existingUrl, isUploading
       </div>
 
       {!preview ? (
-        <label className="flex flex-col items-center justify-center py-4 md:py-6 cursor-pointer hover:bg-slate-50 rounded-lg md:rounded-xl transition-colors">
-          <Upload className="text-blue-900 mb-1 md:mb-2 size-5 md:size-6" />
-          <span className="text-[8px] md:text-[10px] font-bold text-slate-400 uppercase">CLIQUE PARA ANEXAR</span>
-          <input type="file" className="hidden" onChange={handleFileChange} accept="image/*,.pdf" />
-        </label>
+        <div className="flex flex-col gap-2">
+          <label className="flex flex-col items-center justify-center py-4 md:py-6 cursor-pointer hover:bg-slate-50 rounded-lg md:rounded-xl transition-colors border border-transparent hover:border-slate-100">
+            <Upload className="text-blue-900 mb-1 md:mb-2 size-5 md:size-6" />
+            <span className="text-[8px] md:text-[10px] font-bold text-slate-400 uppercase">CLIQUE PARA ANEXAR</span>
+            <input type="file" className="hidden" onChange={handleFileChange} accept="image/*,.pdf" />
+          </label>
+          
+          {showManualConfirm && status === 'pendente' && (
+            <button
+              onClick={(e) => { e.preventDefault(); onConfirm?.(); }}
+              className="mt-1 flex items-center justify-center gap-1.5 py-2 w-full rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-500 hover:text-white transition-all font-bold text-[8px] md:text-[10px] uppercase tracking-widest border border-amber-100 shadow-sm"
+              title="Confirmar Recebimento Manualmente"
+            >
+              <CheckCircle size={14} />
+              Confirmar Recebimento
+            </button>
+          )}
+        </div>
       ) : (
         <div className="relative group">
           {isPdf ? (

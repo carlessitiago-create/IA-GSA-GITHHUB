@@ -19,9 +19,11 @@ interface SmartFichaProps {
   processos: any[];
   clienteDados: any;
   onUpdate?: () => void;
+  isAdm?: boolean;
+  onConfirmManual?: (docKey: string) => void;
 }
 
-export const SmartFicha: React.FC<SmartFichaProps> = ({ processos, clienteDados, onUpdate }) => {
+export const SmartFicha: React.FC<SmartFichaProps> = ({ processos, clienteDados, onUpdate, isAdm, onConfirmManual }) => {
   const { config: requirementsConfig } = useRequirements();
   const [formData, setFormData] = useState<any>({});
   const [submitting, setSubmitting] = useState(false);
@@ -347,6 +349,8 @@ export const SmartFicha: React.FC<SmartFichaProps> = ({ processos, clienteDados,
               existingUrl={clienteDados[docLabel]}
               isUploading={uploading === docLabel}
               onUpload={(file) => handleFileUpload(docLabel, file)}
+              showManualConfirm={isAdm}
+              onConfirm={() => onConfirmManual?.(docLabel)}
             />
           ))}
         </div>
