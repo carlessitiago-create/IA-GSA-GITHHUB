@@ -577,10 +577,10 @@ export const OperationalView: React.FC = () => {
                       <span className="text-[6px] sm:text-[7px] font-bold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-100 uppercase tracking-tighter">Falta Nascimento</span>
                     )}
                     {processo.dados_faltantes?.map(f => (
-                      <span key={f} className="text-[6px] sm:text-[7px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 uppercase tracking-tighter truncate max-w-[120px]">Falta: {requirementsConfig.field_labels?.[f] || f.replace(/_/g, ' ')}</span>
+                      <span key={f} className="text-[6px] sm:text-[7px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 uppercase tracking-tighter truncate max-w-[120px]">Falta: {requirementsConfig?.field_labels?.[f] || f.replace(/_/g, ' ')}</span>
                     ))}
                     {processo.pendencias_iniciais?.filter(d => !processo.documentos_enviados?.includes(d)).map(d => (
-                      <span key={d} className="text-[6px] sm:text-[7px] font-bold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-100 uppercase tracking-tighter truncate max-w-[120px]">Doc Pendente: {requirementsConfig.document_labels?.[d] || d.replace(/_/g, ' ')}</span>
+                      <span key={d} className="text-[6px] sm:text-[7px] font-bold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-100 uppercase tracking-tighter truncate max-w-[120px]">Doc Pendente: {requirementsConfig?.document_labels?.[d] || d.replace(/_/g, ' ')}</span>
                     ))}
                   </div>
                 )}
@@ -903,7 +903,7 @@ export const OperationalView: React.FC = () => {
                               <span className={`text-[10px] md:text-[11px] font-black uppercase tracking-tight truncate ${
                                 isEnviado ? 'text-emerald-700' : 'text-slate-400'
                               }`}>
-                                {requirementsConfig.document_labels[docKey] || docKey}
+                                {requirementsConfig?.document_labels?.[docKey] || docKey}
                               </span>
                             </div>
                           {isEnviado && (
