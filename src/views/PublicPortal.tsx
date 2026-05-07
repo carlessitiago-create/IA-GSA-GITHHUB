@@ -23,6 +23,7 @@ export const PublicPortal = ({ previewConfig }: { previewConfig?: PublicPortalCo
   const [loading, setLoading] = useState(false);
   const [documento, setDocumento] = useState('');
   const [dataNascimento, setDataNascimento] = useState('');
+  const [codigoInterno, setCodigoInterno] = useState('');
   const [processo, setProcesso] = useState<any>(null);
   const [indicacoes, setIndicacoes] = useState<any[]>([]);
   const [pendencias, setPendencias] = useState<any[]>([]);
@@ -61,17 +62,17 @@ export const PublicPortal = ({ previewConfig }: { previewConfig?: PublicPortalCo
     e.preventDefault();
     
     // Validação estrita
-    if (!documento || !dataNascimento) {
-      return Swal.fire('Atenção', 'Documento e Data de Nascimento são obrigatórios para sua segurança.', 'warning');
+    if (!documento || (!dataNascimento && !codigoInterno)) {
+      return Swal.fire('Atenção', 'Documento e Data de Nascimento (ou Código Interno) são obrigatórios para sua segurança.', 'warning');
     }
 
     setLoading(true);
     try {
-      const res = await consultaPublicaProcesso(documento, dataNascimento);
+      const res = await consultaPublicaProcesso(documento, dataNascimento, codigoInterno);
       // Se res for null, significa que o cliente existe mas não tem processos.
       // Vamos permitir que ele veja o "Tapete Vermelho" no resultado.
       
-      const refs = await listarMinhasIndicacoesPublicas(documento, dataNascimento);
+      const refs = await listarMinhasIndicacoesPublicas(documento, dataNascimento, codigoInterno);
       setIndicacoes(refs);
       
       if (res) {
@@ -105,9 +106,9 @@ export const PublicPortal = ({ previewConfig }: { previewConfig?: PublicPortalCo
   };
 
   const refreshData = async () => {
-    if (!documento || !dataNascimento) return;
+    if (!documento || (!dataNascimento && !codigoInterno)) return;
     try {
-      const res = await consultaPublicaProcesso(documento, dataNascimento);
+      const res = await consultaPublicaProcesso(documento, dataNascimento, codigoInterno);
       setProcesso(res);
       if (res) {
         const pends = await listarPendenciasPublicas(res.cliente_id);
@@ -124,10 +125,10 @@ export const PublicPortal = ({ previewConfig }: { previewConfig?: PublicPortalCo
     }
     try {
       const bonusValor = config?.bonus_indicacao || 50;
-      await registrarIndicacaoPublica(documento, dataNascimento, nomeAmigo, whatsAmigo, emailAmigo, bonusValor);
+      await registrarIndicacaoPublica(documento, dataNascimento, codigoInterno, nomeAmigo, whatsAmigo, emailAmigo, bonusValor);
       
       // Recarrega as indicações
-      const refs = await listarMinhasIndicacoesPublicas(documento, dataNascimento);
+      const refs = await listarMinhasIndicacoesPublicas(documento, dataNascimento, codigoInterno);
       setIndicacoes(refs);
       
       setNomeAmigo('');
@@ -259,31 +260,49 @@ export const PublicPortal = ({ previewConfig }: { previewConfig?: PublicPortalCo
                   >
                     <div className="bg-slate-50 rounded-[calc(2.5rem-8px)] p-6 sm:p-10 text-left">
                       <form onSubmit={handleSearch} className="space-y-6">
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-black uppercase text-slate-400 ml-4 tracking-widest flex items-center gap-2">
-                            <User size={12} className="text-blue-600" /> CPF ou CNPJ do Titular
-                          </label>
-                          <input 
-                            type="text" 
-                            placeholder="000.000.000-00"
-                            value={documento}
-                            onChange={(e) => setDocumento(formatDocument(e.target.value))}
-                            className="w-full bg-white border border-slate-200 rounded-2xl p-4 text-sm font-bold text-slate-800 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all outline-none"
-                            required
-                          />
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-black uppercase text-slate-400 ml-4 tracking-widest flex items-center gap-2">
-                            <Clock size={12} className="text-blue-600" /> Data de Nascimento
-                          </label>
-                          <input 
-                            type="date" 
-                            value={dataNascimento}
-                            onChange={(e) => setDataNascimento(e.target.value)}
-                            className="w-full bg-white border border-slate-200 rounded-2xl p-4 text-sm font-bold text-slate-800 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all outline-none [color-scheme:light]"
-                            required
-                          />
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase text-slate-400 ml-4 tracking-widest flex items-center gap-2">
+                              <User size={12} className="text-blue-600" /> CPF ou CNPJ do Titular
+                            </label>
+                            <input 
+                              type="text" 
+                              placeholder="000.000.000-00"
+                              value={documento}
+                              onChange={(e) => setDocumento(formatDocument(e.target.value))}
+                              className="w-full bg-white border border-slate-200 rounded-2xl p-4 text-sm font-bold text-slate-800 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all outline-none"
+                              required
+                            />
+                          </div>
+                          
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <label className="text-[10px] font-black uppercase text-slate-400 ml-4 tracking-widest flex items-center gap-2">
+                                <Clock size={12} className="text-blue-600" /> Data Nasc. (Opcional)
+                              </label>
+                              <input 
+                                type="date" 
+                                value={dataNascimento}
+                                onChange={(e) => setDataNascimento(e.target.value)}
+                                className="w-full bg-white border border-slate-200 rounded-2xl p-4 text-sm font-bold text-slate-800 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all outline-none [color-scheme:light]"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-[10px] font-black uppercase text-slate-400 ml-4 tracking-widest flex items-center gap-2">
+                                <ShieldAlert size={12} className="text-blue-600" /> Código Interno (Opcional)
+                              </label>
+                              <input 
+                                type="text" 
+                                placeholder="ABC-1234"
+                                value={codigoInterno}
+                                onChange={(e) => setCodigoInterno(e.target.value)}
+                                className="w-full bg-white border border-slate-200 rounded-2xl p-4 text-sm font-bold text-slate-800 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all outline-none"
+                              />
+                            </div>
+                          </div>
+                          <p className="text-[10px] text-slate-400 font-medium text-center">
+                            * Preencha a data de nascimento OU o código interno gerado pelo admin.
+                          </p>
                         </div>
 
                         <button 

@@ -147,8 +147,89 @@ export const OperationalView: React.FC = () => {
     }
   };
 
+  const handleMudarServico = async () => {
+    if (!selectedProcess || !isAdm) return;
+    try {
+      const { collection, getDocs } = await import('firebase/firestore');
+      const servicesSnap = await getDocs(collection(db, 'services'));
+      const servicosAtivos = servicesSnap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .filter((s:any) => s.ativo !== false && s.nome);
+
+      const inputOptions: Record<string, string> = {};
+      servicosAtivos.forEach((s: any) => {
+        inputOptions[s.id] = s.nome;
+      });
+
+      const { value: selectedServicoId } = await Swal.fire({
+        title: 'Mudar Tipo de Processo',
+        input: 'select',
+        inputOptions,
+        inputValue: selectedProcess.servico_id,
+        showCancelButton: true
+      });
+
+      if (selectedServicoId && selectedServicoId !== selectedProcess.servico_id) {
+        const servicoSelecionado: any = servicosAtivos.find(s => s.id === selectedServicoId);
+        
+        let arrCamposFaltantes = servicoSelecionado.requisitos_campos || [];
+        let arrDocsFaltantes = servicoSelecionado.requisitos_documentos || [];
+        const modelId = servicoSelecionado.modelo_id || "";
+        
+        if (modelId && (!arrCamposFaltantes.length && !arrDocsFaltantes.length)) {
+          const { doc: fsDoc, getDoc } = await import('firebase/firestore');
+          const modelDoc = await getDoc(fsDoc(db, 'process_models', modelId));
+          if (modelDoc.exists()) {
+             arrCamposFaltantes = modelDoc.data().campos || [];
+             arrDocsFaltantes = modelDoc.data().documentos || [];
+          }
+        }
+        
+        const { registrarLogAuditoria } = await import('../../services/orderService');
+        await updateDoc(doc(db, 'order_processes', selectedProcess.id!), {
+          servico_id: selectedServicoId,
+          servico_nome: servicoSelecionado.nome,
+          modelo_id: modelId,
+          dados_faltantes: arrCamposFaltantes,
+          pendencias_iniciais: arrDocsFaltantes
+        });
+        
+        await registrarLogAuditoria(selectedProcess.id!, `Tipo de processo alterado para: ${servicoSelecionado.nome}`, profile?.uid || '', profile?.nome_completo || 'Analista');
+        
+        const updatedProcess = {
+          ...selectedProcess, 
+          servico_id: selectedServicoId, 
+          servico_nome: servicoSelecionado.nome,
+          modelo_id: modelId,
+          dados_faltantes: arrCamposFaltantes,
+          pendencias_iniciais: arrDocsFaltantes
+        };
+        setSelectedProcess(updatedProcess);
+        
+        Swal.fire('Sucesso', 'Tipo de processo alterado.', 'success');
+        
+        setProcessos(prev => prev.map(p => p.id === updatedProcess.id ? updatedProcess : p));
+      }
+    } catch(e) {
+      console.error(e);
+      Swal.fire('Erro', 'Ocorreu um erro ao mudar o processo.', 'error');
+    }
+  };
+
   const handleUpdateStatus = async (processo: OrderProcess, novoStatus: OrderProcess['status_atual']) => {
     if (!isAdm) return;
+
+    if (novoStatus !== 'Pendente' && novoStatus !== 'Aguardando Documentação' && !isProcessReady(processo)) {
+      Swal.fire({
+        title: 'Dados Incompletos',
+        text: 'Faltam campos na Ficha Técnica ou documentos. O processo só deve avançar quando Docs estiverem OK.',
+        icon: 'warning'
+      });
+      // Força a re-renderização para que o select volte ao "Pendente"
+      setProcessos(prev => [...prev]);
+      return;
+    }
+
     const oldStatus = processo.status_atual;
     
     if (novoStatus === 'Concluído') {
@@ -368,18 +449,43 @@ export const OperationalView: React.FC = () => {
         const currentDocs = processo.documentos_enviados || [];
         if (!currentDocs.includes(docKey)) {
           const updatedDocs = [...currentDocs, docKey];
-          await updateDoc(doc(db, 'order_processes', processo.id!), {
-            documentos_enviados: updatedDocs
-          });
+          const updatedProcess = { ...processo, documentos_enviados: updatedDocs };
+          
+          if (isProcessReady(updatedProcess)) {
+            if (updatedProcess.status_atual === 'Pendente' || updatedProcess.status_atual === 'Aguardando Documentação') {
+              updatedProcess.status_atual = 'Em Análise';
+              await updateDoc(doc(db, 'order_processes', processo.id!), {
+                documentos_enviados: updatedDocs,
+                status_atual: 'Em Análise'
+              });
+              Swal.fire('Pronto!', 'Todos os documentos e dados foram preenchidos. Processo agora está Em Análise.', 'success');
+            } else {
+              await updateDoc(doc(db, 'order_processes', processo.id!), {
+                documentos_enviados: updatedDocs
+              });
+              Swal.fire('Sucesso!', 'Documento confirmado.', 'success');
+            }
+          } else {
+            if (updatedProcess.status_atual !== 'Pendente' && updatedProcess.status_atual !== 'Aguardando Documentação') {
+              updatedProcess.status_atual = 'Pendente';
+              await updateDoc(doc(db, 'order_processes', processo.id!), {
+                documentos_enviados: updatedDocs,
+                status_atual: 'Pendente'
+              });
+              Swal.fire('Atenção', 'A documentação ainda está incompleta. O status retornou para Pendente.', 'warning');
+            } else {
+              await updateDoc(doc(db, 'order_processes', processo.id!), {
+                documentos_enviados: updatedDocs
+              });
+              Swal.fire('Sucesso!', 'Documento confirmado. Faltam outros requisitos.', 'info');
+            }
+          }
 
           // Atualizar o estado local
-          const updatedProcess = { ...processo, documentos_enviados: updatedDocs };
           setProcessos(prev => prev.map(p => p.id === processo.id ? updatedProcess : p));
           if (selectedProcess?.id === processo.id) {
             setSelectedProcess(updatedProcess);
           }
-
-          Swal.fire('Sucesso!', 'Documento confirmado.', 'success');
         }
       } catch (error: any) {
         Swal.fire('Erro', 'Não foi possível confirmar: ' + error.message, 'error');
@@ -402,9 +508,12 @@ export const OperationalView: React.FC = () => {
     // Dados críticos para rastreio público
     const hasTrackingData = !!processo.cliente_cpf_cnpj && !!processo.data_nascimento;
 
-    const docsReady = reqDocs.length === 0 || (processo.documentos_enviados || []).length >= reqDocs.length;
+    // Apenas OK se enviou TODOS os documentos exigidos e preencheu TODOS os campos requeridos
+    const docsReady = reqDocs.every(d => (processo.documentos_enviados || []).includes(d));
     const fieldsReady = reqFields.length === 0;
     
+    // Para serviços sem requisitos, mas sem documentos cadastrados de origem, pode bugar,
+    // então verificamos se não há pendencias ou se as pendencias foram cumpridas.
     return docsReady && fieldsReady && hasTrackingData;
   };
 
@@ -426,48 +535,64 @@ export const OperationalView: React.FC = () => {
     return matchesSearch && matchesStatus;
   });
 
-  const stats = {
-    totalFila: processos.filter(p => p.status_atual !== 'Concluído').length,
-    totalAtraso: processos.filter(p => {
-      if (p.status_atual === 'Concluído') return false;
-      const dataVenda = p.data_venda?.toDate() || new Date();
-      const diffTime = Math.abs(new Date().getTime() - dataVenda.getTime());
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      return diffDays > (p.prazo_estimado_dias || 7);
-    }).length,
-    totalConcluidoHoje: processos.filter(p => {
-      if (p.status_atual !== 'Concluído') return false;
-      const dataConclusao = p.data_conclusao_real?.toDate() || new Date();
-      const today = new Date();
-      return dataConclusao.getDate() === today.getDate() &&
-             dataConclusao.getMonth() === today.getMonth() &&
-             dataConclusao.getFullYear() === today.getFullYear();
-    }).length
-  };
+  const totalFila = processos.filter(p => p.status_atual !== 'Concluído').length;
+  const totalAtraso = processos.filter(p => {
+    if (p.status_atual === 'Concluído') return false;
+    const dataVenda = p.data_venda?.toDate ? p.data_venda.toDate() : new Date();
+    const diffTime = Math.abs(new Date().getTime() - dataVenda.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays > (p.prazo_estimado_dias || 7);
+  }).length;
+  const totalConcluidoHoje = processos.filter(p => {
+    if (p.status_atual !== 'Concluído') return false;
+    const dataConclusao = p.data_conclusao_real?.toDate ? p.data_conclusao_real.toDate() : new Date();
+    const today = new Date();
+    return dataConclusao.getDate() === today.getDate() &&
+           dataConclusao.getMonth() === today.getMonth() &&
+           dataConclusao.getFullYear() === today.getFullYear();
+  }).length;
 
   const [displayFila, setDisplayFila] = useState(0);
   const [displayAtraso, setDisplayAtraso] = useState(0);
   const [displayConcluido, setDisplayConcluido] = useState(0);
 
   useEffect(() => {
-    if (!loading) {
-      if (stats.totalFila > 0) {
-        let start = 0; const end = stats.totalFila; const duration = 1000;
-        const inc = end / (duration / 16);
-        const timer = setInterval(() => { start += inc; if (start >= end) { setDisplayFila(end); clearInterval(timer); } else { setDisplayFila(Math.floor(start)); } }, 16);
-      }
-      if (stats.totalAtraso > 0) {
-        let start = 0; const end = stats.totalAtraso; const duration = 1000;
-        const inc = end / (duration / 16);
-        const timer = setInterval(() => { start += inc; if (start >= end) { setDisplayAtraso(end); clearInterval(timer); } else { setDisplayAtraso(Math.floor(start)); } }, 16);
-      }
-      if (stats.totalConcluidoHoje > 0) {
-        let start = 0; const end = stats.totalConcluidoHoje; const duration = 1000;
-        const inc = end / (duration / 16);
-        const timer = setInterval(() => { start += inc; if (start >= end) { setDisplayConcluido(end); clearInterval(timer); } else { setDisplayConcluido(Math.floor(start)); } }, 16);
-      }
+    if (loading) return;
+    
+    let timerFila: NodeJS.Timeout;
+    let timerAtraso: NodeJS.Timeout;
+    let timerConcluido: NodeJS.Timeout;
+
+    if (totalFila > 0) {
+      let start = 0; const end = totalFila; const duration = 1000;
+      const inc = end / (duration / 16);
+      timerFila = setInterval(() => { start += inc; if (start >= end) { setDisplayFila(end); clearInterval(timerFila); } else { setDisplayFila(Math.floor(start)); } }, 16);
+    } else {
+      setDisplayFila(0);
     }
-  }, [loading, stats]);
+    
+    if (totalAtraso > 0) {
+      let start = 0; const end = totalAtraso; const duration = 1000;
+      const inc = end / (duration / 16);
+      timerAtraso = setInterval(() => { start += inc; if (start >= end) { setDisplayAtraso(end); clearInterval(timerAtraso); } else { setDisplayAtraso(Math.floor(start)); } }, 16);
+    } else {
+      setDisplayAtraso(0);
+    }
+    
+    if (totalConcluidoHoje > 0) {
+      let start = 0; const end = totalConcluidoHoje; const duration = 1000;
+      const inc = end / (duration / 16);
+      timerConcluido = setInterval(() => { start += inc; if (start >= end) { setDisplayConcluido(end); clearInterval(timerConcluido); } else { setDisplayConcluido(Math.floor(start)); } }, 16);
+    } else {
+      setDisplayConcluido(0);
+    }
+
+    return () => {
+      if (timerFila) clearInterval(timerFila);
+      if (timerAtraso) clearInterval(timerAtraso);
+      if (timerConcluido) clearInterval(timerConcluido);
+    };
+  }, [loading, totalFila, totalAtraso, totalConcluidoHoje]);
 
   if (loading) {
     return (
@@ -562,11 +687,11 @@ export const OperationalView: React.FC = () => {
       {/* LISTAGEM DE PROCESSOS (Fila Real) */}
       <div className="grid grid-cols-1 gap-6">
         {filteredProcessos.map((processo, idx) => {
-          const dataVenda = processo.data_venda?.toDate() || new Date();
+          const dataVenda = processo.data_venda?.toDate ? processo.data_venda.toDate() : new Date();
           const diffTime = Math.abs(new Date().getTime() - dataVenda.getTime());
           const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
           const isAtrasado = diffDays > (processo.prazo_estimado_dias || 7);
-          const ready = isProcessReady(processo);
+          const ready = isProcessReady(processo) && !['Pendente', 'Aguardando Documentação'].includes(processo.status_atual);
 
           return (
             <motion.div 
@@ -601,7 +726,64 @@ export const OperationalView: React.FC = () => {
                     </div>
                   )}
                 </div>
-                <h3 className="text-lg sm:text-xl md:text-2xl font-black text-[#0a0a2e] uppercase italic leading-none group-hover:text-blue-600 transition-colors truncate max-w-full">{processo.cliente_nome}</h3>
+                <div className="flex flex-col flex-1 min-w-[200px] w-full xl:w-auto">
+                  {(processo.cliente_cpf_cnpj && processo.cliente_cpf_cnpj.length > 11) || (processo as any).nome_empresa ? (
+                    <>
+                      <h3 className="text-lg sm:text-xl md:text-2xl font-black text-[#0a0a2e] uppercase italic leading-none group-hover:text-blue-600 transition-colors truncate max-w-full">
+                        {(processo as any).nome_empresa || processo.cliente_nome}
+                      </h3>
+                      <div className="flex flex-col gap-0.5 mt-1">
+                        <p className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wide">
+                          CNPJ: <span className="font-mono text-[#0a0a2e]">{processo.cliente_cpf_cnpj?.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2}).*/, "$1.$2.$3/$4-$5")}</span>
+                        </p>
+                        <p className="text-[9px] font-bold text-slate-400 uppercase">
+                          Representante Legal: {processo.cliente_nome}
+                        </p>
+                        {(processo.gestor_nome || processo.vendedor_nome) && (
+                          <div className="flex gap-2">
+                            {processo.gestor_nome && (
+                              <p className="text-[9px] font-bold text-blue-500/80 uppercase">
+                                Gestor: {processo.gestor_nome}
+                              </p>
+                            )}
+                            {processo.vendedor_nome && (
+                              <p className="text-[9px] font-bold text-blue-500/80 uppercase">
+                                Vendedor: {processo.vendedor_nome}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <h3 className="text-lg sm:text-xl md:text-2xl font-black text-[#0a0a2e] uppercase italic leading-none group-hover:text-blue-600 transition-colors truncate max-w-full">
+                        {processo.cliente_nome}
+                      </h3>
+                      <div className="flex flex-col gap-0.5 mt-1">
+                        {processo.cliente_cpf_cnpj && (
+                          <p className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wide">
+                            CPF: <span className="font-mono text-[#0a0a2e]">{processo.cliente_cpf_cnpj?.replace(/^(\d{3})(\d{3})(\d{3})(\d{2}).*/, "$1.$2.$3-$4")}</span>
+                          </p>
+                        )}
+                        {(processo.gestor_nome || processo.vendedor_nome) && (
+                          <div className="flex gap-2">
+                            {processo.gestor_nome && (
+                              <p className="text-[9px] font-bold text-blue-500/80 uppercase">
+                                Gestor: {processo.gestor_nome}
+                              </p>
+                            )}
+                            {processo.vendedor_nome && (
+                              <p className="text-[9px] font-bold text-blue-500/80 uppercase">
+                                Vendedor: {processo.vendedor_nome}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
                 
                 {/* Alerta de Dados Faltantes Detalhado */}
                 {!ready && (
@@ -899,6 +1081,21 @@ export const OperationalView: React.FC = () => {
                     <span className="text-[9px] font-black text-blue-300 uppercase tracking-widest mb-1 md:mb-2">Status</span>
                     <h4 className="text-xl md:text-2xl font-black uppercase italic leading-none text-blue-400">{selectedProcess.status_atual}</h4>
                   </div>
+                </div>
+
+                {/* Bloco de Tipo de Processo */}
+                <div className="bg-emerald-50 p-6 md:p-8 rounded-3xl md:rounded-[2.5rem] border border-emerald-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div>
+                    <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest mb-1 md:mb-2 block">Tipo de Processo (Serviço)</span>
+                    <h4 className="text-lg md:text-xl font-black text-emerald-900 uppercase italic">
+                      {selectedProcess.servico_nome || 'Não definido'}
+                    </h4>
+                  </div>
+                  {isAdm && (
+                     <button onClick={handleMudarServico} className="px-5 py-2.5 bg-white text-emerald-600 border border-emerald-200 hover:bg-emerald-600 hover:text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm shrink-0 whitespace-nowrap">
+                       Alterar Serviço
+                     </button>
+                  )}
                 </div>
 
                 {/* Grid Duplo para Mobile e Desktop */}

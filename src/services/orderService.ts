@@ -776,7 +776,26 @@ export async function listarTodosProcessos(profile?: any) {
     }
 
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as OrderProcess) }));
+    const processos = snapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as OrderProcess) }));
+    
+    // Dynamic Fallback para preencher pendencias se tiver vazio
+    const { PROCESS_REQUIREMENTS } = await import('../constants/processRequirements');
+    for (const p of processos) {
+        if (!p.pendencias_iniciais || p.pendencias_iniciais.length === 0) {
+            const fallback = PROCESS_REQUIREMENTS[p.servico_id];
+            if (fallback && fallback.documentos.length > 0) {
+                p.pendencias_iniciais = fallback.documentos;
+            }
+        }
+        if (!p.dados_faltantes || p.dados_faltantes.length === 0) {
+            const fallback = PROCESS_REQUIREMENTS[p.servico_id];
+            if (fallback && fallback.campos.length > 0) {
+                p.dados_faltantes = fallback.campos;
+            }
+        }
+    }
+    
+    return processos;
   } catch (error) {
     handleFirestoreError(error, OperationType.LIST, PROCESSES_COLLECTION);
     throw error;
@@ -920,6 +939,9 @@ export async function processarDadosFichaTecnica(processoId: string, clienteId: 
       if (todosDocsOk && todosCamposOk && trackingOk) {
         updates.status_atual = 'Em Análise';
         updates.status_info_extra = 'DOCUMENTAÇÃO COMPLETA - AGUARDANDO ANÁLISE';
+      } else if (processData.status_atual !== 'Pendente') {
+        updates.status_atual = 'Pendente';
+        updates.status_info_extra = 'DOCUMENTAÇÃO PENDENTE';
       }
 
       await updateDoc(processRef, updates);

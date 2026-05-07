@@ -16,6 +16,7 @@ export const IncluirVendaDireta = () => {
     const [nomeCliente, setNomeCliente] = useState('');
     const [cpfCliente, setCpfCliente] = useState('');
     const [nascCliente, setNascCliente] = useState('');
+    const [codigoInterno, setCodigoInterno] = useState('');
     const [servicoId, setServicoId] = useState('');
     const [vendedorId, setVendedorId] = useState('');
     const [dataServico, setDataServico] = useState('');
@@ -79,11 +80,34 @@ export const IncluirVendaDireta = () => {
             const timestamp = serverTimestamp();
             const cleanCPF = cpfCliente.replace(/\D/g, '');
 
-            // 1. Obter nomes para denormalização
             let servicoNome = "Serviço";
+            let defaultModelId = "";
+            let requisitosCampos: string[] = [];
+            let requisitosDocs: string[] = [];
+
             const svcDoc = await getDoc(doc(db, 'services', servicoId));
             if (svcDoc.exists()) {
-                servicoNome = svcDoc.data()?.nome_servico || svcDoc.data()?.nome || servicoNome;
+                const sData = svcDoc.data();
+                servicoNome = sData.nome_servico || sData.nome || servicoNome;
+                defaultModelId = sData.modelo_id || "";
+                requisitosCampos = sData.requisitos_campos || [];
+                requisitosDocs = sData.requisitos_documentos || [];
+            }
+            
+            // Tenta buscar as pendências do modelo
+            let arrCamposFaltantes: string[] = requisitosCampos;
+            let arrDocsFaltantes: string[] = requisitosDocs;
+            
+            if (defaultModelId && (!requisitosCampos.length && !requisitosDocs.length)) {
+                try {
+                    const modelDoc = await getDoc(doc(db, 'process_models', defaultModelId));
+                    if (modelDoc.exists()) {
+                        arrCamposFaltantes = modelDoc.data().campos || [];
+                        arrDocsFaltantes = modelDoc.data().documentos || [];
+                    }
+                } catch (e) {
+                    console.error("Erro ao buscar modelo:", e);
+                }
             }
 
             let vendedorNome = "Vendedor";
@@ -103,6 +127,7 @@ export const IncluirVendaDireta = () => {
                 documento: cleanCPF,
                 cpf: cleanCPF,
                 data_nascimento: nascCliente || "",
+                codigo_interno: codigoInterno || "",
                 vendedor_id: finalVendedorId,
                 especialista_id: auth.currentUser?.uid,
                 created_at: timestamp,
@@ -155,17 +180,21 @@ export const IncluirVendaDireta = () => {
                 venda_id: saleRef.id,
                 servico_id: servicoId,
                 servico_nome: servicoNome,
+                modelo_id: defaultModelId,
                 cliente_id: clientRef.id,
                 cliente_nome: nomeCliente,
                 cliente_cpf_cnpj: cleanCPF,
-                data_nascimento: nascCliente,
+                data_nascimento: nascCliente || "",
+                codigo_interno: codigoInterno || "",
                 vendedor_id: finalVendedorId,
                 vendedor_nome: vendedorNome,
                 id_superior: idSuperior,
-                status_atual: 'Pendente',
+                status_atual: (arrCamposFaltantes.length > 0 || arrDocsFaltantes.length > 0) ? 'Pendente' : 'Em Análise',
                 status_financeiro: 'PAGO',
                 data_execucao: dataServico,
-                data_venda: timestamp
+                data_venda: timestamp,
+                dados_faltantes: arrCamposFaltantes,
+                pendencias_iniciais: arrDocsFaltantes
             };
 
             if (temCnpj) {
@@ -179,7 +208,7 @@ export const IncluirVendaDireta = () => {
             await batch.commit();
             
             Swal.fire('Sucesso', 'Cliente, Venda e Processo criados com sucesso!', 'success');
-            setNomeCliente(''); setCpfCliente(''); setNascCliente(''); setServicoId(''); setVendedorId(''); setGestorId(''); setDataServico(''); setCnpjEmpresa(''); setNomeEmpresa(''); setTemCnpj(false);
+            setNomeCliente(''); setCpfCliente(''); setNascCliente(''); setCodigoInterno(''); setServicoId(''); setVendedorId(''); setGestorId(''); setDataServico(''); setCnpjEmpresa(''); setNomeEmpresa(''); setTemCnpj(false);
             
         } catch (error: any) {
             console.error('Erro ao processar venda administrativa:', error);
@@ -206,7 +235,7 @@ export const IncluirVendaDireta = () => {
                     />
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <label className="block text-sm font-medium text-slate-300 mb-1">CPF do Cliente</label>
                         <input 
@@ -217,12 +246,22 @@ export const IncluirVendaDireta = () => {
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-slate-300 mb-1">Data de Nascimento</label>
+                        <label className="block text-sm font-medium text-slate-300 mb-1">Data de Nascimento (Opcionais)</label>
                         <input 
                             type="date" 
                             className="w-full p-3 bg-slate-900 border border-slate-600 rounded-xl text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all" 
                             value={nascCliente} 
                             onChange={(e) => setNascCliente(e.target.value)} 
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-slate-300 mb-1">Código Interno (Opcional)</label>
+                        <input 
+                            type="text" 
+                            className="w-full p-3 bg-slate-900 border border-slate-600 rounded-xl text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all placeholder:text-slate-500" 
+                            placeholder="Ex: XYZ-123" 
+                            value={codigoInterno} 
+                            onChange={(e) => setCodigoInterno(e.target.value)} 
                         />
                     </div>
                 </div>

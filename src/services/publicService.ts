@@ -2,17 +2,20 @@ import { db } from '../firebase';
 import { collection, addDoc, query, where, getDocs, serverTimestamp, limit, orderBy } from 'firebase/firestore';
 
 // Helper robusto para buscar cliente público
-const getPublicClient = async (documento: string, dataNascimento: string) => {
+const getPublicClient = async (documento: string, dataNascimento?: string, codigoInterno?: string) => {
   const docSemMascara = documento.replace(/[^\d]+/g, '');
   
   // Normalizar datas (Tenta YYYY-MM-DD -> DD/MM/YYYY e vice-versa)
-  const datasParaTentar = [dataNascimento];
-  if (dataNascimento.includes('-')) {
-    const [y, m, d] = dataNascimento.split('-');
-    if (y.length === 4) datasParaTentar.push(`${d}/${m}/${y}`);
-  } else if (dataNascimento.includes('/')) {
-    const [d, m, y] = dataNascimento.split('/');
-    if (y.length === 4) datasParaTentar.push(`${y}-${m}-${d}`);
+  const datasParaTentar: string[] = [];
+  if (dataNascimento) {
+    datasParaTentar.push(dataNascimento);
+    if (dataNascimento.includes('-')) {
+      const [y, m, d] = dataNascimento.split('-');
+      if (y.length === 4) datasParaTentar.push(`${d}/${m}/${y}`);
+    } else if (dataNascimento.includes('/')) {
+      const [d, m, y] = dataNascimento.split('/');
+      if (y.length === 4) datasParaTentar.push(`${y}-${m}-${d}`);
+    }
   }
 
   const collections = [
@@ -22,27 +25,43 @@ const getPublicClient = async (documento: string, dataNascimento: string) => {
   ];
 
   for (const coll of collections) {
-    for (const dt of datasParaTentar) {
-      // Tenta com Mascara
-      let q = query(
-        collection(db, coll.name),
-        where(coll.field, '==', documento),
-        where('data_nascimento', '==', dt),
-        limit(1)
-      );
+    if (codigoInterno) {
+      // Tenta por codigo interno + mascara
+      let q = query(collection(db, coll.name), where(coll.field, '==', documento), where('codigo_interno', '==', codigoInterno), limit(1));
       let snap = await getDocs(q);
       if (!snap.empty) return snap.docs[0];
 
-      // Tenta sem Mascara
+      // Tenta por codigo interno + sem mascara
       if (documento !== docSemMascara) {
-        q = query(
+        q = query(collection(db, coll.name), where(coll.field, '==', docSemMascara), where('codigo_interno', '==', codigoInterno), limit(1));
+        snap = await getDocs(q);
+        if (!snap.empty) return snap.docs[0];
+      }
+    }
+
+    if (datasParaTentar.length > 0) {
+      for (const dt of datasParaTentar) {
+        // Tenta com Mascara
+        let q = query(
           collection(db, coll.name),
-          where(coll.field, '==', docSemMascara),
+          where(coll.field, '==', documento),
           where('data_nascimento', '==', dt),
           limit(1)
         );
-        snap = await getDocs(q);
+        let snap = await getDocs(q);
         if (!snap.empty) return snap.docs[0];
+
+        // Tenta sem Mascara
+        if (documento !== docSemMascara) {
+          q = query(
+            collection(db, coll.name),
+            where(coll.field, '==', docSemMascara),
+            where('data_nascimento', '==', dt),
+            limit(1)
+          );
+          snap = await getDocs(q);
+          if (!snap.empty) return snap.docs[0];
+        }
       }
     }
   }
@@ -50,73 +69,115 @@ const getPublicClient = async (documento: string, dataNascimento: string) => {
   return null;
 };
 
-export const consultaPublicaProcesso = async (documento: string, dataNascimento: string) => {
-  if (!documento || !dataNascimento) {
-    throw new Error("Documento e Data de Nascimento são obrigatórios.");
+export const consultaPublicaProcesso = async (documento: string, dataNascimento?: string, codigoInterno?: string) => {
+  if (!documento || (!dataNascimento && !codigoInterno)) {
+    throw new Error("Documento e (Data de Nascimento ou Código Interno) são obrigatórios.");
   }
 
   const docSemMascara = documento.replace(/[^\d]+/g, '');
   
   // Normalizar datas (Tenta YYYY-MM-DD -> DD/MM/YYYY e vice-versa)
-  const datasParaTentar = [dataNascimento];
-  if (dataNascimento.includes('-')) {
-    const [y, m, d] = dataNascimento.split('-');
-    if (y.length === 4) datasParaTentar.push(`${d}/${m}/${y}`);
-  } else if (dataNascimento.includes('/')) {
-    const [d, m, y] = dataNascimento.split('/');
-    if (y.length === 4) datasParaTentar.push(`${y}-${m}-${d}`);
+  const datasParaTentar: string[] = [];
+  if (dataNascimento) {
+    datasParaTentar.push(dataNascimento);
+    if (dataNascimento.includes('-')) {
+      const [y, m, d] = dataNascimento.split('-');
+      if (y.length === 4) datasParaTentar.push(`${d}/${m}/${y}`);
+    } else if (dataNascimento.includes('/')) {
+      const [d, m, y] = dataNascimento.split('/');
+      if (y.length === 4) datasParaTentar.push(`${y}-${m}-${d}`);
+    }
   }
 
-  // 1. Busca o processo diretamente pelos dados de segurança (Protocolo OU CPF/CNPJ + Nascimento)
+  // 1. Busca o processo diretamente pelos dados de segurança (Protocolo OU CPF/CNPJ + Nascimento/Codigo)
   // Isso evita erros de permissão ao tentar listar coleções protegidas
   let snapProc;
 
   // Busca por PROTOCOLO (Prioritário se o formato bater)
   const isProtocolo = documento.toUpperCase().includes('ADM-') || documento.length > 11;
   if (isProtocolo) {
-    for (const dt of datasParaTentar) {
+    if (codigoInterno) {
       const qProt = query(
         collection(db, 'order_processes'),
         where('protocolo', '==', documento.toUpperCase()),
-        where('data_nascimento', '==', dt),
+        where('codigo_interno', '==', codigoInterno),
         limit(1)
       );
       const res = await getDocs(qProt);
-      if (!res.empty) {
-        snapProc = res;
-        break;
+      if (!res.empty) snapProc = res;
+    }
+    
+    if (!snapProc && datasParaTentar.length > 0) {
+      for (const dt of datasParaTentar) {
+        const qProt = query(
+          collection(db, 'order_processes'),
+          where('protocolo', '==', documento.toUpperCase()),
+          where('data_nascimento', '==', dt),
+          limit(1)
+        );
+        const res = await getDocs(qProt);
+        if (!res.empty) {
+          snapProc = res;
+          break;
+        }
       }
     }
   }
 
   // Se não achou por protocolo, tenta por CPF/CNPJ
   if (!snapProc || snapProc.empty) {
-    for (const dt of datasParaTentar) {
+    if (codigoInterno) {
       // Tenta com Mascara
-      const qProcMasc = query(
+      let qProcMasc = query(
         collection(db, 'order_processes'),
         where('cliente_cpf_cnpj', '==', documento),
-        where('data_nascimento', '==', dt),
+        where('codigo_interno', '==', codigoInterno),
         limit(5)
       );
-      const resMasc = await getDocs(qProcMasc);
+      let resMasc = await getDocs(qProcMasc);
       if (!resMasc.empty) {
         snapProc = resMasc;
-        break;
-      }
-
-      // Tenta sem Mascara se falhou
-      if (documento !== docSemMascara) {
-        const qProcSemMasc = query(
+      } else if (documento !== docSemMascara) {
+        // Tenta sem Mascara
+        let qProcSemMasc = query(
           collection(db, 'order_processes'),
           where('cliente_cpf_cnpj', '==', docSemMascara),
+          where('codigo_interno', '==', codigoInterno),
+          limit(5)
+        );
+        let resSemMasc = await getDocs(qProcSemMasc);
+        if (!resSemMasc.empty) snapProc = resSemMasc;
+      }
+    }
+
+    if ((!snapProc || snapProc.empty) && datasParaTentar.length > 0) {
+      for (const dt of datasParaTentar) {
+        // Tenta com Mascara
+        const qProcMasc = query(
+          collection(db, 'order_processes'),
+          where('cliente_cpf_cnpj', '==', documento),
           where('data_nascimento', '==', dt),
           limit(5)
         );
-        const resSemMasc = await getDocs(qProcSemMasc);
-        if (!resSemMasc.empty) {
-          snapProc = resSemMasc;
+        const resMasc = await getDocs(qProcMasc);
+        if (!resMasc.empty) {
+          snapProc = resMasc;
           break;
+        }
+
+        // Tenta sem Mascara se falhou
+        if (documento !== docSemMascara) {
+          const qProcSemMasc = query(
+            collection(db, 'order_processes'),
+            where('cliente_cpf_cnpj', '==', docSemMascara),
+            where('data_nascimento', '==', dt),
+            limit(5)
+          );
+          const resSemMasc = await getDocs(qProcSemMasc);
+          if (!resSemMasc.empty) {
+            snapProc = resSemMasc;
+            break;
+          }
         }
       }
     }
@@ -125,28 +186,37 @@ export const consultaPublicaProcesso = async (documento: string, dataNascimento:
   // Se ainda não encontrou, tenta buscar o cliente primeiro para pegar o ID 
   // (Caso o processo não tenha CPF/Nasc gravado mas o cliente tenha)
   if (!snapProc || snapProc.empty) {
-    const snapCliente = await getPublicClient(documento, dataNascimento);
+    const snapCliente = await getPublicClient(documento, dataNascimento, codigoInterno);
     if (!snapCliente) return null;
 
     const clienteId = snapCliente.id;
     const clienteData = snapCliente.data();
     
     // Tentar encontrar processo vinculado a este cliente
-    // Como a regra de segurança no firestore.rules EXIGE data_nascimento no order_processes,
-    // se o processo não tiver esse campo, a query irá falhar ou os documentos serão filtrados pelas regras.
-    // Para mitigar, tentamos com as variações de data de nascimento.
-    
-    for (const dt of datasParaTentar) {
+    if (codigoInterno) {
       const qProc = query(
         collection(db, 'order_processes'),
         where('cliente_id', '==', clienteId),
-        where('data_nascimento', '==', dt),
+        where('codigo_interno', '==', codigoInterno),
         limit(10)
       );
       const res = await getDocs(qProc);
-      if (!res.empty) {
-        snapProc = res;
-        break;
+      if (!res.empty) snapProc = res;
+    }
+
+    if ((!snapProc || snapProc.empty) && datasParaTentar.length > 0) {
+      for (const dt of datasParaTentar) {
+        const qProc = query(
+          collection(db, 'order_processes'),
+          where('cliente_id', '==', clienteId),
+          where('data_nascimento', '==', dt),
+          limit(10)
+        );
+        const res = await getDocs(qProc);
+        if (!res.empty) {
+          snapProc = res;
+          break;
+        }
       }
     }
 
@@ -199,8 +269,8 @@ export const consultaPublicaProcesso = async (documento: string, dataNascimento:
 };
 
 // Listar Indicações do Cliente (para o Portal Público)
-export const listarMinhasIndicacoesPublicas = async (documento: string, dataNascimento: string) => {
-  const snapCliente = await getPublicClient(documento, dataNascimento);
+export const listarMinhasIndicacoesPublicas = async (documento: string, dataNascimento?: string, codigoInterno?: string) => {
+  const snapCliente = await getPublicClient(documento, dataNascimento, codigoInterno);
   if (!snapCliente) return [];
   const clienteId = snapCliente.id;
 
@@ -269,8 +339,8 @@ export const registrarNovidadePublica = async (nome: string, whatsapp: string, e
   });
 };
 
-export const registrarIndicacaoPublica = async (documento: string, dataNascimento: string, nomeAmigo: string, whatsAmigo: string, emailAmigo: string = '', bonusValor: number = 50) => {
-  const snapCliente = await getPublicClient(documento, dataNascimento);
+export const registrarIndicacaoPublica = async (documento: string, dataNascimento: string | undefined, codigoInterno: string | undefined, nomeAmigo: string, whatsAmigo: string, emailAmigo: string = '', bonusValor: number = 50) => {
+  const snapCliente = await getPublicClient(documento, dataNascimento, codigoInterno);
   const clienteId = snapCliente ? snapCliente.id : documento;
 
   await addDoc(collection(db, 'referrals'), {

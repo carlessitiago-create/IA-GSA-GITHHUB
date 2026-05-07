@@ -262,23 +262,41 @@ export const SmartFicha: React.FC<SmartFichaProps> = ({ processos, clienteDados,
     }
   };
 
+  const [showAllFields, setShowAllFields] = useState(false);
+
+  // ... (inside component)
+
   const camposFaltantes = Array.from(new Set([
     ...requisitosDinamicos.campos,
     ...(!processos[0]?.cliente_cpf_cnpj ? ['cpf'] : []),
     ...(!processos[0]?.data_nascimento ? ['data_nascimento'] : [])
   ])).filter(c => {
-    // Se não tem no processo, queremos que apareça (mesmo que tenha no cliente, para forçar o sync se o ADM desejar)
-    const jaTemNoProcesso = 
-      (c === 'cpf' && !!processos[0]?.cliente_cpf_cnpj) || 
-      (c === 'data_nascimento' && !!processos[0]?.data_nascimento) || 
-      (requisitosDinamicos.campos.includes(c) && !processos[0]?.dados_faltantes?.includes(c));
+    // Se o admin solicitou ver todos os campos, não filtra os campos obrigatórios
+    if (showAllFields && isAdm) return true;
+
+    // Para cpf e nascimento, olhamos para a raiz do processo
+    if (c === 'cpf' && !!processos[0]?.cliente_cpf_cnpj) return false; // não falta
+    if (c === 'data_nascimento' && !!processos[0]?.data_nascimento) return false; // não falta
+
+    // Se a propriedade dados_faltantes existe como um array, confiamos nela:
+    if (processos[0] && Array.isArray(processos[0].dados_faltantes)) {
+      return processos[0].dados_faltantes.includes(c);
+    }
     
-    // Se o analista/admin está vendo, queremos que ele possa editar se faltar no processo 
-    // ou se ele quiser garantir a consistência
-    return !jaTemNoProcesso;
+    // Fallback: se não temos dados_faltantes mas o requisito existe
+    if (requisitosDinamicos.campos.includes(c)) {
+      return !clienteDados[c];
+    }
+    
+    return true;
   });
 
-  const documentosFaltantes = requisitosDinamicos.documentos;
+  const documentosFaltantes = isAdm && showAllFields ? requisitosDinamicos.documentos : requisitosDinamicos.documentos.filter(d => {
+    if (processos[0] && Array.isArray(processos[0].pendencias_iniciais)) {
+      return processos[0].pendencias_iniciais.includes(d);
+    }
+    return !clienteDados[d];
+  });
 
   if (loadingReqs) {
     return (
@@ -299,22 +317,52 @@ export const SmartFicha: React.FC<SmartFichaProps> = ({ processos, clienteDados,
           <h3 className="text-base md:text-lg font-black text-emerald-900 uppercase italic">Documentação Completa!</h3>
           <p className="text-xs md:text-sm font-medium text-emerald-700">Você já forneceu todas as informações necessárias. O processo agora está em análise pela nossa equipe.</p>
         </div>
+        
+        {isAdm && (
+          <button 
+            onClick={() => setShowAllFields(true)}
+            className="mt-4 px-4 py-2 bg-white text-emerald-600 border border-emerald-200 rounded-lg text-xs font-bold uppercase hover:bg-emerald-100 transition-colors"
+          >
+            Revisar Ficha Completa
+          </button>
+        )}
       </div>
     );
   }
 
   return (
     <div className="space-y-6 md:space-y-8">
-      <div className="p-4 md:p-6 bg-blue-50 rounded-[2rem] md:rounded-[32px] border border-blue-100 flex flex-col sm:flex-row gap-3 md:gap-4">
-        <div className="size-10 md:size-12 rounded-xl md:rounded-2xl bg-white flex items-center justify-center shrink-0 shadow-sm">
-          <AlertCircle className="text-blue-600 size-5 md:size-6" />
+      <div className="p-4 md:p-6 bg-blue-50 rounded-[2rem] md:rounded-[32px] border border-blue-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex gap-4 items-center">
+          <div className="size-10 md:size-12 rounded-xl md:rounded-2xl bg-white flex items-center justify-center shrink-0 shadow-sm">
+            <AlertCircle className="text-blue-600 size-5 md:size-6" />
+          </div>
+          <div className="min-w-0">
+            <h3 className="text-[10px] md:text-sm font-black text-blue-900 uppercase italic truncate">
+              {showAllFields ? "Ficha Técnica Completa" : "Formulário de Auto-preenchimento"}
+            </h3>
+            <p className="text-[9px] md:text-xs font-medium text-blue-700 leading-relaxed">
+              {showAllFields ? "Revise ou altere todos os campos do processo" : "Identificamos que faltam informações para o processo. Complete os campos abaixo."}
+            </p>
+          </div>
         </div>
-        <div className="min-w-0">
-          <h3 className="text-[10px] md:text-sm font-black text-blue-900 uppercase italic truncate">Formulário de Auto-preenchimento</h3>
-          <p className="text-[9px] md:text-xs font-medium text-blue-700 leading-relaxed">
-            Identificamos que faltam informações para o processo. Complete os campos abaixo.
-          </p>
-        </div>
+        
+        {isAdm && !showAllFields && (
+          <button 
+            onClick={() => setShowAllFields(true)}
+            className="px-3 py-1.5 bg-white text-blue-600 border border-blue-200 rounded-lg text-[10px] font-bold uppercase hover:bg-blue-100 transition-colors whitespace-nowrap"
+          >
+            Mostrar Todos
+          </button>
+        )}
+        {isAdm && showAllFields && (
+          <button 
+            onClick={() => setShowAllFields(false)}
+            className="px-3 py-1.5 bg-white text-blue-600 border border-blue-200 rounded-lg text-[10px] font-bold uppercase hover:bg-blue-100 transition-colors whitespace-nowrap"
+          >
+            Ocultar Preenchidos
+          </button>
+        )}
       </div>
 
       {/* Secção de Dados */}

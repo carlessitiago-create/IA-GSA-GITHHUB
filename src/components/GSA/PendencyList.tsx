@@ -64,13 +64,8 @@ export const PendencyList: React.FC = () => {
 
     const unsubProc = qProc ? onSnapshot(qProc, (snapshot) => {
       const procs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as OrderProcess));
-      // Filtrar apenas os que realmente têm pendências de dados ou docs
-      const filtered = procs.filter(p => 
-        (p.dados_faltantes && p.dados_faltantes.length > 0) || 
-        (p.pendencias_iniciais && p.pendencias_iniciais.length > 0) ||
-        !p.cliente_cpf_cnpj || !p.data_nascimento
-      );
-      setProcessPendencies(filtered);
+      
+      setProcessPendencies(procs);
       setLoading(false);
     }) : () => setLoading(false);
 
@@ -259,7 +254,7 @@ export const PendencyList: React.FC = () => {
                       {proc.dados_faltantes?.map(f => (
                         <span key={f} className="text-[8px] font-black text-amber-600 bg-amber-50 px-2 py-1 rounded-lg border border-amber-100 uppercase tracking-widest">Falta {f}</span>
                       ))}
-                      {proc.pendencias_iniciais?.map(d => (
+                      {proc.pendencias_iniciais?.filter(d => !proc.documentos_enviados?.includes(d)).map(d => (
                         <span key={d} className="text-[8px] font-black text-blue-600 bg-blue-50 px-2 py-1 rounded-lg border border-blue-100 uppercase tracking-widest">Falta Doc: {d}</span>
                       ))}
                     </div>

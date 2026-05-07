@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, query, where, getDocs, getDoc, doc, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Search, FileText, Clock, CheckCircle, AlertCircle, User, Calendar, ExternalLink, Info, Eye, Gift, Trophy, Share2, Star, Shield, AlertTriangle, ArrowRight, MessageCircle } from 'lucide-react';
+import { Search, FileText, Clock, CheckCircle, AlertCircle, User, Calendar, ExternalLink, Info, Eye, Gift, Trophy, Share2, Star, Shield, AlertTriangle, ArrowRight, MessageCircle, ShieldAlert } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useAuth } from '../components/AuthContext';
@@ -16,6 +16,7 @@ export function ConsultaPublicaView() {
   const { profile, simulateUser } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [dataNascimento, setDataNascimento] = useState('');
+  const [codigoInterno, setCodigoInterno] = useState('');
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
@@ -126,19 +127,19 @@ export function ConsultaPublicaView() {
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!searchTerm || !dataNascimento) return;
+    if (!searchTerm || (!dataNascimento && !codigoInterno)) return;
 
     setLoading(true);
     setSearched(true);
     try {
       const { consultaPublicaProcesso } = await import('../services/publicService');
-      const process = await consultaPublicaProcesso(searchTerm, dataNascimento);
+      const process = await consultaPublicaProcesso(searchTerm, dataNascimento, codigoInterno);
       
       if (process) {
         setResults([process]);
         // Buscar indicações relacionadas para o dashboard atrativo
         const { listarMinhasIndicacoesPublicas } = await import('../services/publicService');
-        const refs = await listarMinhasIndicacoesPublicas(searchTerm, dataNascimento);
+        const refs = await listarMinhasIndicacoesPublicas(searchTerm, dataNascimento, codigoInterno);
         setIndicacoes(refs);
       } else {
         setResults([]);
@@ -202,16 +203,32 @@ export function ConsultaPublicaView() {
                 className="w-full bg-white border border-slate-200 rounded-2xl p-4 text-sm font-bold text-slate-800 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all outline-none"
               />
             </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase text-slate-400 ml-4 tracking-widest flex items-center gap-2">
-                <Calendar size={12} className="text-blue-600" /> Data de Nascimento
-              </label>
-              <input 
-                type="date"
-                value={dataNascimento}
-                onChange={e => setDataNascimento(e.target.value)}
-                className="w-full bg-white border border-slate-200 rounded-2xl p-4 text-sm font-bold text-slate-800 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all outline-none [color-scheme:light]"
-              />
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase text-slate-400 ml-4 tracking-widest flex items-center gap-2">
+                  <Calendar size={12} className="text-blue-600" /> Data Nasc. (Opcional)
+                </label>
+                <input 
+                  type="date"
+                  value={dataNascimento}
+                  onChange={e => setDataNascimento(e.target.value)}
+                  className="w-full bg-white border border-slate-200 rounded-2xl p-4 text-sm font-bold text-slate-800 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all outline-none [color-scheme:light]"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase text-slate-400 ml-4 tracking-widest flex items-center gap-2">
+                  <ShieldAlert size={12} className="text-blue-600" /> Código Interno (Opcional)
+                </label>
+                <input 
+                  type="text"
+                  placeholder="Ex: XYZ-123"
+                  value={codigoInterno}
+                  onChange={e => setCodigoInterno(e.target.value)}
+                  className="w-full bg-white border border-slate-200 rounded-2xl p-4 text-sm font-bold text-slate-800 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all outline-none"
+                />
+              </div>
             </div>
             <div className="md:col-span-2">
               <button 
