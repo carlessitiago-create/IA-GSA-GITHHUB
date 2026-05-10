@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
+import { ConsultationMetrics } from '../components/dashboard/ConsultationMetrics';
 import { 
   Activity, 
   TrendingUp, 
@@ -286,6 +287,11 @@ export const IntelligenceDashboardView = () => {
                         </div>
                     </div>
                 </motion.div>
+            </div>
+
+            {/* Consultation Metrics Chart */}
+            <div className="w-full">
+                <ConsultationMetrics />
             </div>
 
             {/* Recent Activities & Insights */}

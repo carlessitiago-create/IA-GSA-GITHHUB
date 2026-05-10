@@ -35,6 +35,8 @@ const VitrineView = lazy(() => import("./components/GSA/VitrineView").then(m => 
 const AdminNotificationSettingsView = lazy(() => import("./views/AdminNotificationSettingsView"));
 const ConsultaPublicaView = lazy(() => import("./views/ConsultaPublicaView").then(m => ({ default: m.ConsultaPublicaView })));
 const ClubePontosView = lazy(() => import("./views/ClubePontosView").then(m => ({ default: m.ClubePontosView })));
+const AdminConsultationManagerView = lazy(() => import("./views/AdminConsultationManagerView").then(m => ({ default: m.AdminConsultationManagerView })));
+const AdminConsultationHistoryView = lazy(() => import("./views/AdminConsultationHistoryView").then(m => ({ default: m.AdminConsultationHistoryView })));
 const ClubeMarketingView = lazy(() => import("./views/ClubeMarketingView").then(m => ({ default: m.ClubeMarketingView })));
 const ClientProcessesView = lazy(() => import("./components/GSA/ClientProcessesView").then(m => ({ default: m.ClientProcessesView })));
 const ClientWalletView = lazy(() => import("./components/GSA/ClientWalletView").then(m => ({ default: m.ClientWalletView })));
@@ -201,6 +203,8 @@ const App: React.FC = () => {
             <Route path="/config_consulta" element={<PortalSettingsView />} />
             <Route path="/configuracoes-notificacoes" element={<AdminNotificationSettingsView />} />
             <Route path="/gerenciador-notificacoes" element={<GerenciadorNotificacoesView />} />
+            <Route path="/admin-consultas" element={<AdminConsultationManagerView />} />
+            <Route path="/historico-consultas" element={<AdminConsultationHistoryView />} />
 
             {/* Rotas Portal do Cliente */}
             <Route path="/clube_pontos" element={<ClubePontosView />} />

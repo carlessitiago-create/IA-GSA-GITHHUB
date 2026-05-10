@@ -89,6 +89,15 @@ export function Sidebar({ currentProfile, logout, onClose }: any) {
           </div>
         )}
 
+        {/* CATEGORIA: CONSULTAS */}
+        {(role.startsWith('ADM')) && (
+          <div className="space-y-2">
+            <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Consultas</p>
+            <MenuItem to="admin-consultas" icon={Settings} label="Gestão e API" color="text-orange-400" />
+            <MenuItem to="historico-consultas" icon={Search} label="Histórico de Pedidos" color="text-blue-400" />
+          </div>
+        )}
+
         {/* CATEGORIA: ENGENHARIA */}
         {(role.startsWith('ADM')) && (
           <div className="space-y-2">

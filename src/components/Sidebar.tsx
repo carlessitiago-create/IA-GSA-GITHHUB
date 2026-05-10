@@ -74,8 +74,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ view, setView, currentProfile,
     { id: 'inteligencia', label: 'INTELIGÊNCIA', icon: <Activity className="size-5" />, group: 'ENGENHARIA', roles: ['ADM_MASTER', 'GESTOR'] },
     { id: 'conversao', label: 'CONVERSÃO', icon: <BarChart3 className="size-5" />, group: 'ENGENHARIA', roles: ['ADM_MASTER', 'GESTOR'] },
     { id: 'saas_settings', label: 'CONFIG. SAAS', icon: <Settings className="size-5" />, group: 'ENGENHARIA', color: 'text-emerald-500', roles: ['ADM_MASTER', 'ADM_GERENTE', 'ADM_ANALISTA'] },
-    { id: 'admin_clube_settings', label: 'CONFIG. CLUBE', icon: <Gift className="size-5" />, group: 'ENGENHARIA', roles: ['ADM_MASTER', 'ADM_GERENTE', 'ADM_ANALISTA'] },
-    { id: 'configuracoes-notificacoes', label: 'E-MAIS E PERMISSÕES', icon: <Mail className="size-5" />, group: 'ENGENHARIA', roles: ['ADM_MASTER'] },
+    { id: 'admin_clube_settings', label: 'CONFIG. CLUBE', icon: <Gift className="size-5" />, group: 'ENGENHARIA', roles: ['ADM_MASTER', 'ADM MASTER', 'ADM_GERENTE', 'ADM_ANALISTA'] },
+    { id: 'admin-consultas', label: 'GESTÃO E API', icon: <Settings className="size-5" />, group: 'CONSULTAS', roles: ['ADM_MASTER', 'ADM MASTER', 'ADM_GERENTE', 'ADM GERENTE'] },
+    { id: 'historico-consultas', label: 'HISTÓRICO DE PEDIDOS', icon: <Search className="size-5" />, group: 'CONSULTAS', roles: ['ADM_MASTER', 'ADM MASTER', 'ADM_GERENTE', 'ADM GERENTE', 'ADM_ANALISTA', 'ADM ANALISTA'] },
+    { id: 'configuracoes-notificacoes', label: 'E-MAIS E PERMISSÕES', icon: <Mail className="size-5" />, group: 'ENGENHARIA', roles: ['ADM_MASTER', 'ADM MASTER'] },
     
     { id: 'consulta-interna', label: 'CONSULTA PÚBLICA', icon: <Search className="size-5" />, group: 'SISTEMA' },
     { id: 'suporte', label: 'SUPORTE', icon: <MessageSquare className="size-5" />, group: 'SISTEMA' },
@@ -96,7 +98,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ view, setView, currentProfile,
     : clientItems;
 
   const groups = isAdm 
-    ? ['FINANCEIRO', 'COMERCIAL', 'OPERAÇÕES', 'ENGENHARIA', 'SISTEMA', 'USUÁRIO']
+    ? ['FINANCEIRO', 'COMERCIAL', 'OPERAÇÕES', 'CONSULTAS', 'ENGENHARIA', 'SISTEMA', 'USUÁRIO']
     : ['COMERCIAL', 'OPERAÇÕES', 'FINANCEIRO', 'USUÁRIO'];
 
   return (

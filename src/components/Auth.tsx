@@ -174,29 +174,29 @@ export function Login() {
             <>
               <div>
                 <label className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase mb-1">Nome Completo</label>
-                <input type="text" value={name} onChange={(e) => setName(e.target.value)} required className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#0a0a2e]/20 shadow-sm" />
+                <input type="text" value={name} onChange={(e) => setName(e.target.value)} required className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm text-slate-900 focus:ring-2 focus:ring-[#0a0a2e]/20 shadow-sm" />
               </div>
               <div>
                 <label className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase mb-1">CPF</label>
-                <input type="text" value={cpf} onChange={(e) => setCpf(e.target.value)} required className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#0a0a2e]/20 shadow-sm" />
+                <input type="text" value={cpf} onChange={(e) => setCpf(e.target.value)} required className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm text-slate-900 focus:ring-2 focus:ring-[#0a0a2e]/20 shadow-sm" />
               </div>
               <div>
                 <label className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase mb-1">Data de Nascimento</label>
-                <input type="date" value={dataNascimento} onChange={(e) => setDataNascimento(e.target.value)} required className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#0a0a2e]/20 shadow-sm" />
+                <input type="date" value={dataNascimento} onChange={(e) => setDataNascimento(e.target.value)} required className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm text-slate-900 focus:ring-2 focus:ring-[#0a0a2e]/20 shadow-sm" />
               </div>
               <div>
                 <label className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase mb-1">WhatsApp</label>
-                <input type="tel" value={telefone} onChange={(e) => setTelefone(e.target.value)} required className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#0a0a2e]/20 shadow-sm" />
+                <input type="tel" value={telefone} onChange={(e) => setTelefone(e.target.value)} required className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm text-slate-900 focus:ring-2 focus:ring-[#0a0a2e]/20 shadow-sm" />
               </div>
             </>
           )}
           <div>
             <label className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase mb-1">E-mail</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#0a0a2e]/20 shadow-sm" />
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm text-slate-900 focus:ring-2 focus:ring-[#0a0a2e]/20 shadow-sm" />
           </div>
           <div>
             <label className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase mb-1">Senha</label>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#0a0a2e]/20 shadow-sm" />
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm text-slate-900 focus:ring-2 focus:ring-[#0a0a2e]/20 shadow-sm" />
             {!isRegistering && (
               <button type="button" onClick={handleForgotPassword} className="text-xs font-bold text-slate-400 hover:text-[#0a0a2e] hover:underline mt-2 block">
                 Esqueceu sua senha?
@@ -362,15 +362,15 @@ export function CompleteProfile({ profile: initialProfile }: { profile: any }) {
         <form onSubmit={handleComplete} className="space-y-4 text-left">
           <div>
             <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">CPF</label>
-            <input type="text" value={cpf || ""} onChange={(e) => setCpf(formatDocument(e.target.value))} required className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm" />
+            <input type="text" value={cpf || ""} onChange={(e) => setCpf(formatDocument(e.target.value))} required className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm text-slate-900" />
           </div>
           <div>
             <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Data de Nascimento</label>
-            <input type="date" value={dataNascimento || ""} onChange={(e) => setDataNascimento(e.target.value)} required className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm" />
+            <input type="date" value={dataNascimento || ""} onChange={(e) => setDataNascimento(e.target.value)} required className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm text-slate-900" />
           </div>
           <div>
             <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Contato (WhatsApp)</label>
-            <input type="tel" value={telefone || ""} onChange={(e) => setTelefone(formatPhone(e.target.value))} required className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm" />
+            <input type="tel" value={telefone || ""} onChange={(e) => setTelefone(formatPhone(e.target.value))} required className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm text-slate-900" />
           </div>
           <button type="submit" disabled={isLoading} className="w-full py-4 bg-[#0a0a2e] text-white rounded-xl font-bold hover:bg-[#151542] transition-colors disabled:opacity-70">
             {isLoading ? 'Salvando...' : 'Finalizar Cadastro'}

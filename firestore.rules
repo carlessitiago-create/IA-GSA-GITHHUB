@@ -322,6 +322,18 @@ service cloud.firestore {
       allow delete: if isMaster();
     }
 
+    // Consultations (Upsell & Standalone)
+    match /consultation_types/{docId} {
+      allow read: if true; // Todos podem ver as consultas disponíveis
+      allow write: if isAdmin();
+    }
+    match /consultation_requests/{requestId} {
+      allow read: if isAuthenticated() && (isAdmin() || isOwner(resource.data.client_id));
+      allow create: if isAuthenticated() && request.resource.data.client_id == request.auth.uid;
+      allow update: if isAuthenticated() && (isAdmin() || isOwner(resource.data.client_id));
+      allow delete: if isMaster();
+    }
+
     // Tickets & Messages
     match /tickets/{ticketId} {
       allow read: if isAuthenticated() && (isAdmin() || isDocGestor(resource.data) || isOwner(resource.data.clientId) || isOwner(resource.data.sellerId));

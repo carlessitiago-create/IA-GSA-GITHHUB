@@ -26,6 +26,7 @@ import { aceitarPropostaLeadVitrine, atualizarStatusLeadVitrine, LeadStatus } fr
 import { getOrCreateWallet, Wallet } from '../services/financialService';
 import { useAuth } from '../components/AuthContext';
 import { SmartFicha } from '../components/GSA/SmartFicha';
+import { ClientConsultationUpsell } from '../components/ClientConsultationUpsell';
 import Swal from 'sweetalert2';
 
 interface ClientDashboardViewProps {
@@ -263,6 +264,15 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({ proces
 
         </div>
       </motion.div>
+
+      {/* Serviços Avulsos */}
+      <div className="mb-10 bg-white rounded-[2rem] border border-slate-100 p-8 shadow-sm">
+        <h2 className="text-xl font-bold text-gray-800 mb-2">Serviços Avulsos</h2>
+        <p className="text-sm text-gray-600 mb-6">
+          Precisa de uma verificação rápida? Faça consultas oficiais a qualquer momento.
+        </p>
+        <ClientConsultationUpsell />
+      </div>
 
       {/* HEADER & FILTERS */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">

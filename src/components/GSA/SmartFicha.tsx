@@ -285,6 +285,8 @@ export const SmartFicha: React.FC<SmartFichaProps> = ({ processos, clienteDados,
     
     // Fallback: se não temos dados_faltantes mas o requisito existe
     if (requisitosDinamicos.campos.includes(c)) {
+      if (c === 'cpf_cnpj') return !(clienteDados.cpf || clienteDados.cnpj || clienteDados.documento);
+      if (c === 'nome_empresa' || c === 'razao_social') return !(clienteDados.nome_empresa || clienteDados.razao_social);
       return !clienteDados[c];
     }
     
@@ -377,6 +379,8 @@ export const SmartFicha: React.FC<SmartFichaProps> = ({ processos, clienteDados,
                 onChange={(e) => handleFieldChange(campo, e.target.value)}
                 value={formData[campo] !== undefined ? formData[campo] : (
                   campo === 'cpf' ? (clienteDados.cpf || clienteDados.documento || '') :
+                  campo === 'cpf_cnpj' ? (clienteDados.cpf || clienteDados.cnpj || clienteDados.documento || '') :
+                  campo === 'nome_empresa' || campo === 'razao_social' ? (clienteDados.nome_empresa || clienteDados.razao_social || '') :
                   campo === 'data_nascimento' ? (clienteDados.data_nascimento || '') :
                   (clienteDados[campo] || '')
                 )}

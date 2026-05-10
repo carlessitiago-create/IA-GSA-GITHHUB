@@ -37,7 +37,11 @@ export const DynamicCaptureForm: React.FC<DynamicCaptureFormProps> = ({ processo
   const [submitting, setSubmitting] = useState(false);
 
   // Filtrar apenas o que está faltando
-  const camposFaltantes = todosRequisitos.campos.filter(c => !clienteData[c]);
+  const camposFaltantes = todosRequisitos.campos.filter(c => {
+    if (c === 'cpf' || c === 'cpf_cnpj') return !(clienteData.cpf || clienteData.cnpj || clienteData.documento);
+    if (c === 'nome_empresa' || c === 'razao_social') return !(clienteData.nome_empresa || clienteData.razao_social);
+    return !clienteData[c];
+  });
   const documentosFaltantes = todosRequisitos.documentos; // Documentos sempre mostramos para upload se for o caso
 
   const handleInputChange = (field: string, value: string) => {
