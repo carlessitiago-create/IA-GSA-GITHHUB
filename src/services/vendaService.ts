@@ -20,7 +20,7 @@ function handleFirebaseError(error: any, context: string): never {
   }
 
   // Se a mensagem for "internal", tentamos extrair o máximo de info técnica do objeto de erro
-  if (errorMessage.toLowerCase() === 'internal' || errorMessage.toLowerCase() === 'internal error') {
+  if (errorMessage.toLowerCase().includes('internal')) {
     const technicalInfo = [];
     if (error?.code) technicalInfo.push(`Code: ${error.code}`);
     if (error?.details) technicalInfo.push(`Details: ${JSON.stringify(error.details)}`);

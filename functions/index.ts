@@ -50,7 +50,7 @@ async function getSaasAdminConfig() {
 async function processarBonusDeVendaNoBackend(vendaId: string, batch: admin.firestore.WriteBatch) {
     try {
         const saleSnap = await db.collection('sales').doc(vendaId).get();
-        if (!saleSnap.exists) return;
+        if (!saleSnap.exists()) return;
         const sale = saleSnap.data()!;
 
         const rulesSnap = await db.collection('platform_config').doc('points_rules').get();
@@ -427,6 +427,7 @@ export const processVenda = onCall(
 
     return await db.runTransaction(async (transaction: any) => {
     if (!Array.isArray(itens) || itens.length === 0) {
+      logError("processVenda: Itens inválidos", { itens });
       throw new HttpsError('invalid-argument', 'A lista de itens não pode estar vazia');
     }
 
@@ -436,11 +437,16 @@ export const processVenda = onCall(
     let managerId = null;
 
     if (request.auth) {
-      const userRef = db.collection('usuarios').doc(request.auth.uid);
-      const userSnap = await transaction.get(userRef);
-      const userData = userSnap.data();
-      managerId = userData?.managerId || null;
-      vendedorNome = userData?.nome || 'Vendedor';
+      try {
+        const userRef = db.collection('usuarios').doc(request.auth.uid);
+        const userSnap = await transaction.get(userRef);
+        const userData = userSnap.data();
+        managerId = userData?.managerId || null;
+        vendedorNome = userData?.nome || 'Vendedor';
+      } catch (e) {
+        logError("processVenda: Erro ao buscar usuário", e);
+        throw e;
+      }
     }
 
     // 1. Generate protocol
@@ -461,7 +467,7 @@ export const processVenda = onCall(
       const servicoSnap = await transaction.get(servicoRef);
       
       let servicoData: any = null;
-      if (servicoSnap.exists) {
+      if (servicoSnap.exists()) {
         servicoData = servicoSnap.data();
       } else if (vendedorId === 'SYSTEM_SAAS' || item.servicoId === 'diag_credito' || item.servicoId === 'diag_saas') {
         // Fallback for SaaS sales if service doc is missing
@@ -488,7 +494,7 @@ export const processVenda = onCall(
 
       if (modeloId) {
         const modelSnap = await transaction.get(db.doc(`process_models/${modeloId}`));
-        if (modelSnap.exists) {
+        if (modelSnap.exists()) {
           const modelData = modelSnap.data();
           if (modelData) {
             pendenciasIniciais = modelData.documentos || [];
@@ -518,7 +524,7 @@ export const processVenda = onCall(
     // Fetch client data to find specialist/responsible
     const clientRef = db.collection('clients').doc(clienteId);
     const clientSnap = await transaction.get(clientRef);
-    if (!clientSnap.exists) {
+    if (!clientSnap.exists()) {
       throw new HttpsError('not-found', 'Cliente não encontrado');
     }
     const clientData = clientSnap.data() || {};
@@ -727,7 +733,7 @@ export const processarVendaSegura = onCall(
       // 🔍 1. VALIDAR VENDEDOR E SERVIÇO
       const userRef = db.collection('usuarios').doc(uid);
       const userSnap = await tx.get(userRef);
-      if (!userSnap.exists) throw new HttpsError('not-found', 'Vendedor não encontrado');
+      if (!userSnap.exists()) throw new HttpsError('not-found', 'Vendedor não encontrado');
       
       const user = userSnap.data()!;
       
@@ -746,7 +752,7 @@ export const processarVendaSegura = onCall(
       if (servicoId !== 'manual') {
         const servicoRef = db.collection('services').doc(servicoId);
         const servicoSnap = await tx.get(servicoRef);
-        if (servicoSnap.exists) {
+        if (servicoSnap.exists()) {
           servico = servicoSnap.data()!;
         } else {
           console.warn(`[VENDA_SEGURA] Servico ${servicoId} não encontrado. Assumindo venda manual.`);
@@ -1094,7 +1100,7 @@ export const webhookAsaas = onRequest(async (req: any, res: any) => {
     const eventRef = db.collection('webhook_events').doc(`asaas_${eventId}`);
     const eventSnap = await eventRef.get();
 
-    if (eventSnap.exists) {
+    if (eventSnap.exists()) {
       logInfo("Evento já processado", { eventId });
       return res.status(200).send("OK");
     }
@@ -1115,7 +1121,7 @@ export const webhookAsaas = onRequest(async (req: any, res: any) => {
     const saleRef = db.collection('sales').doc(vendaId);
     const saleSnap = await saleRef.get();
 
-    if (!saleSnap.exists) {
+    if (!saleSnap.exists()) {
       logError("Venda asaas não encontrada", { vendaId });
       return res.status(404).send("Sale not found");
     }
@@ -1244,7 +1250,7 @@ export const webhookMercadoPago = onRequest(async (req: any, res: any) => {
     const eventRef = db.collection('webhook_events').doc(idempotencyKey);
     const eventSnap = await eventRef.get();
 
-    if (eventSnap.exists) {
+    if (eventSnap.exists()) {
       logInfo("Evento MP já processado", { paymentId });
       return res.status(200).send("OK");
     }
@@ -1268,7 +1274,7 @@ export const webhookMercadoPago = onRequest(async (req: any, res: any) => {
     const saleRef = db.collection('sales').doc(vendaId);
     const saleSnap = await saleRef.get();
 
-    if (!saleSnap.exists) {
+    if (!saleSnap.exists()) {
       logError("Venda MP não encontrada", { vendaId });
       return res.status(404).send("Sale not found");
     }
@@ -1408,7 +1414,7 @@ export const registrarVendaAdministrativa = onCall(
 
             // Fetch the service to get its requirements
             const servicoSnap = await db.collection('services').doc(servicoId).get();
-            const servicoData = servicoSnap.exists ? servicoSnap.data() : null;
+            const servicoData = servicoSnap.exists() ? servicoSnap.data() : null;
             const pendencias_iniciais = servicoData?.requisitos_documentos || servicoData?.documentos || [];
             const dados_faltantes = servicoData?.requisitos_campos || servicoData?.campos || [];
 

@@ -11,7 +11,7 @@ import {
   getDoc,
   getDocs
 } from 'firebase/firestore';
-import { db, auth, handleFirestoreError, OperationType } from '../firebase';
+import { db, auth, handleFirestoreError, OperationType, cleanData } from '../firebase';
 
 export interface AppNotification {
   id?: string;
@@ -108,12 +108,12 @@ export async function sendNotification(notification: Omit<AppNotification, 'id' 
       visibilidade_uids.push(notification.gestor_id);
     }
 
-    await addDoc(collection(db, 'notifications'), {
+    await addDoc(collection(db, 'notifications'), cleanData({
       ...notification,
       visibilidade_uids,
       lida: false,
       timestamp: serverTimestamp()
-    });
+    }));
 
     // Envios de E-mail: Dispara notificação por e-mail para o usuário direto (se tiver e-mail)
     if (toEmail) {
