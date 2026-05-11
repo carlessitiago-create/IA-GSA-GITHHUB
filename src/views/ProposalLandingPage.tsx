@@ -317,7 +317,7 @@ export const ProposalLandingPage: React.FC = () => {
           >
             {proposal.is_public 
               ? "Confira os detalhes desta oferta especial que preparamos para você iniciar seu processo hoje mesmo com a GSA Diagnóstico."
-              : `Olá ${proposal.lead_nome.split(' ')[0]}, preparamos as melhores condições para você iniciar seu processo hoje mesmo com a GSA Diagnóstico.`}
+              : `Olá ${(proposal.lead_nome || '').split(' ')[0]}, preparamos as melhores condições para você iniciar seu processo hoje mesmo com a GSA Diagnóstico.`}
           </motion.p>
         </div>
       </header>
@@ -384,10 +384,10 @@ export const ProposalLandingPage: React.FC = () => {
             <div className="flex items-center gap-6">
               <div className="size-20 rounded-2xl bg-slate-100 overflow-hidden border-4 border-white shadow-lg">
                 {proposal.vendedor_foto ? (
-                  <img src={proposal.vendedor_foto} alt={proposal.vendedor_nome} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                  <img src={proposal.vendedor_foto} alt={proposal.vendedor_nome || 'Consultor'} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-[#0a0a2e] text-white font-black text-2xl">
-                    {proposal.vendedor_nome.substring(0, 2).toUpperCase()}
+                    {(proposal.vendedor_nome || 'GS').substring(0, 2).toUpperCase()}
                   </div>
                 )}
               </div>
@@ -444,18 +444,18 @@ export const ProposalLandingPage: React.FC = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <p className="text-slate-400 text-sm font-medium line-through">De R$ {(proposal.opcao_vista.valor * 1.1).toLocaleString('pt-BR')}</p>
+                  <p className="text-slate-400 text-sm font-medium line-through">De R$ {((proposal.opcao_vista?.valor || 0) * 1.1).toLocaleString('pt-BR')}</p>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-5xl md:text-7xl font-black text-[#0a0a2e] italic">R$ {proposal.opcao_vista.valor.toLocaleString('pt-BR')}</span>
+                    <span className="text-5xl md:text-7xl font-black text-[#0a0a2e] italic">R$ {(proposal.opcao_vista?.valor || 0).toLocaleString('pt-BR')}</span>
                   </div>
                   <div className="pt-1">
                     <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-50 rounded-full border border-emerald-100">
                       <Banknote size={12} className="text-emerald-600" />
-                      <span className="text-[9px] font-black uppercase tracking-widest text-emerald-600">{proposal.opcao_vista.forma_pagamento || 'PIX'}</span>
+                      <span className="text-[9px] font-black uppercase tracking-widest text-emerald-600">{proposal.opcao_vista?.forma_pagamento || 'PIX'}</span>
                     </div>
                   </div>
                   <div className="text-emerald-600 font-bold text-sm uppercase italic whitespace-pre-line leading-relaxed">
-                    {proposal.opcao_vista.condicoes}
+                    {proposal.opcao_vista?.condicoes}
                   </div>
                 </div>
 
@@ -491,22 +491,22 @@ export const ProposalLandingPage: React.FC = () => {
                 <div className="space-y-4">
                   <div className="space-y-1">
                     <p className="text-white/40 text-[10px] font-black uppercase tracking-widest">Entrada de</p>
-                    <p className="text-3xl font-black text-blue-400 italic">R$ {proposal.opcao_parcelado.valor_entrada?.toLocaleString('pt-BR') || '0,00'}</p>
+                    <p className="text-3xl font-black text-blue-400 italic">R$ {proposal.opcao_parcelado?.valor_entrada?.toLocaleString('pt-BR') || '0,00'}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-white/40 text-[10px] font-black uppercase tracking-widest">Mais {proposal.opcao_parcelado.num_parcelas}x de</p>
+                    <p className="text-white/40 text-[10px] font-black uppercase tracking-widest">Mais {proposal.opcao_parcelado?.num_parcelas}x de</p>
                     <div className="flex items-baseline gap-2">
-                      <span className="text-5xl md:text-7xl font-black text-white italic">R$ {proposal.opcao_parcelado.valor_parcela?.toLocaleString('pt-BR') || '0,00'}</span>
+                      <span className="text-5xl md:text-7xl font-black text-white italic">R$ {proposal.opcao_parcelado?.valor_parcela?.toLocaleString('pt-BR') || '0,00'}</span>
                     </div>
                   </div>
                   <div className="pt-2">
                     <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full border border-white/10">
                       <CreditCard size={12} className="text-blue-400" />
-                      <span className="text-[9px] font-black uppercase tracking-widest text-blue-300">{proposal.opcao_parcelado.forma_pagamento || 'Boleto'}</span>
+                      <span className="text-[9px] font-black uppercase tracking-widest text-blue-300">{proposal.opcao_parcelado?.forma_pagamento || 'Boleto'}</span>
                     </div>
                   </div>
                   <div className="text-white/60 font-bold text-xs uppercase italic whitespace-pre-line leading-relaxed">
-                    {proposal.opcao_parcelado.condicoes}
+                    {proposal.opcao_parcelado?.condicoes}
                   </div>
                 </div>
 
@@ -617,17 +617,19 @@ export const ProposalLandingPage: React.FC = () => {
       </footer>
 
       {/* Floating WhatsApp Button */}
-      <a 
-        href={`https://wa.me/55${proposal.lead_telefone?.replace(/\D/g, '')}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="fixed bottom-8 right-8 size-16 bg-[#25D366] text-white rounded-full flex items-center justify-center shadow-2xl hover:scale-110 transition-all z-[100] group"
-      >
-        <MessageCircle size={32} />
-        <span className="absolute right-full mr-4 bg-white text-slate-900 px-4 py-2 rounded-xl text-xs font-bold shadow-xl whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all pointer-events-none">
-          Dúvidas? Fale comigo!
-        </span>
-      </a>
+      {(proposal.lead_telefone || proposal.lead_whatsapp) && (
+        <a 
+          href={`https://wa.me/55${(proposal.lead_telefone || proposal.lead_whatsapp || '').replace(/\D/g, '')}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="fixed bottom-8 right-8 size-16 bg-[#25D366] text-white rounded-full flex items-center justify-center shadow-2xl hover:scale-110 transition-all z-[100] group"
+        >
+          <MessageCircle size={32} />
+          <span className="absolute right-full mr-4 bg-white text-slate-900 px-4 py-2 rounded-xl text-xs font-bold shadow-xl whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all pointer-events-none">
+            Dúvidas? Fale comigo!
+          </span>
+        </a>
+      )}
     </div>
   );
 };

@@ -186,7 +186,8 @@ service cloud.firestore {
 
     // Documento Locks (Trava de CPF/CNPJ)
     match /documento_locks/{docId} {
-      allow read: if isAuthenticated();
+      allow get: if true;
+      allow list: if isAuthenticated();
       allow create: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor());
       allow update: if isAuthenticated() && (isAdmin() || isGestor() || isVendedor());
       allow delete: if isMaster();

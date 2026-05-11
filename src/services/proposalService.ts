@@ -80,30 +80,50 @@ export const listProposalsByVendedor = async (vendedorId: string) => {
 };
 
 export const checkCpfOwnership = async (cpf: string) => {
-  const q = query(collection(db, 'documento_locks'), where('documento', '==', cpf));
-  const snapshot = await getDocs(q);
-  
-  if (snapshot.empty) return null;
-  
-  const lockData = snapshot.docs[0].data();
-  const userDoc = await getDoc(doc(db, 'usuarios', lockData.dono_id));
-  
-  if (userDoc.exists()) {
-    const ownerData = userDoc.data();
-    
-    // Notificar dono original sobre tentativa de acesso
-    await sendNotification({
-      usuario_id: lockData.dono_id,
-      titulo: "⚠️ Tentativa de Aceite em Lead Bloqueado",
-      mensagem: `O CPF/CNPJ ${cpf} tentou aceitar uma proposta pública, mas já está vinculado a você. Entre em contato imediatamente!`,
-      tipo: 'SYSTEM',
-      vendedor_id: lockData.dono_id
-    });
+  const cleanCpf = cpf.replace(/\D/g, '');
+  if (!cleanCpf) return null;
 
-    return { uid: lockData.dono_id, nome: ownerData.nome_completo };
+  try {
+    const lockDoc = await getDoc(doc(db, 'documento_locks', cleanCpf));
+    let lockData: any = null;
+    
+    if (!lockDoc.exists()) {
+      // Tentar fallback pela query caso haja docId diferente
+      const q = query(collection(db, 'documento_locks'), where('documento', '==', cpf));
+      const snapshot = await getDocs(q);
+      if (snapshot.empty) return null;
+      lockData = snapshot.docs[0].data();
+    } else {
+      lockData = lockDoc.data();
+    }
+
+    if (!lockData) return null;
+
+    const donoId = lockData.dono_id || lockData.vendedor_id;
+    if (!donoId) return null;
+
+    const userDoc = await getDoc(doc(db, 'usuarios', donoId));
+    
+    if (userDoc.exists()) {
+      const ownerData = userDoc.data();
+      
+      // Notificar dono original sobre tentativa de acesso
+      await sendNotification({
+        usuario_id: donoId,
+        titulo: "⚠️ Tentativa de Aceite em Lead Bloqueado",
+        mensagem: `O CPF/CNPJ ${cpf} tentou aceitar uma proposta pública, mas já está vinculado a você. Entre em contato imediatamente!`,
+        tipo: 'SYSTEM',
+        vendedor_id: donoId
+      });
+
+      return { uid: donoId, nome: ownerData.nome_completo };
+    }
+    
+    return { uid: donoId, nome: 'Consultor GSA' };
+  } catch (err) {
+    console.error("Erro ao verificar dono do CPF:", err);
+    return null;
   }
-  
-  return { uid: lockData.dono_id, nome: 'Consultor GSA' };
 };
 
 export const listAllProposals = async () => {
