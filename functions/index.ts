@@ -17,7 +17,7 @@ if (admin.apps.length === 0) {
 const app = admin.apps[0]!;
 
 // Obtém o databaseId
-let dbId = 'ai-studio-2473fb05-836e-42bf-bfe7-6175607907dd';
+let dbId = '(default)';
 try {
     const configPath = path.join(__dirname, '..', 'firebase-applet-config.json');
     if (fs.existsSync(configPath)) {
@@ -218,6 +218,12 @@ function safeExecute(moduleName: string, handler: (request: CallableRequest) => 
                 }
             }
 
+            // Garante que o erro nunca seja 'internal'
+            if (safeCode === 'internal' || safeCode === 'unknown' || safeMessage === 'internal') {
+                safeCode = 'aborted';
+                safeMessage = 'Erro interno no processamento (Aborted)';
+            }
+
             console.error(`[${moduleName}] Emitindo Erro -> Code: ${safeCode}, Message: ${safeMessage}`);
             throw new HttpsError(safeCode, safeMessage, safeDetails);
         }
@@ -237,6 +243,8 @@ async function getMPClient() {
 }
 
 const ASAAS_URL = 'https://www.asaas.com/api/v3';
+
+// DEPLOY_COMMAND: npx -y firebase-tools deploy --only functions --project gsa-camara-pro
 
 export const criarAdministradorDeUsuarios = onCall(async (request) => {
   if (!request.auth) throw new HttpsError('unauthenticated', 'Usuário não autenticado');
@@ -299,11 +307,13 @@ export const processVenda = onCall(
 
     // Transação ÚNICA (Removido o erro de transação aninhada)
     return await db.runTransaction(async (transaction: any) => {
+      logInfo("INICIO_TRANSACAO", { clienteId, metodoPagamento });
       let vendedorId = request.auth?.uid || 'SYSTEM_SAAS';
       let vendedorNome = 'GSA-IA SaaS';
       let managerId = null;
 
       if (request.auth) {
+        logInfo("BUSCANDO_USUARIO", { uid: request.auth.uid });
         const userSnap = await transaction.get(db.collection('usuarios').doc(request.auth.uid));
         managerId = userSnap.data()?.managerId || null;
         vendedorNome = userSnap.data()?.nome || 'Vendedor';
