@@ -22,21 +22,6 @@ export const functions = getFunctions(app);
 
 export const secondaryAuth = auth; // Simplification for now
 
-// Test connection to Firestore
-async function testConnection() {
-  try {
-    // We attempt to fetch a dummy doc from the server specifically to bypass cache
-    await getDocFromServer(doc(db, 'platform_config', 'test_connection'));
-    console.log("Firestore connection successful.");
-  } catch (error) {
-    if(error instanceof Error && error.message.includes('the client is offline')) {
-      console.error("Firebase Configuration Error: The client is offline. This usually means the firestoreDatabaseId in firebase-applet-config.json is incorrect or the database is not provisioned.");
-    }
-    // Other errors are ignored as this is just a test
-  }
-}
-testConnection();
-
 export enum OperationType {
   CREATE = 'create',
   UPDATE = 'update',
