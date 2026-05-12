@@ -233,22 +233,25 @@ export const OperationalView: React.FC = () => {
     const oldStatus = processo.status_atual;
     
     if (novoStatus === 'Concluído') {
-      const { value: fileUrl } = await Swal.fire({
+      const { value: fileUrl, isConfirmed, isDenied } = await Swal.fire({
         title: 'Finalizar Processo',
-        text: 'Anexe o arquivo do diagnóstico (PDF ou Imagem). Isso liberará o resultado no Portal do Cliente.',
+        text: 'Anexe o arquivo do diagnóstico (PDF ou Imagem) ou conclua sem anexo.',
         input: 'file',
         inputAttributes: {
           'accept': 'application/pdf,image/*',
           'aria-label': 'Upload do diagnóstico'
         },
         showCancelButton: true,
+        showDenyButton: true,
         confirmButtonText: 'Enviar e Concluir',
+        denyButtonText: 'Concluir sem Anexo',
         confirmButtonColor: '#10b981',
+        denyButtonColor: '#6b7280',
         cancelButtonText: 'Voltar',
         showLoaderOnConfirm: true,
         preConfirm: async (file) => {
           if (!file) {
-            Swal.showValidationMessage('Você precisa selecionar um arquivo!');
+            Swal.showValidationMessage('Você precisa selecionar um arquivo para anexar!');
             return false;
           }
           try {
@@ -263,15 +266,16 @@ export const OperationalView: React.FC = () => {
         allowOutsideClick: () => !Swal.isLoading()
       });
 
-      if (fileUrl) {
+      if (isConfirmed || isDenied) {
+        const urlToUse = isConfirmed ? fileUrl : null;
         try {
           await atualizarStatusProcesso(
             processo.id!,
             novoStatus,
             auth.currentUser!.uid,
             oldStatus,
-            fileUrl,
-            'Processo concluído com sucesso pelo analista.'
+            urlToUse,
+            isDenied ? 'Processo concluído sem anexo.' : 'Processo concluído com sucesso pelo analista.'
           );
 
           // Notificar Interessados
@@ -699,12 +703,12 @@ export const OperationalView: React.FC = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.05, duration: 0.5 }}
-              className={`bg-white rounded-2xl md:rounded-[2.5rem] border p-4 sm:p-6 md:p-8 shadow-sm flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 sm:gap-6 md:gap-8 transition-all hover:shadow-2xl hover:-translate-y-1 group ${
+              className={`bg-white rounded-2xl md:rounded-[2.5rem] border p-4 sm:p-6 md:p-8 shadow-sm flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 sm:gap-6 md:gap-8 transition-all hover:shadow-2xl hover:-translate-y-1 group ${
                 isAtrasado ? 'border-rose-100 bg-rose-50/10' : 'border-slate-100'
               }`}
             >
               {/* Info Cliente e Protocolo */}
-              <div className="space-y-2 sm:space-y-3 min-w-[200px] w-full xl:w-auto">
+              <div className="space-y-2 sm:space-y-3 min-w-[200px] w-full lg:w-auto">
                 <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                   <div className="bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">
                     <span className="text-[7px] sm:text-[9px] font-black text-blue-600 uppercase tracking-widest">
@@ -726,7 +730,7 @@ export const OperationalView: React.FC = () => {
                     </div>
                   )}
                 </div>
-                <div className="flex flex-col flex-1 min-w-[200px] w-full xl:w-auto">
+                <div className="flex flex-col flex-1 min-w-[200px] w-full lg:w-auto">
                   {(processo.cliente_cpf_cnpj && processo.cliente_cpf_cnpj.length > 11) || (processo as any).nome_empresa ? (
                     <>
                       <h3 className="text-lg sm:text-xl md:text-2xl font-black text-[#0a0a2e] uppercase italic leading-none group-hover:text-blue-600 transition-colors truncate max-w-full">
@@ -810,14 +814,14 @@ export const OperationalView: React.FC = () => {
               </div>
 
               {/* Timeline de Status (Dropdown Master / View Only for Sales) */}
-              <div className="flex-1 w-full xl:w-auto space-y-2">
+              <div className="flex-1 w-full lg:w-auto space-y-2">
                 <p className="text-[7px] sm:text-[8px] md:text-[9px] font-black text-slate-300 uppercase tracking-[0.3em] ml-1">Fluxo Operacional</p>
                 {isAdm ? (
                   <div className="relative group/select">
                     <select 
                       value={processo.status_atual}
                       onChange={(e) => handleUpdateStatus(processo, e.target.value as any)}
-                      className="w-full xl:w-72 bg-slate-50 border border-slate-100 rounded-xl sm:rounded-2xl text-[9px] sm:text-[11px] font-black uppercase tracking-widest text-[#0a0a2e] py-3.5 sm:py-4 pl-4 sm:pl-6 pr-10 focus:ring-4 focus:ring-blue-500/10 cursor-pointer appearance-none transition-all hover:bg-blue-50"
+                      className="w-full lg:w-72 bg-slate-50 border border-slate-100 rounded-xl sm:rounded-2xl text-[9px] sm:text-[11px] font-black uppercase tracking-widest text-[#0a0a2e] py-3.5 sm:py-4 pl-4 sm:pl-6 pr-10 focus:ring-4 focus:ring-blue-500/10 cursor-pointer appearance-none transition-all hover:bg-blue-50"
                     >
                       <option value="Pendente">1. Pendente</option>
                       <option value="Em Análise">2. Em Análise</option>
@@ -831,7 +835,7 @@ export const OperationalView: React.FC = () => {
                     </div>
                   </div>
                 ) : (
-                  <div className="w-full xl:w-72 bg-[#020617] border border-slate-800 rounded-xl sm:rounded-2xl py-3.5 sm:py-4 px-6 flex items-center justify-between">
+                  <div className="w-full lg:w-72 bg-[#020617] border border-slate-800 rounded-xl sm:rounded-2xl py-3.5 sm:py-4 px-6 flex items-center justify-between">
                      <span className="text-[9px] sm:text-[11px] font-black uppercase tracking-widest text-blue-400 italic">
                         {processo.status_atual}
                      </span>
@@ -863,23 +867,23 @@ export const OperationalView: React.FC = () => {
               </div>
 
               {/* Botões de Ação */}
-              <div className="grid grid-cols-2 xl:flex gap-2 sm:gap-3 w-full xl:w-auto">
+              <div className="grid grid-cols-2 lg:flex gap-2 sm:gap-3 w-full lg:w-auto">
                 <button 
                   onClick={() => setSelectedProcess(processo)}
-                  className="bg-slate-50 text-slate-400 hover:bg-[#0a0a2e] hover:text-white h-12 sm:h-14 xl:w-14 rounded-xl sm:rounded-2xl transition-all shadow-sm flex items-center justify-center border border-slate-100 group/btn" 
+                  className="bg-slate-50 text-slate-400 hover:bg-[#0a0a2e] hover:text-white h-12 sm:h-14 lg:w-14 rounded-xl sm:rounded-2xl transition-all shadow-sm flex items-center justify-center border border-slate-100 group/btn" 
                   title="Ver Pasta do Cliente"
                 >
                   <FolderOpen size={20} className="group-hover/btn:scale-110 transition-transform" />
-                  <span className="ml-2 xl:hidden text-[10px] font-black uppercase tracking-widest">Abrir Pasta</span>
+                  <span className="ml-2 lg:hidden text-[10px] font-black uppercase tracking-widest">Abrir Pasta</span>
                 </button>
                 {isAdm && (
                   <button 
                     onClick={() => handleAbrirPendencia(processo)}
-                    className="bg-rose-50 text-rose-500 hover:bg-rose-600 hover:text-white h-12 sm:h-14 xl:w-14 rounded-xl sm:rounded-2xl transition-all shadow-sm flex items-center justify-center border border-rose-100 group/btn" 
+                    className="bg-rose-50 text-rose-500 hover:bg-rose-600 hover:text-white h-12 sm:h-14 lg:w-14 rounded-xl sm:rounded-2xl transition-all shadow-sm flex items-center justify-center border border-rose-100 group/btn" 
                     title="Abrir Pendência"
                   >
                     <AlertTriangle size={20} className="group-hover/btn:scale-110 transition-transform" />
-                    <span className="ml-2 xl:hidden text-[10px] font-black uppercase tracking-widest">Pendência</span>
+                    <span className="ml-2 lg:hidden text-[10px] font-black uppercase tracking-widest">Pendência</span>
                   </button>
                 )}
               </div>

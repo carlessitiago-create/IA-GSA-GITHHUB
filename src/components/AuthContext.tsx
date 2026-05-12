@@ -11,7 +11,7 @@ import {
   UserCredential
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
-import { auth, db, OperationType, handleFirestoreError } from '../firebase';
+import { auth, db, OperationType, handleFirestoreError, cleanData } from '../firebase';
 
 export interface UserProfile {
   uid: string;
@@ -120,7 +120,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // Notifica o ADM Master - Cadastro Público via Google (fora do try/catch principal para não travar o login)
             try {
               const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
-              await addDoc(collection(db, 'notifications'), {
+              await addDoc(collection(db, 'notifications'), cleanData({
                 usuario_id: 'ADM_MASTER',
                 targetRole: 'ADM_MASTER',
                 title: '👤 Novo Cadastro Público (Google)',
@@ -131,7 +131,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 timestamp: serverTimestamp(),
                 createdAt: serverTimestamp(),
                 origem: 'publico'
-              });
+              }));
             } catch (e) {
               console.warn("AuthContext: Could not send notification for new user:", e);
             }
@@ -212,7 +212,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         // Notifica o ADM Master - Cadastro Público via E-mail
         const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
-        await addDoc(collection(db, 'notifications'), {
+        await addDoc(collection(db, 'notifications'), cleanData({
           usuario_id: 'ADM_MASTER',
           targetRole: 'ADM_MASTER',
           title: '👤 Novo Cadastro Público (E-mail)',
@@ -223,7 +223,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           timestamp: serverTimestamp(),
           createdAt: serverTimestamp(),
           origem: 'publico'
-        });
+        }));
       } catch (error) {
         handleFirestoreError(error, OperationType.WRITE, 'usuarios/' + newUser.uid);
       }
@@ -231,7 +231,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Notifica o ADM Master
       try {
         const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
-        await addDoc(collection(db, 'notifications'), {
+        await addDoc(collection(db, 'notifications'), cleanData({
           usuario_id: 'ADM_MASTER',
           targetRole: 'ADM_MASTER',
           title: '👤 Novo Cliente na Base',
@@ -241,7 +241,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           read: false,
           timestamp: serverTimestamp(),
           createdAt: serverTimestamp()
-        });
+        }));
       } catch (e) {
         handleFirestoreError(e, OperationType.CREATE, 'notifications');
       }

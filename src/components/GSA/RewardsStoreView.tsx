@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../firebase';
+import { cleanData } from '../../firebase';
 import { collection, doc, getDoc, addDoc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
 import { Trophy, Gift, Star, ArrowRight, Image as ImageIcon, Lock } from 'lucide-react';
 import Swal from 'sweetalert2';
@@ -92,14 +93,14 @@ export const RewardsStoreView = ({ currentProfile }: RewardsStoreProps) => {
         });
 
         // 3. Gerar Notificação Interna para o ADM
-        await addDoc(collection(db, 'notifications'), {
+        await addDoc(collection(db, 'notifications'), cleanData({
           title: "🎁 Novo Resgate de Prêmio!",
           message: `${currentProfile.nome} solicitou o resgate de: ${premio.nome}.`,
           type: "success",
           read: false,
           createdAt: serverTimestamp(),
           targetRole: "ADM_MASTER" // Só os administradores verão isso
-        });
+        }));
 
         setSaldo(prev => prev - premio.pontos);
         Swal.fire('Parabéns!', 'O seu resgate foi solicitado. A nossa equipa entrará em contacto para a entrega.', 'success');

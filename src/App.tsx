@@ -7,7 +7,7 @@ import { DashboardFinanceiro } from "./pages/DashboardFinanceiro";
 import { MAIN_DOMAINS } from "./utils/navigation";
 
 // Lazy Loading Views
-const LoginView = lazy(() => import("./components/LoginView"));
+const LoginView = lazy(() => import("./components/LoginView").then(m => ({ default: m.default })));
 const PortalCliente = lazy(() => import("./components/PortalCliente").then(m => ({ default: m.PortalCliente })));
 const PublicPortal = lazy(() => import("./views/PublicPortal").then(m => ({ default: m.PublicPortal })));
 const VitrinePublicaView = lazy(() => import("./views/VitrinePublicaView").then(m => ({ default: m.VitrinePublicaView })));
@@ -168,6 +168,7 @@ const App: React.FC = () => {
         <Route path="/login" element={<LoginView />} />
         <Route path="/consulta" element={<PublicPortal />} />
         <Route path="/vendas/p/:slug" element={<ProposalLandingPage />} />
+        <Route path="/vendasp/:slug" element={<ProposalLandingPage />} />
         <Route path="/p/:slug" element={<ProposalLandingPage />} />
         <Route path="/cp/*" element={<PublicPortal />} />
         <Route path="/vitrine-publica/*" element={<VitrinePublicaView />} />

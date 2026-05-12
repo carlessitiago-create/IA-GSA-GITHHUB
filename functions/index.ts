@@ -520,9 +520,19 @@ export const processVenda = onCall(
     let statusProcesso = metodoPagamento === 'PIX' ? 'Aguardando Aprovação' : 'Pendente';
     let transacaoConfirmada = false;
     let responsavelId = vendedorId;
+    let walletId = null;
 
     // Fetch client data to find specialist/responsible
     const clientRef = db.collection('clients').doc(clienteId);
+    
+    if (metodoPagamento === 'CARTEIRA') {
+        const walletQuery = await db.collection('wallets').where('cliente_id', '==', clienteId).limit(1).get();
+        if (!walletQuery.empty) {
+            walletId = walletQuery.docs[0].id;
+        }
+    }
+
+    return await db.runTransaction(async (transaction: any) => {
     const clientSnap = await transaction.get(clientRef);
     if (!clientSnap.exists()) {
       throw new HttpsError('not-found', 'Cliente não encontrado');
@@ -532,17 +542,10 @@ export const processVenda = onCall(
     const visibilidade_uids = clientData.visibilidade_uids || [];
 
     if (metodoPagamento === 'CARTEIRA') {
-      // Get client's wallet
-      // Note: transaction.get(query) is not supported in Admin SDK.
-      // We fetch the wallet doc reference first.
-      const walletQuery = await db.collection('wallets').where('cliente_id', '==', clienteId).limit(1).get();
-      
       let saldoDisponivel = 0;
-      let walletId = null;
       let walletData: any = null;
 
-      if (!walletQuery.empty) {
-        walletId = walletQuery.docs[0].id;
+      if (walletId) {
         const walletRef = db.collection('wallets').doc(walletId);
         const walletSnap = await transaction.get(walletRef);
         walletData = walletSnap.data();
@@ -571,11 +574,11 @@ export const processVenda = onCall(
             novoSaldoAtual -= valorRestante;
           }
 
-        transaction.update(walletRef, cleanDataForFirestore({
-          saldo_atual: novoSaldoAtual,
-          saldo_bonus: novoSaldoBonus,
-          ultima_atualizacao: admin.firestore.FieldValue.serverTimestamp()
-        }));
+          transaction.update(walletRef, cleanDataForFirestore({
+            saldo_atual: novoSaldoAtual,
+            saldo_bonus: novoSaldoBonus,
+            ultima_atualizacao: admin.firestore.FieldValue.serverTimestamp()
+          }));
         }
       } else {
         // Saldo insuficiente -> Vai para carteira do responsável e aguarda liberação
@@ -680,7 +683,7 @@ export const processVenda = onCall(
           valor: -valorTotal,
           tipo: 'DEBITO',
           origem: 'VENDA',
-          descricao: `Venda Pagar Depois (Cliente ${clientData.nome} sem saldo) - Aguardando Liberação - Venda ${saleRef.id.slice(0, 8)}`,
+          descricao: `Venda Pagar Depois (Cliente ${clientData.nome || 'Cliente'} sem saldo) - Aguardando Liberação - Venda ${saleRef.id.slice(0, 8)}`,
           confirmado_pelo_administrador: false,
           venda_id: saleRef.id,
           vendedor_id: vendedorId,
@@ -694,6 +697,7 @@ export const processVenda = onCall(
 
     return { saleId: saleRef.id, protocolo };
     });
+
   })
 );
 

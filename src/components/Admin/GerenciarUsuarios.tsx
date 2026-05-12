@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { db, firebaseConfig } from "../../firebase"; // Importe sua config
+import { db, firebaseConfig, cleanData } from "../../firebase"; // Importe sua config
 import { initializeApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword, signOut } from "firebase/auth";
 import { doc, setDoc, collection, query, where, getDocs } from "firebase/firestore";
@@ -206,7 +206,7 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
           const { addDoc, collection, serverTimestamp } = await import('firebase/firestore');
           
           // Notifica ADM Master (outros ADMs se houver)
-          await addDoc(collection(db, 'notifications'), {
+          await addDoc(collection(db, 'notifications'), cleanData({
             usuario_id: 'ADM_MASTER',
             targetRole: 'ADM_MASTER',
             title: '👤 Novo Cadastro Hierárquico (Painel ADM)',
@@ -217,11 +217,11 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
             timestamp: serverTimestamp(),
             createdAt: serverTimestamp(),
             origem: 'hierarquia'
-          });
+          }));
 
           // Notifica o Gestor se for um vendedor
           if (role === "VENDEDOR" && managerId) {
-            await addDoc(collection(db, 'notifications'), {
+            await addDoc(collection(db, 'notifications'), cleanData({
               usuario_id: managerId,
               title: '👥 Novo Vendedor na sua Equipe',
               message: `Um novo vendedor (${userData.nome_completo}) foi atribuído a você.`,
@@ -230,7 +230,7 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
               read: false,
               timestamp: serverTimestamp(),
               createdAt: serverTimestamp()
-            });
+            }));
           }
         } catch (e) {
           console.error("Erro ao enviar notificações de cadastro:", e);

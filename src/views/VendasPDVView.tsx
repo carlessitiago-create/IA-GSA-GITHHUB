@@ -142,7 +142,7 @@ export function VendasPDVView() {
         const { addDoc, collection, serverTimestamp } = await import('firebase/firestore');
         
         // Notifica ADM
-        await addDoc(collection(db, 'notifications'), {
+        await addDoc(collection(db, 'notifications'), cleanData({
           usuario_id: 'ADM_MASTER',
           targetRole: 'ADM_MASTER',
           title: '👤 Novo Cadastro Hierárquico',
@@ -155,11 +155,11 @@ export function VendasPDVView() {
           origem: 'hierarquia',
           criador_id: profile?.uid,
           criador_nome: profile?.nome_completo
-        });
+        }));
 
         // Notifica o Superior Direto (se houver e não for o próprio ADM)
         if (profile?.id_superior && profile.id_superior !== 'ADM_MASTER') {
-          await addDoc(collection(db, 'notifications'), {
+          await addDoc(collection(db, 'notifications'), cleanData({
             usuario_id: profile.id_superior,
             title: '👥 Novo Cliente na sua Equipe',
             message: `Seu liderado ${profile.nome_completo} cadastrou um novo cliente: ${clientData.nome_completo}.`,
@@ -168,7 +168,7 @@ export function VendasPDVView() {
             read: false,
             timestamp: serverTimestamp(),
             createdAt: serverTimestamp()
-          });
+          }));
         }
       } catch (e) {
         console.error("Erro ao enviar notificações de cadastro:", e);

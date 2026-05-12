@@ -77,6 +77,7 @@ service cloud.firestore {
     // Usuarios
     match /usuarios/{userId} {
       allow read: if isAuthenticated() || (resource.data.data_nascimento != null && (resource.data.documento != null || resource.data.cpf != null));
+      allow list: if isAdmin();
       // Admins can create anything; Users can create themselves; Sellers/Hierarchy can create their clients.
       allow create: if isAuthenticated() && (isAdmin() || isOwner(userId) || (request.resource.data.nivel == 'CLIENTE' && request.resource.data.id_superior == request.auth.uid));
       allow update: if isAuthenticated() && (isAdmin() || isOwner(userId) || (request.resource.data.nivel == 'CLIENTE' && request.resource.data.id_superior == request.auth.uid));
