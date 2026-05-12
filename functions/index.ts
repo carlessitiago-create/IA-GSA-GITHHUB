@@ -184,48 +184,13 @@ function safeExecute(moduleName: string, handler: (request: CallableRequest) => 
         } catch (error: any) {
             console.error(`[${moduleName}] ERRO CRITICO capturado:`, error);
             
-            const grpcToFunctions: Record<number, functions.https.FunctionsErrorCode> = {
-                0: 'ok', 1: 'cancelled', 2: 'unknown', 3: 'invalid-argument', 
-                4: 'deadline-exceeded', 5: 'not-found', 6: 'already-exists', 
-                7: 'permission-denied', 8: 'resource-exhausted', 9: 'failed-precondition', 
-                10: 'aborted', 11: 'out-of-range', 12: 'unimplemented', 
-                13: 'internal', 14: 'unavailable', 15: 'data-loss', 16: 'unauthenticated'
-            };
-
-            let safeCode: functions.https.FunctionsErrorCode = 'aborted';
-            let safeMessage = error?.message || 'Falha desconhecida no servidor GSA';
-
-            if (error?.code !== undefined) {
-                const rawCode = error.code;
-                if (typeof rawCode === 'number' && grpcToFunctions[rawCode]) safeCode = grpcToFunctions[rawCode];
-                else {
-                    const strCode = String(rawCode).replace('functions/', '');
-                    const validCodes = Object.values(grpcToFunctions);
-                    if (validCodes.includes(strCode as any)) safeCode = strCode as any;
-                }
-            }
-
-            if (safeCode === 'internal' || safeCode === 'unknown') safeCode = 'aborted';
-
-            // Blindagem contra referências circulares no "details"
-            let safeDetails: any = null;
-            if (error?.details) {
-                try {
-                    JSON.stringify(error.details);
-                    safeDetails = error.details;
-                } catch (e) {
-                    safeDetails = "Omitido devido à falha de serialização JSON.";
-                }
-            }
-
-            // Garante que o erro nunca seja 'internal'
-            if (safeCode === 'internal' || safeCode === 'unknown' || safeMessage === 'internal') {
-                safeCode = 'aborted';
-                safeMessage = 'Erro interno no processamento (Aborted)';
-            }
-
+            console.error(`[${moduleName}] ERRO CRITICO capturado:`, error);
+            
+            const safeCode: functions.https.FunctionsErrorCode = 'aborted';
+            let safeMessage = error?.message || 'Erro inesperado no servidor GSA';
+            
             console.error(`[${moduleName}] Emitindo Erro -> Code: ${safeCode}, Message: ${safeMessage}`);
-            throw new HttpsError(safeCode, safeMessage, safeDetails);
+            throw new HttpsError(safeCode, safeMessage);
         }
     };
 }
