@@ -316,13 +316,13 @@ export const AdminSaasSettings: React.FC = () => {
               <div>
                 <p className="text-[9px] font-black text-blue-600 uppercase tracking-widest mb-1">Webhook Mercado Pago:</p>
                 <code className="text-[10px] bg-white px-2 py-1 rounded block border border-slate-200 break-all select-all">
-                  https://us-central1-gen-lang-client-0086269527.cloudfunctions.net/webhookMercadoPago
+                  https://us-central1-gsa-camara-pro.cloudfunctions.net/webhookMercadoPago
                 </code>
               </div>
               <div>
                 <p className="text-[9px] font-black text-blue-600 uppercase tracking-widest mb-1">Webhook Asaas:</p>
                 <code className="text-[10px] bg-white px-2 py-1 rounded block border border-slate-200 break-all select-all">
-                  https://us-central1-gen-lang-client-0086269527.cloudfunctions.net/webhookAsaas
+                  https://us-central1-gsa-camara-pro.cloudfunctions.net/webhookAsaas
                 </code>
               </div>
               <p className="text-[9px] text-slate-400 mt-1">Configure estas URLs nos respectivos painéis para ter baixa automática.</p>

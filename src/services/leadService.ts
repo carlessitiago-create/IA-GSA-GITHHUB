@@ -156,7 +156,8 @@ export async function cadastrarCliente(data: Omit<ClientData, 'data_entrada' | '
       visibilidade_uids,
       data_nascimento: data.data_nascimento || '',
       data_entrada: serverTimestamp(),
-      ai_insights: aiInsights
+      ai_insights: aiInsights,
+      origem: 'Landing Page SaaS'
     }));
 
     // Alert admins if lead is "orphan" (e.g., from SaaS Landing Page without specific seller)

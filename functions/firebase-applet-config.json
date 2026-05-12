@@ -3,7 +3,7 @@
   "appId": "1:107357724964:web:e0fecd8bba9cf853f593b1",
   "apiKey": "AIzaSyCDQmXXCTDioxYhO72QE11QHa4yZCGEKdg",
   "authDomain": "gsa-camara-pro.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-2473fb05-836e-42bf-bfe7-6175607907dd",
+  "firestoreDatabaseId": "(default)",
   "storageBucket": "gsa-camara-pro.firebasestorage.app",
   "messagingSenderId": "107357724964"
 }
