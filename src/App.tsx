@@ -40,6 +40,7 @@ const AdminConsultationHistoryView = lazy(() => import("./views/AdminConsultatio
 const ClubeMarketingView = lazy(() => import("./views/ClubeMarketingView").then(m => ({ default: m.ClubeMarketingView })));
 const ClientProcessesView = lazy(() => import("./components/GSA/ClientProcessesView").then(m => ({ default: m.ClientProcessesView })));
 const ClientWalletView = lazy(() => import("./components/GSA/ClientWalletView").then(m => ({ default: m.ClientWalletView })));
+const ClientDashboardView = lazy(() => import("./components/GSA/ClientDashboardView").then(m => ({ default: m.ClientDashboardView })));
 const TabelaCustasView = lazy(() => import("./views/TabelaCustasView").then(m => ({ default: m.TabelaCustasView })));
 const VendaEmMassaView = lazy(() => import("./views/VendaEmMassaView").then(m => ({ default: m.VendaEmMassaView })));
 const GerenciadorNotificacoesView = lazy(() => import("./views/GerenciadorNotificacoesView").then(m => ({ default: m.GerenciadorNotificacoes })));
@@ -213,6 +214,7 @@ const App: React.FC = () => {
             <Route path="/clube-cliente" element={<ClubeMarketingView />} />
             <Route path="/processos-cliente" element={<ClientProcessesView />} />
             <Route path="/carteira" element={<ClientWalletView />} />
+            <Route path="/dashboard-cliente" element={<ClientDashboardView />} />
             <Route path="/perfil-cliente" element={<ProfileView />} />
           </Route>
         </Route>

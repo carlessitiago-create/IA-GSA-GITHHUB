@@ -10,9 +10,11 @@ export const firebaseConfig = firebaseConfigImport;
 
 // Initialize Firebase SDK
 export const app = initializeApp(firebaseConfig);
+console.log("Firebase initialized with dbId:", firebaseConfig.firestoreDatabaseId);
 export const db = initializeFirestore(app, {
   experimentalForceLongPolling: true,
 }, firebaseConfig.firestoreDatabaseId === '(default)' ? undefined : firebaseConfig.firestoreDatabaseId);
+console.log("Firestore db instance configured:", db);
 export const auth = getAuth(app);
 export const storage = getStorage(app);
 export const functions = getFunctions(app);

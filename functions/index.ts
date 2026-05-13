@@ -535,32 +535,73 @@ export const gerarPagamentoPixGateway = onCall(
 export const gerarPagamentoAsaas = onCall(
   safeExecute("ASAAS_PIX", async (request) => {
     try { assertAuth(request); } catch (e) { if (request.data?.origem !== 'SAAS_LANDING_PAGE') throw e; }
+    
     const { valor, nome, email, cpf, vendaId, descricao } = request.data;
+    if (!valor || !nome || !email || !cpf || !vendaId) throw new HttpsError('invalid-argument', 'Dados do pedido incompletos.');
+
     const config = await getSaasAdminConfig();
     const token = config.asaas_key || process.env.ASAAS_KEY;
-    if (!token) throw new HttpsError('failed-precondition', 'Chave Asaas não encontrada.');
+    if (!token) throw new HttpsError('failed-precondition', 'Configuração de pagamento Asaas não encontrada.');
 
     const ASAAS_URL = config.is_sandbox ? 'https://sandbox.asaas.com/api/v3' : 'https://www.asaas.com/api/v3';
     const headers = { 'access_token': token, 'Content-Type': 'application/json' };
     const safeCpf = cpf ? String(cpf).replace(/\D/g, '') : '';
 
+    console.log(`[ASAAS_PIX] Iniciando para venda: ${vendaId}, Cliente: ${email}`);
+
     try {
+      // 1. Busca ou cria o cliente no Asaas
       let customerId = '';
-      const searchRes = await axios.get(`${ASAAS_URL}/customers?email=${email || 'cliente@gsa.com'}`, { headers });
-      if (searchRes.data?.data?.length > 0) customerId = searchRes.data.data[0].id;
-      else {
-        const customerRes = await axios.post(`${ASAAS_URL}/customers`, { name: nome || 'Cliente GSA', email: email || 'cliente@gsa.com', ...(safeCpf.length === 11 && safeCpf !== '00000000000' && {cpfCnpj: safeCpf}) }, { headers });
+      const searchRes = await axios.get(`${ASAAS_URL}/customers?email=${email}`, { headers });
+      
+      if (searchRes.data?.data?.length > 0) {
+        customerId = searchRes.data.data[0].id;
+      } else {
+        const customerData = {
+          name: nome,
+          email: email,
+          ...(safeCpf && { cpfCnpj: safeCpf })
+        };
+        const customerRes = await axios.post(`${ASAAS_URL}/customers`, customerData, { headers });
         customerId = customerRes.data.id;
+        console.log(`[ASAAS_PIX] Cliente criado: ${customerId}`);
       }
 
-      const paymentRes = await axios.post(`${ASAAS_URL}/payments`, { customer: customerId, billingType: 'PIX', value: valor, dueDate: new Date().toISOString().split('T')[0], externalReference: vendaId, description: descricao || 'Pagamento GSA' }, { headers });
-      const qrRes = await axios.get(`${ASAAS_URL}/payments/${paymentRes.data.id}/pixQrCode`, { headers });
+      // 2. Cria a cobrança
+      const paymentData = {
+        customer: customerId,
+        billingType: 'PIX',
+        value: Number(valor),
+        dueDate: new Date().toISOString().split('T')[0],
+        externalReference: vendaId,
+        description: descricao || `Pagamento GSA Venda ${vendaId.substring(0, 8)}`
+      };
+      
+      const paymentRes = await axios.post(`${ASAAS_URL}/payments`, paymentData, { headers });
+      const paymentId = paymentRes.data.id;
+      console.log(`[ASAAS_PIX] Cobrança criada: ${paymentId}`);
 
-      await db.collection('sales').doc(vendaId).update({ asaas_payment_id: paymentRes.data.id, gateway: 'ASAAS', status_pagamento: 'Pendente' });
+      // 3. Busca o QR Code
+      const qrRes = await axios.get(`${ASAAS_URL}/payments/${paymentId}/pixQrCode`, { headers });
+      
+      // 4. Atualiza a venda no banco
+      await db.collection('sales').doc(vendaId).update(cleanDataForFirestore({
+          asaas_payment_id: paymentId,
+          gateway: 'ASAAS',
+          status_pagamento: 'Pendente',
+          updated_at: FieldValue.serverTimestamp()
+      }));
 
-      return { copy_paste: qrRes.data.payload, qr_code_base64: qrRes.data.encodedImage, payment_id: paymentRes.data.id };
+      return {
+        payment_id: paymentId,
+        copy_paste: qrRes.data.payload,
+        qr_code_base64: qrRes.data.encodedImage,
+        status: paymentRes.data.status,
+        gateway: 'ASAAS'
+      };
     } catch (error: any) {
-      throw new HttpsError('aborted', `Asaas recusou: ${error.response?.data?.errors?.[0]?.description || error.message}`);
+      console.error("[ASAAS_PIX] Erro na API:", error.response?.data || error.message);
+      throw new HttpsError('aborted', `Falha na integração Asaas: ${error.response?.data?.errors?.[0]?.description || error.message}`);
     }
   })
 );
