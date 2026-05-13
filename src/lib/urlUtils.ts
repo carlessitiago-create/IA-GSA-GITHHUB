@@ -18,4 +18,8 @@ export const getAppOrigin = () => {
 };
 export const getDiagnosticoOrigin = () => `https://diagnostico.${getBaseDomain()}`;
 
-export const getPublicOrigin = () => getConsultaOrigin();
+export const getPublicOrigin = () => {
+    // If running in browser, return the current origin to ensure links work on the active domain
+    if (typeof window !== 'undefined') return window.location.origin;
+    return getConsultaOrigin();
+};

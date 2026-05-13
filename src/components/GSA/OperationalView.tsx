@@ -273,6 +273,7 @@ export const OperationalView: React.FC = () => {
             processo.id!,
             novoStatus,
             auth.currentUser!.uid,
+            profile?.nome_completo || 'Analista', // Passando o nome
             oldStatus,
             urlToUse,
             isDenied ? 'Processo concluído sem anexo.' : 'Processo concluído com sucesso pelo analista.'
@@ -324,6 +325,7 @@ export const OperationalView: React.FC = () => {
             processo.id!,
             novoStatus,
             auth.currentUser!.uid,
+            profile?.nome_completo || 'Analista', // Passando o nome
             oldStatus,
             undefined,
             `Status alterado para ${novoStatus}`
@@ -789,6 +791,16 @@ export const OperationalView: React.FC = () => {
                   )}
                 </div>
                 
+                {/* Informativos de Responsáveis e Tempo */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 text-[8px] font-black uppercase text-slate-400 mt-2">
+                  <p>Vendedor: <span className="text-[#0a0a2e]">{processo.vendedor_nome || 'N/A'}</span></p>
+                  <p>Gestor: <span className="text-[#0a0a2e]">{processo.gestor_nome || 'N/A'}</span></p>
+                  <p>Analista: <span className="text-[#0a0a2e]">{processo.analista_nome || 'N/A'}</span></p>
+                  <p>Fase há: <span className="text-blue-600">
+                    {processo.data_status_atual ? `${Math.ceil((new Date().getTime() - processo.data_status_atual.toDate().getTime()) / (1000 * 60 * 60 * 24))} dias` : '0 dias'}
+                  </span></p>
+                </div>
+
                 {/* Alerta de Dados Faltantes Detalhado */}
                 {!ready && (
                   <div className="flex flex-wrap gap-1 md:gap-2 mt-1">

@@ -70,6 +70,8 @@ export interface OrderProcess {
   gestor_nome?: string;
   adm_notes?: string;
   whatsapp_suporte?: string;
+  analista_nome?: string;
+  data_status_atual?: Timestamp;
   proposta_enviada_url?: string;
   detalhes_negociacao?: string;
   valor_proposta_aceita?: number;
@@ -596,22 +598,21 @@ export async function atualizarStatusProcesso(
   processoId: string, 
   novoStatus: OrderProcess['status_atual'], 
   usuarioId: string,
+  nomeAnalista: string, // Novo parâmetro
   statusAnterior: string,
   urlArquivo?: string,
   observacoes?: string,
   statusInfoExtra?: string
 ) {
   try {
-    if (novoStatus === 'Concluído' && !urlArquivo) {
-      throw new Error('TRAVA_CONCLUSAO: É obrigatório anexar o comprovante para concluir o processo.');
-    }
-
     const batch = writeBatch(db);
     const processRef = doc(db, PROCESSES_COLLECTION, processoId);
     
     const updates: any = {
       status_atual: novoStatus,
-      observacoes_internas: observacoes || ''
+      observacoes_internas: observacoes || '',
+      analista_nome: nomeAnalista, // Salva o nome do analista
+      data_status_atual: serverTimestamp() // Salva o momento da mudança
     };
 
     if (statusInfoExtra !== undefined) {

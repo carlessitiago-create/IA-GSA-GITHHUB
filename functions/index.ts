@@ -8,6 +8,7 @@ import axios from 'axios';
 import * as nodemailer from 'nodemailer';
 import * as path from 'path';
 import * as fs from 'fs';
+import { seedUsers } from './seedUsers';
 
 // Inicializa o admin SDK
 if (admin.apps.length === 0) {
@@ -252,6 +253,20 @@ export const atualizarSenhaUsuario = onCall(async (request) => {
     return { success: true };
   } catch (error: any) {
     throw new HttpsError('aborted', 'Erro ao atualizar senha: ' + (error?.message || error));
+  }
+});
+
+export const syncUsers = onCall(async (request) => {
+  if (!request.auth) throw new HttpsError('unauthenticated', 'Usuário não autenticado');
+  const callerSnap = await db.collection('usuarios').doc(request.auth.uid).get();
+  if (!['ADM_MASTER', 'ADM_MESTRE', 'ADM_GERENTE'].includes(callerSnap.data()?.role)) {
+    throw new HttpsError('permission-denied', 'Permissão negada.');
+  }
+  try {
+    await seedUsers();
+    return { success: true };
+  } catch (error: any) {
+    throw new HttpsError('aborted', 'Erro ao sincronizar usuários: ' + (error?.message || error));
   }
 });
 
@@ -606,7 +621,7 @@ export const gerarPagamentoAsaas = onCall(
   })
 );
 
-export const webhookAsaas = onRequest(async (req: any, res: any) => {
+export const webhookAsaas = onRequest({ invoker: 'public' }, async (req: any, res: any) => {
   const eventId = req.body?.payment?.id;
   try {
     if (!eventId) return res.status(400).send("Missing eventId");
@@ -637,7 +652,7 @@ export const webhookAsaas = onRequest(async (req: any, res: any) => {
   } catch (error) { res.status(500).send("Error"); }
 });
 
-export const webhookMercadoPago = onRequest(async (req: any, res: any) => {
+export const webhookMercadoPago = onRequest({ invoker: 'public' }, async (req: any, res: any) => {
   const paymentId = req.body?.data?.id || req.body?.id || req.query?.id;
   try {
     if (!paymentId) return res.status(400).send("Missing paymentId");
