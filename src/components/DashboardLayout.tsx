@@ -343,7 +343,13 @@ export const DashboardLayout: React.FC = () => {
         fixed inset-y-0 left-0 z-50 lg:relative lg:translate-x-0 transition-transform duration-300 ease-in-out
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
-        <Sidebar currentProfile={profile} logout={logout} onClose={closeSidebar} />
+        <Sidebar 
+          view={currentView} 
+          setView={(v: string) => navigate(`/${v}`)} 
+          currentProfile={profile} 
+          isOpen={isSidebarOpen} 
+          setIsOpen={setIsSidebarOpen} 
+        />
       </div>
 
       {/* Main Content Area */}

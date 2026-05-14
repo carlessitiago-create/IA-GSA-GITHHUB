@@ -184,22 +184,22 @@ export const ProcessCard: React.FC<ProcessCardProps> = ({ proc, pendencies, hist
       <div className="p-4">
         <div className="flex justify-between items-start mb-2">
           <div className="flex-1">
-            <h4 className="font-black text-slate-800 dark:text-white uppercase text-sm">{proc.servico_nome}</h4>
+            <h4 className="font-bold text-slate-800 dark:text-white uppercase text-sm leading-tight">{proc.servico_nome}</h4>
             {proc.cliente_nome && (
-              <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase">{proc.cliente_nome}</p>
+              <p className="text-[11px] font-semibold text-blue-600 dark:text-blue-400 mt-0.5">{proc.cliente_nome}</p>
             )}
-            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Protocolo {proc.protocolo || `#${proc.venda_id.slice(0, 8)}`}</p>
+            <p className="text-[10px] font-semibold text-slate-400 mt-1 uppercase tracking-wide">Protocolo {proc.protocolo || `#${proc.venda_id.slice(0, 8)}`}</p>
             {readiness && (
               <div className="mt-2 flex items-center gap-1.5">
                 <div className={`size-1.5 rounded-full ${readiness.color} animate-pulse`} />
-                <span className={`text-[7px] font-black uppercase tracking-widest ${readiness.color.replace('bg-', 'text-')}`}>
+                <span className={`text-[10px] font-bold uppercase tracking-wide ${readiness.color.replace('bg-', 'text-')}`}>
                   {readiness.label}
                 </span>
               </div>
             )}
           </div>
           <div className="flex flex-col items-end gap-2">
-            <span className={`px-2 py-1 rounded text-[8px] font-black uppercase ${
+            <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${
               proc.status_atual === 'Concluído' ? 'bg-emerald-50 text-emerald-700' :
               proc.status_atual === 'Aguardando Aprovação' ? 'bg-amber-100 text-amber-700 border border-amber-200' :
               proc.status_atual === 'Em Andamento' ? 'bg-blue-50 text-blue-700' :
@@ -303,19 +303,19 @@ export const ProcessCard: React.FC<ProcessCardProps> = ({ proc, pendencies, hist
         <div className="space-y-3">
             <div className="flex justify-between items-center">
             <div className="flex flex-col">
-              <span className="text-[9px] font-black uppercase text-slate-400">Progresso do Processo</span>
-              <span className="text-xs font-black">{progressPercent}%</span>
+              <span className="text-[10px] font-bold uppercase text-slate-500">Progresso do Processo</span>
+              <span className="text-sm font-bold">{progressPercent}%</span>
             </div>
             <div className="flex items-center gap-3">
               <button 
                 onClick={() => setShowDetailModal(true)} 
-                className="text-blue-600 dark:text-blue-400 text-xs font-black uppercase tracking-widest hover:underline"
+                className="text-blue-600 dark:text-blue-400 text-xs font-semibold uppercase tracking-wide hover:underline"
               >
                 Ver Detalhes
               </button>
               <button 
                 onClick={() => setIsExpanded(!isExpanded)} 
-                className="text-slate-900 dark:text-slate-100 text-xs font-bold hover:underline"
+                className="text-slate-900 dark:text-slate-100 text-xs font-medium hover:underline"
               >
                 {isExpanded ? 'Ver Menos' : 'Auditoria'}
               </button>
@@ -337,7 +337,7 @@ export const ProcessCard: React.FC<ProcessCardProps> = ({ proc, pendencies, hist
 
         {proc.status_atual === 'Concluído' && (
           <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
-            <button className="w-full bg-emerald-600 text-white font-black py-3 rounded-xl text-xs flex items-center justify-center gap-2 hover:bg-emerald-700 transition-colors">
+            <button className="w-full bg-emerald-600 text-white font-semibold py-2.5 rounded-lg text-xs flex items-center justify-center gap-2 hover:bg-emerald-700 transition-colors">
               <Download size={16} /> DOWNLOAD FINAL
             </button>
           </div>
@@ -347,7 +347,7 @@ export const ProcessCard: React.FC<ProcessCardProps> = ({ proc, pendencies, hist
           <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
             <button 
               onClick={() => setShowSmartFicha(true)}
-              className="w-full bg-blue-600 text-white font-black py-3 rounded-xl text-xs flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/20"
+              className="w-full bg-blue-600 text-white font-semibold py-2.5 rounded-lg text-xs flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors shadow-sm"
             >
               <ClipboardList size={16} /> RESOLVER PENDÊNCIAS AGORA
             </button>
@@ -357,7 +357,7 @@ export const ProcessCard: React.FC<ProcessCardProps> = ({ proc, pendencies, hist
         <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
           <button 
             onClick={() => generateProcessPdf(proc)}
-            className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-black py-3 rounded-xl text-xs flex items-center justify-center gap-2 transition-all"
+            className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2.5 rounded-lg text-xs flex items-center justify-center gap-2 transition-all"
           >
             <Download size={16} /> GERAR PDF DO PROCESSO
           </button>

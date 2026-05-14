@@ -80,6 +80,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ view, setView, currentProfile,
     { id: 'configuracoes-notificacoes', label: 'E-MAIS E PERMISSÕES', icon: <Mail className="size-5" />, group: 'ENGENHARIA', roles: ['ADM_MASTER', 'ADM MASTER'] },
     
     { id: 'consulta-interna', label: 'CONSULTA PÚBLICA', icon: <Search className="size-5" />, group: 'SISTEMA' },
+    { id: 'consultas-cpf-cnpj', label: 'CONSULTAS CPF/CNPJ', icon: <Search className="size-5" />, group: 'CONSULTAS' },
     { id: 'suporte', label: 'SUPORTE', icon: <MessageSquare className="size-5" />, group: 'SISTEMA' },
     { id: 'perfil', label: 'MEU PERFIL', icon: <User className="size-5" />, group: 'USUÁRIO' },
   ];
@@ -88,6 +89,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ view, setView, currentProfile,
     { id: 'clube_pontos', label: 'CLUBE DE PONTOS', icon: <Trophy className="size-5" />, group: 'COMERCIAL' },
     { id: 'clube-cliente', label: 'INDIQUE E GANHE', icon: <Gift className="size-5" />, group: 'COMERCIAL' },
     { id: 'vitrine-cliente', label: 'VITRINE DE SERVIÇOS', icon: <LayoutGrid className="size-5" />, group: 'COMERCIAL' },
+    { id: 'consultas-cpf-cnpj', label: 'CONSULTAS CPF/CNPJ', icon: <Search className="size-5" />, group: 'CONSULTAS' },
     { id: 'processos-cliente', label: 'MEUS PROCESSOS', icon: <ClipboardList className="size-5" />, group: 'OPERAÇÕES' },
     { id: 'carteira', label: 'MINHA CARTEIRA', icon: <Wallet className="size-5" />, group: 'FINANCEIRO' },
     { id: 'perfil-cliente', label: 'MEU PERFIL', icon: <User className="size-5" />, group: 'USUÁRIO' },
@@ -99,7 +101,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ view, setView, currentProfile,
 
   const groups = isAdm 
     ? ['FINANCEIRO', 'COMERCIAL', 'OPERAÇÕES', 'CONSULTAS', 'ENGENHARIA', 'SISTEMA', 'USUÁRIO']
-    : ['COMERCIAL', 'OPERAÇÕES', 'FINANCEIRO', 'USUÁRIO'];
+    : ['COMERCIAL', 'OPERAÇÕES', 'CONSULTAS', 'FINANCEIRO', 'USUÁRIO'];
 
   return (
     <>

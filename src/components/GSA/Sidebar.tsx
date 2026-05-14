@@ -20,26 +20,26 @@ export function Sidebar({ currentProfile, logout, onClose }: any) {
       onClick={onClose}
       target={blank ? "_blank" : undefined}
       rel={blank ? "noopener noreferrer" : undefined}
-      className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${
+      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all group ${
         isActive(to) 
-          ? 'bg-[#0a0a2e] text-white shadow-lg shadow-blue-900/20' 
-          : 'text-slate-400 hover:bg-slate-800/50 hover:text-white'
+          ? 'bg-blue-600/10 text-blue-400' 
+          : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-300'
       }`}
     >
       <Icon size={18} className={isActive(to) ? 'text-blue-400' : color} />
-      <span className="text-xs font-bold uppercase tracking-widest">{label}</span>
-      {isActive(to) && <ChevronRight size={14} className="ml-auto text-blue-400" />}
+      <span className="text-sm font-medium">{label}</span>
+      {isActive(to) && <ChevronRight size={16} className="ml-auto text-blue-400" />}
     </Link>
   );
 
   return (
     <aside className="w-72 bg-[#050517] h-screen flex flex-col border-r border-white/5 z-50">
-      <div className="p-8 flex items-center justify-between">
-        <div className="flex items-center gap-3 px-2">
-          <div className="bg-blue-600 p-2 rounded-xl shadow-lg shadow-blue-600/20">
-            <Shield className="text-white" size={24} />
+      <div className="p-6 md:p-8 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="bg-blue-600 p-2 rounded-lg shadow-sm">
+            <Shield className="text-white" size={20} />
           </div>
-          <h1 className="text-2xl font-black text-white tracking-tighter italic">GSA Diagnóstico</h1>
+          <h1 className="text-xl font-bold text-white tracking-tight">GSA Diagnóstico</h1>
         </div>
         <button 
           onClick={onClose}
@@ -52,8 +52,8 @@ export function Sidebar({ currentProfile, logout, onClose }: any) {
       <nav className="flex-1 overflow-y-auto px-4 space-y-8 custom-scrollbar">
         {/* CATEGORIA: COMERCIAL */}
         {(role !== 'CLIENTE') && (
-          <div className="space-y-2">
-            <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Comercial</p>
+          <div className="space-y-1 mt-4">
+            <p className="px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Comercial</p>
             {/* Varejo - Individual */}
             {(role.startsWith('ADM') || currentProfile?.permissoes_venda === 'VAREJO' || currentProfile?.permissoes_venda === 'AMBOS' || !currentProfile?.permissoes_venda) && (
               <MenuItem to="vendas-internas" icon={PlusCircle} label="Nova Venda" />
@@ -73,8 +73,8 @@ export function Sidebar({ currentProfile, logout, onClose }: any) {
 
         {/* CATEGORIA: OPERAÇÕES */}
         {(role.startsWith('ADM') || role === 'GESTOR' || role === 'VENDEDOR') && (
-          <div className="space-y-2">
-            <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Operações</p>
+          <div className="space-y-1 mt-6">
+            <p className="px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Operações</p>
             <MenuItem 
               to="operacional" 
               icon={ClipboardList} 
@@ -90,18 +90,23 @@ export function Sidebar({ currentProfile, logout, onClose }: any) {
         )}
 
         {/* CATEGORIA: CONSULTAS */}
-        {(role.startsWith('ADM')) && (
-          <div className="space-y-2">
-            <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Consultas</p>
-            <MenuItem to="admin-consultas" icon={Settings} label="Gestão e API" color="text-orange-400" />
-            <MenuItem to="historico-consultas" icon={Search} label="Histórico de Pedidos" color="text-blue-400" />
+        {(role !== 'CLIENTE') && (
+          <div className="space-y-1 mt-6">
+            <p className="px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Consultas</p>
+            <MenuItem to="consultas-cpf-cnpj" icon={Search} label="Consultas CPF/CNPJ" color="text-emerald-400" />
+            {(role.startsWith('ADM')) && (
+              <>
+                <MenuItem to="admin-consultas" icon={Settings} label="Gestão e API" color="text-orange-400" />
+                <MenuItem to="historico-consultas" icon={Search} label="Histórico de Pedidos" color="text-blue-400" />
+              </>
+            )}
           </div>
         )}
 
         {/* CATEGORIA: ENGENHARIA */}
         {(role.startsWith('ADM')) && (
-          <div className="space-y-2">
-            <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Engenharia</p>
+          <div className="space-y-1 mt-6">
+            <p className="px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Engenharia</p>
             {role !== 'ADM_ANALISTA' && <MenuItem to="saas-settings" icon={Settings} label="Configurações SaaS" color="text-blue-500" />}
             {role !== 'ADM_ANALISTA' && <MenuItem to="admin_clube_settings" icon={Gift} label="Configurações do Clube" color="text-purple-500" />}
             {role !== 'ADM_ANALISTA' && <MenuItem to="config_consulta" icon={LayoutDashboard} label="Configurações de Consulta" color="text-orange-500" />}
@@ -117,16 +122,16 @@ export function Sidebar({ currentProfile, logout, onClose }: any) {
 
         {/* CATEGORIA: GESTÃO (Para Gestores e Vendedores) */}
         {(role === 'GESTOR' || role === 'VENDEDOR') && (
-          <div className="space-y-2">
-            <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Minha Gestão</p>
+          <div className="space-y-1 mt-6">
+            <p className="px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Minha Gestão</p>
             <MenuItem to="equipe" icon={Users} label={role === 'VENDEDOR' ? 'Meus Clientes' : 'Minha Equipe'} />
           </div>
         )}
 
         {/* CATEGORIA: FINANCEIRO */}
         {(role.startsWith('ADM') || role === 'GESTOR' || role === 'VENDEDOR') && (
-          <div className="space-y-2">
-            <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Financeiro</p>
+          <div className="space-y-1 mt-6">
+            <p className="px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Financeiro</p>
             <MenuItem to="financeiro" icon={DollarSign} label="Conciliação" color="text-emerald-500" />
             {(role === 'ADM_MASTER' || role === 'ADM_GERENTE' || role === 'GESTOR') && (
               <MenuItem to="custas" icon={DollarSign} label="Tabela de Custas" color="text-amber-500" />
@@ -136,8 +141,9 @@ export function Sidebar({ currentProfile, logout, onClose }: any) {
 
         {/* CATEGORIA: ÁREA DO CLIENTE */}
         {role === 'CLIENTE' && (
-          <div className="space-y-2">
-            <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Minha Conta</p>
+          <div className="space-y-1 mt-6">
+            <p className="px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Minha Conta</p>
+            <MenuItem to="consultas-cpf-cnpj" icon={Search} label="Consultas CPF/CNPJ" color="text-emerald-400" />
             <MenuItem to="clube_pontos" icon={Trophy} label="Clube de Pontos" />
             <MenuItem to="clube-cliente" icon={Gift} label="Indique e Ganhe" />
             <MenuItem to="vitrine-cliente" icon={ShoppingBag} label="Vitrine de Serviços" />
@@ -147,8 +153,8 @@ export function Sidebar({ currentProfile, logout, onClose }: any) {
         )}
 
         {/* CATEGORIA: SISTEMA */}
-        <div className="space-y-2">
-          <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Sistema</p>
+        <div className="space-y-1 mt-6 mb-6">
+          <p className="px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Sistema</p>
           {role !== 'ADM_ANALISTA' && <MenuItem to="consulta-interna" icon={Search} label="Consulta Pública" />}
           <MenuItem to="suporte" icon={Bell} label="Suporte" />
           <MenuItem to="perfil" icon={User} label="Meu Perfil" />
@@ -157,16 +163,16 @@ export function Sidebar({ currentProfile, logout, onClose }: any) {
 
       <div className="p-6 border-t border-white/5 bg-white/5">
         <div className="flex items-center gap-3 mb-6">
-          <div className="size-10 rounded-full bg-blue-600 flex items-center justify-center font-black text-white">
+          <div className="size-10 rounded-full bg-blue-600 flex items-center justify-center font-bold text-white shadow-sm">
             {currentProfile?.nome?.charAt(0)}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-bold text-white truncate">{currentProfile?.nome}</p>
-            <p className="text-[10px] font-black text-blue-400 uppercase">{role.replace('_', ' ')}</p>
+            <p className="text-sm font-semibold text-white truncate leading-tight">{currentProfile?.nome}</p>
+            <p className="text-[11px] font-semibold text-blue-400 mt-0.5">{role.replace('_', ' ')}</p>
           </div>
         </div>
-        <button onClick={logout} className="w-full flex items-center justify-center gap-2 py-3 bg-red-500/10 text-red-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all">
-          <LogOut size={14} /> Sair do Sistema
+        <button onClick={logout} className="w-full flex items-center justify-center gap-2 py-2.5 bg-red-500/10 text-red-500 rounded-lg text-xs font-semibold hover:bg-red-500 hover:text-white transition-all">
+          <LogOut size={16} /> Sair do Sistema
         </button>
       </div>
     </aside>

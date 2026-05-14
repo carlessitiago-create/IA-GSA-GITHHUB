@@ -35,6 +35,10 @@ export const IncluirVendaDireta = () => {
     const [temCnpj, setTemCnpj] = useState(false);
     const [cnpjEmpresa, setCnpjEmpresa] = useState('');
     const [nomeEmpresa, setNomeEmpresa] = useState('');
+    const [cpfVinculado, setCpfVinculado] = useState('');
+
+    const cleanMainDoc = cpfCliente.replace(/\D/g, '');
+    const isPj = cleanMainDoc.length > 11;
 
     const [recentProcesses, setRecentProcesses] = useState<any[]>([]);
     const [filterText, setFilterText] = useState('');
@@ -99,25 +103,24 @@ export const IncluirVendaDireta = () => {
     const downloadTemplate = () => {
         const ws = XLSX.utils.json_to_sheet([
             {
-                "Nome do Cliente": "João da Silva",
-                "CPF": "000.000.000-00",
-                "Data de Nascimento": "01/01/1990",
-                "Codigo Interno": "XYZ-123",
-                "Data de Inclusao": "01/05/2026"
+                "Nome / Nome da Empresa": "João da Silva",
+                "CPF / CNPJ": "000.000.000-00",
+                "Serviço Adquirido / A Produzir": "Defesa SISBAJUD",
+                "Data de Nascimento (PF)": "01/01/1990",
+                "Codigo Interno (Obrigatorio)": "XYZ-123",
+                "Data da Aprovacao (Obrigatoria)": "01/05/2026",
+                "Gestor de Vendas": "",
+                "Vendedor": ""
             }
         ]);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Template");
-        XLSX.writeFile(wb, "Template_Importacao.xlsx");
+        XLSX.writeFile(wb, "Modelo_Atualizado_Cadastros.xlsx");
     };
 
     const handleMassCreate = async () => {
         if (!planilhaFile) {
             Swal.fire('Erro', 'Selecione a planilha para importação.', 'error');
-            return;
-        }
-        if (!servicoId) {
-            Swal.fire('Erro', 'Selecione o serviço.', 'error');
             return;
         }
 
@@ -130,6 +133,29 @@ export const IncluirVendaDireta = () => {
         setLoading(true);
 
         try {
+            const tokenize = (str: string) => {
+                return str.normalize("NFD")
+                          .replace(/[\u0300-\u036f]/g, "")
+                          .toLowerCase()
+                          .replace(/[^a-z0-9]/g, " ")
+                          .split(/\s+/)
+                          .filter(w => w.length > 1);
+            };
+
+            const allServicesSnap = await getDocs(collection(db, 'services'));
+            const allServicesMap = new Map();
+            allServicesSnap.forEach(d => {
+                const data = d.data();
+                const nm = (data.nome_servico || data.nome || "").toLowerCase().trim();
+                const tokens = tokenize(nm);
+                const normalizedNm = tokens.join('');
+                if (normalizedNm) allServicesMap.set(normalizedNm, { ...data, id: d.id, tokens });
+            });
+
+            const allModelsSnap = await getDocs(collection(db, 'process_models'));
+            const allModelsMap = new Map();
+            allModelsSnap.forEach(d => allModelsMap.set(d.id, d.data()));
+
             const fileData = await planilhaFile.arrayBuffer();
             const wb = XLSX.read(fileData, { type: 'array' });
             const sheetName = wb.SheetNames[0];
@@ -142,41 +168,12 @@ export const IncluirVendaDireta = () => {
                 return;
             }
 
-            let servicoNome = "Serviço";
-            let defaultModelId = "";
-            let requisitosCampos: string[] = [];
-            let requisitosDocs: string[] = [];
-
-            const svcDoc = await getDoc(doc(db, 'services', servicoId));
-            if (svcDoc.exists()) {
-                const sData = svcDoc.data();
-                servicoNome = sData.nome_servico || sData.nome || servicoNome;
-                defaultModelId = sData.modelo_id || "";
-                requisitosCampos = sData.requisitos_campos || [];
-                requisitosDocs = sData.requisitos_documentos || [];
-            }
-            
-            let arrCamposFaltantes: string[] = requisitosCampos;
-            let arrDocsFaltantes: string[] = requisitosDocs;
-            
-            if (defaultModelId && (!requisitosCampos.length && !requisitosDocs.length)) {
-                try {
-                    const modelDoc = await getDoc(doc(db, 'process_models', defaultModelId));
-                    if (modelDoc.exists()) {
-                        arrCamposFaltantes = modelDoc.data().campos || [];
-                        arrDocsFaltantes = modelDoc.data().documentos || [];
-                    }
-                } catch (e) {
-                    console.error("Erro ao buscar modelo:", e);
-                }
-            }
-
-            let vendedorNome = "Vendedor";
-            let idSuperior = finalVendedorId;
+            let vendedorNomeGlobal = "Vendedor";
+            let idSuperiorGlobal = finalVendedorId;
             const vendDoc = await getDoc(doc(db, 'usuarios', finalVendedorId));
             if (vendDoc.exists()) {
-                vendedorNome = vendDoc.data()?.nome_completo || vendDoc.data()?.nome || vendedorNome;
-                idSuperior = vendDoc.data()?.id_superior || finalVendedorId;
+                vendedorNomeGlobal = vendDoc.data()?.nome_completo || vendDoc.data()?.nome || vendedorNomeGlobal;
+                idSuperiorGlobal = vendDoc.data()?.id_superior || finalVendedorId;
             }
 
             let batch = writeBatch(db);
@@ -185,20 +182,84 @@ export const IncluirVendaDireta = () => {
             let errorCount = 0;
 
             for (const row of data as any[]) {
-                const nome = row["Nome do Cliente"];
-                const cpfRaw = row["CPF"] || "";
-                const cpf = String(cpfRaw).replace(/\D/g, '');
-                const nascRaw = row["Data de Nascimento"] || "";
-                let nasc = String(nascRaw);
-                const codigo = String(row["Codigo Interno"] || "");
-                const dataIncRaw = row["Data de Inclusao"] || row["Data de Inclusão"] || "";
-                let dataInc = String(dataIncRaw);
-                
-                const cnpjRaw = row["CNPJ (Opcional)"] || row["CNPJ"] || "";
-                const cnpj = String(cnpjRaw).replace(/\D/g, '');
-                const nomeEmpresa = String(row["Nome da Empresa (Opcional)"] || row["Nome da Empresa"] || "");
+                const servicoRaw = row["Serviço Adquirido / A Produzir"] || row["Servico Adquirido"] || "";
+                if (!servicoRaw) {
+                    errorCount++;
+                    continue;
+                }
 
-                if (!nome || !cpf || (!nasc && !codigo) || !dataInc) {
+                const rawTokens = tokenize(String(servicoRaw));
+                const normalizedServicoRaw = rawTokens.join('');
+                let svcData = allServicesMap.get(normalizedServicoRaw);
+                
+                if (!svcData) {
+                    let bestMatch = null;
+                    let maxScore = 0;
+                    
+                    for (const [key, val] of allServicesMap.entries()) {
+                        const dbTokens = val.tokens as string[];
+                        
+                        let matchCount = 0;
+                        for (const rt of rawTokens) {
+                            if (dbTokens.includes(rt)) matchCount++;
+                        }
+                        
+                        const score = matchCount / Math.max(rawTokens.length, dbTokens.length, 1);
+                        
+                        if (score > maxScore && score > 0.4) {
+                            maxScore = score;
+                            bestMatch = val;
+                        }
+                    }
+                    
+                    if (bestMatch) {
+                        svcData = bestMatch;
+                    }
+                }
+
+                if (!svcData) {
+                    console.error("Serviço não encontrado: ", servicoRaw);
+                    errorCount++;
+                    continue;
+                }
+
+                const currentServicoId = svcData.id;
+                const currentServicoNome = svcData.nome_servico || svcData.nome;
+                const defaultModelId = svcData.modelo_id || "";
+                let arrCamposFaltantes = svcData.requisitos_campos || [];
+                let arrDocsFaltantes = svcData.requisitos_documentos || [];
+
+                if (defaultModelId && (!arrCamposFaltantes.length && !arrDocsFaltantes.length)) {
+                    const modelData = allModelsMap.get(defaultModelId);
+                    if (modelData) {
+                        arrCamposFaltantes = modelData.campos || [];
+                        arrDocsFaltantes = modelData.documentos || [];
+                    }
+                }
+
+                const nomeRaw = row["Nome / Nome da Empresa"] || row["Nome do Cliente"] || row["Nome"] || "";
+                const docRaw = row["CPF / CNPJ"] || row["CPF"] || row["CNPJ"] || "";
+                const docClean = String(docRaw).replace(/\D/g, '');
+                
+                let cpf = "";
+                let cnpj = "";
+                let nomeEmpresa = "";
+                const nome = String(nomeRaw);
+
+                if (docClean.length === 14) {
+                    cnpj = docClean;
+                    nomeEmpresa = nome; // if PJ, the name is the company name
+                } else {
+                    cpf = docClean;
+                }
+
+                const nascRaw = row["Data de Nascimento (PF)"] || row["Data de Nascimento"] || "";
+                let nasc = String(nascRaw);
+                const codigo = String(row["Codigo Interno (Obrigatorio)"] || row["Codigo Interno"] || "");
+                const dataIncRaw = row["Data da Aprovacao (Obrigatoria)"] || row["Data de Inclusao"] || row["Data de Inclusão"] || "";
+                let dataInc = String(dataIncRaw);
+
+                if (!nome || !docClean || !codigo || !dataInc) {
                    errorCount++;
                    continue;
                 }
@@ -231,8 +292,7 @@ export const IncluirVendaDireta = () => {
                 const clientData: any = {
                     nome: String(nome),
                     nome_completo: String(nome),
-                    documento: cpf,
-                    cpf: cpf,
+                    documento: docClean,
                     data_nascimento: nasc,
                     codigo_interno: codigo,
                     vendedor_id: finalVendedorId,
@@ -242,6 +302,10 @@ export const IncluirVendaDireta = () => {
                     origem: 'ADMIN_LOTE'
                 };
 
+                if (cpf) {
+                    clientData.cpf = cpf;
+                }
+
                 if (cnpj) {
                     clientData.cnpj = cnpj;
                     clientData.nome_empresa = nomeEmpresa;
@@ -250,8 +314,8 @@ export const IncluirVendaDireta = () => {
                 const clientRef = doc(collection(db, 'clients'));
                 batch.set(clientRef, clientData);
 
-                batch.set(doc(db, 'documento_locks', cpf), {
-                    documento: cpf,
+                batch.set(doc(db, 'documento_locks', docClean), {
+                    documento: docClean,
                     dono_id: finalVendedorId,
                     vendedor_id: finalVendedorId,
                     timestamp: timestamp
@@ -266,8 +330,8 @@ export const IncluirVendaDireta = () => {
                     cliente_id: clientRef.id,
                     cliente_nome: String(nome),
                     vendedor_id: finalVendedorId,
-                    vendedor_nome: vendedorNome,
-                    id_superior: idSuperior,
+                    vendedor_nome: vendedorNomeGlobal,
+                    id_superior: idSuperiorGlobal,
                     valor_total: 0,
                     metodo_pagamento: 'MANUAL',
                     status_pagamento: 'Pago',
@@ -280,17 +344,17 @@ export const IncluirVendaDireta = () => {
                 const processData: any = {
                     protocolo,
                     venda_id: saleRef.id,
-                    servico_id: servicoId,
-                    servico_nome: servicoNome,
+                    servico_id: currentServicoId,
+                    servico_nome: currentServicoNome,
                     modelo_id: defaultModelId,
                     cliente_id: clientRef.id,
                     cliente_nome: String(nome),
-                    cliente_cpf_cnpj: cpf,
+                    cliente_cpf_cnpj: docClean,
                     data_nascimento: nasc,
                     codigo_interno: codigo,
                     vendedor_id: finalVendedorId,
-                    vendedor_nome: vendedorNome,
-                    id_superior: idSuperior,
+                    vendedor_nome: vendedorNomeGlobal,
+                    id_superior: idSuperiorGlobal,
                     status_atual: (currentCamposFaltantes.length > 0 || arrDocsFaltantes.length > 0) ? 'Pendente' : 'Em Análise',
                     status_financeiro: 'PAGO',
                     data_execucao: dataInc,
@@ -302,6 +366,9 @@ export const IncluirVendaDireta = () => {
                 if (cnpj) {
                     processData.cnpj = cnpj;
                     processData.nome_empresa = nomeEmpresa;
+                }
+                if (cpf) {
+                    processData.cpf = cpf;
                 }
 
                 batch.set(processRef, processData);
@@ -348,7 +415,8 @@ export const IncluirVendaDireta = () => {
         try {
             const batch = writeBatch(db);
             const timestamp = serverTimestamp();
-            const cleanCPF = cpfCliente.replace(/\D/g, '');
+            const cleanMainDoc = cpfCliente.replace(/\D/g, '');
+            const isPj = cleanMainDoc.length > 11;
 
             let servicoNome = "Serviço";
             let defaultModelId = "";
@@ -389,9 +457,12 @@ export const IncluirVendaDireta = () => {
             }
 
             const providedFields = ['nome_completo'];
-            if (cleanCPF) providedFields.push('cpf', 'cpf_cnpj', 'documento');
+            if (cleanMainDoc) providedFields.push('cpf_cnpj', 'documento');
+            if (!isPj && cleanMainDoc) providedFields.push('cpf');
             if (nascCliente) providedFields.push('data_nascimento');
-            if (temCnpj && cnpjEmpresa) providedFields.push('cnpj', 'nome_empresa', 'razao_social');
+            if (temCnpj && !isPj && cnpjEmpresa) providedFields.push('cnpj', 'nome_empresa', 'razao_social');
+            if (isPj) providedFields.push('cnpj', 'nome_empresa', 'razao_social');
+            if (temCnpj && isPj && cpfVinculado) providedFields.push('cpf');
 
             const currentCamposFaltantes = arrCamposFaltantes.filter(c => !providedFields.includes(c));
 
@@ -401,8 +472,7 @@ export const IncluirVendaDireta = () => {
             const clientData: any = {
                 nome: nomeCliente,
                 nome_completo: nomeCliente,
-                documento: cleanCPF,
-                cpf: cleanCPF,
+                documento: cleanMainDoc,
                 data_nascimento: nascCliente || "",
                 codigo_interno: codigoInterno || "",
                 vendedor_id: finalVendedorId,
@@ -412,18 +482,26 @@ export const IncluirVendaDireta = () => {
                 origem: 'ADMIN_MANUAL'
             };
 
-            if (temCnpj) {
-                const cleanCNPJ = cnpjEmpresa.replace(/\D/g, '');
-                clientData.cnpj = cleanCNPJ;
-                clientData.nome_empresa = nomeEmpresa;
+            if (isPj) {
+                clientData.cnpj = cleanMainDoc;
+                clientData.nome_empresa = nomeCliente;
+                if (temCnpj && cpfVinculado) {
+                    clientData.cpf = cpfVinculado.replace(/\D/g, '');
+                }
+            } else {
+                clientData.cpf = cleanMainDoc;
+                if (temCnpj && cnpjEmpresa) {
+                    clientData.cnpj = cnpjEmpresa.replace(/\D/g, '');
+                    clientData.nome_empresa = nomeEmpresa;
+                }
             }
 
             batch.set(clientRef, clientData);
 
-            // 3. Trava de CPF
-            const lockRef = doc(db, 'documento_locks', cleanCPF);
+            // 3. Trava de CPF/CNPJ Principal
+            const lockRef = doc(db, 'documento_locks', cleanMainDoc);
             batch.set(lockRef, {
-                documento: cleanCPF,
+                documento: cleanMainDoc,
                 dono_id: finalVendedorId,
                 vendedor_id: finalVendedorId,
                 timestamp: timestamp
@@ -460,7 +538,7 @@ export const IncluirVendaDireta = () => {
                 modelo_id: defaultModelId,
                 cliente_id: clientRef.id,
                 cliente_nome: nomeCliente,
-                cliente_cpf_cnpj: cleanCPF,
+                cliente_cpf_cnpj: cleanMainDoc,
                 data_nascimento: nascCliente || "",
                 codigo_interno: codigoInterno || "",
                 vendedor_id: finalVendedorId,
@@ -474,10 +552,19 @@ export const IncluirVendaDireta = () => {
                 pendencias_iniciais: arrDocsFaltantes
             };
 
-            if (temCnpj) {
-                const cleanCNPJ = cnpjEmpresa.replace(/\D/g, '');
-                processData.cnpj = cleanCNPJ;
-                processData.nome_empresa = nomeEmpresa;
+            if (isPj) {
+                processData.cnpj = cleanMainDoc;
+                processData.nome_empresa = nomeCliente;
+                if (temCnpj && cpfVinculado) {
+                    processData.cpf = cpfVinculado.replace(/\D/g, '');
+                }
+            } else {
+                processData.cpf = cleanMainDoc;
+                if (temCnpj && cnpjEmpresa) {
+                    const cleanCNPJ = cnpjEmpresa.replace(/\D/g, '');
+                    processData.cnpj = cleanCNPJ;
+                    processData.nome_empresa = nomeEmpresa;
+                }
             }
 
             batch.set(processRef, processData);
@@ -534,10 +621,10 @@ export const IncluirVendaDireta = () => {
                 {importMode === 'manual' ? (
                     <>
                         <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-1">Nome Completo do Cliente</label>
+                            <label className="block text-sm font-medium text-slate-300 mb-1">Nome/Empresa</label>
                             <input 
                                 className="w-full p-3 bg-slate-900 border border-slate-600 rounded-xl text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all placeholder:text-slate-500" 
-                                placeholder="Ex: João da Silva" 
+                                placeholder="Ex: João da Silva ou Empresa XYZ" 
                                 value={nomeCliente} 
                                 onChange={(e) => setNomeCliente(e.target.value)} 
                             />
@@ -545,24 +632,26 @@ export const IncluirVendaDireta = () => {
                         
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-1">CPF do Cliente</label>
+                                <label className="block text-sm font-medium text-slate-300 mb-1">CPF/CNPJ</label>
                                 <input 
                                     className="w-full p-3 bg-slate-900 border border-slate-600 rounded-xl text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all placeholder:text-slate-500" 
-                                    placeholder="000.000.000-00" 
+                                    placeholder="000.000.000-00 ou 00.000.000/0000-00" 
                                     value={cpfCliente} 
                                     onChange={(e) => setCpfCliente(e.target.value)} 
                                 />
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-1">Data de Nascimento (Opcionais)</label>
-                                <input 
-                                    type="date" 
-                                    className="w-full p-3 bg-slate-900 border border-slate-600 rounded-xl text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all" 
-                                    value={nascCliente} 
-                                    onChange={(e) => setNascCliente(e.target.value)} 
-                                />
-                            </div>
-                            <div>
+                            {!isPj && (
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-1">Data de Nascimento (Opcional)</label>
+                                    <input 
+                                        type="date" 
+                                        className="w-full p-3 bg-slate-900 border border-slate-600 rounded-xl text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all" 
+                                        value={nascCliente} 
+                                        onChange={(e) => setNascCliente(e.target.value)} 
+                                    />
+                                </div>
+                            )}
+                            <div className={isPj ? "md:col-span-2" : ""}>
                                 <label className="block text-sm font-medium text-slate-300 mb-1">Código Interno (Opcional)</label>
                                 <input 
                                     type="text" 
@@ -583,11 +672,11 @@ export const IncluirVendaDireta = () => {
                                 className="w-5 h-5 rounded border-slate-600 bg-slate-900 text-blue-600 focus:ring-blue-500"
                             />
                             <label htmlFor="temCnpj" className="text-sm font-medium text-slate-300 cursor-pointer">
-                                Vincular um CNPJ a este cliente (Opcional)
+                                {isPj ? "Vincular um CPF a esta empresa (Opcional)" : "Vincular um CNPJ a este cliente (Opcional)"}
                             </label>
                         </div>
 
-                        {temCnpj && (
+                        {temCnpj && !isPj && (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-900/50 p-4 rounded-xl border border-slate-700">
                                 <div>
                                     <label className="block text-sm font-medium text-slate-300 mb-1">CNPJ</label>
@@ -605,6 +694,29 @@ export const IncluirVendaDireta = () => {
                                         placeholder="Ex: Empresa Silva Ltda" 
                                         value={nomeEmpresa} 
                                         onChange={(e) => setNomeEmpresa(e.target.value)} 
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        {temCnpj && isPj && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-900/50 p-4 rounded-xl border border-slate-700">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-1">CPF (Representante)</label>
+                                    <input 
+                                        className="w-full p-3 bg-slate-900 border border-slate-600 rounded-xl text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all placeholder:text-slate-500" 
+                                        placeholder="000.000.000-00" 
+                                        value={cpfVinculado} 
+                                        onChange={(e) => setCpfVinculado(e.target.value)} 
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-1">Data de Nascimento (Opcional)</label>
+                                    <input 
+                                        type="date" 
+                                        className="w-full p-3 bg-slate-900 border border-slate-600 rounded-xl text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all" 
+                                        value={nascCliente} 
+                                        onChange={(e) => setNascCliente(e.target.value)} 
                                     />
                                 </div>
                             </div>
@@ -654,27 +766,30 @@ export const IncluirVendaDireta = () => {
                         </div>
                         <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-lg">
                             <p className="text-sm text-blue-300">
-                                <strong>Regras da Planilha:</strong> O sistema criará um Processo para cada linha da planilha, vinculando-os ao <span className="text-white font-bold">Gestor, Vendedor e Serviço</span> selecionados abaixo. Mínimo de campos exigidos por linha na planilha:
-                                <br />• Nome do Cliente
-                                <br />• CPF
-                                <br />• Código Interno OU Data de Nascimento
-                                <br />• Data de Inclusão
+                                <strong>Regras da Planilha:</strong> O sistema criará um Processo para cada linha da planilha, vinculando-os ao <span className="text-white font-bold">Gestor e Vendedor</span> selecionados abaixo e ao <span className="text-white font-bold">Serviço</span> fornecido na planilha. Mínimo de campos exigidos por linha:
+                                <br />• Nome / Nome da Empresa
+                                <br />• CPF / CNPJ
+                                <br />• Serviço Adquirido / A Produzir
+                                <br />• Código Interno
+                                <br />• Data da Aprovação
                             </p>
                         </div>
                     </div>
                 )}
 
-                <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-1">Serviço Adquirido / A Produzir</label>
-                    <select 
-                        className="w-full p-3 bg-slate-900 border border-slate-600 rounded-xl text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all" 
-                        value={servicoId} 
-                        onChange={(e) => setServicoId(e.target.value)}
-                    >
-                        <option value="" className="text-slate-500">Selecione o Serviço...</option>
-                        {servicos.map(s => <option key={s.id} value={s.id}>{s.nome}</option>)}
-                    </select>
-                </div>
+                {importMode === 'manual' && (
+                    <div>
+                        <label className="block text-sm font-medium text-slate-300 mb-1">Serviço Adquirido / A Produzir</label>
+                        <select 
+                            className="w-full p-3 bg-slate-900 border border-slate-600 rounded-xl text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all" 
+                            value={servicoId} 
+                            onChange={(e) => setServicoId(e.target.value)}
+                        >
+                            <option value="" className="text-slate-500">Selecione o Serviço...</option>
+                            {servicos.map(s => <option key={s.id} value={s.id}>{s.nome}</option>)}
+                        </select>
+                    </div>
+                )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>

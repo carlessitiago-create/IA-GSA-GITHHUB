@@ -71,6 +71,7 @@ export interface OrderProcess {
   adm_notes?: string;
   whatsapp_suporte?: string;
   analista_nome?: string;
+  analista_id?: string;
   data_status_atual?: Timestamp;
   proposta_enviada_url?: string;
   detalhes_negociacao?: string;
@@ -612,6 +613,7 @@ export async function atualizarStatusProcesso(
       status_atual: novoStatus,
       observacoes_internas: observacoes || '',
       analista_nome: nomeAnalista, // Salva o nome do analista
+      analista_id: usuarioId, // Salva o ID do analista logado
       data_status_atual: serverTimestamp() // Salva o momento da mudança
     };
 

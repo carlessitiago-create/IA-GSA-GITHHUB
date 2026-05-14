@@ -81,7 +81,7 @@ export const NotificationBell: React.FC<{ currentProfile: any }> = ({ currentPro
               <div className="p-5 border-b border-white/5 flex items-center justify-between bg-white/5">
                 <div className="flex items-center gap-2">
                   <Bell className="size-4 text-blue-400" />
-                  <h3 className="text-xs font-black uppercase italic tracking-widest text-white">Notificações</h3>
+                  <h3 className="text-sm font-semibold text-white tracking-wide">Notificações</h3>
                 </div>
                 <button onClick={() => setIsOpen(false)} className="p-1 hover:bg-white/10 rounded-lg text-slate-400">
                   <X className="size-4" />
@@ -94,7 +94,7 @@ export const NotificationBell: React.FC<{ currentProfile: any }> = ({ currentPro
                     <div className="size-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 border border-white/5">
                       <Bell className="size-8 text-slate-600" />
                     </div>
-                    <p className="text-xs font-black text-slate-500 uppercase tracking-widest italic">Nenhuma notificação por enquanto</p>
+                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest">Nenhuma notificação por enquanto</p>
                   </div>
                 ) : (
                   <div className="divide-y divide-white/5">
@@ -108,15 +108,15 @@ export const NotificationBell: React.FC<{ currentProfile: any }> = ({ currentPro
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
                               {!n.lida && <span className="size-1.5 bg-blue-500 rounded-full" />}
-                              <h4 className={`text-[11px] font-black uppercase tracking-tighter italic ${!n.lida ? 'text-blue-400' : 'text-slate-200'}`}>
-                                {n.titulo}
+                              <h4 className={`text-xs font-semibold ${!n.lida ? 'text-blue-300' : 'text-slate-200'}`}>
+                                {n.titulo || (n as any).title || 'Aviso do Sistema'}
                               </h4>
                             </div>
-                            <p className="text-xs text-slate-400 italic font-medium leading-relaxed">
-                              {n.mensagem}
+                            <p className={`text-[11px] leading-relaxed ${!n.lida ? 'text-blue-100/90' : 'text-slate-400'}`}>
+                              {n.mensagem || (n as any).message}
                             </p>
                           </div>
-                          <span className="text-[9px] font-black text-slate-600 uppercase flex items-center gap-1 shrink-0">
+                          <span className="text-[10px] text-slate-500 font-medium flex items-center gap-1 shrink-0">
                             <Clock size={10} /> {getTimeAgo(n.timestamp)}
                           </span>
                         </div>

@@ -5,8 +5,10 @@ import { getConsultationTypes } from '../services/consultationService';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { generateConsultationPDF } from '../utils/pdfConsultationGenerator';
 import { db } from '../firebase';
+import { useAuth } from './AuthContext';
 
-export const ClientConsultationUpsell: React.FC = () => {
+export const ClientConsultationUpsell: React.FC<{ hideHeader?: boolean }> = ({ hideHeader }) => {
+  const { profile } = useAuth();
   const [consultations, setConsultations] = useState<ConsultationType[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedConsultation, setSelectedConsultation] = useState<ConsultationType | null>(null);
@@ -18,8 +20,8 @@ export const ClientConsultationUpsell: React.FC = () => {
   const [searchParam, setSearchParam] = useState('');
 
   useEffect(() => {
-    loadClientConsultations();
-  }, []);
+    if (profile) loadClientConsultations();
+  }, [profile]);
 
   // Listener de atualização em tempo real (Magia do Webhook)
   useEffect(() => {
@@ -42,6 +44,14 @@ export const ClientConsultationUpsell: React.FC = () => {
 
     return () => unsubscribe();
   }, [pixData?.requestId]);
+
+  const getMappedRole = () => {
+    if (!profile) return 'client';
+    if (profile.nivel?.startsWith('ADM')) return 'admin';
+    if (profile.nivel === 'GESTOR') return 'manager';
+    if (profile.nivel === 'VENDEDOR') return 'seller';
+    return 'client';
+  }
 
   useEffect(() => {
     if (paymentStatus === 'approved' && selectedConsultation && (!selectedConsultation.required_input_type || selectedConsultation.required_input_type === 'none')) {
@@ -70,15 +80,24 @@ export const ClientConsultationUpsell: React.FC = () => {
     }
   }, [paymentStatus, selectedConsultation, pixData]);
 
+  const getPriceForRole = (consultation: ConsultationType) => {
+    const role = getMappedRole();
+    if (role === 'admin') return consultation.internal_cost || 0;
+    if (role === 'manager') return consultation.manager_price || consultation.client_price;
+    if (role === 'seller') return consultation.seller_price || consultation.client_price;
+    return consultation.client_price;
+  };
+
   const loadClientConsultations = async () => {
     setLoading(true);
     try {
       const allTypes = await getConsultationTypes();
-      // Filtra apenas as consultas ativas e que têm visibilidade para o cliente final
-      const clientTypes = allTypes.filter(
-        type => type.active && type.visibility.includes('client')
+      const role = getMappedRole();
+      
+      const allowedTypes = allTypes.filter(
+        type => type.active && (role === 'admin' || type.visibility.includes(role))
       );
-      setConsultations(clientTypes);
+      setConsultations(allowedTypes);
     } catch (error) {
       console.error("Erro ao carregar ofertas:", error);
     } finally {
@@ -117,12 +136,15 @@ export const ClientConsultationUpsell: React.FC = () => {
       // Import Firestore methods
       const { collection, doc, setDoc, serverTimestamp } = await import('firebase/firestore');
       
+      const priceToCharge = getPriceForRole(consultation);
+
+      // Se for admin, o valor pode ser 0 ou custo interno. Vamos deixar criar o PIX com o valor calculado.
       // 1. Gera o PIX pelo backend (sem aceder ao Firestore lá para evitar problemas de IAM)
       const response = await fetch('/api/consultations/create-pix', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          transactionAmount: consultation.client_price,
+          transactionAmount: priceToCharge,
           description: `Consulta GSA: ${consultation.name}`,
           clientEmail: user.email,
         })
@@ -142,7 +164,7 @@ export const ClientConsultationUpsell: React.FC = () => {
         seller_id: null,
         manager_id: null,
         consultation_type_id: consultation.id,
-        amount_paid: consultation.client_price,
+        amount_paid: priceToCharge,
         commissions: {
           seller_amount: consultation.client_price - (consultation.seller_price || 0),
           manager_amount: (consultation.seller_price || 0) - (consultation.manager_price || 0),
@@ -190,16 +212,18 @@ export const ClientConsultationUpsell: React.FC = () => {
   if (consultations.length === 0) return null; // Não exibe nada se não houver ofertas
 
   return (
-    <div className="bg-gradient-to-br from-slate-50 to-gray-100 rounded-xl p-6 shadow-sm border border-gray-200 mt-8">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-          <ShieldCheck className="text-blue-600" />
-          Proteja seus Negócios
-        </h2>
-        <p className="text-gray-600 mt-1">
-          Aproveite e realize consultas detalhadas de crédito ou histórico veicular diretamente na plataforma, com liberação imediata.
-        </p>
-      </div>
+    <div className={`bg-gradient-to-br from-slate-50 to-gray-100 rounded-xl p-6 shadow-sm border border-gray-200 ${hideHeader ? '' : 'mt-8'}`}>
+      {!hideHeader && (
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+            <ShieldCheck className="text-blue-600" />
+            Proteja seus Negócios
+          </h2>
+          <p className="text-gray-600 mt-1">
+            Aproveite e realize consultas detalhadas de crédito ou histórico veicular diretamente na plataforma, com liberação imediata.
+          </p>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {consultations.map((consultation) => (
@@ -229,7 +253,7 @@ export const ClientConsultationUpsell: React.FC = () => {
               <div className="flex items-center justify-between mb-4">
                 <span className="text-sm font-medium text-gray-500">Valor único</span>
                 <span className="text-2xl font-black text-gray-900">
-                  R$ {consultation.client_price.toFixed(2).replace('.', ',')}
+                  R$ {getPriceForRole(consultation).toFixed(2).replace('.', ',')}
                 </span>
               </div>
               

@@ -146,7 +146,7 @@ export function ClubeMarketingView() {
       return;
     }
     
-    const link = `${getPublicOrigin()}/cp?ref=${profile.uid}`;
+    const link = `${getPublicOrigin()}/?ref=${profile.uid}`;
     
     const copyToClipboard = (text: string) => {
       if (navigator.clipboard && window.isSecureContext) {

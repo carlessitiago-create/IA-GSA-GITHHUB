@@ -97,7 +97,7 @@ export const PublicPortal = ({ previewConfig }: { previewConfig?: PublicPortalCo
         cancelButtonColor: '#1e3a8a'
       }).then((result) => {
         if (result.isConfirmed) {
-          window.location.href = '/';
+          window.location.href = searchParams.has('ref') ? `/?ref=${searchParams.get('ref')}` : '/';
         }
       });
     } finally {
@@ -681,7 +681,7 @@ export const PublicPortal = ({ previewConfig }: { previewConfig?: PublicPortalCo
                 </div>
                 
                 <button 
-                  onClick={() => window.location.href = '/'}
+                  onClick={() => window.location.href = searchParams.has('ref') ? `/?ref=${searchParams.get('ref')}` : '/'}
                   className="w-full py-4 text-[#0a0a2e] border-2 border-[#0a0a2e] rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-[#0a0a2e] hover:text-white transition-all shadow-lg"
                 >
                   Ver Catálogo De Prêmios Completo
@@ -783,7 +783,7 @@ export const PublicPortal = ({ previewConfig }: { previewConfig?: PublicPortalCo
           <div className="max-w-4xl mx-auto pointer-events-auto">
             <ClubePromoBanner 
               isPublic 
-              onAction={() => window.location.href = '/'} 
+              onAction={() => window.location.href = searchParams.has('ref') ? `/?ref=${searchParams.get('ref')}` : '/'} 
             />
           </div>
         </div>

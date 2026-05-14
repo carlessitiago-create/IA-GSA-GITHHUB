@@ -54,7 +54,7 @@ export const Header: React.FC<HeaderProps> = ({
           <Menu size={24} />
         </button>
         
-        <h2 className="text-xl font-black text-slate-800 hidden sm:block italic tracking-tight uppercase">
+        <h2 className="text-lg md:text-xl font-bold text-slate-800 hidden sm:block tracking-tight">
           {selectedClientName ? selectedClientName :
            view === 'equipe' ? (currentProfile?.nivel === 'VENDEDOR' ? 'Meus Clientes' : currentProfile?.nivel === 'GESTOR' ? 'Minha Equipe' : 'Gestão de Equipe') : 
            view === 'vendas-internas' ? 'Nova Venda' : 
@@ -83,23 +83,23 @@ export const Header: React.FC<HeaderProps> = ({
         {(currentProfile?.nivel === 'CLIENTE' || currentProfile?.nivel === 'ADM_MASTER') && (
           <div className="flex items-center gap-4 sm:gap-8">
             <div className="text-right pr-2 sm:pr-4 border-r border-slate-200">
-              <p className="hidden sm:block text-[10px] font-black text-slate-400 uppercase tracking-widest">Clube GSA</p>
-              <div className="flex items-center justify-end gap-1">
+              <p className="hidden sm:block text-[10px] font-bold text-slate-500 uppercase tracking-widest">Clube GSA</p>
+              <div className="flex items-center justify-end gap-1.5 mt-0.5">
                 <Trophy size={14} className="text-yellow-500" />
-                <p className="text-sm sm:text-lg font-black text-yellow-600">
+                <p className="text-sm md:text-base font-bold text-yellow-600">
                   {pointsBalance} <span className="text-[10px] hidden sm:inline">PTS</span>
                 </p>
               </div>
             </div>
             <div className="text-right">
-              <p className="text-[8px] sm:text-[10px] font-black text-slate-400 uppercase">Saldo em Carteira</p>
-              <div className="flex items-center justify-end gap-1 sm:gap-2">
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Saldo em Carteira</p>
+              <div className="flex items-center justify-end gap-2 mt-0.5">
                 {walletBalance < 0 && (
                   <div className="flex items-center justify-center size-4 sm:size-5 bg-red-100 dark:bg-red-900/30 rounded-full" title="Você possui pendências financeiras.">
                     <AlertTriangle size={10} className="text-red-600 dark:text-red-400 sm:w-3 sm:h-3" />
                   </div>
                 )}
-                <p className={`text-sm sm:text-lg md:text-xl font-black ${walletBalance < 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
+                <p className={`text-base md:text-lg font-bold tracking-tight ${walletBalance < 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
                   R$ {walletBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
               </div>
@@ -129,25 +129,25 @@ export const Header: React.FC<HeaderProps> = ({
                   exit={{ opacity: 0, y: 10 }}
                   className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-slate-100 z-[100] overflow-hidden"
                 >
-                  <div className="p-4 border-b border-slate-100 flex justify-between items-center">
-                    <h4 className="font-bold text-sm">Notificações</h4>
-                    <div className="flex gap-3">
+                  <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                    <h4 className="font-bold text-slate-800 text-sm">Notificações</h4>
+                    <div className="flex gap-4">
                       <button 
                         onClick={() => {
                           notifications.forEach(n => n.id && markAsRead(n.id));
                         }}
-                        className="text-[10px] text-indigo-600 font-bold uppercase hover:underline"
+                        className="text-xs text-blue-600 font-semibold hover:text-blue-800 transition-colors"
                       >
-                        Marcar todas
+                        MARCAR TODAS
                       </button>
                       <button 
                         onClick={() => {
                           setView('notifications_center');
                           setIsNotificationOpen(false);
                         }}
-                        className="text-[10px] text-slate-400 font-bold uppercase hover:underline"
+                        className="text-xs text-slate-500 font-semibold hover:text-slate-700 transition-colors"
                       >
-                        Ver todas
+                        VER TODAS
                       </button>
                     </div>
                   </div>
@@ -166,11 +166,15 @@ export const Header: React.FC<HeaderProps> = ({
                             if (n.link) setView(n.link);
                             setIsNotificationOpen(false);
                           }}
-                          className={`p-4 border-b border-slate-50 hover:bg-slate-50 cursor-pointer transition-all ${!n.lida ? 'bg-indigo-50/30' : ''}`}
+                          className={`p-4 border-b border-slate-50 hover:bg-slate-50 cursor-pointer transition-all ${!n.lida ? 'bg-blue-50/50' : ''}`}
                         >
-                          <p className="text-xs font-bold text-slate-800 mb-1">{n.titulo}</p>
-                          <p className="text-[10px] text-slate-500 line-clamp-2">{n.mensagem}</p>
-                          <p className="text-[8px] text-slate-400 mt-2 uppercase font-bold">
+                          <p className={`text-sm font-semibold mb-1 leading-tight ${!n.lida ? 'text-blue-700' : 'text-slate-800'}`}>
+                            {n.titulo || (n as any).title || 'Aviso do Sistema'}
+                          </p>
+                          <p className={`text-xs font-medium line-clamp-2 leading-relaxed ${!n.lida ? 'text-blue-600/90' : 'text-slate-600'}`}>
+                            {n.mensagem || (n as any).message}
+                          </p>
+                          <p className={`text-[10px] mt-2 font-medium ${!n.lida ? 'text-blue-500/80' : 'text-slate-400'}`}>
                             {formatDate(n.timestamp)}
                           </p>
                         </div>

@@ -624,41 +624,41 @@ export const OperationalView: React.FC = () => {
         <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-emerald-600/5 blur-[80px] rounded-full pointer-events-none transform -translate-x-1/3 translate-y-1/3"></div>
 
         <div className="space-y-4 relative z-10 w-full lg:w-auto">
-          <div className="flex items-center gap-6">
-            <div className="size-16 bg-blue-500/10 border border-blue-500/20 rounded-[1.5rem] flex items-center justify-center shadow-[0_0_20px_rgba(59,130,246,0.2)]">
-               <Activity className="text-blue-400" size={28} />
+          <div className="flex items-center gap-4">
+            <div className="size-12 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex items-center justify-center shadow-[0_0_20px_rgba(59,130,246,0.2)]">
+               <Activity className="text-blue-400" size={24} />
             </div>
             <div>
-              <h1 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tighter italic leading-none">
+              <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">
                 { (profile?.nivel === 'GESTOR' || profile?.nivel === 'VENDEDOR') ? 'Meus Processos' : 'Fila de Produção' }
               </h1>
-              <p className="text-blue-400 text-[10px] font-black uppercase tracking-[0.2em] mt-2">GSA IA Operational Engine</p>
+              <p className="text-blue-400 text-[10px] font-bold uppercase tracking-wider mt-1">GSA IA Operational Engine</p>
             </div>
           </div>
-          <div className="flex items-center gap-3 bg-[#0F172A] w-fit px-4 py-2 rounded-xl border border-slate-800">
-            <div className="size-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_10px_rgba(52,211,153,0.8)]"></div>
-            <p className="text-slate-400 text-xs font-black uppercase tracking-widest">
+          <div className="flex items-center gap-3 bg-[#0F172A] w-fit px-3 py-1.5 rounded-lg border border-slate-800">
+            <div className="size-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_10px_rgba(52,211,153,0.8)]"></div>
+            <p className="text-slate-400 text-xs font-semibold tracking-wide">
               Terminal: <span className="text-white">{auth.currentUser?.displayName || 'Analista GSA'}</span>
             </p>
           </div>
         </div>
         
         {/* MINI DASHBOARD VIP ANALISTA */}
-        <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-4 relative z-10 w-full lg:w-auto mt-4 lg:mt-0">
-          <div className="bg-[#0B0F19] px-6 md:px-10 py-5 rounded-[1.8rem] border border-slate-800/50 shadow-inner flex flex-col items-center justify-center relative overflow-hidden group/card shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-3 relative z-10 w-full lg:w-auto mt-4 lg:mt-0">
+          <div className="bg-[#0B0F19] px-4 md:px-6 py-4 rounded-2xl border border-slate-800/50 shadow-inner flex flex-col items-center justify-center relative overflow-hidden group/card shadow-[0_0_20px_rgba(0,0,0,0.5)]">
              <div className="absolute inset-0 bg-gradient-to-t from-blue-900/10 to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity"></div>
-             <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1">Em Fila</p>
-             <p className="text-3xl md:text-4xl font-black text-blue-400 italic tracking-tighter drop-shadow-[0_0_10px_rgba(59,130,246,0.3)]">{displayFila.toString().padStart(2, '0')}</p>
+             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Em Fila</p>
+             <p className="text-2xl md:text-3xl font-bold text-blue-400 tracking-tight drop-shadow-[0_0_10px_rgba(59,130,246,0.3)]">{displayFila.toString().padStart(2, '0')}</p>
           </div>
-          <div className="bg-[#0B0F19] px-6 md:px-10 py-5 rounded-[1.8rem] border border-rose-900/20 shadow-inner flex flex-col items-center justify-center relative overflow-hidden group/card shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+          <div className="bg-[#0B0F19] px-4 md:px-6 py-4 rounded-2xl border border-rose-900/20 shadow-inner flex flex-col items-center justify-center relative overflow-hidden group/card shadow-[0_0_20px_rgba(0,0,0,0.5)]">
              <div className="absolute inset-0 bg-gradient-to-t from-rose-900/10 to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity"></div>
-            <p className="text-[9px] font-black text-rose-500/70 uppercase tracking-[0.2em] mb-1">Atraso SLA</p>
-            <p className="text-3xl md:text-4xl font-black text-rose-500 italic tracking-tighter drop-shadow-[0_0_10px_rgba(225,29,72,0.3)]">{displayAtraso.toString().padStart(2, '0')}</p>
+            <p className="text-[10px] font-bold text-rose-500/70 uppercase tracking-widest mb-1">Atraso SLA</p>
+            <p className="text-2xl md:text-3xl font-bold text-rose-500 tracking-tight drop-shadow-[0_0_10px_rgba(225,29,72,0.3)]">{displayAtraso.toString().padStart(2, '0')}</p>
           </div>
-          <div className="col-span-2 sm:col-span-1 bg-[#0B0F19] px-6 md:px-10 py-5 rounded-[1.8rem] border border-emerald-900/20 shadow-inner flex flex-col items-center justify-center relative overflow-hidden group/card shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+          <div className="col-span-2 sm:col-span-1 bg-[#0B0F19] px-4 md:px-6 py-4 rounded-2xl border border-emerald-900/20 shadow-inner flex flex-col items-center justify-center relative overflow-hidden group/card shadow-[0_0_20px_rgba(0,0,0,0.5)]">
              <div className="absolute inset-0 bg-gradient-to-t from-emerald-900/10 to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity"></div>
-            <p className="text-[9px] font-black text-emerald-500/70 uppercase tracking-[0.2em] mb-1">Concluídos</p>
-            <p className="text-3xl md:text-4xl font-black text-emerald-500 italic tracking-tighter drop-shadow-[0_0_10px_rgba(52,211,153,0.3)]">{displayConcluido.toString().padStart(2, '0')}</p>
+            <p className="text-[10px] font-bold text-emerald-500/70 uppercase tracking-widest mb-1">Concluídos</p>
+            <p className="text-2xl md:text-3xl font-bold text-emerald-500 tracking-tight drop-shadow-[0_0_10px_rgba(52,211,153,0.3)]">{displayConcluido.toString().padStart(2, '0')}</p>
           </div>
         </div>
       </div>
@@ -670,13 +670,13 @@ export const OperationalView: React.FC = () => {
           <input 
             type="text" 
             placeholder="Buscar Protocolo ou Cliente..." 
-            className="w-full pl-14 pr-6 py-4 md:py-5 bg-white border border-slate-100 rounded-[1.5rem] md:rounded-[1.8rem] text-[10px] md:text-[11px] font-black uppercase tracking-widest text-[#0a0a2e] placeholder:text-slate-300 focus:ring-4 focus:ring-blue-500/10 outline-none shadow-sm transition-all"
+            className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none shadow-sm transition-all"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         <select 
-          className="w-full md:w-auto bg-white border border-slate-100 rounded-[1.5rem] md:rounded-[1.8rem] px-8 py-4 md:py-5 text-[10px] font-black uppercase tracking-[0.2em] outline-none shadow-sm text-slate-500 cursor-pointer hover:text-[#0a0a2e] transition-all"
+          className="w-full md:w-auto bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs font-semibold text-slate-700 outline-none shadow-sm cursor-pointer hover:border-slate-300 transition-all focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
         >
@@ -705,55 +705,55 @@ export const OperationalView: React.FC = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.05, duration: 0.5 }}
-              className={`bg-white rounded-2xl md:rounded-[2.5rem] border p-4 sm:p-6 md:p-8 shadow-sm flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 sm:gap-6 md:gap-8 transition-all hover:shadow-2xl hover:-translate-y-1 group ${
-                isAtrasado ? 'border-rose-100 bg-rose-50/10' : 'border-slate-100'
+              className={`bg-white rounded-xl md:rounded-2xl border p-4 sm:p-5 shadow-sm flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 sm:gap-6 transition-all hover:shadow-md hover:-translate-y-0.5 group ${
+                isAtrasado ? 'border-rose-200 bg-rose-50/10' : 'border-slate-200'
               }`}
             >
               {/* Info Cliente e Protocolo */}
-              <div className="space-y-2 sm:space-y-3 min-w-[200px] w-full lg:w-auto">
-                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                  <div className="bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">
-                    <span className="text-[7px] sm:text-[9px] font-black text-blue-600 uppercase tracking-widest">
+              <div className="space-y-2 min-w-[200px] w-full lg:w-auto">
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100">
+                    <span className="text-[10px] font-bold text-blue-700 uppercase tracking-wide">
                       #{processo.protocolo || processo.id?.slice(-6).toUpperCase()}
                     </span>
                   </div>
                   {isAtrasado && (
-                    <div className="bg-rose-500 px-2.5 py-1 rounded-full shadow-lg shadow-rose-500/20 animate-pulse">
-                      <span className="text-[7px] sm:text-[8px] font-black text-white uppercase tracking-widest">SLA Crítico</span>
+                    <div className="bg-rose-100 px-2 py-0.5 rounded-md border border-rose-200">
+                      <span className="text-[10px] font-bold text-rose-700 uppercase tracking-wide">SLA Crítico</span>
                     </div>
                   )}
                   {ready ? (
-                    <div className="bg-emerald-500 px-2.5 py-1 rounded-full shadow-lg shadow-emerald-500/20">
-                      <span className="text-[7px] sm:text-[8px] font-black text-white uppercase tracking-widest">Docs OK</span>
+                    <div className="bg-emerald-100 px-2 py-0.5 rounded-md border border-emerald-200">
+                      <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wide">Docs OK</span>
                     </div>
                   ) : (
-                    <div className="bg-amber-500 px-2.5 py-1 rounded-full shadow-lg shadow-amber-500/20">
-                      <span className="text-[7px] sm:text-[8px] font-black text-white uppercase tracking-widest">Pendente</span>
+                    <div className="bg-amber-100 px-2 py-0.5 rounded-md border border-amber-200">
+                      <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wide">Pendente</span>
                     </div>
                   )}
                 </div>
                 <div className="flex flex-col flex-1 min-w-[200px] w-full lg:w-auto">
                   {(processo.cliente_cpf_cnpj && processo.cliente_cpf_cnpj.length > 11) || (processo as any).nome_empresa ? (
                     <>
-                      <h3 className="text-lg sm:text-xl md:text-2xl font-black text-[#0a0a2e] uppercase italic leading-none group-hover:text-blue-600 transition-colors truncate max-w-full">
+                      <h3 className="text-base sm:text-lg font-bold text-slate-800 leading-tight group-hover:text-blue-600 transition-colors truncate max-w-full">
                         {(processo as any).nome_empresa || processo.cliente_nome}
                       </h3>
-                      <div className="flex flex-col gap-0.5 mt-1">
-                        <p className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wide">
-                          CNPJ: <span className="font-mono text-[#0a0a2e]">{processo.cliente_cpf_cnpj?.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2}).*/, "$1.$2.$3/$4-$5")}</span>
+                      <div className="flex flex-col gap-1 mt-1">
+                        <p className="text-[11px] font-medium text-slate-500">
+                          CNPJ: <span className="font-mono text-slate-700">{processo.cliente_cpf_cnpj?.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2}).*/, "$1.$2.$3/$4-$5")}</span>
                         </p>
-                        <p className="text-[9px] font-bold text-slate-400 uppercase">
-                          Representante Legal: {processo.cliente_nome}
+                        <p className="text-[11px] font-medium text-slate-500">
+                          Rep. Legal: {processo.cliente_nome}
                         </p>
                         {(processo.gestor_nome || processo.vendedor_nome) && (
-                          <div className="flex gap-2">
+                          <div className="flex gap-3 mt-1">
                             {processo.gestor_nome && (
-                              <p className="text-[9px] font-bold text-blue-500/80 uppercase">
+                              <p className="text-[11px] font-medium text-slate-500">
                                 Gestor: {processo.gestor_nome}
                               </p>
                             )}
                             {processo.vendedor_nome && (
-                              <p className="text-[9px] font-bold text-blue-500/80 uppercase">
+                              <p className="text-[11px] font-medium text-slate-500">
                                 Vendedor: {processo.vendedor_nome}
                               </p>
                             )}
@@ -763,24 +763,24 @@ export const OperationalView: React.FC = () => {
                     </>
                   ) : (
                     <>
-                      <h3 className="text-lg sm:text-xl md:text-2xl font-black text-[#0a0a2e] uppercase italic leading-none group-hover:text-blue-600 transition-colors truncate max-w-full">
+                      <h3 className="text-base sm:text-lg font-bold text-slate-800 leading-tight group-hover:text-blue-600 transition-colors truncate max-w-full">
                         {processo.cliente_nome}
                       </h3>
-                      <div className="flex flex-col gap-0.5 mt-1">
+                      <div className="flex flex-col gap-1 mt-1">
                         {processo.cliente_cpf_cnpj && (
-                          <p className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wide">
-                            CPF: <span className="font-mono text-[#0a0a2e]">{processo.cliente_cpf_cnpj?.replace(/^(\d{3})(\d{3})(\d{3})(\d{2}).*/, "$1.$2.$3-$4")}</span>
+                          <p className="text-[11px] font-medium text-slate-500">
+                            CPF: <span className="font-mono text-slate-700">{processo.cliente_cpf_cnpj?.replace(/^(\d{3})(\d{3})(\d{3})(\d{2}).*/, "$1.$2.$3-$4")}</span>
                           </p>
                         )}
                         {(processo.gestor_nome || processo.vendedor_nome) && (
-                          <div className="flex gap-2">
+                          <div className="flex gap-3 mt-1">
                             {processo.gestor_nome && (
-                              <p className="text-[9px] font-bold text-blue-500/80 uppercase">
+                              <p className="text-[11px] font-medium text-slate-500">
                                 Gestor: {processo.gestor_nome}
                               </p>
                             )}
                             {processo.vendedor_nome && (
-                              <p className="text-[9px] font-bold text-blue-500/80 uppercase">
+                              <p className="text-[11px] font-medium text-slate-500">
                                 Vendedor: {processo.vendedor_nome}
                               </p>
                             )}
@@ -792,48 +792,48 @@ export const OperationalView: React.FC = () => {
                 </div>
                 
                 {/* Informativos de Responsáveis e Tempo */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 text-[8px] font-black uppercase text-slate-400 mt-2">
-                  <p>Vendedor: <span className="text-[#0a0a2e]">{processo.vendedor_nome || 'N/A'}</span></p>
-                  <p>Gestor: <span className="text-[#0a0a2e]">{processo.gestor_nome || 'N/A'}</span></p>
-                  <p>Analista: <span className="text-[#0a0a2e]">{processo.analista_nome || 'N/A'}</span></p>
-                  <p>Fase há: <span className="text-blue-600">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 text-[10px] font-medium text-slate-500 mt-2">
+                  <p>Vend: <span className="text-slate-800">{processo.vendedor_nome || 'N/A'}</span></p>
+                  <p>Gestor: <span className="text-slate-800">{processo.gestor_nome || 'N/A'}</span></p>
+                  <p>Ana: <span className="text-slate-800">{processo.analista_nome || 'N/A'}</span></p>
+                  <p>Há: <span className="text-blue-600 font-semibold">
                     {processo.data_status_atual ? `${Math.ceil((new Date().getTime() - processo.data_status_atual.toDate().getTime()) / (1000 * 60 * 60 * 24))} dias` : '0 dias'}
                   </span></p>
                 </div>
 
                 {/* Alerta de Dados Faltantes Detalhado */}
                 {!ready && (
-                  <div className="flex flex-wrap gap-1 md:gap-2 mt-1">
+                  <div className="flex flex-wrap gap-2 mt-2">
                     {!processo.cliente_cpf_cnpj && (
-                      <span className="text-[6px] sm:text-[7px] font-bold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-100 uppercase tracking-tighter">Falta CPF</span>
+                      <span className="text-[10px] font-semibold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200 truncate">Falta CPF</span>
                     )}
                     {!processo.data_nascimento && (
-                      <span className="text-[6px] sm:text-[7px] font-bold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-100 uppercase tracking-tighter">Falta Nascimento</span>
+                      <span className="text-[10px] font-semibold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200 truncate">Falta Nascimento</span>
                     )}
                     {processo.dados_faltantes?.map(f => (
-                      <span key={f} className="text-[6px] sm:text-[7px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 uppercase tracking-tighter truncate max-w-[120px]">Falta: {requirementsConfig?.field_labels?.[f] || f.replace(/_/g, ' ')}</span>
+                      <span key={f} className="text-[10px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 truncate max-w-[150px]">Falta: {requirementsConfig?.field_labels?.[f] || f.replace(/_/g, ' ')}</span>
                     ))}
                     {processo.pendencias_iniciais?.filter(d => !processo.documentos_enviados?.includes(d)).map(d => (
-                      <span key={d} className="text-[6px] sm:text-[7px] font-bold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-100 uppercase tracking-tighter truncate max-w-[120px]">Doc Pendente: {requirementsConfig?.document_labels?.[d] || d.replace(/_/g, ' ')}</span>
+                      <span key={d} className="text-[10px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 truncate max-w-[150px]">Pendente: {requirementsConfig?.document_labels?.[d] || d.replace(/_/g, ' ')}</span>
                     ))}
                   </div>
                 )}
 
-                <div className="flex items-center gap-2 text-slate-400 overflow-hidden">
-                  <div className="size-1 bg-slate-300 rounded-full shrink-0" />
-                  <p className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest truncate">{processo.servico_nome}</p>
+                <div className="flex items-center gap-2 text-slate-500 mt-2">
+                  <div className="size-1.5 bg-slate-300 rounded-full shrink-0" />
+                  <p className="text-[11px] font-semibold truncate">{processo.servico_nome}</p>
                 </div>
               </div>
 
               {/* Timeline de Status (Dropdown Master / View Only for Sales) */}
-              <div className="flex-1 w-full lg:w-auto space-y-2">
-                <p className="text-[7px] sm:text-[8px] md:text-[9px] font-black text-slate-300 uppercase tracking-[0.3em] ml-1">Fluxo Operacional</p>
+              <div className="flex-1 w-full lg:w-auto space-y-1.5">
+                <p className="text-[10px] font-bold text-slate-500 uppercase ml-1">Fluxo Operacional</p>
                 {isAdm ? (
                   <div className="relative group/select">
                     <select 
                       value={processo.status_atual}
                       onChange={(e) => handleUpdateStatus(processo, e.target.value as any)}
-                      className="w-full lg:w-72 bg-slate-50 border border-slate-100 rounded-xl sm:rounded-2xl text-[9px] sm:text-[11px] font-black uppercase tracking-widest text-[#0a0a2e] py-3.5 sm:py-4 pl-4 sm:pl-6 pr-10 focus:ring-4 focus:ring-blue-500/10 cursor-pointer appearance-none transition-all hover:bg-blue-50"
+                      className="w-full lg:w-64 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 py-2.5 pl-3 pr-8 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer appearance-none transition-all hover:bg-slate-100"
                     >
                       <option value="Pendente">1. Pendente</option>
                       <option value="Em Análise">2. Em Análise</option>
@@ -842,60 +842,51 @@ export const OperationalView: React.FC = () => {
                       <option value="Aguardando Documentação">5. Aguardando Doc.</option>
                       <option value="Concluído">6. CONCLUIR PROCESSO</option>
                     </select>
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-blue-400 group-hover/select:translate-y-[-40%] transition-transform">
-                      <ChevronRight size={16} className="rotate-90" />
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                      <ChevronRight size={14} className="rotate-90" />
                     </div>
                   </div>
                 ) : (
-                  <div className="w-full lg:w-72 bg-[#020617] border border-slate-800 rounded-xl sm:rounded-2xl py-3.5 sm:py-4 px-6 flex items-center justify-between">
-                     <span className="text-[9px] sm:text-[11px] font-black uppercase tracking-widest text-blue-400 italic">
+                  <div className="w-full lg:w-64 bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 flex items-center justify-between">
+                     <span className="text-xs font-semibold text-slate-700">
                         {processo.status_atual}
                      </span>
-                     <div className="size-1.5 rounded-full bg-blue-500 animate-pulse shadow-[0_0_10px_rgba(59,130,246,0.5)]"></div>
+                     <div className="size-1.5 rounded-full bg-blue-500 animate-pulse shadow-sm"></div>
                   </div>
                 )}
               </div>
 
               {/* Time & Team (Visible only on larger screens) */}
-              <div className="hidden xl:flex items-center gap-12 border-x border-slate-50 px-12">
-                <div className="text-center space-y-1">
-                  <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">Data Início</p>
-                  <div className="flex items-center gap-2 text-[#0a0a2e]">
-                    <Calendar size={14} className="text-blue-500" />
-                    <p className="text-xs font-black uppercase italic">
+              <div className="hidden xl:flex items-center justify-end gap-8 border-l border-slate-100 pl-8">
+                <div className="text-right space-y-1">
+                  <p className="text-[10px] font-bold text-slate-500 uppercase">Data Início</p>
+                  <div className="flex items-center justify-end gap-1.5 text-slate-700">
+                    <Calendar size={12} className="text-blue-500" />
+                    <p className="text-[11px] font-medium">
                       {processo.data_venda?.toDate ? format(processo.data_venda.toDate(), "dd/MM/yy") : 'N/A'}
-                    </p>
-                  </div>
-                </div>
-                <div className="text-center space-y-1">
-                  <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">Responsável</p>
-                  <div className="flex items-center gap-2 text-[#0a0a2e]">
-                    <User size={14} className="text-blue-500" />
-                    <p className="text-[10px] font-black uppercase tracking-tight truncate max-w-[120px]">
-                      {processo.vendedor_nome || 'N/A'}
                     </p>
                   </div>
                 </div>
               </div>
 
               {/* Botões de Ação */}
-              <div className="grid grid-cols-2 lg:flex gap-2 sm:gap-3 w-full lg:w-auto">
+              <div className="grid grid-cols-2 lg:flex gap-2 w-full lg:w-auto mt-4 lg:mt-0">
                 <button 
                   onClick={() => setSelectedProcess(processo)}
-                  className="bg-slate-50 text-slate-400 hover:bg-[#0a0a2e] hover:text-white h-12 sm:h-14 lg:w-14 rounded-xl sm:rounded-2xl transition-all shadow-sm flex items-center justify-center border border-slate-100 group/btn" 
+                  className="bg-white text-slate-600 hover:bg-slate-50 h-10 lg:w-10 rounded-lg transition-all shadow-sm flex items-center justify-center border border-slate-200" 
                   title="Ver Pasta do Cliente"
                 >
-                  <FolderOpen size={20} className="group-hover/btn:scale-110 transition-transform" />
-                  <span className="ml-2 lg:hidden text-[10px] font-black uppercase tracking-widest">Abrir Pasta</span>
+                  <FolderOpen size={16} />
+                  <span className="ml-2 lg:hidden text-xs font-semibold">Pasta</span>
                 </button>
                 {isAdm && (
                   <button 
                     onClick={() => handleAbrirPendencia(processo)}
-                    className="bg-rose-50 text-rose-500 hover:bg-rose-600 hover:text-white h-12 sm:h-14 lg:w-14 rounded-xl sm:rounded-2xl transition-all shadow-sm flex items-center justify-center border border-rose-100 group/btn" 
+                    className="bg-white text-rose-500 hover:bg-rose-50 h-10 lg:w-10 rounded-lg transition-all shadow-sm flex items-center justify-center border border-rose-200" 
                     title="Abrir Pendência"
                   >
-                    <AlertTriangle size={20} className="group-hover/btn:scale-110 transition-transform" />
-                    <span className="ml-2 lg:hidden text-[10px] font-black uppercase tracking-widest">Pendência</span>
+                    <AlertTriangle size={16} />
+                    <span className="ml-2 lg:hidden text-xs font-semibold">Pendência</span>
                   </button>
                 )}
               </div>

@@ -29,7 +29,7 @@ export const ProposalsTable = () => {
       }
       
       const snap = await getDocs(q);
-      const data = snap.docs.map(d => ({ id: d.id, ...d.data() } as ProposalData));
+      const data = snap.docs.map(d => ({ id: d.id, ...(d.data() as any) } as ProposalData));
       setProposals(data);
     } catch (e) {
       console.error(e);

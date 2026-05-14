@@ -3,7 +3,7 @@ import { useOutletContext } from 'react-router-dom';
 import { FinancialTransactions } from '../components/dashboard/FinancialTransactions';
 import { OpenInvoices } from '../components/dashboard/OpenInvoices';
 import { RecentSales } from '../components/dashboard/RecentSales';
-import { DollarSign, Clock, AlertTriangle, ReceiptText, TrendingUp, ArrowUpRight } from 'lucide-react';
+import { DollarSign, Clock, AlertTriangle, ReceiptText, TrendingUp, ArrowUpRight, Search, Activity } from 'lucide-react';
 import { motion } from 'motion/react';
 import AlertCenter from '../components/GSA/AlertCenter';
 import { useNavigate } from 'react-router-dom';
@@ -48,13 +48,13 @@ export function DashboardFinanceiro() {
                 <DollarSign size={20} className="md:size-7 text-white" />
               </div>
               <div className="min-w-0">
-                <h1 className="text-xl sm:text-4xl md:text-5xl font-black text-[#0a0a2e] uppercase tracking-tighter italic leading-none truncate">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#0a0a2e] tracking-tight leading-none truncate">
                   Financeiro
                 </h1>
-                <p className="text-slate-400 text-[8px] sm:text-[10px] font-black uppercase tracking-widest mt-0.5">Control v4.0</p>
+                <p className="text-slate-500 text-[10px] sm:text-xs font-semibold uppercase tracking-wider mt-1">Control v4.0</p>
               </div>
             </div>
-            <p className="text-slate-500 text-[10px] sm:text-xs md:text-sm font-medium">
+            <p className="text-slate-600 text-xs sm:text-sm font-medium">
               Gestão estratégica de faturas e fluxo de caixa.
             </p>
           </div>
@@ -65,11 +65,45 @@ export function DashboardFinanceiro() {
                 <TrendingUp size={18} />
               </div>
               <div>
-                <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Saúde Financeira</p>
-                <p className="text-base sm:text-lg font-black text-emerald-700 uppercase italic leading-none">Excelente</p>
+                <p className="text-[10px] font-semibold text-emerald-600 uppercase tracking-widest">Saúde Financeira</p>
+                <p className="text-base sm:text-lg font-bold text-emerald-700 leading-none mt-1">Excelente</p>
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Banner Consultas CPF/CNPJ */}
+        <div className="mt-8 mb-8">
+          <motion.div 
+            whileHover={{ y: -2 }}
+            onClick={() => navigate('/consultas-cpf-cnpj')}
+            className="bg-gradient-to-br from-[#0a0a2e] to-[#16164d] p-6 sm:p-8 rounded-2xl shadow-lg cursor-pointer group relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6"
+          >
+            <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-blue-500/20 blur-[80px] rounded-full translate-x-1/3 -translate-y-1/3 pointer-events-none" />
+            
+            <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center gap-6">
+              <div className="size-14 sm:size-16 bg-blue-500/20 rounded-2xl flex items-center justify-center text-blue-300 border border-blue-500/30 shrink-0">
+                <Search className="size-6 sm:size-8" />
+              </div>
+              <div>
+                <div className="inline-flex items-center gap-2 bg-blue-500/20 text-blue-300 px-3 py-1 rounded-full font-bold text-[10px] uppercase tracking-wider mb-2 border border-blue-500/30">
+                  <Activity size={12} /> Exclusivo
+                </div>
+                <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight mb-2">
+                  Consultas Completas de CPF/CNPJ
+                </h3>
+                <p className="text-sm text-blue-100/80 font-medium max-w-xl">
+                  Consultas de dívidas, Score, Rating, Bacen, CADIN, Veículos e muito mais! Receba a consulta em PDF na mesma hora do pedido.
+                </p>
+              </div>
+            </div>
+
+            <div className="relative z-10 shrink-0 self-start md:self-center">
+              <div className="bg-blue-600 text-white px-5 py-3 rounded-xl font-semibold text-sm hover:bg-blue-500 transition-colors flex items-center gap-2 shadow-md">
+                Fazer Consulta <ArrowUpRight size={16} />
+              </div>
+            </div>
+          </motion.div>
         </div>
 
         {/* Grid de Cards de Estatísticas */}
@@ -87,8 +121,8 @@ export function DashboardFinanceiro() {
               </div>
             </div>
             <div>
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Comprovantes Pendentes</p>
-              <h3 className="text-3xl sm:text-4xl font-black text-[#0a0a2e] tracking-tighter italic">
+              <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Comprovantes Pendentes</p>
+              <h3 className="text-2xl sm:text-3xl font-bold text-[#0a0a2e] tracking-tight">
                 R$ {totalPending.toLocaleString('pt-BR')}
               </h3>
             </div>
@@ -107,8 +141,8 @@ export function DashboardFinanceiro() {
               </div>
             </div>
             <div>
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Faturas em Aberto</p>
-              <h3 className="text-3xl sm:text-4xl font-black text-[#0a0a2e] tracking-tighter italic">
+              <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Faturas em Aberto</p>
+              <h3 className="text-2xl sm:text-3xl font-bold text-[#0a0a2e] tracking-tight">
                 R$ {totalOpenInvoices.toLocaleString('pt-BR')}
               </h3>
             </div>
@@ -127,8 +161,8 @@ export function DashboardFinanceiro() {
               </div>
             </div>
             <div>
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Faturas Vencidas</p>
-              <h3 className="text-3xl sm:text-4xl font-black text-[#0a0a2e] tracking-tighter italic">
+              <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Faturas Vencidas</p>
+              <h3 className="text-2xl sm:text-3xl font-bold text-[#0a0a2e] tracking-tight">
                 R$ {overdueInvoices.toLocaleString('pt-BR')}
               </h3>
             </div>

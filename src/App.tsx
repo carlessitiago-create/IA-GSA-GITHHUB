@@ -37,6 +37,7 @@ const ConsultaPublicaView = lazy(() => import("./views/ConsultaPublicaView").the
 const ClubePontosView = lazy(() => import("./views/ClubePontosView").then(m => ({ default: m.ClubePontosView })));
 const AdminConsultationManagerView = lazy(() => import("./views/AdminConsultationManagerView").then(m => ({ default: m.AdminConsultationManagerView })));
 const AdminConsultationHistoryView = lazy(() => import("./views/AdminConsultationHistoryView").then(m => ({ default: m.AdminConsultationHistoryView })));
+const ConsultasCpfCnpjView = lazy(() => import("./views/ConsultasCpfCnpjView").then(m => ({ default: m.ConsultasCpfCnpjView })));
 const ClubeMarketingView = lazy(() => import("./views/ClubeMarketingView").then(m => ({ default: m.ClubeMarketingView })));
 const ClientProcessesView = lazy(() => import("./components/GSA/ClientProcessesView").then(m => ({ default: m.ClientProcessesView })));
 const ClientWalletView = lazy(() => import("./components/GSA/ClientWalletView").then(m => ({ default: m.ClientWalletView })));
@@ -207,6 +208,7 @@ const App: React.FC = () => {
             <Route path="/gerenciador-notificacoes" element={<GerenciadorNotificacoesView />} />
             <Route path="/admin-consultas" element={<AdminConsultationManagerView />} />
             <Route path="/historico-consultas" element={<AdminConsultationHistoryView />} />
+            <Route path="/consultas-cpf-cnpj" element={<ConsultasCpfCnpjView />} />
 
             {/* Rotas Portal do Cliente */}
             <Route path="/clube_pontos" element={<ClubePontosView />} />

@@ -19,7 +19,9 @@ import {
   Crown,
   ChevronUp,
   Activity,
-  Flame
+  Flame,
+  Search,
+  ArrowUpRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { aceitarPropostaLeadVitrine, atualizarStatusLeadVitrine, LeadStatus } from '../services/marketingService';
@@ -212,15 +214,15 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({ proces
                 <circle cx="48" cy="48" r="44" fill="none" stroke="currentColor" strokeWidth="8" strokeDasharray="276" strokeDashoffset={276 - (276 * ratingSimulado) / 1000} className={`${ratingClass} opacity-80`} strokeLinecap="round" />
               </svg>
               <div className="flex flex-col items-center">
-                <span className={`text-2xl font-black tracking-tighter ${ratingClass}`}>{ratingSimulado}</span>
-                <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Score</span>
+                <span className={`text-2xl font-bold tracking-tight ${ratingClass}`}>{ratingSimulado}</span>
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Score</span>
               </div>
             </div>
 
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <Crown className={ratingClass} size={20} />
-                <h3 className="text-xl font-black text-white uppercase italic tracking-tighter">Rating GSA</h3>
+                <h3 className="text-xl font-bold text-white tracking-tight">Rating GSA</h3>
               </div>
               <p className="text-slate-400 text-sm max-w-xs font-medium">
                 Sua blindagem no mercado. {saldo > 0 ? "O seu saldo está alavancando ativamente o seu perfil de crédito." : "Adicione saldo para acelerar sua reputação e serviços."}
@@ -229,14 +231,14 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({ proces
           </div>
 
           {/* Wallet Balance Section */}
-          <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-3xl p-6 w-full lg:w-auto flex flex-col gap-4">
+          <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-6 w-full lg:w-auto flex flex-col gap-4">
             <div className="flex justify-between items-start gap-12">
               <div>
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5 mb-1">
+                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5 mb-1">
                   <WalletIcon size={12} /> Saldo de Alavancagem
                 </span>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-black text-white tracking-tighter">{formatCurrency(saldo)}</span>
+                  <span className="text-3xl font-bold text-white tracking-tight">{formatCurrency(saldo)}</span>
                 </div>
               </div>
               <div className="size-10 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-400">
@@ -256,7 +258,7 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({ proces
                   confirmButtonColor: '#2563eb'
                 })
               }}
-              className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-black uppercase text-xs tracking-widest transition-all shadow-lg shadow-blue-600/20 flex justify-center items-center gap-2"
+              className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-semibold text-sm transition-all shadow-md flex justify-center items-center gap-2"
             >
               <TrendingUp size={16} /> Aumentar Limite de Crédito
             </button>
@@ -266,12 +268,38 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({ proces
       </motion.div>
 
       {/* Serviços Avulsos */}
-      <div className="mb-10 bg-white rounded-[2rem] border border-slate-100 p-8 shadow-sm">
-        <h2 className="text-xl font-bold text-gray-800 mb-2">Serviços Avulsos</h2>
-        <p className="text-sm text-gray-600 mb-6">
-          Precisa de uma verificação rápida? Faça consultas oficiais a qualquer momento.
-        </p>
-        <ClientConsultationUpsell />
+      {/* Banner Consultas CPF/CNPJ */}
+      <div className="mb-10">
+        <motion.div 
+          whileHover={{ y: -5 }}
+          onClick={() => navigate('/consultas-cpf-cnpj')}
+          className="bg-gradient-to-br from-[#0a0a2e] to-[#16164d] p-6 sm:p-8 rounded-2xl shadow-lg cursor-pointer group relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6"
+        >
+          <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-blue-500/20 blur-[80px] rounded-full translate-x-1/3 -translate-y-1/3 pointer-events-none" />
+          
+          <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center gap-6">
+            <div className="size-14 sm:size-16 bg-blue-500/20 rounded-2xl flex items-center justify-center text-blue-300 border border-blue-500/30 shrink-0">
+              <Search className="size-6 sm:size-8" />
+            </div>
+            <div>
+              <div className="inline-flex items-center gap-2 bg-blue-500/20 text-blue-300 px-3 py-1 rounded-full font-bold text-[10px] uppercase tracking-wider mb-2 border border-blue-500/30">
+                <Activity size={12} /> Exclusivo
+              </div>
+              <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight mb-2">
+                Consultas Completas de CPF/CNPJ
+              </h3>
+              <p className="text-sm text-blue-100/80 font-medium max-w-xl">
+                Consultas de dívidas, Score, Rating, Bacen, CADIN, Veículos e muito mais! Receba a consulta em PDF na mesma hora do pedido.
+              </p>
+            </div>
+          </div>
+
+          <div className="relative z-10 shrink-0 self-start md:self-center">
+            <div className="bg-blue-600 text-white px-5 py-3 rounded-xl font-semibold text-sm hover:bg-blue-500 transition-colors flex items-center gap-2 shadow-md">
+              Fazer Consulta <ArrowUpRight size={16} />
+            </div>
+          </div>
+        </motion.div>
       </div>
 
       {/* HEADER & FILTERS */}

@@ -115,10 +115,22 @@ export const PendencyList: React.FC = () => {
 
         // 2. Se houver um processo vinculado, atualiza o status dele também
         if (processoId) {
-          await updateDoc(doc(db, 'order_processes', processoId), {
-            status_atual: 'Em Análise',
-            status_info_extra: 'PENDÊNCIA RESOLVIDA: Aguardando nova conferência.'
-          });
+          const procSnap = await getDoc(doc(db, 'order_processes', processoId));
+          if (procSnap.exists()) {
+            const { atualizarStatusProcesso } = await import('../../services/orderService');
+            const statusAnterior = procSnap.data().status_atual || 'Aguardando Documentação';
+            const analistaNome = procSnap.data().analista_nome || 'Sistema';
+            await atualizarStatusProcesso(
+              processoId, 
+              'Em Análise', 
+              profile?.uid || 'Sistema', 
+              analistaNome, 
+              statusAnterior, 
+              undefined, 
+              'Pendência resolvida pelo cliente ou parceiro.', 
+              'PENDÊNCIA RESOLVIDA: Aguardando nova conferência.'
+            );
+          }
         }
 
         Swal.fire('Sucesso', 'Pendência resolvida! A venda voltou para análise.', 'success');

@@ -23,6 +23,7 @@ export interface AppNotification {
   timestamp: any;
   vendedor_id?: string;
   gestor_id?: string;
+  analista_id?: string;
   visibilidade_uids?: string[];
 }
 
@@ -106,6 +107,9 @@ export async function sendNotification(notification: Omit<AppNotification, 'id' 
     }
     if (notification.gestor_id && !visibilidade_uids.includes(notification.gestor_id)) {
       visibilidade_uids.push(notification.gestor_id);
+    }
+    if (notification.analista_id && !visibilidade_uids.includes(notification.analista_id)) {
+      visibilidade_uids.push(notification.analista_id);
     }
 
     await addDoc(collection(db, 'notifications'), cleanData({
@@ -215,7 +219,8 @@ export const notificarStatusProcesso = async (processo: any, novoStatus: string)
     mensagem: mensagem,
     tipo: 'PROCESS',
     vendedor_id: processo.vendedor_id,
-    gestor_id: processo.id_superior || processo.gestor_id
+    gestor_id: processo.id_superior || processo.gestor_id,
+    analista_id: processo.analista_id
   });
 };
 
@@ -228,7 +233,8 @@ export const notificarNovaPendencia = async (processo: any, descricao: string) =
     mensagem: mensagem,
     tipo: 'PROCESS',
     vendedor_id: processo.vendedor_id,
-    gestor_id: processo.id_superior || processo.gestor_id
+    gestor_id: processo.id_superior || processo.gestor_id,
+    analista_id: processo.analista_id
   });
 };
 

@@ -279,6 +279,28 @@ const SaaSLandingPage: React.FC = () => {
         throw new Error("O sistema não conseguiu gerar um ID para o novo cliente.");
       }
       
+      // Se houver Link de Referência (refCode), registramos uma Indicação para atar o cliente antigo ao novo Lead
+      if (refCode && refCode !== "SaaS_GSA_IA") {
+         try {
+             const { criarIndicacao } = await import('../services/marketingService');
+             const { getPublicPortalConfig } = await import('../services/configService');
+             const portalConfig = await getPublicPortalConfig();
+             await criarIndicacao({
+                cliente_origem_id: refCode,
+                origem_tipo: 'CLIENTE', // Consideramos clientes na ponta repassando o link
+                nome_indicado: leadData.nome,
+                telefone_indicado: leadData.telefone,
+                email_indicado: leadData.email,
+                vendedor_id: 'SaaS_GSA_IA',
+                bonus_valor: portalConfig.bonus_indicacao || 50,
+                metodo_indicacao: 'VITRINE'
+             });
+             console.log("Indicação auto-gerada com sucesso para", refCode);
+         } catch (refError) {
+             console.warn("Falha silenciosa ao gerar Indicação de convite:", refError);
+         }
+      }
+
       console.log("Cliente cadastrado com sucesso. ID:", novoCliente.id);
 
       if (config?.modo_pagamento === 'MANUAL') {
