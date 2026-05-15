@@ -316,7 +316,7 @@ export const VendaEmMassaView: React.FC = () => {
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-[#0a0a2e] p-8 sm:p-12 rounded-[2.5rem] sm:rounded-[3.5rem] text-white relative overflow-hidden shadow-2xl"
+        className="bg-[#0a0a2e] p-8 sm:p-6 rounded-2xl sm:rounded-3xl text-white relative overflow-hidden shadow-2xl"
       >
         <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-8">
           <div className="space-y-4 text-center md:text-left">
@@ -324,7 +324,7 @@ export const VendaEmMassaView: React.FC = () => {
               <Package className="text-blue-400 size-4" />
               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-100">Venda por Atacado</span>
             </div>
-            <h2 className="text-3xl sm:text-5xl font-black italic uppercase tracking-tighter leading-none">
+            <h2 className="text-3xl sm:text-3xl font-black italic uppercase tracking-tighter leading-none">
               Emissão em <br/>
               <span className="text-blue-400">Massa.</span>
             </h2>
@@ -373,7 +373,7 @@ export const VendaEmMassaView: React.FC = () => {
           >
             {/* CONFIGURAÇÃO */}
             <div className="lg:col-span-1 space-y-6">
-              <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm space-y-6">
+              <div className="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm space-y-6">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="size-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600">
                     <Package size={20} />
@@ -404,7 +404,7 @@ export const VendaEmMassaView: React.FC = () => {
                 </div>
               </div>
 
-              <div className="bg-gradient-to-br from-[#0a0a2e] to-blue-900 p-8 rounded-[2rem] text-white shadow-xl space-y-6 relative overflow-hidden">
+              <div className="bg-gradient-to-br from-[#0a0a2e] to-blue-900 p-8 rounded-2xl text-white shadow-xl space-y-6 relative overflow-hidden">
                 <div className="relative z-10 space-y-6">
                   <div className="flex items-center gap-3">
                     <div className="size-10 bg-white/10 rounded-xl flex items-center justify-center">
@@ -438,7 +438,7 @@ export const VendaEmMassaView: React.FC = () => {
 
             {/* LISTA DE ITENS */}
             <div className="lg:col-span-2 space-y-6">
-              <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden min-h-[500px] flex flex-col font-sans">
+              <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden min-h-[500px] flex flex-col font-sans">
                 <div className="p-8 border-b border-slate-50 flex flex-col sm:flex-row items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
                     <div className="size-10 bg-slate-100 rounded-xl flex items-center justify-center text-[#0a0a2e]">
@@ -554,7 +554,7 @@ export const VendaEmMassaView: React.FC = () => {
                   {items.length === 0 && (
                     <div className="px-8 py-20 text-center">
                       <div className="flex flex-col items-center gap-4">
-                        <div className="size-20 bg-slate-50 rounded-[2rem] flex items-center justify-center text-slate-200">
+                        <div className="size-20 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-200">
                           <Search size={40} />
                         </div>
                         <p className="text-xs font-black uppercase text-slate-300 tracking-widest italic leading-relaxed">
@@ -583,7 +583,7 @@ export const VendaEmMassaView: React.FC = () => {
                     <button 
                       onClick={handleCheckout}
                       disabled={isProcessing}
-                      className="w-full sm:w-auto bg-emerald-600 text-white px-12 py-5 rounded-2xl font-black uppercase text-xs tracking-widest flex items-center justify-center gap-3 hover:bg-emerald-700 hover:scale-105 active:scale-95 transition-all shadow-xl shadow-emerald-500/20"
+                      className="w-full sm:w-auto bg-emerald-600 text-white px-6 py-5 rounded-2xl font-black uppercase text-xs tracking-widest flex items-center justify-center gap-3 hover:bg-emerald-700 hover:scale-105 active:scale-95 transition-all shadow-xl shadow-emerald-500/20"
                     >
                       {isProcessing ? <Loader2 className="animate-spin" size={20} /> : <CreditCard size={20} />}
                       PAGAR E EMITIR AGORA
@@ -599,7 +599,7 @@ export const VendaEmMassaView: React.FC = () => {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
-            className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden"
+            className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden"
           >
             <div className="p-8 border-b border-slate-50">
               <h3 className="text-lg font-black italic uppercase text-[#0a0a2e] tracking-tight">Histórico de Emissões em Massa</h3>
@@ -702,7 +702,7 @@ export const VendaEmMassaView: React.FC = () => {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-md bg-white rounded-[2.5rem] shadow-2xl p-10 overflow-hidden"
+              className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 overflow-hidden"
             >
               <div className="flex items-center gap-4 mb-8">
                 <div className="size-12 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-600/20">

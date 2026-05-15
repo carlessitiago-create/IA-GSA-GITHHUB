@@ -6,7 +6,7 @@ export const ConsultasCpfCnpjView: React.FC = () => {
   return (
     <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-8 animate-fade-in pb-24">
       {/* Hero Section */}
-      <div className="bg-gradient-to-br from-[#0a0a2e] to-[#16164d] rounded-[2rem] p-8 sm:p-12 text-white relative overflow-hidden shadow-2xl">
+      <div className="bg-gradient-to-br from-[#0a0a2e] to-[#16164d] rounded-2xl p-8 sm:p-6 text-white relative overflow-hidden shadow-2xl">
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500/20 blur-[100px] rounded-full translate-x-1/2 -translate-y-1/2 pointer-events-none" />
         
         <div className="relative z-10 max-w-3xl">
@@ -14,7 +14,7 @@ export const ConsultasCpfCnpjView: React.FC = () => {
             <Search size={16} /> Central de Inteligência
           </div>
           
-          <h1 className="text-4xl sm:text-5xl font-black mb-6 leading-tight">
+          <h1 className="text-2xl sm:text-3xl font-black mb-6 leading-tight">
             Consultas Completas de <br className="hidden sm:block" />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">CPF e CNPJ</span>
           </h1>

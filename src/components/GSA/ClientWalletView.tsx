@@ -55,7 +55,7 @@ export const ClientWalletView: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="p-12 flex justify-center">
+      <div className="p-6 flex justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
       </div>
     );
@@ -184,7 +184,7 @@ export const ClientWalletView: React.FC = () => {
     <div className="space-y-10 pb-24">
       {/* HEADER DE SEÇÃO */}
       <div className="flex flex-col gap-2">
-        <h2 className="text-4xl font-black text-[#0a0a2e] uppercase tracking-tighter italic">Minha Carteira</h2>
+        <h2 className="text-2xl font-black text-[#0a0a2e] uppercase tracking-tighter italic">Minha Carteira</h2>
         <p className="text-slate-500 font-medium text-sm">Gestão transparente de saldos, bônus e transações seguras.</p>
       </div>
 
@@ -193,10 +193,10 @@ export const ClientWalletView: React.FC = () => {
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="relative overflow-hidden bg-[#0a0a2e] rounded-[3rem] p-10 shadow-2xl shadow-blue-900/20 group"
+          className="relative overflow-hidden bg-[#0a0a2e] rounded-3xl p-6 shadow-2xl shadow-blue-900/20 group"
         >
           {/* Abstract background elements */}
-          <div className="absolute -right-10 -top-10 size-64 bg-blue-500/10 rounded-full blur-3xl group-hover:bg-blue-500/20 transition-all duration-700" />
+          <div className="absolute -right-10 -top-6 size-64 bg-blue-500/10 rounded-full blur-3xl group-hover:bg-blue-500/20 transition-all duration-700" />
           <div className="absolute -left-10 -bottom-10 size-48 bg-emerald-500/5 rounded-full blur-2xl" />
           
           <div className="relative z-10 space-y-8">
@@ -211,7 +211,7 @@ export const ClientWalletView: React.FC = () => {
             </div>
             
             <div className="space-y-1">
-              <h3 className="text-5xl md:text-6xl font-black italic text-white tracking-tighter">
+              <h3 className="text-3xl md:text-6xl font-black italic text-white tracking-tighter">
                 {formatCurrency(wallet?.saldo_atual || 0)}
               </h3>
               <p className="text-[10px] font-bold text-blue-300/50 uppercase tracking-widest">Atualizado em tempo real</p>
@@ -244,9 +244,9 @@ export const ClientWalletView: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="relative overflow-hidden bg-white rounded-[3rem] p-10 shadow-sm border border-slate-100 group"
+          className="relative overflow-hidden bg-white rounded-3xl p-6 shadow-sm border border-slate-100 group"
         >
-          <div className="absolute -right-10 -top-10 size-64 bg-amber-500/5 rounded-full blur-3xl" />
+          <div className="absolute -right-10 -top-6 size-64 bg-amber-500/5 rounded-full blur-3xl" />
           
           <div className="relative z-10 space-y-8">
             <div className="flex items-center justify-between">
@@ -260,7 +260,7 @@ export const ClientWalletView: React.FC = () => {
             </div>
             
             <div className="space-y-1">
-              <h3 className="text-5xl md:text-6xl font-black italic text-amber-500 tracking-tighter">
+              <h3 className="text-3xl md:text-6xl font-black italic text-amber-500 tracking-tighter">
                 {formatCurrency(wallet?.saldo_bonus || 0)}
               </h3>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Créditos para novos serviços</p>
@@ -288,7 +288,7 @@ export const ClientWalletView: React.FC = () => {
         </div>
 
         {transactions.length === 0 ? (
-          <div className="bg-white border border-dashed border-slate-200 rounded-[3rem] p-20 text-center flex flex-col items-center shadow-sm">
+          <div className="bg-white border border-dashed border-slate-200 rounded-3xl p-20 text-center flex flex-col items-center shadow-sm">
             <div className="size-20 bg-slate-50 rounded-full flex items-center justify-center mb-6">
               <Clock className="text-slate-300" size={40} />
             </div>
@@ -303,7 +303,7 @@ export const ClientWalletView: React.FC = () => {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: idx * 0.05 }}
-                className="bg-white border border-slate-100 rounded-[2rem] p-6 flex items-center justify-between group hover:shadow-xl hover:-translate-y-0.5 transition-all"
+                className="bg-white border border-slate-100 rounded-2xl p-6 flex items-center justify-between group hover:shadow-xl hover:-translate-y-0.5 transition-all"
               >
                 <div className="flex items-center gap-5">
                   <div className={`size-14 rounded-2xl flex items-center justify-center shadow-sm ${

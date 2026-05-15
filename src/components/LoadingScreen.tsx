@@ -11,12 +11,12 @@ export const LoadingScreen: React.FC<{ message?: string }> = ({ message = "Valid
 
       <div className="relative z-10 flex flex-col items-center">
         <div
-          className="size-24 bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2rem] flex items-center justify-center shadow-2xl mb-8 relative"
+          className="size-24 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl flex items-center justify-center shadow-2xl mb-8 relative"
         >
           <Shield className="text-white w-10 h-10" />
           {/* Animated Ring */}
-          <div className="absolute inset-0 rounded-[2rem] border-2 border-blue-500/30 animate-ping opacity-20"></div>
-          <div className="absolute inset-[-8px] rounded-[2.5rem] border border-white/5 animate-spin-slow"></div>
+          <div className="absolute inset-0 rounded-2xl border-2 border-blue-500/30 animate-ping opacity-20"></div>
+          <div className="absolute inset-[-8px] rounded-2xl border border-white/5 animate-spin-slow"></div>
         </div>
 
         <div

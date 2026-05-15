@@ -61,8 +61,8 @@ export const OpenInvoices = ({ sales, marcarFaturaVencida, atualizarInfosFatura,
   };
 
   return (
-    <div className="bg-white rounded-3xl sm:rounded-[2.5rem] border border-slate-100 overflow-hidden shadow-sm transition-all hover:shadow-md">
-      <div className="p-6 sm:p-8 md:p-10 border-b border-slate-50 bg-slate-50/30 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="bg-white rounded-3xl sm:rounded-2xl border border-slate-100 overflow-hidden shadow-sm transition-all hover:shadow-md">
+      <div className="p-6 sm:p-8 md:p-6 border-b border-slate-50 bg-slate-50/30 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h3 className="text-lg sm:text-2xl font-black text-[#0a0a2e] uppercase tracking-tighter italic leading-none">Faturas em Aberto</h3>
           <p className="text-slate-400 text-[8px] sm:text-[10px] font-black uppercase tracking-widest mt-1 sm:mt-2">Gestão de Recebíveis</p>
@@ -152,18 +152,18 @@ export const OpenInvoices = ({ sales, marcarFaturaVencida, atualizarInfosFatura,
         <table className="w-full text-left border-collapse min-w-[900px]">
           <thead>
             <tr className="bg-white text-slate-400 border-b border-slate-50">
-              <th className="px-10 py-6 font-black uppercase text-[10px] tracking-[0.2em]">Protocolo</th>
-              <th className="px-10 py-6 font-black uppercase text-[10px] tracking-[0.2em]">Cliente</th>
-              <th className="px-10 py-6 font-black uppercase text-[10px] tracking-[0.2em]">Valor Total</th>
-              <th className="px-10 py-6 font-black uppercase text-[10px] tracking-[0.2em]">Status Pagamento</th>
-              <th className="px-10 py-6 font-black uppercase text-[10px] tracking-[0.2em]">Atraso</th>
-              <th className="px-10 py-6 font-black uppercase text-[10px] tracking-[0.2em] text-right">Ações Rápidas</th>
+              <th className="px-5 py-6 font-black uppercase text-[10px] tracking-[0.2em]">Protocolo</th>
+              <th className="px-5 py-6 font-black uppercase text-[10px] tracking-[0.2em]">Cliente</th>
+              <th className="px-5 py-6 font-black uppercase text-[10px] tracking-[0.2em]">Valor Total</th>
+              <th className="px-5 py-6 font-black uppercase text-[10px] tracking-[0.2em]">Status Pagamento</th>
+              <th className="px-5 py-6 font-black uppercase text-[10px] tracking-[0.2em]">Atraso</th>
+              <th className="px-5 py-6 font-black uppercase text-[10px] tracking-[0.2em] text-right">Ações Rápidas</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
             {sales.filter((s: any) => s.status_pagamento === 'Pendente' || s.status_pagamento === 'Vencida').map((sale: any) => (
               <tr key={sale.id} className="hover:bg-slate-50/50 transition-colors group">
-                <td className="px-10 py-6">
+                <td className="px-5 py-6">
                   <span className="text-[11px] font-black text-blue-600 bg-blue-50 px-3 py-1 rounded-lg border border-blue-100 uppercase tracking-widest">
                     #{sale.protocolo}
                   </span>
@@ -171,17 +171,17 @@ export const OpenInvoices = ({ sales, marcarFaturaVencida, atualizarInfosFatura,
                      {sale.data_criacao?.toDate ? sale.data_criacao.toDate().toLocaleDateString('pt-BR') : 'N/A'}
                   </p>
                 </td>
-                <td className="px-10 py-6">
+                <td className="px-5 py-6">
                   <p className="text-sm font-black text-[#0a0a2e] uppercase italic tracking-tight group-hover:text-blue-600 transition-colors">{sale.cliente_nome}</p>
                   <p className="text-[10px] font-black text-slate-500 uppercase tracking-tight truncate bg-slate-50 w-fit px-2 py-0.5 rounded border border-slate-100 mt-1">
                     {sale.servico_nome || 'Serviço GSA'}
                   </p>
                   <p className="text-[9px] font-bold text-slate-400 mt-1 uppercase tracking-tighter">Vendedor: <span className="text-slate-600">{sale.vendedor_nome || 'N/A'}</span></p>
                 </td>
-                <td className="px-10 py-6">
+                <td className="px-5 py-6">
                   <p className="text-base font-black text-[#0a0a2e] italic tracking-tighter">R$ {sale.valor_total.toLocaleString('pt-BR')}</p>
                 </td>
-                <td className="px-10 py-6">
+                <td className="px-5 py-6">
                   <div className="flex flex-col gap-2">
                     <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest w-fit shadow-sm border ${
                       sale.status_pagamento === 'Vencida' 
@@ -199,7 +199,7 @@ export const OpenInvoices = ({ sales, marcarFaturaVencida, atualizarInfosFatura,
                     )}
                   </div>
                 </td>
-                <td className="px-10 py-6">
+                <td className="px-5 py-6">
                   {getDaysWaiting(sale.data_criacao) > 1 && sale.status_pagamento !== 'Vencida' && sale.status_pagamento !== 'Pago' ? (
                      <div className="bg-orange-50 p-2 rounded-xl text-orange-600 flex items-center gap-2 border border-orange-200">
                         <p className="text-[9px] font-black uppercase tracking-widest italic flex items-center gap-1">
@@ -216,7 +216,7 @@ export const OpenInvoices = ({ sales, marcarFaturaVencida, atualizarInfosFatura,
                     <span className="text-slate-300 text-xs font-black italic">No Prazo</span>
                   )}
                 </td>
-                <td className="px-10 py-6 text-right">
+                <td className="px-5 py-6 text-right">
                   <div className="flex items-center justify-end gap-3">
                       <button 
                         onClick={() => handleUpdateStatus(sale)}

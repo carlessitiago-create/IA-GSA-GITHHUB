@@ -18,18 +18,26 @@ export const useSales = (profile: any, realIsAdm: boolean, realIsGestor: boolean
     if (realIsAdm) {
       qSales = query(collection(db, 'sales'), orderBy('timestamp', 'desc'));
     } else if (realIsGestor && profile?.uid) {
-      qSales = query(collection(db, 'sales'), where('id_superior', '==', profile.uid), orderBy('timestamp', 'desc'));
+      qSales = query(collection(db, 'sales'), where('id_superior', '==', profile.uid));
     } else if (profile?.nivel === 'VENDEDOR' && profile?.uid) {
-      qSales = query(collection(db, 'sales'), where('vendedor_id', '==', profile.uid), orderBy('timestamp', 'desc'));
+      qSales = query(collection(db, 'sales'), where('vendedor_id', '==', profile.uid));
     } else if (profile?.uid) {
-      qSales = query(collection(db, 'sales'), where('cliente_id', '==', profile.uid), orderBy('timestamp', 'desc'));
+      qSales = query(collection(db, 'sales'), where('cliente_id', '==', profile.uid));
     } else {
       setLoading(false);
       return;
     }
 
     const unsubscribe = onSnapshot(qSales, (snapshot) => {
-      setSales(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SaleData)));
+      let items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SaleData));
+      if (!realIsAdm) {
+         items.sort((a,b) => {
+           const timeA = a.timestamp?.toMillis ? a.timestamp.toMillis() : 0;
+           const timeB = b.timestamp?.toMillis ? b.timestamp.toMillis() : 0;
+           return timeB - timeA;
+         });
+      }
+      setSales(items);
       setLoading(false);
     }, (error) => {
       setError('Erro ao carregar vendas.');

@@ -114,7 +114,7 @@ export function ClubePontosView() {
 
   if (loading) {
     return (
-      <div className="p-12 flex justify-center">
+      <div className="p-6 flex justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
       </div>
     );
@@ -123,7 +123,7 @@ export function ClubePontosView() {
   return (
     <div className="space-y-8 pb-20">
       {/* HEADER / SALDO */}
-      <section className="relative bg-[#0a0a2e] rounded-[2.5rem] sm:rounded-[3.5rem] p-8 sm:p-12 overflow-hidden shadow-2xl shadow-blue-900/20">
+      <section className="relative bg-[#0a0a2e] rounded-2xl sm:rounded-3xl p-8 sm:p-6 overflow-hidden shadow-2xl shadow-blue-900/20">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 to-transparent"></div>
         <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
           <div className="space-y-4 text-center md:text-left">
@@ -131,7 +131,7 @@ export function ClubePontosView() {
               <Star className="text-blue-400 size-4 animate-pulse" />
               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-100">Clube de Pontos GSA</span>
             </div>
-            <h2 className="text-3xl sm:text-5xl font-black italic uppercase text-white tracking-tighter leading-none">
+            <h2 className="text-3xl sm:text-3xl font-black italic uppercase text-white tracking-tighter leading-none">
               Seu Saldo de <br/>
               <span className="text-blue-400">Vantagens.</span>
             </h2>
@@ -140,12 +140,12 @@ export function ClubePontosView() {
             </p>
           </div>
 
-          <div className="bg-white/10 backdrop-blur-xl border border-white/10 p-8 sm:p-10 rounded-[2.5rem] flex flex-col items-center justify-center min-w-[240px] shadow-2xl">
+          <div className="bg-white/10 backdrop-blur-xl border border-white/10 p-8 sm:p-6 rounded-2xl flex flex-col items-center justify-center min-w-[240px] shadow-2xl">
             <div className="size-16 bg-blue-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-blue-600/40">
               <Trophy className="text-white size-8" />
             </div>
             <p className="text-[10px] font-black text-blue-300 uppercase tracking-[0.3em] mb-1">Pontos Disponíveis</p>
-            <p className="text-5xl font-black text-white tracking-tighter italic">
+            <p className="text-3xl font-black text-white tracking-tighter italic">
               {profile?.saldo_pontos || 0}
             </p>
             <div className="mt-4 flex items-center gap-2 text-emerald-400">
@@ -194,9 +194,9 @@ export function ClubePontosView() {
                 .map((reward, idx) => (
                 <div 
                   key={reward.id}
-                  className={`group bg-white rounded-[2.5rem] p-5 border border-slate-100 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 flex flex-col ${reward.status === 'esgotado' ? 'opacity-75 grayscale-[0.5]' : ''}`}
+                  className={`group bg-white rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 flex flex-col ${reward.status === 'esgotado' ? 'opacity-75 grayscale-[0.5]' : ''}`}
                 >
-                  <div className="relative aspect-square rounded-[2rem] overflow-hidden mb-6 shadow-inner bg-slate-50">
+                  <div className="relative aspect-square rounded-2xl overflow-hidden mb-6 shadow-inner bg-slate-50">
                     <img 
                       src={transformImageUrl(reward.foto || 'https://picsum.photos/seed/gift/400/400')} 
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
@@ -267,7 +267,7 @@ export function ClubePontosView() {
             </div>
 
             {/* REGRAS DE PONTUAÇÃO */}
-            <section className="bg-white rounded-[3rem] p-8 sm:p-12 border border-slate-100 shadow-sm">
+            <section className="bg-white rounded-3xl p-8 sm:p-6 border border-slate-100 shadow-sm">
               <div className="flex flex-col md:flex-row items-center justify-between gap-8 mb-12">
                 <div className="space-y-2 text-center md:text-left">
                   <h3 className="text-2xl font-black italic uppercase text-[#0a0a2e] tracking-tighter">Como Acumular Pontos?</h3>
@@ -288,7 +288,7 @@ export function ClubePontosView() {
                   { icon: Zap, label: 'Antecipar Fatura', points: rules?.pagamento_antecipado || 50, color: 'amber' },
                   { icon: ShoppingBag, label: 'Contratar Serviço', points: 'Variável', color: 'indigo' }
                 ].map((item, i) => (
-                  <div key={i} className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 hover:border-blue-200 transition-all group text-center">
+                  <div key={i} className="p-8 bg-slate-50 rounded-2xl border border-slate-100 hover:border-blue-200 transition-all group text-center">
                     <div className={`size-14 mx-auto rounded-2xl bg-white flex items-center justify-center mb-6 shadow-sm group-hover:scale-110 transition-transform`}>
                       <item.icon className={`text-${item.color}-500`} size={24} />
                     </div>
@@ -307,7 +307,7 @@ export function ClubePontosView() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="bg-white rounded-[3rem] border border-slate-100 shadow-sm overflow-hidden"
+            className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden"
           >
             <div className="p-8 border-b border-slate-50 flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -372,7 +372,7 @@ export function ClubePontosView() {
       </AnimatePresence>
 
       {/* BANNER INFORMATIVO */}
-      <section className="bg-blue-600 rounded-[2.5rem] p-8 sm:p-12 text-white flex flex-col md:flex-row items-center justify-between gap-8 relative overflow-hidden">
+      <section className="bg-blue-600 rounded-2xl p-8 sm:p-6 text-white flex flex-col md:flex-row items-center justify-between gap-8 relative overflow-hidden">
         <div className="relative z-10 space-y-4 text-center md:text-left">
           <h3 className="text-2xl sm:text-3xl font-black italic uppercase tracking-tighter">Indique e Ganhe Mais!</h3>
           <p className="opacity-80 text-sm sm:text-base max-w-md font-medium">
@@ -388,7 +388,7 @@ export function ClubePontosView() {
         <div className="relative z-10 size-40 sm:size-56 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center border border-white/20">
           <Gift className="text-white size-20 sm:size-28" />
         </div>
-        <div className="absolute top-0 right-0 p-12 opacity-10">
+        <div className="absolute top-0 right-0 p-6 opacity-10">
           <Zap size={200} className="text-white" />
         </div>
       </section>

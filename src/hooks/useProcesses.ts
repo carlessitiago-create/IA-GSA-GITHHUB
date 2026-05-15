@@ -18,18 +18,26 @@ export const useProcesses = (profile: any, realIsAdm: boolean, realIsGestor: boo
     if (realIsAdm) {
       qProcesses = query(collection(db, 'order_processes'), orderBy('venda_id', 'desc'));
     } else if (realIsGestor && profile?.uid) {
-      qProcesses = query(collection(db, 'order_processes'), where('id_superior', '==', profile.uid), orderBy('venda_id', 'desc'));
+      qProcesses = query(collection(db, 'order_processes'), where('id_superior', '==', profile.uid));
     } else if (profile?.nivel === 'VENDEDOR' && profile?.uid) {
-      qProcesses = query(collection(db, 'order_processes'), where('vendedor_id', '==', profile.uid), orderBy('venda_id', 'desc'));
+      qProcesses = query(collection(db, 'order_processes'), where('vendedor_id', '==', profile.uid));
     } else if (profile?.uid) {
-      qProcesses = query(collection(db, 'order_processes'), where('cliente_id', '==', profile.uid), orderBy('venda_id', 'desc'));
+      qProcesses = query(collection(db, 'order_processes'), where('cliente_id', '==', profile.uid));
     } else {
       setLoading(false);
       return;
     }
 
     const unsubscribe = onSnapshot(qProcesses, (snapshot) => {
-      setProcesses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as OrderProcess)));
+      let items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as OrderProcess));
+      if (!realIsAdm) {
+        items.sort((a, b) => {
+           const vA = a.venda_id || 0;
+           const vB = b.venda_id || 0;
+           return (vB as number) - (vA as number);
+        });
+      }
+      setProcesses(items);
       setLoading(false);
     }, (error) => {
       setError('Erro ao carregar processos.');

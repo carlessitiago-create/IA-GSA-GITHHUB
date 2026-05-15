@@ -170,7 +170,7 @@ export const ProcessModelsManager: React.FC = () => {
               {filteredModelos.map((modelo) => (
                 <div 
                   key={modelo.id}
-                  className="bg-white dark:bg-slate-900 p-5 sm:p-6 md:p-8 rounded-[2rem] sm:rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-xl transition-all duration-500 group relative overflow-hidden"
+                  className="bg-white dark:bg-slate-900 p-5 sm:p-6 md:p-8 rounded-2xl sm:rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-xl transition-all duration-500 group relative overflow-hidden"
                 >
                   <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:rotate-12 transition-transform duration-1000 pointer-events-none">
                     <Settings2 size={120} />

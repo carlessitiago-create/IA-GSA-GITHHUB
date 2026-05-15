@@ -20,7 +20,6 @@ import {
   ChevronUp,
   Activity,
   Flame,
-  Search,
   ArrowUpRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -198,13 +197,13 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({ proces
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-[2.5rem] bg-slate-900 border border-slate-800 shadow-2xl p-8 sm:p-10"
+        className="relative overflow-hidden rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl p-8 sm:p-6"
       >
         {/* Background Gradients */}
         <div className="absolute top-0 right-0 -mt-20 -mr-20 size-96 bg-blue-600/30 blur-[100px] rounded-full pointer-events-none"></div>
         <div className="absolute bottom-0 left-0 -mb-20 -ml-20 size-80 bg-indigo-600/20 blur-[120px] rounded-full pointer-events-none"></div>
 
-        <div className="relative z-10 flex flex-col lg:flex-row gap-10 items-center justify-between">
+        <div className="relative z-10 flex flex-col lg:flex-row gap-6 items-center justify-between">
           
           {/* Rating Section */}
           <div className="flex items-center gap-6 w-full lg:w-auto">
@@ -232,7 +231,7 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({ proces
 
           {/* Wallet Balance Section */}
           <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-6 w-full lg:w-auto flex flex-col gap-4">
-            <div className="flex justify-between items-start gap-12">
+            <div className="flex justify-between items-start gap-6">
               <div>
                 <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5 mb-1">
                   <WalletIcon size={12} /> Saldo de Alavancagem
@@ -333,7 +332,7 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({ proces
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5, ease: "easeOut" }}
-          className="relative bg-gradient-to-br from-[#0B0F19] to-[#020617] rounded-[3rem] border border-rose-900/50 p-8 sm:p-12 shadow-[0_20px_50px_rgba(225,29,72,0.15)] overflow-hidden group"
+          className="relative bg-gradient-to-br from-[#0B0F19] to-[#020617] rounded-3xl border border-rose-900/50 p-8 sm:p-6 shadow-[0_20px_50px_rgba(225,29,72,0.15)] overflow-hidden group"
         >
           {/* Animated Glow Elements */}
           <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-rose-600/20 blur-[100px] rounded-full pointer-events-none transform translate-x-1/3 -translate-y-1/3 group-hover:bg-rose-600/30 transition-all duration-1000"></div>
@@ -343,7 +342,7 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({ proces
             <Flame size={250} />
           </div>
           
-          <div className="relative z-10 flex flex-col lg:flex-row gap-12 items-center">
+          <div className="relative z-10 flex flex-col lg:flex-row gap-6 items-center">
             <div className="flex-1 space-y-5 text-center lg:text-left">
               <motion.div 
                 animate={{ y: [0, -5, 0] }}
@@ -352,7 +351,7 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({ proces
               >
                 <AlertCircle size={14} className="animate-pulse" /> Ação Requerida Imediata
               </motion.div>
-              <h2 className="text-4xl sm:text-5xl font-black text-white uppercase italic tracking-tighter leading-none">
+              <h2 className="text-2xl sm:text-3xl font-black text-white uppercase italic tracking-tighter leading-none">
                 Tire seu nome do <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-400 to-orange-500">Vermelho</span>
               </h2>
               <p className="text-slate-400 font-medium max-w-lg text-sm sm:text-base">
@@ -432,7 +431,7 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({ proces
             ))}
           </div>
         ) : (
-          <div className="bg-white border-2 border-dashed border-slate-200 rounded-[2.5rem] p-12 text-center space-y-4">
+          <div className="bg-white border-2 border-dashed border-slate-200 rounded-2xl p-6 text-center space-y-4">
             <div className="size-20 bg-slate-50 rounded-3xl flex items-center justify-center mx-auto text-slate-300">
               <Package size={40} />
             </div>
@@ -482,7 +481,7 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({ proces
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-white dark:bg-slate-900 w-full max-w-4xl max-h-[90vh] rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col relative border border-slate-100 dark:border-slate-800"
+              className="bg-white dark:bg-slate-900 w-full max-w-4xl max-h-[90vh] rounded-2xl overflow-hidden shadow-2xl flex flex-col relative border border-slate-100 dark:border-slate-800"
             >
               <button 
                 onClick={() => setShowSmartFicha(null)}
@@ -545,7 +544,7 @@ const ProcessCard = ({ process, onResolve }: { process: any, onResolve: () => vo
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md transition-all overflow-hidden group"
+      className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all overflow-hidden group"
     >
       <div className="p-6 sm:p-8 flex flex-col md:flex-row gap-6 items-start md:items-center">
         <div className="size-16 bg-slate-50 rounded-2xl flex items-center justify-center text-blue-600 shrink-0 group-hover:scale-110 transition-transform">
@@ -610,7 +609,7 @@ const LeadCard = ({ lead, onAccept, onReject }: { lead: any, onAccept: () => voi
   const statusInfo = getStatusInfo(lead.status);
 
   return (
-    <div className="bg-white rounded-[2rem] border border-slate-100 p-6 space-y-6 shadow-sm hover:border-indigo-200 transition-all">
+    <div className="bg-white rounded-2xl border border-slate-100 p-6 space-y-6 shadow-sm hover:border-indigo-200 transition-all">
       <div className="flex justify-between items-start">
         <div className={`px-4 py-1.5 rounded-xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest ${statusInfo.color}`}>
           <statusInfo.icon size={14} />

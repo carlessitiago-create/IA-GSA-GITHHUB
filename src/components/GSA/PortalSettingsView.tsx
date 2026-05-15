@@ -70,7 +70,7 @@ export const PortalSettingsView = () => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
       {/* Formulário de Edição */}
-      <div className="bg-white dark:bg-slate-900 p-4 md:p-8 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-800 space-y-6">
+      <div className="bg-white dark:bg-slate-900 p-4 md:p-8 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 space-y-6">
         <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase italic flex items-center gap-2">
           <Palette size={24} className="text-blue-600" /> Identidade do Portal
         </h3>
@@ -280,7 +280,7 @@ export const PortalSettingsView = () => {
       </div>
 
       {/* Mini Preview em Tempo Real */}
-      <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-[2rem] border-4 border-dashed border-slate-200 dark:border-slate-700 flex flex-col items-center justify-start overflow-hidden relative min-h-[600px]">
+      <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border-4 border-dashed border-slate-200 dark:border-slate-700 flex flex-col items-center justify-start overflow-hidden relative min-h-[600px]">
          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 bg-white/90 dark:bg-slate-900/90 backdrop-blur px-4 py-1.5 rounded-full shadow-sm border border-slate-100 dark:border-slate-800">
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
               <Eye size={12} className="text-blue-600" /> Visualização em Tempo Real

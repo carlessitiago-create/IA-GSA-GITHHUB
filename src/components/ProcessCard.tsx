@@ -565,7 +565,7 @@ export const ProcessCard: React.FC<ProcessCardProps> = ({ proc, pendencies, hist
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-white dark:bg-slate-900 w-full max-w-4xl max-h-[90vh] rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col relative border border-slate-100 dark:border-slate-800"
+              className="bg-white dark:bg-slate-900 w-full max-w-4xl max-h-[90vh] rounded-2xl overflow-hidden shadow-2xl flex flex-col relative border border-slate-100 dark:border-slate-800"
             >
               <button 
                 onClick={() => setShowSmartFicha(false)}

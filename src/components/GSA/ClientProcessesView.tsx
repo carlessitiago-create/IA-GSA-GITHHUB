@@ -69,7 +69,7 @@ export const ClientProcessesView: React.FC = () => {
   return (
     <div className="space-y-8">
       <div className="flex flex-col gap-2">
-        <h2 className="text-4xl font-black text-[#0a0a2e] uppercase tracking-tighter italic">Meus Processos</h2>
+        <h2 className="text-2xl font-black text-[#0a0a2e] uppercase tracking-tighter italic">Meus Processos</h2>
         <p className="text-slate-500 font-medium text-sm">Acompanhe em tempo real a evolução dos seus serviços contratados.</p>
       </div>
 
@@ -80,7 +80,7 @@ export const ClientProcessesView: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             onClick={() => setSelectedProcess(proc)}
-            className="bg-white rounded-[2rem] border border-slate-100 p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer group relative overflow-hidden"
+            className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer group relative overflow-hidden"
           >
             {/* Status Indicator Bar */}
             <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${
@@ -155,7 +155,7 @@ export const ClientProcessesView: React.FC = () => {
         ))}
 
         {processos.length === 0 && (
-          <div className="py-24 text-center bg-white rounded-[3rem] border border-dashed border-slate-200 shadow-sm">
+          <div className="py-24 text-center bg-white rounded-3xl border border-dashed border-slate-200 shadow-sm">
             <div className="size-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
               <FileText size={40} className="text-slate-300" />
             </div>
@@ -176,7 +176,7 @@ export const ClientProcessesView: React.FC = () => {
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="bg-white w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-[2rem] md:rounded-[3rem] shadow-2xl relative border border-slate-100"
+              className="bg-white w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl md:rounded-3xl shadow-2xl relative border border-slate-100"
             >
               <button 
                 onClick={() => setSelectedProcess(null)}
@@ -186,7 +186,7 @@ export const ClientProcessesView: React.FC = () => {
               </button>
 
               {(selectedProcess.status_atual as string) === 'Concluído' ? (
-                <div className="p-6 md:p-12 text-center space-y-6 md:space-y-8">
+                <div className="p-6 md:p-6 text-center space-y-6 md:space-y-8">
                   <div className="relative inline-block">
                     <div className="size-24 md:size-32 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto animate-bounce shadow-inner">
                       <Trophy className="size-12 md:size-16" />
@@ -197,19 +197,19 @@ export const ClientProcessesView: React.FC = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    <h2 className="text-3xl md:text-5xl font-black text-[#0a0a2e] uppercase tracking-tighter italic">Sucesso!</h2>
+                    <h2 className="text-3xl md:text-3xl font-black text-[#0a0a2e] uppercase tracking-tighter italic">Sucesso!</h2>
                     <p className="text-sm md:text-lg text-slate-500 font-medium leading-relaxed">
                       O serviço <span className="text-blue-600 font-black">{selectedProcess.servico_nome}</span> foi finalizado com excelência pela nossa equipe.
                     </p>
                   </div>
                   
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
-                    <div className="bg-slate-50 p-4 md:p-6 rounded-[1.5rem] md:rounded-[2rem] border border-slate-100 text-left">
+                    <div className="bg-slate-50 p-4 md:p-6 rounded-[1.5rem] md:rounded-2xl border border-slate-100 text-left">
                       <ShieldCheck className="text-emerald-600 mb-2 md:mb-3 size-6 md:size-7" />
                       <h4 className="font-black text-[#0a0a2e] uppercase text-[9px] md:text-[10px] tracking-widest">Garantia Ativa</h4>
                       <p className="text-slate-500 text-[8px] md:text-[9px] font-bold uppercase mt-1">12 Meses de Cobertura</p>
                     </div>
-                    <div className="bg-slate-50 p-4 md:p-6 rounded-[1.5rem] md:rounded-[2rem] border border-slate-100 text-left">
+                    <div className="bg-slate-50 p-4 md:p-6 rounded-[1.5rem] md:rounded-2xl border border-slate-100 text-left">
                       <Calendar className="text-blue-600 mb-2 md:mb-3 size-6 md:size-7" />
                       <h4 className="font-black text-[#0a0a2e] uppercase text-[9px] md:text-[10px] tracking-widest">Concluído em</h4>
                       <p className="text-slate-500 text-[8px] md:text-[9px] font-bold uppercase mt-1">{format(new Date(), "dd 'de' MMMM, yyyy", { locale: ptBR })}</p>
@@ -229,7 +229,7 @@ export const ClientProcessesView: React.FC = () => {
                   )}
                 </div>
               ) : (
-              <div className="p-6 md:p-12 space-y-8 md:space-y-10">
+              <div className="p-6 md:p-6 space-y-8 md:space-y-10">
                 <div className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-6">
                   <div className="size-16 md:size-20 bg-blue-50 text-blue-600 rounded-[1.2rem] md:rounded-[1.5rem] flex items-center justify-center shadow-inner shrink-0">
                     <Clock size={32} className="md:hidden" />
@@ -296,7 +296,7 @@ export const ClientProcessesView: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="bg-blue-50 p-5 md:p-6 rounded-[1.5rem] md:rounded-[2rem] border border-blue-100 flex items-start gap-3 md:gap-4">
+                <div className="bg-blue-50 p-5 md:p-6 rounded-[1.5rem] md:rounded-2xl border border-blue-100 flex items-start gap-3 md:gap-4">
                   <div className="size-9 md:size-10 bg-white rounded-lg md:rounded-xl flex items-center justify-center shadow-sm shrink-0">
                     <AlertCircle className="text-blue-600 size-[18px] md:size-5" />
                   </div>

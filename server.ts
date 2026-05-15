@@ -45,7 +45,11 @@ async function startServer() {
         res.json({ success: true });
     } catch (e: any) {
         console.error("Email error:", e);
-        res.status(500).json({ error: e.message || "Failed to send email" });
+        let errorMsg = e.message || "Failed to send email";
+        if (errorMsg.includes("535-5.7.8")) {
+            errorMsg = "Erro de Autenticação de E-mail (535-5.7.8): As credenciais (usuário/senha) foram recusadas. Se você estiver usando o Gmail, por favor, gere uma 'Senha de App' (App Password) nas configurações de segurança da sua conta Google e atualize a variável SMTP_PASS nas configurações do projeto.";
+        }
+        res.status(500).json({ error: errorMsg });
     }
   });
 

@@ -13,8 +13,8 @@ export const FinanceiroView = () => {
 
     return (
         <div className="responsive-container pb-20">
-            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 bg-white p-6 sm:p-8 md:p-10 rounded-[2rem] sm:rounded-[2.5rem] md:rounded-[3rem] border border-slate-100 shadow-sm relative overflow-hidden group">
-                <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none group-hover:rotate-12 transition-transform duration-1000">
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 bg-white p-6 sm:p-8 md:p-6 rounded-2xl sm:rounded-2xl md:rounded-3xl border border-slate-100 shadow-sm relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-6 opacity-5 pointer-events-none group-hover:rotate-12 transition-transform duration-1000">
                     <TrendingUp className="size-[140px] sm:size-[180px] text-[#0a0a2e]" />
                 </div>
 
@@ -24,7 +24,7 @@ export const FinanceiroView = () => {
                             <DollarSign size={24} className="md:size-7 text-white" />
                         </div>
                         <div>
-                            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-[#0a0a2e] uppercase tracking-tighter italic leading-none">
+                            <h1 className="text-3xl sm:text-2xl md:text-3xl font-black text-[#0a0a2e] uppercase tracking-tighter italic leading-none">
                                 Financeiro
                             </h1>
                             <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-1">GSA IA Financial Control v4.0</p>
@@ -64,7 +64,7 @@ export const FinanceiroView = () => {
                     </div>
                     <div>
                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Comprovantes Pendentes</p>
-                        <h3 className="text-3xl sm:text-4xl font-black text-[#0a0a2e] tracking-tighter italic">
+                        <h3 className="text-3xl sm:text-2xl font-black text-[#0a0a2e] tracking-tighter italic">
                             R$ {totalPending.toLocaleString('pt-BR')}
                         </h3>
                     </div>
@@ -84,7 +84,7 @@ export const FinanceiroView = () => {
                     </div>
                     <div>
                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Faturas em Aberto</p>
-                        <h3 className="text-3xl sm:text-4xl font-black text-[#0a0a2e] tracking-tighter italic">
+                        <h3 className="text-3xl sm:text-2xl font-black text-[#0a0a2e] tracking-tighter italic">
                             R$ {totalOpenInvoices.toLocaleString('pt-BR')}
                         </h3>
                     </div>
@@ -104,14 +104,14 @@ export const FinanceiroView = () => {
                     </div>
                     <div>
                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Faturas Vencidas</p>
-                        <h3 className="text-3xl sm:text-4xl font-black text-[#0a0a2e] tracking-tighter italic">
+                        <h3 className="text-3xl sm:text-2xl font-black text-[#0a0a2e] tracking-tighter italic">
                             R$ {overdueInvoices.toLocaleString('pt-BR')}
                         </h3>
                     </div>
                 </motion.div>
             </div>
 
-            <div className="grid grid-cols-1 gap-8 sm:gap-12">
+            <div className="grid grid-cols-1 gap-8 sm:gap-6">
                 <FinancialTransactions {...props} />
                 <OpenInvoices {...props} />
                 <RecentSales {...props} />

@@ -103,7 +103,7 @@ export const ConversionDashboardView: React.FC = () => {
     <div className="space-y-10 animate-in fade-in duration-700">
       
       {/* GLOWING HEADER */}
-      <div className="relative overflow-hidden bg-[#020617] border border-slate-800 rounded-[3rem] p-10 flex flex-col md:flex-row items-center justify-between gap-10 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+      <div className="relative overflow-hidden bg-[#020617] border border-slate-800 rounded-3xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-600/10 blur-[120px] rounded-full pointer-events-none transform translate-x-1/3 -translate-y-1/3"></div>
           
           <div className="relative z-10 flex-1">
@@ -111,7 +111,7 @@ export const ConversionDashboardView: React.FC = () => {
                   <Activity className="text-indigo-400" size={16} />
                   <span className="text-[10px] font-black text-indigo-300 uppercase tracking-widest">Growth & CRO Analytics</span>
               </div>
-              <h1 className="text-4xl md:text-5xl font-black text-white uppercase italic tracking-tighter leading-none mb-4">
+              <h1 className="text-2xl md:text-3xl font-black text-white uppercase italic tracking-tighter leading-none mb-4">
                   Taxa de <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-500">Conversão</span>
               </h1>
               <p className="text-slate-400 font-medium max-w-md">
@@ -169,7 +169,7 @@ export const ConversionDashboardView: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Funil de Conversão */}
-        <div className="lg:col-span-2 bg-[#0B0F19] p-10 rounded-[3rem] border border-slate-800 shadow-xl relative overflow-hidden">
+        <div className="lg:col-span-2 bg-[#0B0F19] p-6 rounded-3xl border border-slate-800 shadow-xl relative overflow-hidden">
           <div className="absolute top-1/2 right-0 w-64 h-64 bg-indigo-600/5 blur-[80px] rounded-full pointer-events-none"></div>
           
           <div className="relative z-10 flex items-center justify-between mb-10">
@@ -212,7 +212,7 @@ export const ConversionDashboardView: React.FC = () => {
         </div>
 
         {/* Distribuição de Status */}
-        <div className="bg-[#0B0F19] p-10 rounded-[3rem] border border-slate-800 shadow-xl flex flex-col">
+        <div className="bg-[#0B0F19] p-6 rounded-3xl border border-slate-800 shadow-xl flex flex-col">
           <h4 className="text-[10px] font-black text-emerald-500 uppercase tracking-widest italic mb-1">Visão Geral</h4>
           <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter mb-8 flex items-center gap-2">
             Status Pipeline
@@ -259,8 +259,8 @@ export const ConversionDashboardView: React.FC = () => {
       </div>
 
       {/* Performance da Equipe */}
-      <div className="bg-[#0B0F19] rounded-[3rem] border border-slate-800 shadow-xl overflow-hidden">
-        <div className="p-8 sm:p-10 border-b border-slate-800/50 flex flex-col sm:flex-row items-center justify-between gap-6">
+      <div className="bg-[#0B0F19] rounded-3xl border border-slate-800 shadow-xl overflow-hidden">
+        <div className="p-8 sm:p-6 border-b border-slate-800/50 flex flex-col sm:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-4">
               <div className="size-14 bg-indigo-500/10 border border-indigo-500/20 rounded-[1.2rem] flex items-center justify-center text-indigo-400">
                 <Crosshair size={24} />
@@ -340,7 +340,7 @@ const MetricCard = ({ title, value, icon: Icon, trend, trendUp, color }: any) =>
   };
 
   return (
-    <div className={`p-8 rounded-[2rem] border transition-all ${getColors()} relative overflow-hidden bg-[#0B0F19]`}>
+    <div className={`p-8 rounded-2xl border transition-all ${getColors()} relative overflow-hidden bg-[#0B0F19]`}>
       <div className="absolute top-0 right-0 p-6 opacity-10 pointer-events-none">
         <Icon size={80} />
       </div>
@@ -356,7 +356,7 @@ const MetricCard = ({ title, value, icon: Icon, trend, trendUp, color }: any) =>
         </div>
         <div>
           <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">{title}</h3>
-          <p className="text-4xl font-black text-white italic tracking-tighter">{value}</p>
+          <p className="text-2xl font-black text-white italic tracking-tighter">{value}</p>
         </div>
       </div>
     </div>

@@ -228,7 +228,7 @@ export const PublicPortal = ({ previewConfig }: { previewConfig?: PublicPortalCo
               {/* HERO SECTION COM BUSCA */}
               <section className="relative bg-[#0a0a2e] pt-12 pb-24 px-4 overflow-hidden">
                 {/* Background Decorations */}
-                <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none">
+                <div className="absolute top-0 right-0 p-6 opacity-5 pointer-events-none">
                   <ShieldCheck size={400} className="text-white rotate-12" />
                 </div>
                 <div className="absolute -bottom-24 -left-24 size-96 bg-blue-600/20 rounded-full blur-[120px] pointer-events-none" />
@@ -242,7 +242,7 @@ export const PublicPortal = ({ previewConfig }: { previewConfig?: PublicPortalCo
                     >
                       <Zap size={14} className="animate-pulse" /> Portal de Vantagens GSA
                     </motion.div>
-                    <h1 className="text-4xl sm:text-6xl font-black text-white uppercase italic tracking-tighter leading-tight">
+                    <h1 className="text-2xl sm:text-6xl font-black text-white uppercase italic tracking-tighter leading-tight">
                       Acompanhe seu <span className="text-yellow-400">Processo</span> <br/>
                       e Ganhe <span className="text-blue-500">Prêmios!</span>
                     </h1>
@@ -256,9 +256,9 @@ export const PublicPortal = ({ previewConfig }: { previewConfig?: PublicPortalCo
                     initial={{ y: 30, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ delay: 0.2 }}
-                    className="bg-white p-2 rounded-[2.5rem] shadow-2xl max-w-xl mx-auto"
+                    className="bg-white p-2 rounded-2xl shadow-2xl max-w-xl mx-auto"
                   >
-                    <div className="bg-slate-50 rounded-[calc(2.5rem-8px)] p-6 sm:p-10 text-left">
+                    <div className="bg-slate-50 rounded-[calc(2.5rem-8px)] p-6 sm:p-6 text-left">
                       <form onSubmit={handleSearch} className="space-y-6">
                         <div className="space-y-4">
                           <div className="space-y-2">
@@ -328,7 +328,7 @@ export const PublicPortal = ({ previewConfig }: { previewConfig?: PublicPortalCo
               {/* VITRINE DE SERVIÇOS */}
               <section className="max-w-7xl mx-auto px-4 space-y-12">
                 <div className="text-center space-y-4">
-                  <h2 className="text-3xl sm:text-5xl font-black text-[#0a0a2e] uppercase italic tracking-tighter">Nossas <span className="text-blue-600">Soluções</span></h2>
+                  <h2 className="text-3xl sm:text-3xl font-black text-[#0a0a2e] uppercase italic tracking-tighter">Nossas <span className="text-blue-600">Soluções</span></h2>
                   <p className="text-slate-400 text-xs sm:text-base font-bold uppercase tracking-[0.2em]">Especialistas em Reabilitação de Crédito</p>
                 </div>
 
@@ -337,7 +337,7 @@ export const PublicPortal = ({ previewConfig }: { previewConfig?: PublicPortalCo
                     <motion.div 
                       key={s.id}
                       whileHover={{ y: -10 }}
-                      className="bg-white rounded-[2.5rem] p-8 shadow-xl border border-slate-100 flex flex-col h-full group"
+                      className="bg-white rounded-2xl p-8 shadow-xl border border-slate-100 flex flex-col h-full group"
                     >
                       <div className="size-14 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 mb-8 group-hover:bg-blue-600 group-hover:text-white transition-all duration-500">
                         <Zap size={28} />
@@ -359,7 +359,7 @@ export const PublicPortal = ({ previewConfig }: { previewConfig?: PublicPortalCo
 
               {/* CLUBE DE PRÊMIOS PREVIEW */}
               <section className="max-w-7xl mx-auto px-4">
-                <div className="bg-gradient-to-br from-yellow-400 to-orange-500 rounded-[3.5rem] p-8 sm:p-16 text-[#0a0a2e] relative overflow-hidden flex flex-col items-center text-center gap-12">
+                <div className="bg-gradient-to-br from-yellow-400 to-orange-500 rounded-3xl p-8 sm:p-16 text-[#0a0a2e] relative overflow-hidden flex flex-col items-center text-center gap-6">
                   <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
                     <Trophy size={300} />
                   </div>
@@ -368,7 +368,7 @@ export const PublicPortal = ({ previewConfig }: { previewConfig?: PublicPortalCo
                     <div className="inline-flex items-center gap-2 bg-white/30 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/10 mx-auto">
                       <Star size={14} fill="currentColor" /> Benefício Exclusivo
                     </div>
-                    <h2 className="text-4xl sm:text-6xl font-black uppercase italic tracking-tighter leading-none mx-auto">
+                    <h2 className="text-2xl sm:text-6xl font-black uppercase italic tracking-tighter leading-none mx-auto">
                       Elite de <br/> <span className="text-white">Prêmios!</span>
                     </h2>
                     <p className="text-[#0a0a2e]/70 text-sm sm:text-lg font-bold uppercase italic leading-relaxed mx-auto">
@@ -376,7 +376,7 @@ export const PublicPortal = ({ previewConfig }: { previewConfig?: PublicPortalCo
                     </p>
                     <button 
                       onClick={() => Swal.fire('Clube de Vantagens', 'Consulte o seu processo para ver seu saldo de pontos atual!', 'info')}
-                      className="px-12 py-5 bg-[#0a0a2e] text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-2xl hover:scale-105 transition-transform mx-auto"
+                      className="px-6 py-5 bg-[#0a0a2e] text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-2xl hover:scale-105 transition-transform mx-auto"
                     >
                       Descobrir Prêmios
                     </button>
@@ -400,13 +400,13 @@ export const PublicPortal = ({ previewConfig }: { previewConfig?: PublicPortalCo
 
               {/* NEWSLETTER VIP */}
               <section className="max-w-4xl mx-auto px-4">
-                <div className="bg-white rounded-[3rem] p-8 sm:p-16 shadow-2xl border border-slate-100 relative overflow-hidden text-center space-y-8">
+                <div className="bg-white rounded-3xl p-8 sm:p-16 shadow-2xl border border-slate-100 relative overflow-hidden text-center space-y-8">
                   <div className="absolute inset-0 bg-blue-50 opacity-30"></div>
                   <div className="relative z-10 space-y-6">
                     <div className="size-20 bg-blue-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-blue-600/30">
                       <Bell size={32} className="text-white" />
                     </div>
-                    <h2 className="text-3xl sm:text-5xl font-black text-[#0a0a2e] uppercase italic tracking-tighter">Seja o Primeiro a <span className="text-blue-600">Saber!</span></h2>
+                    <h2 className="text-3xl sm:text-3xl font-black text-[#0a0a2e] uppercase italic tracking-tighter">Seja o Primeiro a <span className="text-blue-600">Saber!</span></h2>
                     <p className="text-slate-500 text-sm sm:text-lg max-w-xl mx-auto italic font-medium">
                       Torne-se um VIP e receba estratégias de crédito, promoções exclusivas e bônus em primeira mão.
                     </p>
@@ -457,7 +457,7 @@ export const PublicPortal = ({ previewConfig }: { previewConfig?: PublicPortalCo
               className="space-y-12 pb-32"
             >
               {/* HEADER DO RESULTADO */}
-              <div className="bg-[#0a0a2e] rounded-[2rem] sm:rounded-[3rem] p-8 sm:p-12 text-white shadow-2xl relative overflow-hidden group border border-white/5">
+              <div className="bg-[#0a0a2e] rounded-2xl sm:rounded-3xl p-8 sm:p-6 text-white shadow-2xl relative overflow-hidden group border border-white/5">
                 <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:rotate-12 transition-transform duration-700">
                   <Star size={200} fill="currentColor" />
                 </div>
@@ -467,7 +467,7 @@ export const PublicPortal = ({ previewConfig }: { previewConfig?: PublicPortalCo
                     <Trophy className="size-10 sm:size-14 text-blue-900" />
                   </div>
                   <div className="text-center sm:text-left space-y-2">
-                    <h1 className="text-3xl sm:text-5xl font-black uppercase italic tracking-tighter leading-none">
+                    <h1 className="text-3xl sm:text-3xl font-black uppercase italic tracking-tighter leading-none">
                       {processo ? `Olá, ${processo.cliente_nome?.split(' ')[0]}!` : 'Área do Cliente'}
                     </h1>
                     <p className="text-blue-200 text-sm sm:text-base font-medium max-w-md opacity-80">
@@ -492,7 +492,7 @@ export const PublicPortal = ({ previewConfig }: { previewConfig?: PublicPortalCo
 
               {/* STATUS DO PROCESSO (Se existir) */}
               {processo && processo.dias_atraso <= 10 && (
-                <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-xl relative overflow-hidden group">
+                <div className="bg-white rounded-2xl p-8 border border-slate-100 shadow-xl relative overflow-hidden group">
                   <div className="flex justify-between items-start mb-8">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
@@ -546,7 +546,7 @@ export const PublicPortal = ({ previewConfig }: { previewConfig?: PublicPortalCo
 
               {/* AVISO JURÍDICO (Se em atraso) */}
               {processo?.dias_atraso > 10 && (
-                <div className="bg-rose-600 rounded-[2.5rem] p-8 text-white shadow-2xl border-4 border-rose-500 animate-pulse-slow">
+                <div className="bg-rose-600 rounded-2xl p-8 text-white shadow-2xl border-4 border-rose-500 animate-pulse-slow">
                    <div className="flex items-center gap-4 mb-6">
                     <div className="size-16 bg-white/20 rounded-3xl flex items-center justify-center">
                       <AlertOctagon size={40} />
@@ -570,8 +570,8 @@ export const PublicPortal = ({ previewConfig }: { previewConfig?: PublicPortalCo
               )}
 
               {/* HUB INDIQUE E GANHE (POLISHED) */}
-              <div className="bg-gradient-to-br from-blue-600 to-indigo-900 rounded-[3rem] p-1 scale-100 sm:scale-105 shadow-2xl">
-                <div className="bg-[#0a0a2e] rounded-[calc(3rem-4px)] p-8 sm:p-12 text-white relative overflow-hidden h-full">
+              <div className="bg-gradient-to-br from-blue-600 to-indigo-900 rounded-3xl p-1 scale-100 sm:scale-105 shadow-2xl">
+                <div className="bg-[#0a0a2e] rounded-[calc(3rem-4px)] p-8 sm:p-6 text-white relative overflow-hidden h-full">
                   <div className="absolute top-0 right-0 p-8 opacity-5">
                     <Share2 size={240} />
                   </div>
@@ -581,7 +581,7 @@ export const PublicPortal = ({ previewConfig }: { previewConfig?: PublicPortalCo
                       <div className="size-16 bg-blue-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-blue-600/30">
                         <Gift size={32} className="text-white" />
                       </div>
-                      <h2 className="text-3xl sm:text-5xl font-black uppercase italic tracking-tighter leading-none">
+                      <h2 className="text-3xl sm:text-3xl font-black uppercase italic tracking-tighter leading-none">
                         COMPARTILHAR <span className="text-blue-500">LINK</span>
                       </h2>
                       <p className="text-blue-200 text-sm sm:text-lg max-w-md mx-auto opacity-80 mt-4 leading-relaxed font-semibold uppercase italic">
@@ -589,7 +589,7 @@ export const PublicPortal = ({ previewConfig }: { previewConfig?: PublicPortalCo
                       </p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center bg-white/5 p-8 rounded-[2rem] border border-white/10 backdrop-blur-md">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center bg-white/5 p-8 rounded-2xl border border-white/10 backdrop-blur-md">
                       <div className="space-y-4">
                         <button 
                           onClick={() => {
@@ -689,7 +689,7 @@ export const PublicPortal = ({ previewConfig }: { previewConfig?: PublicPortalCo
               </div>
 
               {/* VITRINE DE SERVIÇOS (SLIDER-LIKE OR GRID) */}
-              <div className="space-y-8 bg-slate-100 -mx-4 sm:-mx-8 p-8 sm:p-12 rounded-[3.5rem]">
+              <div className="space-y-8 bg-slate-100 -mx-4 sm:-mx-8 p-8 sm:p-6 rounded-3xl">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className="size-12 bg-[#0a0a2e] rounded-2xl flex items-center justify-center text-white shadow-xl shadow-blue-900/20">
@@ -728,14 +728,14 @@ export const PublicPortal = ({ previewConfig }: { previewConfig?: PublicPortalCo
               </div>
 
               {/* NEWSLETTER (NEWS) REGISTRATION */}
-              <div className="bg-white rounded-[3rem] p-8 sm:p-12 border border-slate-100 shadow-2xl relative overflow-hidden text-center space-y-8">
+              <div className="bg-white rounded-3xl p-8 sm:p-6 border border-slate-100 shadow-2xl relative overflow-hidden text-center space-y-8">
                 <div className="absolute inset-0 bg-blue-50 opacity-30"></div>
                 
                 <div className="relative z-10 space-y-6">
                   <div className="size-16 bg-blue-600 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-blue-500/20">
                     <Bell size={28} className="text-white" />
                   </div>
-                  <h3 className="text-3xl sm:text-4xl font-black text-[#0a0a2e] uppercase italic tracking-tighter">Receba Novidades Em Primeira Mão</h3>
+                  <h3 className="text-3xl sm:text-2xl font-black text-[#0a0a2e] uppercase italic tracking-tighter">Receba Novidades Em Primeira Mão</h3>
                   <p className="text-slate-500 text-sm sm:text-lg max-w-xl mx-auto italic">
                     Cadastre-se na nossa lista VIP para receber promoções, bônus extras e novas soluções GSA antes de todo mundo.
                   </p>

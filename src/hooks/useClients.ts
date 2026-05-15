@@ -17,14 +17,22 @@ export const useClients = (profile: any, realIsAdm: boolean) => {
     if (realIsAdm) {
       qClients = query(collection(db, 'clients'), orderBy('data_entrada', 'desc'));
     } else if (profile?.uid) {
-      qClients = query(collection(db, 'clients'), where('visibilidade_uids', 'array-contains', profile.uid), orderBy('data_entrada', 'desc'));
+      qClients = query(collection(db, 'clients'), where('visibilidade_uids', 'array-contains', profile.uid));
     } else {
       setLoading(false);
       return;
     }
 
     const unsubscribe = onSnapshot(qClients, (snapshot) => {
-      setClients(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      let items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      if (!realIsAdm) {
+         items.sort((a,b) => {
+           const timeA = a.data_entrada?.toMillis ? a.data_entrada.toMillis() : 0;
+           const timeB = b.data_entrada?.toMillis ? b.data_entrada.toMillis() : 0;
+           return timeB - timeA;
+         });
+      }
+      setClients(items);
       setLoading(false);
     }, (error) => {
       setError('Erro ao carregar clientes.');

@@ -33,7 +33,7 @@ export function Sidebar({ currentProfile, logout, onClose }: any) {
   );
 
   return (
-    <aside className="w-72 bg-[#050517] h-screen flex flex-col border-r border-white/5 z-50">
+    <aside className="w-full bg-[#050517] h-screen flex flex-col border-r border-white/5 z-50">
       <div className="p-6 md:p-8 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="bg-blue-600 p-2 rounded-lg shadow-sm">

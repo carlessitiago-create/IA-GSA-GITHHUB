@@ -72,7 +72,7 @@ export const AdminSaasSettings: React.FC = () => {
     }
   };
 
-  if (loading) return <div className="p-10 text-center text-slate-400">Carregando configurações...</div>;
+  if (loading) return <div className="p-6 text-center text-slate-400">Carregando configurações...</div>;
 
   return (
     <motion.div 
@@ -92,7 +92,7 @@ export const AdminSaasSettings: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Link Público do SaaS */}
-        <div className="md:col-span-2 bg-blue-600 p-8 rounded-[2.5rem] text-white shadow-lg shadow-blue-600/20 relative overflow-hidden">
+        <div className="md:col-span-2 bg-blue-600 p-8 rounded-2xl text-white shadow-lg shadow-blue-600/20 relative overflow-hidden">
           <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-4">
               <div className="size-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md">
@@ -134,7 +134,7 @@ export const AdminSaasSettings: React.FC = () => {
         </div>
 
         {/* Modo de Pagamento */}
-        <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 space-y-6">
+        <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 space-y-6">
           <div className="flex items-center gap-3 mb-2">
             <div className="size-8 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400">
               <Info size={18} />
@@ -331,7 +331,7 @@ export const AdminSaasSettings: React.FC = () => {
         </div>
 
         {/* Configurações Manuais */}
-        <div className={`bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 space-y-6 transition-opacity ${config?.modo_pagamento === 'AUTOMATICO' ? 'opacity-50 pointer-events-none' : ''}`}>
+        <div className={`bg-white p-8 rounded-2xl shadow-sm border border-slate-100 space-y-6 transition-opacity ${config?.modo_pagamento === 'AUTOMATICO' ? 'opacity-50 pointer-events-none' : ''}`}>
           <div className="flex items-center gap-3 mb-2">
             <div className="size-8 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400">
               <Link size={18} />
@@ -420,7 +420,7 @@ export const AdminSaasSettings: React.FC = () => {
           </div>
           <h3 className="font-black text-red-600 uppercase italic tracking-tight">Área de Risco: Limpeza de Sistema</h3>
         </div>
-        <div className="bg-red-50 p-6 rounded-[2rem] border border-red-100 flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="bg-red-50 p-6 rounded-2xl border border-red-100 flex flex-col md:flex-row items-center justify-between gap-6">
           <div>
             <h4 className="font-black text-red-900 uppercase">Hard Reset</h4>
             <p className="text-xs text-red-700/80 mt-1 max-w-md">
@@ -446,7 +446,7 @@ export const AdminSaasSettings: React.FC = () => {
         <button 
           onClick={handleSave}
           disabled={saving}
-          className={`flex items-center gap-3 px-10 py-5 rounded-2xl font-black uppercase text-xs tracking-widest transition-all shadow-lg ${success ? 'bg-emerald-500 text-white' : 'bg-[#0a0a2e] text-white hover:scale-105 active:scale-95'}`}
+          className={`flex items-center gap-3 px-5 py-5 rounded-2xl font-black uppercase text-xs tracking-widest transition-all shadow-lg ${success ? 'bg-emerald-500 text-white' : 'bg-[#0a0a2e] text-white hover:scale-105 active:scale-95'}`}
         >
           {saving ? 'Salvando...' : success ? (
             <>Configurações Salvas <CheckCircle size={18} /></>

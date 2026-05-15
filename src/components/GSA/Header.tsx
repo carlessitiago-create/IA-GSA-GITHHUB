@@ -49,7 +49,7 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="flex items-center gap-3">
         <button 
           onClick={onMenuToggle}
-          className="p-2 -ml-2 text-slate-500 hover:bg-slate-100 rounded-xl lg:hidden transition-colors"
+          className="p-2 -ml-2 text-slate-500 hover:bg-slate-100 rounded-xl transition-colors"
         >
           <Menu size={24} />
         </button>

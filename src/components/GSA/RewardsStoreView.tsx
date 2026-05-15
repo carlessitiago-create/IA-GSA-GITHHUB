@@ -116,7 +116,7 @@ export const RewardsStoreView = ({ currentProfile }: RewardsStoreProps) => {
   return (
     <div className="max-w-5xl mx-auto space-y-8">
       {/* Banner de Saldo */}
-      <div className="bg-gradient-to-br from-indigo-900 via-blue-900 to-slate-900 p-8 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden">
+      <div className="bg-gradient-to-br from-indigo-900 via-blue-900 to-slate-900 p-8 rounded-2xl text-white shadow-2xl relative overflow-hidden">
         <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-6">
           <div>
             <div className="flex items-center gap-3 mb-2">
@@ -129,7 +129,7 @@ export const RewardsStoreView = ({ currentProfile }: RewardsStoreProps) => {
           <div className="flex gap-4">
             <div className="bg-black/30 p-6 rounded-3xl border border-white/10 text-center min-w-[160px]">
               <p className="text-[10px] font-black uppercase tracking-widest text-blue-300 mb-1">Saldo Disponível</p>
-              <h3 className="text-4xl font-black text-yellow-400">{saldo} <span className="text-lg">PTS</span></h3>
+              <h3 className="text-2xl font-black text-yellow-400">{saldo} <span className="text-lg">PTS</span></h3>
             </div>
 
             {saldoPendente > 0 && (
@@ -137,7 +137,7 @@ export const RewardsStoreView = ({ currentProfile }: RewardsStoreProps) => {
                 <p className="text-[10px] font-black uppercase tracking-widest text-blue-200 mb-1 flex items-center justify-center gap-1">
                   <Lock className="size-2.5" /> Saldo Pendente
                 </p>
-                <h3 className="text-4xl font-black text-blue-200 opacity-80">{saldoPendente} <span className="text-lg">PTS</span></h3>
+                <h3 className="text-2xl font-black text-blue-200 opacity-80">{saldoPendente} <span className="text-lg">PTS</span></h3>
                 <p className="text-[8px] text-blue-300 mt-1 uppercase font-bold">Libera após pagamento</p>
               </div>
             )}
@@ -153,7 +153,7 @@ export const RewardsStoreView = ({ currentProfile }: RewardsStoreProps) => {
         </h3>
 
         {premios.length === 0 ? (
-          <div className="text-center p-12 bg-white rounded-[2rem] border border-slate-100 shadow-sm">
+          <div className="text-center p-6 bg-white rounded-2xl border border-slate-100 shadow-sm">
             <Star className="mx-auto text-slate-300 mb-4 size-10 sm:size-12" />
             <p className="text-slate-500 font-medium">Nenhum prémio disponível no momento.</p>
           </div>
@@ -164,7 +164,7 @@ export const RewardsStoreView = ({ currentProfile }: RewardsStoreProps) => {
               const progresso = Math.min(100, (saldo / premio.pontos) * 100);
 
               return (
-                <div key={premio.id} className="bg-white rounded-[2rem] p-4 border border-slate-100 shadow-sm hover:shadow-xl transition-all group flex flex-col">
+                <div key={premio.id} className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm hover:shadow-xl transition-all group flex flex-col">
                   {/* Foto Quadrada do Produto */}
                   <div className="aspect-square bg-slate-50 rounded-2xl overflow-hidden mb-4 relative">
                     {premio.foto ? (

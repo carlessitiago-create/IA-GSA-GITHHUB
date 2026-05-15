@@ -304,7 +304,7 @@ export const ProposalLandingPage: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-4xl md:text-7xl font-black uppercase italic tracking-tighter leading-none"
+            className="text-2xl md:text-7xl font-black uppercase italic tracking-tighter leading-none"
           >
             {proposal.servico_nome}
           </motion.h1>
@@ -333,7 +333,7 @@ export const ProposalLandingPage: React.FC = () => {
               <h2 className="text-xl font-black text-[#0a0a2e] uppercase italic tracking-tighter">Conheça o Serviço</h2>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
               <div className="relative aspect-video rounded-3xl overflow-hidden shadow-2xl bg-slate-900 group border-4 border-white">
                 {showcase.videoId ? (
                   <iframe
@@ -379,7 +379,7 @@ export const ProposalLandingPage: React.FC = () => {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.3 }}
-            className="bg-white rounded-[2.5rem] shadow-2xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-8 border border-slate-100"
+            className="bg-white rounded-2xl shadow-2xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-8 border border-slate-100"
           >
             <div className="flex items-center gap-6">
               <div className="size-20 rounded-2xl bg-slate-100 overflow-hidden border-4 border-white shadow-lg">
@@ -418,7 +418,7 @@ export const ProposalLandingPage: React.FC = () => {
       <section className="py-12 px-4">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16 space-y-4">
-            <h2 className="text-3xl md:text-5xl font-black text-[#0a0a2e] uppercase italic tracking-tighter">Escolha sua Condição</h2>
+            <h2 className="text-3xl md:text-3xl font-black text-[#0a0a2e] uppercase italic tracking-tighter">Escolha sua Condição</h2>
             <p className="text-slate-500 font-medium">Selecione a opção que melhor se adapta ao seu momento.</p>
           </div>
 
@@ -426,9 +426,9 @@ export const ProposalLandingPage: React.FC = () => {
             {/* Option 1: À Vista */}
             <motion.div 
               whileHover={{ y: -10 }}
-              className="bg-white rounded-[3rem] border-2 border-emerald-100 p-10 md:p-16 flex flex-col justify-between shadow-xl hover:shadow-2xl transition-all relative overflow-hidden group"
+              className="bg-white rounded-3xl border-2 border-emerald-100 p-6 md:p-16 flex flex-col justify-between shadow-xl hover:shadow-2xl transition-all relative overflow-hidden group"
             >
-              <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-700">
+              <div className="absolute top-0 right-0 p-6 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-700">
                 <Zap size={150} className="text-emerald-600" />
               </div>
               
@@ -446,7 +446,7 @@ export const ProposalLandingPage: React.FC = () => {
                 <div className="space-y-2">
                   <p className="text-slate-400 text-sm font-medium line-through">De R$ {((proposal.opcao_vista?.valor || 0) * 1.1).toLocaleString('pt-BR')}</p>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-5xl md:text-7xl font-black text-[#0a0a2e] italic">R$ {(proposal.opcao_vista?.valor || 0).toLocaleString('pt-BR')}</span>
+                    <span className="text-3xl md:text-7xl font-black text-[#0a0a2e] italic">R$ {(proposal.opcao_vista?.valor || 0).toLocaleString('pt-BR')}</span>
                   </div>
                   <div className="pt-1">
                     <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-50 rounded-full border border-emerald-100">
@@ -471,9 +471,9 @@ export const ProposalLandingPage: React.FC = () => {
             {/* Option 2: Parcelado */}
             <motion.div 
               whileHover={{ y: -10 }}
-              className="bg-[#0a0a2e] rounded-[3rem] p-10 md:p-16 flex flex-col justify-between shadow-xl hover:shadow-2xl transition-all relative overflow-hidden group text-white"
+              className="bg-[#0a0a2e] rounded-3xl p-6 md:p-16 flex flex-col justify-between shadow-xl hover:shadow-2xl transition-all relative overflow-hidden group text-white"
             >
-              <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-700">
+              <div className="absolute top-0 right-0 p-6 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-700">
                 <Calendar size={150} className="text-blue-600" />
               </div>
               
@@ -496,7 +496,7 @@ export const ProposalLandingPage: React.FC = () => {
                   <div className="space-y-1">
                     <p className="text-white/40 text-[10px] font-black uppercase tracking-widest">Mais {proposal.opcao_parcelado?.num_parcelas}x de</p>
                     <div className="flex items-baseline gap-2">
-                      <span className="text-5xl md:text-7xl font-black text-white italic">R$ {proposal.opcao_parcelado?.valor_parcela?.toLocaleString('pt-BR') || '0,00'}</span>
+                      <span className="text-3xl md:text-7xl font-black text-white italic">R$ {proposal.opcao_parcelado?.valor_parcela?.toLocaleString('pt-BR') || '0,00'}</span>
                     </div>
                   </div>
                   <div className="pt-2">
@@ -526,9 +526,9 @@ export const ProposalLandingPage: React.FC = () => {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="mt-16 p-8 md:p-12 bg-gradient-to-br from-blue-600 to-indigo-900 rounded-[3rem] text-white shadow-2xl relative overflow-hidden"
+              className="mt-16 p-8 md:p-6 bg-gradient-to-br from-blue-600 to-indigo-900 rounded-3xl text-white shadow-2xl relative overflow-hidden"
             >
-              <div className="absolute top-0 right-0 p-12 opacity-10 pointer-events-none">
+              <div className="absolute top-0 right-0 p-6 opacity-10 pointer-events-none">
                 <Star size={120} className="fill-white" />
               </div>
               <div className="relative z-10 space-y-8">
@@ -594,7 +594,7 @@ export const ProposalLandingPage: React.FC = () => {
             </div>
           </div>
           
-          <div className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-slate-100">
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
             <p className="text-slate-600 font-medium text-lg leading-relaxed italic">
               "Nossa missão é simplificar processos complexos através da inteligência artificial, garantindo que você tenha o melhor resultado no menor tempo possível."
             </p>

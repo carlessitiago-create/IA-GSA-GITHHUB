@@ -38,7 +38,7 @@ const ClientPointsCard = ({ saldoAtual, proximoPremio }: { saldoAtual: number, p
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-gradient-to-br from-indigo-900 to-blue-900 p-6 rounded-[2.5rem] text-white shadow-xl border border-white/10"
+      className="bg-gradient-to-br from-indigo-900 to-blue-900 p-6 rounded-2xl text-white shadow-xl border border-white/10"
     >
       <div className="flex justify-between items-start mb-4">
         <div>
@@ -82,7 +82,7 @@ const MyReferralsList = ({ referrals }: { referrals: any[] }) => {
   if (referrals.length === 0) return null;
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 border border-slate-100 dark:border-slate-800 shadow-xl space-y-6">
+    <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 border border-slate-100 dark:border-slate-800 shadow-xl space-y-6">
       <div className="flex items-center gap-3">
         <div className="size-12 bg-blue-400/10 rounded-2xl flex items-center justify-center">
           <Activity size={24} className="text-blue-500" />
@@ -282,12 +282,17 @@ export const TrackingView: React.FC<TrackingViewProps> = ({ saleId, onBack }) =>
     
     const q = query(
       collection(db, 'referrals'),
-      where('cliente_origem_id', '==', currentProfile.uid),
-      orderBy('timestamp', 'desc')
+      where('cliente_origem_id', '==', currentProfile.uid)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      setMyReferrals(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      let items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      items.sort((a,b) => {
+         const timeA = a.timestamp?.toMillis ? a.timestamp.toMillis() : 0;
+         const timeB = b.timestamp?.toMillis ? b.timestamp.toMillis() : 0;
+         return timeB - timeA;
+      });
+      setMyReferrals(items);
     }, (error) => {
       handleFirestoreError(error, OperationType.GET, 'referrals');
     });
@@ -326,7 +331,7 @@ export const TrackingView: React.FC<TrackingViewProps> = ({ saleId, onBack }) =>
     return (
       <div className="space-y-8 max-w-5xl mx-auto p-4 md:p-8 animate-fade-in">
         {/* Header de Boas-Vindas (Tapete Vermelho) */}
-        <div className="bg-white dark:bg-slate-900 rounded-[3rem] p-8 md:p-12 border border-slate-100 dark:border-slate-800 shadow-2xl text-center space-y-6 relative overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 md:p-6 border border-slate-100 dark:border-slate-800 shadow-2xl text-center space-y-6 relative overflow-hidden">
           <div className="absolute top-0 right-0 p-8 opacity-5">
             <Star className="size-[80px] sm:size-[120px]" />
           </div>
@@ -335,7 +340,7 @@ export const TrackingView: React.FC<TrackingViewProps> = ({ saleId, onBack }) =>
             <Trophy className="text-yellow-500 animate-pulse size-10 sm:size-12" />
           </div>
 
-          <h1 className="text-3xl md:text-4xl font-black text-slate-800 dark:text-white uppercase italic tracking-tighter">
+          <h1 className="text-3xl md:text-2xl font-black text-slate-800 dark:text-white uppercase italic tracking-tighter">
             Seja Bem-Vindo ao <span className="text-blue-600">Tapete Vermelho!</span>
           </h1>
           
@@ -364,7 +369,7 @@ export const TrackingView: React.FC<TrackingViewProps> = ({ saleId, onBack }) =>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Card de Indicação */}
-          <div className="bg-gradient-to-br from-indigo-600 to-blue-800 rounded-[2.5rem] p-8 text-white shadow-xl relative overflow-hidden">
+          <div className="bg-gradient-to-br from-indigo-600 to-blue-800 rounded-2xl p-8 text-white shadow-xl relative overflow-hidden">
             <div className="relative z-10 space-y-6">
               <div className="flex items-center gap-3">
                 <div className="size-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md">
@@ -401,7 +406,7 @@ export const TrackingView: React.FC<TrackingViewProps> = ({ saleId, onBack }) =>
           </div>
 
           {/* Card de Clube de Prêmios */}
-          <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 border border-slate-100 dark:border-slate-800 shadow-xl space-y-6">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 border border-slate-100 dark:border-slate-800 shadow-xl space-y-6">
             <div className="flex items-center gap-3">
               <div className="size-12 bg-yellow-400/10 rounded-2xl flex items-center justify-center">
                 <Gift size={24} className="text-yellow-500" />
@@ -447,8 +452,8 @@ export const TrackingView: React.FC<TrackingViewProps> = ({ saleId, onBack }) =>
         </button>
       )}
 
-      <div className="bg-[#0a0a2e] text-white p-8 rounded-[2.5rem] shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-12 opacity-5">
+      <div className="bg-[#0a0a2e] text-white p-8 rounded-2xl shadow-2xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-6 opacity-5">
           <ShieldCheck className="size-[140px] sm:size-[200px]" />
         </div>
         
@@ -610,7 +615,7 @@ export const TrackingView: React.FC<TrackingViewProps> = ({ saleId, onBack }) =>
 
                   {/* Oferta de Retenção (Clube de Benefícios) */}
                   {proc.status_financeiro === 'VENCIDO' && (
-                    <div className="mt-8 bg-gradient-to-br from-emerald-600 to-emerald-800 p-8 rounded-[2.5rem] shadow-2xl text-white relative overflow-hidden">
+                    <div className="mt-8 bg-gradient-to-br from-emerald-600 to-emerald-800 p-8 rounded-2xl shadow-2xl text-white relative overflow-hidden">
                       <div className="absolute top-0 right-0 p-4 opacity-10">
                         <Zap className="size-[80px] sm:size-[120px]" />
                       </div>
@@ -653,7 +658,7 @@ export const TrackingView: React.FC<TrackingViewProps> = ({ saleId, onBack }) =>
         </div>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 text-center space-y-4">
+      <div className="bg-white dark:bg-slate-900 p-8 rounded-2xl border border-slate-100 dark:border-slate-800 text-center space-y-4">
         <h3 className="text-lg font-black text-slate-800 dark:text-white uppercase tracking-tight">Precisa de Ajuda?</h3>
         <p className="text-sm text-slate-500 max-w-md mx-auto">
           Se você tiver alguma dúvida sobre o andamento do seu processo, entre em contato com nosso suporte ou acesse sua área exclusiva.

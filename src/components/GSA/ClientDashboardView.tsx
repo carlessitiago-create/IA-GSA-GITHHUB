@@ -54,7 +54,7 @@ export const ClientDashboardView: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="p-12 flex justify-center">
+      <div className="p-6 flex justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
       </div>
     );

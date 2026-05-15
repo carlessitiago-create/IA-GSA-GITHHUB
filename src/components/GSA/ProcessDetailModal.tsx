@@ -52,10 +52,10 @@ export const ProcessDetailModal: React.FC<ProcessDetailModalProps> = ({
           initial={{ opacity: 0, scale: 0.9, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, y: 20 }}
-          className="bg-white dark:bg-slate-900 w-full max-w-5xl max-h-[90vh] rounded-[2.5rem] md:rounded-[3.5rem] overflow-hidden shadow-2xl flex flex-col relative border border-slate-100 dark:border-slate-800"
+          className="bg-white dark:bg-slate-900 w-full max-w-5xl max-h-[90vh] rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl flex flex-col relative border border-slate-100 dark:border-slate-800"
         >
           {/* Header */}
-          <div className="p-6 md:p-10 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/30">
+          <div className="p-6 md:p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/30">
             <div className="flex items-center gap-4 md:gap-6">
               <div className="size-12 md:size-16 bg-blue-600 rounded-2xl md:rounded-[1.5rem] flex items-center justify-center text-white shadow-2xl shadow-blue-500/20">
                 <ShieldCheck size={32} />
@@ -73,10 +73,10 @@ export const ProcessDetailModal: React.FC<ProcessDetailModalProps> = ({
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-6 md:p-10 space-y-10 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto p-6 md:p-6 space-y-10 custom-scrollbar">
             {/* Informações do Cliente */}
             <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
-              <div className="md:col-span-8 bg-slate-50 dark:bg-slate-800/50 p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-inner">
+              <div className="md:col-span-8 bg-slate-50 dark:bg-slate-800/50 p-6 md:p-8 rounded-2xl md:rounded-2xl border border-slate-100 dark:border-slate-800 shadow-inner">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="size-8 bg-white dark:bg-slate-700 rounded-xl flex items-center justify-center shadow-sm">
                     <User className="text-blue-600" size={16} />
@@ -100,7 +100,7 @@ export const ProcessDetailModal: React.FC<ProcessDetailModalProps> = ({
                   )}
                 </div>
               </div>
-              <div className="md:col-span-4 bg-[#0a0a2e] p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] text-white flex flex-col justify-center shadow-2xl shadow-blue-900/20">
+              <div className="md:col-span-4 bg-[#0a0a2e] p-6 md:p-8 rounded-2xl md:rounded-2xl text-white flex flex-col justify-center shadow-2xl shadow-blue-900/20">
                 <span className="text-[9px] font-black text-blue-300 uppercase tracking-widest mb-2">Status Atual</span>
                 <h4 className="text-xl md:text-2xl font-black uppercase italic leading-none text-blue-400">{process.status_atual}</h4>
                 <div className="mt-8 pt-6 border-t border-white/10">
@@ -180,7 +180,7 @@ export const ProcessDetailModal: React.FC<ProcessDetailModalProps> = ({
                 <h4 className="text-lg font-black text-[#0a0a2e] dark:text-white uppercase tracking-tighter italic">Histórico de Atualizações</h4>
               </div>
 
-              <div className="bg-slate-50 dark:bg-slate-800/50 rounded-[2rem] border border-slate-100 dark:border-slate-800 p-6 md:p-8">
+              <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800 p-6 md:p-8">
                 <div className="space-y-6">
                   {myHistory.length > 0 ? (
                     myHistory.map((h, i) => (
@@ -218,10 +218,10 @@ export const ProcessDetailModal: React.FC<ProcessDetailModalProps> = ({
           </div>
 
           {/* Footer */}
-          <div className="p-6 md:p-10 bg-slate-50/50 dark:bg-slate-800/30 border-t border-slate-100 dark:border-slate-800 flex justify-end">
+          <div className="p-6 md:p-6 bg-slate-50/50 dark:bg-slate-800/30 border-t border-slate-100 dark:border-slate-800 flex justify-end">
             <button 
               onClick={onClose}
-              className="px-10 py-4 bg-[#0a0a2e] text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:scale-105 active:scale-95 shadow-2xl shadow-blue-900/30 transition-all"
+              className="px-5 py-4 bg-[#0a0a2e] text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:scale-105 active:scale-95 shadow-2xl shadow-blue-900/30 transition-all"
             >
               Fechar Detalhes
             </button>

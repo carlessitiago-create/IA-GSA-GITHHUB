@@ -45,13 +45,19 @@ export function listenToNotifications(userId: string, userRole: string, callback
     // Note: We use array-contains for visibilidade_uids
     q = query(
       collection(db, 'notifications'),
-      where('visibilidade_uids', 'array-contains', userId),
-      orderBy('timestamp', 'desc')
+      where('visibilidade_uids', 'array-contains', userId)
+      // Removed orderBy('timestamp', 'desc') to avoid needing composite index
     );
   }
 
   return onSnapshot(q, (snapshot) => {
-    callback(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AppNotification)));
+    const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AppNotification));
+    items.sort((a, b) => {
+      const timeA = a.timestamp?.toMillis ? a.timestamp.toMillis() : (a.timestamp ? a.timestamp : 0);
+      const timeB = b.timestamp?.toMillis ? b.timestamp.toMillis() : (b.timestamp ? b.timestamp : 0);
+      return timeB - timeA;
+    });
+    callback(items);
   }, (error) => {
     // If user is logged out, ignore permission errors as they are expected during cleanup
     if (error.code === 'permission-denied' && !auth.currentUser) {

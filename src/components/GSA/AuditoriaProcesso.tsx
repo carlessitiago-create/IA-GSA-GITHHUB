@@ -22,7 +22,7 @@ export const AuditoriaProcesso: React.FC<AuditoriaProcessoProps> = ({ processo, 
   
   if (!processo || !clienteData) {
     return (
-      <div className="p-12 text-center bg-white rounded-[3rem] border border-dashed border-slate-200">
+      <div className="p-6 text-center bg-white rounded-3xl border border-dashed border-slate-200">
         <Shield size={48} className="mx-auto text-slate-200 mb-4" />
         <h3 className="text-lg font-black text-slate-800 uppercase italic">Auditoria SLA</h3>
         <p className="text-slate-400 font-bold mt-2">Selecione um processo na Fila de Produção para iniciar a auditoria técnica.</p>

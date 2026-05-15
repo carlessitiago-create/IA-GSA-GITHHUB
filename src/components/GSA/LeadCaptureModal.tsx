@@ -37,7 +37,7 @@ export const LeadCaptureModal: React.FC<ModalProps> = ({ isOpen, onClose, onConf
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#0a0a2e]/90 backdrop-blur-md">
-      <div className="bg-[#161b33] w-full max-w-md rounded-[2.5rem] border border-blue-500/30 p-10 shadow-[0_0_60px_rgba(59,130,246,0.1)] relative overflow-hidden">
+      <div className="bg-[#161b33] w-full max-w-md rounded-2xl border border-blue-500/30 p-6 shadow-[0_0_60px_rgba(59,130,246,0.1)] relative overflow-hidden">
         <div className="absolute -top-24 -right-24 w-48 h-48 bg-blue-600/10 rounded-full blur-3xl"></div>
         
         <div className="relative z-10">

@@ -57,7 +57,7 @@ const EfficiencyReport: React.FC = () => {
     return () => unsubscribe();
   }, []);
 
-  if (loading) return <div className="p-10 text-center animate-pulse font-black uppercase text-[10px] tracking-widest text-slate-400">Gerando relatório de auditoria...</div>;
+  if (loading) return <div className="p-6 text-center animate-pulse font-black uppercase text-[10px] tracking-widest text-slate-400">Gerando relatório de auditoria...</div>;
 
   return (
     <div className="space-y-6">
@@ -74,7 +74,7 @@ const EfficiencyReport: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
         <table className="w-full text-left">
           <thead>
             <tr className="bg-slate-50 dark:bg-slate-800/50 text-[10px] font-black text-slate-400 uppercase tracking-widest">
@@ -112,11 +112,11 @@ const EfficiencyReport: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-emerald-50 p-6 rounded-[2rem] border border-emerald-100">
+          <div className="bg-emerald-50 p-6 rounded-2xl border border-emerald-100">
               <h4 className="text-[10px] font-black text-emerald-600 uppercase mb-2">Insight de Agilidade</h4>
               <p className="text-xs text-emerald-800 font-medium leading-relaxed">Vendedores com tempo médio abaixo de 4h aumentam a satisfação do cliente em 40% e aceleram o ciclo de pagamento.</p>
           </div>
-          <div className="bg-red-50 p-6 rounded-[2rem] border border-red-100">
+          <div className="bg-red-50 p-6 rounded-2xl border border-red-100">
               <h4 className="text-[10px] font-black text-red-600 uppercase mb-2">Alerta de Retenção</h4>
               <p className="text-xs text-red-800 font-medium leading-relaxed">Pendências ativas com mais de 48h sem interação indicam possível abandono de processo ou falha de comunicação do vendedor.</p>
           </div>

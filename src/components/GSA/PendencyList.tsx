@@ -29,22 +29,31 @@ export const PendencyList: React.FC = () => {
     if (nivel === 'ADM_MASTER' || nivel === 'ADM_ANALISTA' || nivel === 'ADM_GERENTE') {
       qManual = query(pendenciesRef, orderBy('criadaEm', 'desc'));
     } else if (nivel === 'GESTOR' && uid) {
-      qManual = query(pendenciesRef, where('id_superior', '==', uid), orderBy('criadaEm', 'desc'));
+      qManual = query(pendenciesRef, where('id_superior', '==', uid));
     } else if (nivel === 'VENDEDOR' && uid) {
-      qManual = query(pendenciesRef, where('vendedor_id', '==', uid), orderBy('criadaEm', 'desc'));
+      qManual = query(pendenciesRef, where('vendedor_id', '==', uid));
     } else if (nivel === 'CLIENTE' && uid) {
       qManual = query(
         pendenciesRef, 
-        where('status_pendencia', '==', 'ENVIADO_CLIENTE'),
-        where('cliente_id', '==', uid),
-        orderBy('criadaEm', 'desc')
+        where('cliente_id', '==', uid)
       );
     } else {
-      qManual = query(pendenciesRef, where('criado_por_id', '==', uid), orderBy('criadaEm', 'desc'));
+      qManual = query(pendenciesRef, where('criado_por_id', '==', uid));
     }
 
     const unsubManual = onSnapshot(qManual, (snapshot) => {
-      setPendencies(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PendingIssue)));
+      let items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PendingIssue));
+      if (nivel === 'CLIENTE' && uid) {
+         items = items.filter(p => p.status_pendencia === 'ENVIADO_CLIENTE');
+      }
+      if (nivel !== 'ADM_MASTER' && nivel !== 'ADM_ANALISTA' && nivel !== 'ADM_GERENTE') {
+         items.sort((a,b) => {
+           const timeA = a.criadaEm?.toMillis ? a.criadaEm.toMillis() : 0;
+           const timeB = b.criadaEm?.toMillis ? b.criadaEm.toMillis() : 0;
+           return timeB - timeA;
+         });
+      }
+      setPendencies(items);
     });
 
     // 2. Buscar Processos com Dados/Docs Faltantes
@@ -55,15 +64,18 @@ export const PendencyList: React.FC = () => {
     if (nivel === 'ADM_MASTER' || nivel === 'ADM_ANALISTA' || nivel === 'ADM_GERENTE') {
       qProc = query(processesRef, where('status_atual', 'in', pendingStatuses));
     } else if (nivel === 'GESTOR' && uid) {
-      qProc = query(processesRef, where('id_superior', '==', uid), where('status_atual', 'in', pendingStatuses));
+      qProc = query(processesRef, where('id_superior', '==', uid));
     } else if (nivel === 'VENDEDOR' && uid) {
-      qProc = query(processesRef, where('vendedor_id', '==', uid), where('status_atual', 'in', pendingStatuses));
+      qProc = query(processesRef, where('vendedor_id', '==', uid));
     } else if (nivel === 'CLIENTE' && uid) {
-      qProc = query(processesRef, where('cliente_id', '==', uid), where('status_atual', 'in', pendingStatuses));
+      qProc = query(processesRef, where('cliente_id', '==', uid));
     }
 
     const unsubProc = qProc ? onSnapshot(qProc, (snapshot) => {
-      const procs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as OrderProcess));
+      let procs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as OrderProcess));
+      if (nivel !== 'ADM_MASTER' && nivel !== 'ADM_ANALISTA' && nivel !== 'ADM_GERENTE') {
+        procs = procs.filter(p => pendingStatuses.includes(p.status_atual || ''));
+      }
       
       setProcessPendencies(procs);
       setLoading(false);
@@ -155,7 +167,7 @@ export const PendencyList: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center p-12">
+      <div className="flex justify-center p-6">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
       </div>
     );
@@ -171,7 +183,7 @@ export const PendencyList: React.FC = () => {
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-10 bg-white rounded-[3rem] border border-slate-100 shadow-sm flex items-center gap-8 group hover:shadow-2xl transition-all duration-500 relative overflow-hidden"
+          className="p-6 bg-white rounded-3xl border border-slate-100 shadow-sm flex items-center gap-8 group hover:shadow-2xl transition-all duration-500 relative overflow-hidden"
         >
           <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none group-hover:rotate-12 transition-transform duration-700">
             <AlertCircle size={100} className="text-rose-600" />
@@ -181,7 +193,7 @@ export const PendencyList: React.FC = () => {
           </div>
           <div className="relative z-10">
             <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em] mb-2">Pendências Ativas</p>
-            <h3 className="text-5xl font-black text-[#0a0a2e] italic tracking-tighter leading-none">{totalActive}</h3>
+            <h3 className="text-3xl font-black text-[#0a0a2e] italic tracking-tighter leading-none">{totalActive}</h3>
             <p className="text-[10px] font-black text-rose-400 uppercase tracking-widest mt-3">Ações imediatas requeridas</p>
           </div>
         </motion.div>
@@ -190,7 +202,7 @@ export const PendencyList: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="p-10 bg-white rounded-[3rem] border border-slate-100 shadow-sm flex items-center gap-8 group hover:shadow-2xl transition-all duration-500 relative overflow-hidden"
+          className="p-6 bg-white rounded-3xl border border-slate-100 shadow-sm flex items-center gap-8 group hover:shadow-2xl transition-all duration-500 relative overflow-hidden"
         >
           <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none group-hover:rotate-12 transition-transform duration-700">
             <CheckCircle2 size={100} className="text-emerald-600" />
@@ -200,7 +212,7 @@ export const PendencyList: React.FC = () => {
           </div>
           <div className="relative z-10">
             <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em] mb-2">Resolvidas</p>
-            <h3 className="text-5xl font-black text-[#0a0a2e] italic tracking-tighter leading-none">{resolvedPendencies.length}</h3>
+            <h3 className="text-3xl font-black text-[#0a0a2e] italic tracking-tighter leading-none">{resolvedPendencies.length}</h3>
             <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mt-3">Histórico de correções GSA</p>
           </div>
         </motion.div>
@@ -233,10 +245,10 @@ export const PendencyList: React.FC = () => {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: idx * 0.05 }}
-              className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 group relative overflow-hidden"
+              className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 group relative overflow-hidden"
             >
               <div className="absolute top-0 left-0 w-2.5 h-full bg-amber-500"></div>
-              <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-10">
+              <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
                 <div className="flex items-start gap-8">
                   <div className="size-20 rounded-[1.8rem] bg-amber-50 flex items-center justify-center shrink-0 text-amber-600 shadow-inner group-hover:rotate-12 transition-transform duration-500">
                     <ClipboardList size={36} />
@@ -276,7 +288,7 @@ export const PendencyList: React.FC = () => {
                 <div className="flex flex-col sm:flex-row xl:flex-col gap-4 min-w-[280px]">
                   <button 
                     onClick={() => setShowSmartFicha(proc.id!)}
-                    className="flex-1 flex items-center justify-center gap-4 bg-amber-500 hover:bg-amber-600 text-white px-10 py-5 rounded-[1.8rem] font-black uppercase text-[11px] tracking-[0.2em] transition-all shadow-2xl shadow-amber-600/20 hover:scale-105 active:scale-95"
+                    className="flex-1 flex items-center justify-center gap-4 bg-amber-500 hover:bg-amber-600 text-white px-5 py-5 rounded-[1.8rem] font-black uppercase text-[11px] tracking-[0.2em] transition-all shadow-2xl shadow-amber-600/20 hover:scale-105 active:scale-95"
                   >
                     Resolver via SmartFicha <ArrowRight size={18} />
                   </button>
@@ -292,10 +304,10 @@ export const PendencyList: React.FC = () => {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: idx * 0.05 }}
-              className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 group relative overflow-hidden"
+              className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 group relative overflow-hidden"
             >
               <div className="absolute top-0 left-0 w-2.5 h-full bg-rose-500"></div>
-              <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-10">
+              <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
                 <div className="flex items-start gap-8">
                   <div className="size-20 rounded-[1.8rem] bg-rose-50 flex items-center justify-center shrink-0 text-rose-600 shadow-inner group-hover:rotate-12 transition-transform duration-500">
                     <AlertCircle size={36} />
@@ -341,7 +353,7 @@ export const PendencyList: React.FC = () => {
                   {p.status_pendencia === 'AGUARDANDO_GESTOR' && (profile?.nivel === 'GESTOR' || profile?.nivel.startsWith('ADM')) && (
                     <button 
                       onClick={() => handleApprove(p.id!)}
-                      className="flex-1 flex items-center justify-center gap-4 bg-emerald-600 hover:bg-emerald-700 text-white px-10 py-5 rounded-[1.8rem] font-black uppercase text-[11px] tracking-[0.2em] transition-all shadow-2xl shadow-emerald-600/20 hover:scale-105 active:scale-95"
+                      className="flex-1 flex items-center justify-center gap-4 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-5 rounded-[1.8rem] font-black uppercase text-[11px] tracking-[0.2em] transition-all shadow-2xl shadow-emerald-600/20 hover:scale-105 active:scale-95"
                     >
                       Aprovar e Enviar <ArrowRight size={18} />
                     </button>
@@ -350,7 +362,7 @@ export const PendencyList: React.FC = () => {
                   {p.status_pendencia === 'ENVIADO_CLIENTE' && (
                     <button 
                       onClick={() => handleResolve(p.id!, p.venda_id, p.processo_id)}
-                      className="flex-1 flex items-center justify-center gap-4 bg-[#0a0a2e] hover:bg-slate-800 text-white px-10 py-5 rounded-[1.8rem] font-black uppercase text-[11px] tracking-[0.2em] transition-all shadow-2xl shadow-blue-900/20 hover:scale-105 active:scale-95"
+                      className="flex-1 flex items-center justify-center gap-4 bg-[#0a0a2e] hover:bg-slate-800 text-white px-5 py-5 rounded-[1.8rem] font-black uppercase text-[11px] tracking-[0.2em] transition-all shadow-2xl shadow-blue-900/20 hover:scale-105 active:scale-95"
                     >
                       Resolver Agora <ArrowRight size={18} />
                     </button>
@@ -375,7 +387,7 @@ export const PendencyList: React.FC = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: idx * 0.05 }}
-                className="bg-slate-50/50 rounded-[2.5rem] p-8 border border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-6 group hover:bg-white hover:shadow-xl transition-all duration-500"
+                className="bg-slate-50/50 rounded-2xl p-8 border border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-6 group hover:bg-white hover:shadow-xl transition-all duration-500"
               >
                 <div className="flex items-center gap-6">
                   <div className="size-14 rounded-2xl bg-emerald-100 flex items-center justify-center text-emerald-600 shrink-0 shadow-inner">
@@ -405,7 +417,7 @@ export const PendencyList: React.FC = () => {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-white dark:bg-slate-900 w-full max-w-4xl max-h-[90vh] rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col relative border border-slate-100 dark:border-slate-800"
+              className="bg-white dark:bg-slate-900 w-full max-w-4xl max-h-[90vh] rounded-2xl overflow-hidden shadow-2xl flex flex-col relative border border-slate-100 dark:border-slate-800"
             >
               <button 
                 onClick={() => setShowSmartFicha(null)}

@@ -162,7 +162,7 @@ export const TabelaCustasView: React.FC = () => {
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-[#0a0a2e] p-8 sm:p-12 rounded-[2.5rem] sm:rounded-[3.5rem] text-white relative overflow-hidden shadow-2xl"
+        className="bg-[#0a0a2e] p-8 sm:p-6 rounded-2xl sm:rounded-3xl text-white relative overflow-hidden shadow-2xl"
       >
         <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-8">
           <div className="space-y-4 text-center md:text-left">
@@ -170,7 +170,7 @@ export const TabelaCustasView: React.FC = () => {
               <DollarSign className="text-blue-400 size-4" />
               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-100">Gestão de Margens e Custas</span>
             </div>
-            <h2 className="text-3xl sm:text-5xl font-black italic uppercase tracking-tighter leading-none">
+            <h2 className="text-3xl sm:text-3xl font-black italic uppercase tracking-tighter leading-none">
               Tabela de <br/>
               <span className="text-blue-400">Custas.</span>
             </h2>
@@ -240,7 +240,7 @@ export const TabelaCustasView: React.FC = () => {
       </div>
 
       {/* TABELA DE CUSTAS */}
-      <div className="bg-white rounded-[3rem] border border-slate-100 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
         <div className="p-8 border-b border-slate-50 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="size-10 bg-blue-50 rounded-xl flex items-center justify-center">

@@ -186,12 +186,12 @@ export function ConsultaPublicaView() {
           <div className="size-16 bg-[#0a0a2e] rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-blue-900/20">
             <Search size={28} className="text-white" />
           </div>
-          <h1 className="text-4xl font-black text-[#0a0a2e] uppercase italic tracking-tighter leading-none">Acompanhar Processo</h1>
+          <h1 className="text-2xl font-black text-[#0a0a2e] uppercase italic tracking-tighter leading-none">Acompanhar Processo</h1>
           <p className="text-slate-400 text-xs font-bold uppercase tracking-widest leading-relaxed">Digite os dados para acesso imediato ao status do cliente.</p>
         </div>
 
-        <form onSubmit={handleSearch} className="bg-white p-2 rounded-[2.5rem] shadow-2xl border border-slate-100">
-          <div className="bg-slate-50 rounded-[calc(2.5rem-8px)] p-6 sm:p-10 grid grid-cols-1 md:grid-cols-2 gap-6">
+        <form onSubmit={handleSearch} className="bg-white p-2 rounded-2xl shadow-2xl border border-slate-100">
+          <div className="bg-slate-50 rounded-[calc(2.5rem-8px)] p-6 sm:p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="text-[10px] font-black uppercase text-slate-400 ml-4 tracking-widest flex items-center gap-2">
                 <User size={12} className="text-blue-600" /> Documento ou Protocolo
@@ -248,7 +248,7 @@ export function ConsultaPublicaView() {
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-white p-10 rounded-[3rem] border-2 border-amber-100 text-center space-y-4 shadow-xl max-w-2xl mx-auto"
+            className="bg-white p-6 rounded-3xl border-2 border-amber-100 text-center space-y-4 shadow-xl max-w-2xl mx-auto"
           >
             <div className="size-20 bg-amber-50 rounded-full flex items-center justify-center mx-auto text-amber-500 mb-2">
               <AlertCircle size={40} />
@@ -269,12 +269,12 @@ export function ConsultaPublicaView() {
             {results.map((processo) => (
               <div key={processo.id} className="space-y-16">
                 {/* CARD DE RESULTADO PRINCIPAL */}
-                <div className="bg-[#0a0a2e] rounded-[3rem] p-8 sm:p-12 text-white shadow-2xl relative overflow-hidden border border-white/10 group">
+                <div className="bg-[#0a0a2e] rounded-3xl p-8 sm:p-6 text-white shadow-2xl relative overflow-hidden border border-white/10 group">
                    <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:rotate-12 transition-transform duration-700">
                     <Star size={200} fill="currentColor" />
                   </div>
                   
-                  <div className="relative z-10 flex flex-col md:flex-row items-center gap-10">
+                  <div className="relative z-10 flex flex-col md:flex-row items-center gap-6">
                     <div className="size-24 sm:size-32 bg-yellow-400 rounded-full flex items-center justify-center shadow-2xl shadow-yellow-400/30">
                       <Trophy className="size-12 sm:size-16 text-blue-900" />
                     </div>
@@ -282,7 +282,7 @@ export function ConsultaPublicaView() {
                       <div className="flex items-center justify-center md:justify-start gap-2 mb-2">
                         <span className="text-[10px] font-black bg-blue-600 px-3 py-1 rounded-full uppercase tracking-widest">Protocolo: {processo.protocolo || processo.id}</span>
                       </div>
-                      <h2 className="text-4xl sm:text-6xl font-black uppercase italic tracking-tighter leading-none">{processo.cliente_nome}</h2>
+                      <h2 className="text-2xl sm:text-6xl font-black uppercase italic tracking-tighter leading-none">{processo.cliente_nome}</h2>
                       <p className="text-blue-400 text-lg font-black uppercase italic tracking-widest">{processo.servico_nome}</p>
                     </div>
                     <div className="flex flex-col items-end gap-2">
@@ -294,21 +294,21 @@ export function ConsultaPublicaView() {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-12 relative z-10">
-                    <div className="bg-white/5 backdrop-blur-md rounded-[2rem] p-6 border border-white/10 text-center">
+                    <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10 text-center">
                       <div className="size-10 bg-white/10 rounded-xl flex items-center justify-center mx-auto mb-3">
                         <Calendar size={20} className="text-blue-300" />
                       </div>
                       <p className="text-[9px] font-black uppercase tracking-[0.2em] text-blue-300 mb-1">Início</p>
                       <p className="text-lg font-black text-white">{processo.data_venda ? format(processo.data_venda.toDate(), 'dd/MM/yyyy', { locale: ptBR }) : '-'}</p>
                     </div>
-                    <div className="bg-white/5 backdrop-blur-md rounded-[2rem] p-6 border border-white/10 text-center">
+                    <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10 text-center">
                       <div className="size-10 bg-white/10 rounded-xl flex items-center justify-center mx-auto mb-3">
                         <Clock size={20} className="text-blue-300" />
                       </div>
                       <p className="text-[9px] font-black uppercase tracking-[0.2em] text-blue-300 mb-1">Prazo</p>
                       <p className="text-lg font-black text-white">{processo.prazo_estimado_dias || 7} Dias Úteis</p>
                     </div>
-                    <div className="bg-white/5 backdrop-blur-md rounded-[2rem] p-6 border border-white/10 text-center">
+                    <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10 text-center">
                       <div className="size-10 bg-white/10 rounded-xl flex items-center justify-center mx-auto mb-3">
                         <User size={20} className="text-blue-300" />
                       </div>
@@ -331,7 +331,7 @@ export function ConsultaPublicaView() {
 
                 {/* STATUS DE PAGAMENTO / PROCESSAMENTO / AGUARDANDO */}
                 {(processo.status_atual === 'Pendente' || processo.status_atual === 'Aguardando Pagamento') && (
-                  <div className="bg-amber-50 p-8 sm:p-10 rounded-[3rem] border-2 border-amber-200 shadow-2xl flex flex-col md:flex-row items-center gap-8 text-center md:text-left animate-pulse-slow">
+                  <div className="bg-amber-50 p-8 sm:p-6 rounded-3xl border-2 border-amber-200 shadow-2xl flex flex-col md:flex-row items-center gap-8 text-center md:text-left animate-pulse-slow">
                     <div className="size-20 bg-amber-400 rounded-full flex items-center justify-center shrink-0 shadow-xl shadow-amber-400/30">
                        <div className="size-10 border-4 border-amber-900 border-t-transparent rounded-full animate-spin" />
                     </div>
@@ -360,8 +360,8 @@ export function ConsultaPublicaView() {
                 )}
 
                 {/* HUB INDIQUE E GANHE (POLISHED) */}
-                <div className="bg-gradient-to-br from-blue-600 to-indigo-900 rounded-[3rem] p-1 shadow-2xl">
-                  <div className="bg-[#0a0a2e] rounded-[calc(3rem-4px)] p-8 sm:p-12 text-white relative overflow-hidden h-full">
+                <div className="bg-gradient-to-br from-blue-600 to-indigo-900 rounded-3xl p-1 shadow-2xl">
+                  <div className="bg-[#0a0a2e] rounded-[calc(3rem-4px)] p-8 sm:p-6 text-white relative overflow-hidden h-full">
                     <div className="absolute top-0 right-0 p-8 opacity-5">
                       <Share2 size={240} />
                     </div>
@@ -371,7 +371,7 @@ export function ConsultaPublicaView() {
                         <div className="size-16 bg-blue-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-blue-600/30">
                           <Gift size={32} className="text-white" />
                         </div>
-                        <h2 className="text-3xl sm:text-5xl font-black uppercase italic tracking-tighter leading-none">
+                        <h2 className="text-3xl sm:text-3xl font-black uppercase italic tracking-tighter leading-none">
                           INDICAÇÃO <span className="text-blue-500">PREMIUM</span>
                         </h2>
                         <p className="text-blue-200 text-sm sm:text-lg max-w-md mx-auto opacity-80 mt-4 leading-relaxed font-semibold uppercase italic">
@@ -379,7 +379,7 @@ export function ConsultaPublicaView() {
                         </p>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center bg-white/5 p-8 rounded-[2rem] border border-white/10 backdrop-blur-md">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center bg-white/5 p-8 rounded-2xl border border-white/10 backdrop-blur-md">
                         <div className="space-y-4">
                           <button 
                             onClick={() => {
@@ -444,7 +444,7 @@ export function ConsultaPublicaView() {
 
                 {/* VISUALIZAÇÃO DE SMARTFICHA (PENDÊNCIAS) */}
                 {((processo.dados_faltantes && processo.dados_faltantes.length > 0) || (processo.pendencias_iniciais && processo.pendencias_iniciais.length > 0)) && (
-                   <div className="bg-amber-50 p-10 rounded-[3rem] border-4 border-amber-200 shadow-2xl space-y-8 animate-pulse-slow">
+                   <div className="bg-amber-50 p-6 rounded-3xl border-4 border-amber-200 shadow-2xl space-y-8 animate-pulse-slow">
                       <div className="flex items-center gap-4">
                         <div className="size-16 bg-amber-200 rounded-3xl flex items-center justify-center text-amber-900 shadow-xl">
                           <AlertTriangle size={40} />
@@ -455,7 +455,7 @@ export function ConsultaPublicaView() {
                         </div>
                       </div>
                       
-                      <div className="bg-white rounded-[2rem] p-8 border border-amber-100 shadow-inner">
+                      <div className="bg-white rounded-2xl p-8 border border-amber-100 shadow-inner">
                         <SmartFicha 
                           processos={[processo]} 
                           clienteDados={profile || { 
@@ -497,9 +497,9 @@ export function ConsultaPublicaView() {
                       <motion.div 
                         whileHover={{ y: -10 }}
                         key={idx} 
-                        className="bg-white rounded-[2.5rem] p-5 border border-slate-100 shadow-xl group"
+                        className="bg-white rounded-2xl p-5 border border-slate-100 shadow-xl group"
                       >
-                        <div className="aspect-square bg-slate-100 rounded-[2rem] overflow-hidden mb-4 relative">
+                        <div className="aspect-square bg-slate-100 rounded-2xl overflow-hidden mb-4 relative">
                           <img src={p.img} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={p.nome} referrerPolicy="no-referrer" />
                           <div className="absolute top-3 left-3 bg-[#0a0a2e] text-white text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest shadow-2xl">
                             {p.pts} Pts
@@ -520,13 +520,13 @@ export function ConsultaPublicaView() {
                 </div>
 
                 {/* NEWSLETTER VIP */}
-                <div className="bg-white rounded-[3.5rem] p-10 border border-slate-100 shadow-2xl relative overflow-hidden text-center space-y-8">
+                <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-2xl relative overflow-hidden text-center space-y-8">
                   <div className="absolute inset-0 bg-blue-50 opacity-20 pointer-events-none"></div>
                   <div className="relative z-10 max-w-2xl mx-auto space-y-6">
                     <div className="size-20 bg-blue-600 rounded-3xl flex items-center justify-center mx-auto shadow-2xl shadow-blue-500/30 mb-4">
                       <Star size={32} className="text-white" fill="currentColor" />
                     </div>
-                    <h3 className="text-4xl font-black text-[#0a0a2e] uppercase italic tracking-tighter">Seja um Cliente VIP</h3>
+                    <h3 className="text-2xl font-black text-[#0a0a2e] uppercase italic tracking-tighter">Seja um Cliente VIP</h3>
                     <p className="text-slate-500 text-sm font-medium italic">Fique sabendo de novas oportunidades, bônus e notícias do mercado financeiro em primeira mão.</p>
                     
                     <form onSubmit={handleNewsletter} className="grid grid-cols-1 sm:grid-cols-2 gap-4">

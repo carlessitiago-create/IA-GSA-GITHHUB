@@ -154,7 +154,7 @@ export const PagamentoModal: React.FC<PagamentoModalProps> = ({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          className="relative w-full max-w-[420px] bg-[#0B0F19] border border-slate-800 rounded-[2.5rem] shadow-2xl overflow-hidden"
+          className="relative w-full max-w-[420px] bg-[#0B0F19] border border-slate-800 rounded-2xl shadow-2xl overflow-hidden"
         >
           {/* Fundo Glow Decorativo */}
           <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-blue-600/20 rounded-full blur-[80px] pointer-events-none"></div>
@@ -183,7 +183,7 @@ export const PagamentoModal: React.FC<PagamentoModalProps> = ({
             <div className="bg-[#111827] p-5 rounded-2xl border border-slate-700 shadow-inner">
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Valor do Serviço</p>
               <p className="text-3xl font-black text-white tracking-tighter">
-                R$ <span className="text-4xl">{amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                R$ <span className="text-2xl">{amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
               </p>
             </div>
           </div>
@@ -274,7 +274,7 @@ export const PagamentoModal: React.FC<PagamentoModalProps> = ({
                   <p className="text-[10px] text-emerald-500/70 uppercase">Escaneie o QR Code no app do seu banco</p>
                 </div>
 
-                <div className="bg-[#111827] p-6 rounded-[2rem] border border-slate-800 flex flex-col items-center gap-5 shadow-inner">
+                <div className="bg-[#111827] p-6 rounded-2xl border border-slate-800 flex flex-col items-center gap-5 shadow-inner">
                   <div className="relative">
                     <div className="absolute -inset-2 bg-gradient-to-tr from-blue-500 to-emerald-500 rounded-3xl blur opacity-20"></div>
                     <div className="relative size-48 bg-white p-3 rounded-2xl shadow-xl">

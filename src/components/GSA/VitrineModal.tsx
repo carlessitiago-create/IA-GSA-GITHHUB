@@ -27,7 +27,7 @@ export const VitrineModal: React.FC<VitrineModalProps> = ({ isOpen, onClose, onC
       <motion.div 
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-white dark:bg-slate-900 w-full max-w-3xl rounded-[2.5rem] overflow-hidden shadow-2xl mx-4"
+        className="bg-white dark:bg-slate-900 w-full max-w-3xl rounded-2xl overflow-hidden shadow-2xl mx-4"
       >
         <div className="aspect-video bg-black relative">
           {videoId ? (
@@ -44,7 +44,7 @@ export const VitrineModal: React.FC<VitrineModalProps> = ({ isOpen, onClose, onC
             </div>
           )}
         </div>
-        <div className="p-10">
+        <div className="p-6">
           <div className="flex justify-between items-start mb-6">
             <div>
               <h3 className="text-3xl font-black text-slate-900 dark:text-white mb-2 italic uppercase">{service.nome}</h3>

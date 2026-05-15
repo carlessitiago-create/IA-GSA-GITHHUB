@@ -250,7 +250,7 @@ export const ProposalGenerator: React.FC<ProposalGeneratorProps> = ({ onClose, i
       <motion.div 
         initial={{ opacity: 0, scale: 0.9, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        className="bg-white w-full max-w-4xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] text-slate-900"
+        className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] text-slate-900"
       >
         <div className="bg-[#0a0a2e] p-6 text-white flex justify-between items-center shrink-0">
           <div className="flex items-center gap-4">
@@ -401,7 +401,7 @@ export const ProposalGenerator: React.FC<ProposalGeneratorProps> = ({ onClose, i
 
               </form>
             ) : (
-                <div className="flex flex-col items-center justify-center p-12 text-center space-y-6">
+                <div className="flex flex-col items-center justify-center p-6 text-center space-y-6">
                   <div className="size-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center">
                     <CheckCircle size={40} />
                   </div>

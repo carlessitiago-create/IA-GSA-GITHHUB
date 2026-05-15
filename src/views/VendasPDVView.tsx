@@ -476,20 +476,20 @@ export function VendasPDVView() {
   return (
     <div className="w-full max-w-7xl mx-auto pb-10 sm:pb-20 px-4 sm:px-6">
       {/* VIP TERMINAL HEADER */}
-      <div className="bg-[#020617] p-6 md:p-12 lg:p-20 rounded-[2rem] sm:rounded-[3rem] md:rounded-[4rem] shadow-[0_30px_60px_rgba(0,0,0,0.6)] border border-slate-800 relative overflow-hidden group mb-6 sm:mb-10">
+      <div className="bg-[#020617] p-6 md:p-6 lg:p-10 rounded-2xl sm:rounded-3xl md:rounded-[4rem] shadow-[0_30px_60px_rgba(0,0,0,0.6)] border border-slate-800 relative overflow-hidden group mb-6 sm:mb-10">
         <div className="absolute -top-40 -right-40 w-96 h-96 bg-blue-600/10 blur-[100px] rounded-full pointer-events-none group-hover:bg-blue-500/20 transition-all duration-1000"></div>
         <div className="absolute top-0 right-0 p-16 opacity-[0.03] pointer-events-none group-hover:rotate-12 group-hover:scale-110 transition-all duration-1000">
           <ShoppingCart className="size-[120px] sm:size-[180px] md:size-[220px] text-white" />
         </div>
 
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 sm:gap-8 md:gap-10 relative z-10 w-full">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 sm:gap-8 md:gap-6 relative z-10 w-full">
           <div className="space-y-3 sm:space-y-4 w-full lg:w-auto">
             <div className="flex items-center gap-3 sm:gap-5">
               <div className="size-10 sm:size-16 bg-blue-600/10 border border-blue-500/30 rounded-xl sm:rounded-[1.8rem] flex items-center justify-center text-blue-400 shadow-[0_0_20px_rgba(37,99,235,0.2)] shrink-0">
                 <ShoppingCart className="size-5 sm:size-8" />
               </div>
               <div className="min-w-0">
-                <h1 className="text-xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white uppercase italic tracking-tighter leading-none truncate">
+                <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-6xl font-black text-white uppercase italic tracking-tighter leading-none truncate">
                   Terminal <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">PDV</span>
                 </h1>
                 <div className="flex items-center gap-2 mt-1 sm:mt-2">
@@ -509,13 +509,13 @@ export function VendasPDVView() {
           <div className="flex flex-col xs:flex-row items-center gap-3 sm:gap-4 w-full lg:w-auto mt-2 lg:mt-0">
             <button 
               onClick={() => setShowProposalGenerator(true)}
-              className="w-full sm:w-auto bg-[#0F172A] border border-slate-700 text-slate-300 px-6 sm:px-8 py-3.5 sm:py-5 rounded-xl sm:rounded-[2rem] font-black uppercase text-[9px] sm:text-xs tracking-widest hover:border-blue-500 hover:text-white hover:bg-blue-900/20 transition-all shadow-inner flex items-center justify-center gap-2 sm:gap-3"
+              className="w-full sm:w-auto bg-[#0F172A] border border-slate-700 text-slate-300 px-6 sm:px-8 py-3.5 sm:py-5 rounded-xl sm:rounded-2xl font-black uppercase text-[9px] sm:text-xs tracking-widest hover:border-blue-500 hover:text-white hover:bg-blue-900/20 transition-all shadow-inner flex items-center justify-center gap-2 sm:gap-3"
             >
               <FileText className="size-4 sm:size-6" />
               Gerar Proposta
             </button>
 
-            <div className="w-full sm:w-auto bg-emerald-900/20 px-5 sm:px-8 py-3.5 sm:py-5 rounded-xl sm:rounded-[2rem] border border-emerald-500/30 flex items-center justify-center sm:justify-start gap-4 sm:gap-5 shadow-[inset_0_0_20px_rgba(16,185,129,0.05)]">
+            <div className="w-full sm:w-auto bg-emerald-900/20 px-5 sm:px-8 py-3.5 sm:py-5 rounded-xl sm:rounded-2xl border border-emerald-500/30 flex items-center justify-center sm:justify-start gap-4 sm:gap-5 shadow-[inset_0_0_20px_rgba(16,185,129,0.05)]">
               <div className="size-8 sm:size-12 bg-emerald-500/20 rounded-lg sm:rounded-2xl flex items-center justify-center text-emerald-400 relative overflow-hidden shrink-0">
                 <div className="absolute inset-0 bg-emerald-400/20 animate-pulse"></div>
                 <ShieldCheck className="size-4 sm:size-6 relative z-10" />
@@ -532,7 +532,7 @@ export function VendasPDVView() {
       </div>
 
       {/* PDV MAIN CONTENT WRAPPER */}
-      <div className="bg-white p-5 sm:p-8 md:p-12 lg:p-16 rounded-2xl sm:rounded-[3rem] md:rounded-[3.5rem] shadow-xl border border-slate-100 relative z-10">
+      <div className="bg-white p-5 sm:p-8 md:p-6 lg:p-8 rounded-2xl sm:rounded-3xl md:rounded-3xl shadow-xl border border-slate-100 relative z-10">
         <div className="grid grid-cols-1 gap-8 sm:gap-16 relative z-10">
           {/* INDICADOR DE PASSOS */}
           <div className="flex items-center justify-center gap-2 sm:gap-8 mb-2 sm:mb-4">
@@ -569,7 +569,7 @@ export function VendasPDVView() {
                 </div>
                 <button 
                   onClick={() => setIsRegisteringClient(!isRegisteringClient)}
-                  className={`w-full sm:w-auto px-6 sm:px-10 py-3.5 sm:py-4 rounded-xl sm:rounded-[1.8rem] text-[9px] sm:text-[11px] font-black uppercase tracking-[0.2em] transition-all shadow-sm flex items-center justify-center gap-2 sm:gap-3 group ${
+                  className={`w-full sm:w-auto px-6 sm:px-5 py-3.5 sm:py-4 rounded-xl sm:rounded-[1.8rem] text-[9px] sm:text-[11px] font-black uppercase tracking-[0.2em] transition-all shadow-sm flex items-center justify-center gap-2 sm:gap-3 group ${
                     isRegisteringClient 
                       ? 'bg-rose-50 text-rose-600 border border-rose-100 hover:bg-rose-100' 
                       : 'bg-blue-600 text-white hover:bg-[#0a0a2e] shadow-blue-600/20'
@@ -591,8 +591,8 @@ export function VendasPDVView() {
                     exit={{ opacity: 0, height: 0 }}
                     className="overflow-hidden"
                   >
-                    <form onSubmit={handleRegisterClient} className="p-5 sm:p-10 bg-slate-50/50 rounded-2xl sm:rounded-[3.5rem] border border-slate-100 space-y-6 sm:space-y-10 mb-6 sm:mb-12 shadow-inner">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-10">
+                    <form onSubmit={handleRegisterClient} className="p-5 sm:p-6 bg-slate-50/50 rounded-2xl sm:rounded-3xl border border-slate-100 space-y-6 sm:space-y-10 mb-6 sm:mb-12 shadow-inner">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
                         <div className="space-y-1.5 sm:space-y-2">
                           <span className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase ml-4 sm:ml-6 tracking-[0.3em]">Nome Completo</span>
                           <input 
@@ -600,7 +600,7 @@ export function VendasPDVView() {
                             required
                             value={newClient.nome_completo}
                             onChange={e => setNewClient({...newClient, nome_completo: e.target.value})}
-                            className="w-full bg-white border border-slate-100 rounded-xl sm:rounded-[2rem] p-4 sm:p-6 text-sm font-bold text-[#0a0a2e] focus:ring-4 focus:ring-blue-500/10 outline-none transition-all placeholder:text-slate-300 shadow-sm"
+                            className="w-full bg-white border border-slate-100 rounded-xl sm:rounded-2xl p-4 sm:p-6 text-sm font-bold text-[#0a0a2e] focus:ring-4 focus:ring-blue-500/10 outline-none transition-all placeholder:text-slate-300 shadow-sm"
                             placeholder="Ex: João da Silva"
                           />
                         </div>
@@ -611,7 +611,7 @@ export function VendasPDVView() {
                             required
                             value={newClient.cpf}
                             onChange={e => setNewClient({...newClient, cpf: formatDocument(e.target.value)})}
-                            className="w-full bg-white border border-slate-100 rounded-xl sm:rounded-[2rem] p-4 sm:p-6 text-sm font-bold text-[#0a0a2e] focus:ring-4 focus:ring-blue-500/10 outline-none transition-all placeholder:text-slate-300 shadow-sm"
+                            className="w-full bg-white border border-slate-100 rounded-xl sm:rounded-2xl p-4 sm:p-6 text-sm font-bold text-[#0a0a2e] focus:ring-4 focus:ring-blue-500/10 outline-none transition-all placeholder:text-slate-300 shadow-sm"
                             placeholder="000.000.000-00"
                           />
                         </div>
@@ -622,7 +622,7 @@ export function VendasPDVView() {
                             required
                             value={newClient.email}
                             onChange={e => setNewClient({...newClient, email: e.target.value})}
-                            className="w-full bg-white border border-slate-100 rounded-xl sm:rounded-[2rem] p-4 sm:p-6 text-sm font-bold text-[#0a0a2e] focus:ring-4 focus:ring-blue-500/10 outline-none transition-all placeholder:text-slate-300 shadow-sm"
+                            className="w-full bg-white border border-slate-100 rounded-xl sm:rounded-2xl p-4 sm:p-6 text-sm font-bold text-[#0a0a2e] focus:ring-4 focus:ring-blue-500/10 outline-none transition-all placeholder:text-slate-300 shadow-sm"
                             placeholder="cliente@email.com"
                           />
                         </div>
@@ -632,7 +632,7 @@ export function VendasPDVView() {
                             type="tel" 
                             value={newClient.telefone}
                             onChange={e => setNewClient({...newClient, telefone: formatPhone(e.target.value)})}
-                            className="w-full bg-white border border-slate-100 rounded-xl sm:rounded-[2rem] p-4 sm:p-6 text-sm font-bold text-[#0a0a2e] focus:ring-4 focus:ring-blue-500/10 outline-none transition-all placeholder:text-slate-300 shadow-sm"
+                            className="w-full bg-white border border-slate-100 rounded-xl sm:rounded-2xl p-4 sm:p-6 text-sm font-bold text-[#0a0a2e] focus:ring-4 focus:ring-blue-500/10 outline-none transition-all placeholder:text-slate-300 shadow-sm"
                             placeholder="(00) 0 0000-0000"
                           />
                         </div>
@@ -643,14 +643,14 @@ export function VendasPDVView() {
                             required
                             value={newClient.data_nascimento}
                             onChange={e => setNewClient({...newClient, data_nascimento: e.target.value})}
-                            className="w-full bg-white border border-slate-100 rounded-xl sm:rounded-[2rem] p-4 sm:p-6 text-sm font-bold text-[#0a0a2e] focus:ring-4 focus:ring-blue-500/10 outline-none transition-all shadow-sm"
+                            className="w-full bg-white border border-slate-100 rounded-xl sm:rounded-2xl p-4 sm:p-6 text-sm font-bold text-[#0a0a2e] focus:ring-4 focus:ring-blue-500/10 outline-none transition-all shadow-sm"
                           />
                         </div>
                       </div>
                       <button 
                         type="submit"
                         disabled={loading}
-                        className="w-full bg-[#0a0a2e] text-white py-5 sm:py-7 rounded-xl sm:rounded-[2.5rem] font-black uppercase text-[10px] sm:text-xs tracking-[0.4em] shadow-2xl shadow-blue-900/30 hover:scale-[1.01] active:scale-98 transition-all disabled:opacity-50 flex items-center justify-center gap-3"
+                        className="w-full bg-[#0a0a2e] text-white py-5 sm:py-7 rounded-xl sm:rounded-2xl font-black uppercase text-[10px] sm:text-xs tracking-[0.4em] shadow-2xl shadow-blue-900/30 hover:scale-[1.01] active:scale-98 transition-all disabled:opacity-50 flex items-center justify-center gap-3"
                       >
                         {loading ? <><Loader2 className="animate-spin" size={18} /> Processando...</> : 'Cadastrar e Iniciar Venda'}
                       </button>
@@ -668,7 +668,7 @@ export function VendasPDVView() {
                       placeholder="Pesquisar por CPF, Nome ou E-mail..." 
                       value={searchTermClient}
                       onChange={(e) => setSearchTermClient(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-100 rounded-2xl sm:rounded-[3rem] py-5 sm:py-7 pl-16 sm:pl-24 pr-8 sm:pr-12 text-xs sm:text-base font-bold text-[#0a0a2e] placeholder:text-slate-300 focus:ring-8 focus:ring-blue-500/5 outline-none transition-all shadow-inner"
+                      className="w-full bg-slate-50 border border-slate-100 rounded-2xl sm:rounded-3xl py-5 sm:py-7 pl-16 sm:pl-24 pr-8 sm:pr-12 text-xs sm:text-base font-bold text-[#0a0a2e] placeholder:text-slate-300 focus:ring-8 focus:ring-blue-500/5 outline-none transition-all shadow-inner"
                     />
                   </div>
 
@@ -682,7 +682,7 @@ export function VendasPDVView() {
                           setSelectedClient(client);
                           setStep((selectedService || preSelectedService) ? 3 : 2);
                         }}
-                        className={`p-6 sm:p-8 border-2 rounded-[2.2rem] sm:rounded-[3rem] flex flex-col gap-4 cursor-pointer transition-all relative overflow-hidden group ${
+                        className={`p-6 sm:p-8 border-2 rounded-[2.2rem] sm:rounded-3xl flex flex-col gap-4 cursor-pointer transition-all relative overflow-hidden group ${
                           selectedClient?.uid === client.uid 
                             ? 'border-[#0a0a2e] bg-[#0a0a2e]/5 shadow-xl ring-4 ring-blue-500/5' 
                             : 'border-slate-50 bg-white hover:border-slate-200 hover:shadow-lg'
@@ -746,7 +746,7 @@ export function VendasPDVView() {
                       setFinalPrice(service.preco_base_vendedor);
                       setStep(3);
                     }}
-                    className={`p-6 sm:p-8 border-2 rounded-[2rem] sm:rounded-[2.5rem] flex flex-col justify-between cursor-pointer transition-all relative overflow-hidden group ${
+                    className={`p-6 sm:p-8 border-2 rounded-2xl sm:rounded-2xl flex flex-col justify-between cursor-pointer transition-all relative overflow-hidden group ${
                       selectedService?.id === service.id 
                         ? 'border-[#0a0a2e] bg-[#0a0a2e]/5 shadow-xl' 
                         : 'border-slate-50 bg-white hover:border-slate-200 hover:shadow-md'
@@ -791,10 +791,10 @@ export function VendasPDVView() {
                 <h3 className="text-lg sm:text-xl font-black text-[#0a0a2e] uppercase italic tracking-tight">Condições da Proposta</h3>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 sm:gap-16">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-16">
                 {/* CONFIGURAÇÃO DE PREÇO E PAGAMENTO */}
                 <div className="space-y-8">
-                  <div className="bg-slate-50/50 p-8 sm:p-10 rounded-[2.5rem] border border-slate-100 space-y-8">
+                  <div className="bg-slate-50/50 p-8 sm:p-6 rounded-2xl border border-slate-100 space-y-8">
                     <div className="space-y-4">
                       <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Ajustar Valor da Venda (R$)</span>
                       <div className="relative">
@@ -877,8 +877,8 @@ export function VendasPDVView() {
 
                 {/* RESUMO DA PROPOSTA */}
                 <div className="space-y-8">
-                  <div className="bg-[#0a0a2e] p-6 sm:p-10 rounded-[2rem] sm:rounded-[3rem] text-white shadow-2xl relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-1000">
+                  <div className="bg-[#0a0a2e] p-6 sm:p-6 rounded-2xl sm:rounded-3xl text-white shadow-2xl relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-6 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-1000">
                       <FileText size={150} />
                     </div>
                     

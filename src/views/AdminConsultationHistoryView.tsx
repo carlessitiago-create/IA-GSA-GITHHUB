@@ -28,7 +28,7 @@ export const AdminConsultationHistoryView: React.FC = () => {
   });
 
   return (
-    <div className="p-6 md:p-10 max-w-7xl mx-auto space-y-8 animate-fade-in pb-32">
+    <div className="p-6 md:p-6 max-w-7xl mx-auto space-y-8 animate-fade-in pb-32">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
           <h1 className="text-3xl font-black text-slate-800 tracking-tight">Histórico de Consultas</h1>

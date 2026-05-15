@@ -27,15 +27,23 @@ const SupportModule: React.FC = () => {
     if (nivel === "ADM_MASTER" || nivel === "ADM_ANALISTA") {
       q = query(ticketsRef, orderBy("updatedAt", "desc"));
     } else if (nivel === "GESTOR") {
-      q = query(ticketsRef, where("id_superior", "==", auth.currentUser.uid), orderBy("updatedAt", "desc"));
+      q = query(ticketsRef, where("id_superior", "==", auth.currentUser.uid));
     } else if (nivel === "VENDEDOR") {
-      q = query(ticketsRef, where("vendedor_id", "==", auth.currentUser.uid), orderBy("updatedAt", "desc"));
+      q = query(ticketsRef, where("vendedor_id", "==", auth.currentUser.uid));
     } else {
-      q = query(ticketsRef, where("cliente_id", "==", auth.currentUser.uid), orderBy("updatedAt", "desc"));
+      q = query(ticketsRef, where("cliente_id", "==", auth.currentUser.uid));
     }
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      setTickets(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      let items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      if (nivel !== "ADM_MASTER" && nivel !== "ADM_ANALISTA") {
+         items.sort((a:any, b:any) => {
+             const timeA = a.updatedAt?.toMillis ? a.updatedAt.toMillis() : 0;
+             const timeB = b.updatedAt?.toMillis ? b.updatedAt.toMillis() : 0;
+             return timeB - timeA;
+         });
+      }
+      setTickets(items);
       setLoading(false);
     });
 
@@ -95,10 +103,32 @@ const SupportModule: React.FC = () => {
     }
   };
 
-  if (loading) return <div className="p-10 text-center animate-pulse font-black uppercase text-[10px] tracking-widest text-slate-400">Carregando suporte...</div>;
+  const createNewTicket = async () => {
+    if (!auth.currentUser) return;
+    try {
+      const docRef = await addDoc(collection(db, "tickets"), {
+        cliente_id: auth.currentUser.uid,
+        clientNome: profile?.nome_completo || "Cliente",
+        vendedor_id: profile?.vendedor_id || "",
+        id_superior: profile?.id_superior || profile?.vendedor_id || "", 
+        status: "ABERTO",
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        lastMessage: "Nova conversa iniciada"
+      });
+      Swal.fire("Sucesso", "Conversa iniciada!", "success");
+      // O useEffect onSnapshot vai atualizar a lista e podemos selecionar o novo ticket se quisermos
+      // setSelectedTicket({ id: docRef.id, status: 'ABERTO' ... })
+    } catch (error: any) {
+      console.error("Erro ao criar conversa:", error);
+      Swal.fire("Erro", "Não foi possível iniciar a conversa.", "error");
+    }
+  };
+
+  if (loading) return <div className="p-6 text-center animate-pulse font-black uppercase text-[10px] tracking-widest text-slate-400">Carregando suporte...</div>;
 
   return (
-    <div className="flex flex-col lg:flex-row h-[700px] bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-xl border border-slate-100 dark:border-slate-800 overflow-hidden">
+    <div className="flex flex-col lg:flex-row h-[700px] bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-800 overflow-hidden">
       
       {/* Lista de Conversas */}
       <div className="w-full lg:w-1/3 border-r border-slate-50 dark:border-slate-800 flex flex-col bg-slate-50/50 dark:bg-slate-900/50">
@@ -107,8 +137,19 @@ const SupportModule: React.FC = () => {
             <MessageSquare size={14} />
             Conversas Ativas
           </h4>
-          <div className="size-8 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-400">
-            <Search size={14} />
+          <div className="flex items-center gap-2">
+            {nivel === 'CLIENTE' && (
+              <button 
+                onClick={createNewTicket}
+                title="Nova Conversa"
+                className="size-8 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-full flex items-center justify-center transition-all cursor-pointer"
+              >
+                <span className="font-bold text-lg leading-none mb-0.5">+</span>
+              </button>
+            )}
+            <div className="size-8 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-400">
+              <Search size={14} />
+            </div>
           </div>
         </div>
         <div className="flex-1 overflow-y-auto p-2 space-y-2">
@@ -148,8 +189,16 @@ const SupportModule: React.FC = () => {
             </div>
           ))}
           {tickets.length === 0 && (
-            <div className="p-10 text-center text-slate-400 italic text-xs">
-              Nenhuma conversa encontrada.
+            <div className="p-6 text-center text-slate-400 flex flex-col items-center gap-4">
+              <span className="italic text-xs">Nenhuma conversa encontrada.</span>
+              {nivel === 'CLIENTE' && (
+                <button 
+                  onClick={createNewTicket}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-md"
+                >
+                  Iniciar Conversa
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -230,7 +279,7 @@ const SupportModule: React.FC = () => {
             )}
           </>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-slate-300 p-10 text-center">
+          <div className="flex-1 flex flex-col items-center justify-center text-slate-300 p-6 text-center">
             <div className="size-20 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mb-6">
                 <MessageSquare size={40} className="text-slate-200" />
             </div>

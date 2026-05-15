@@ -12,7 +12,7 @@ export const ClubePromoBanner: React.FC<ClubePromoBannerProps> = ({ onAction, is
     <motion.div 
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="relative overflow-hidden rounded-2xl sm:rounded-[2.5rem] bg-gradient-to-br from-yellow-400 via-orange-500 to-red-600 p-4 sm:p-8 text-white shadow-2xl shadow-orange-500/20"
+      className="relative overflow-hidden rounded-2xl sm:rounded-2xl bg-gradient-to-br from-yellow-400 via-orange-500 to-red-600 p-4 sm:p-8 text-white shadow-2xl shadow-orange-500/20"
     >
       <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-8">
         <div className="flex flex-col md:flex-row items-center gap-3 sm:gap-6 text-center md:text-left">
@@ -45,7 +45,7 @@ export const ClubePromoBanner: React.FC<ClubePromoBannerProps> = ({ onAction, is
       </div>
 
       {/* Decorative elements */}
-      <div className="absolute -right-10 -top-10 size-48 bg-white/10 rounded-full blur-3xl"></div>
+      <div className="absolute -right-10 -top-6 size-48 bg-white/10 rounded-full blur-3xl"></div>
       <div className="absolute -left-10 -bottom-10 size-64 bg-orange-400/20 rounded-full blur-3xl"></div>
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 size-full opacity-10 pointer-events-none">
         <Gift size={200} className="absolute -right-10 -bottom-20 rotate-12" />

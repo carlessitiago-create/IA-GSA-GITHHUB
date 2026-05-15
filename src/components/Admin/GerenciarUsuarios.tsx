@@ -163,7 +163,7 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
           background: '#fff',
           color: '#0a0a2e',
           customClass: {
-            popup: 'rounded-[2rem] border border-slate-100 shadow-2xl'
+            popup: 'rounded-2xl border border-slate-100 shadow-2xl'
           }
         });
         if (onSuccess) onSuccess();
@@ -247,7 +247,7 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
           background: '#fff',
           color: '#0a0a2e',
           customClass: {
-            popup: 'rounded-[2rem] border border-slate-100 shadow-2xl'
+            popup: 'rounded-2xl border border-slate-100 shadow-2xl'
           }
         });
 
@@ -275,7 +275,7 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
         background: '#fff',
         color: '#0a0a2e',
         customClass: {
-          popup: 'rounded-[2rem] border border-slate-100 shadow-2xl'
+          popup: 'rounded-2xl border border-slate-100 shadow-2xl'
         }
       });
     } finally {
@@ -297,7 +297,7 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
         background: '#fff',
         color: '#0a0a2e',
         customClass: {
-          popup: 'rounded-[2rem] border border-slate-100 shadow-2xl'
+          popup: 'rounded-2xl border border-slate-100 shadow-2xl'
         }
       });
     } catch (error: any) {
@@ -310,7 +310,7 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
         background: '#fff',
         color: '#0a0a2e',
         customClass: {
-          popup: 'rounded-[2rem] border border-slate-100 shadow-2xl'
+          popup: 'rounded-2xl border border-slate-100 shadow-2xl'
         }
       });
     } finally {
@@ -344,7 +344,7 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
         background: '#fff',
         color: '#0a0a2e',
         customClass: {
-          popup: 'rounded-[2rem] border border-slate-100 shadow-2xl'
+          popup: 'rounded-2xl border border-slate-100 shadow-2xl'
         }
       });
       setTempPassword("");
@@ -358,7 +358,7 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
         background: '#fff',
         color: '#0a0a2e',
         customClass: {
-          popup: 'rounded-[2rem] border border-slate-100 shadow-2xl'
+          popup: 'rounded-2xl border border-slate-100 shadow-2xl'
         }
       });
     } finally {
@@ -631,7 +631,7 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
         )}
 
         {userToEdit && (
-          <div className="md:col-span-2 p-4 sm:p-8 bg-blue-50/50 rounded-[1.5rem] sm:rounded-[2.5rem] border border-blue-100/50 space-y-6 sm:space-y-8">
+          <div className="md:col-span-2 p-4 sm:p-8 bg-blue-50/50 rounded-[1.5rem] sm:rounded-2xl border border-blue-100/50 space-y-6 sm:space-y-8">
             <div className="flex items-center gap-4 sm:gap-6 px-2">
               <div className="size-10 sm:size-14 bg-blue-600 rounded-xl sm:rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-600/20">
                 <Shield className="size-5 sm:size-7" />

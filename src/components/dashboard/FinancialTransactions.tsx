@@ -4,8 +4,8 @@ import { motion } from 'motion/react';
 
 export const FinancialTransactions = ({ pendingTransactions, clients, confirmarTransacao, sendNotification, sales, allUsers, setNotification, setIsConfirmingTransaction, setTransactionReceipt, currentProfile }: any) => {
   return (
-    <div className="bg-white rounded-3xl sm:rounded-[3rem] shadow-sm border border-slate-100 overflow-hidden transition-all hover:shadow-md">
-      <div className="p-6 sm:p-8 md:p-10 border-b border-slate-50 flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-6 bg-slate-50/30">
+    <div className="bg-white rounded-3xl sm:rounded-3xl shadow-sm border border-slate-100 overflow-hidden transition-all hover:shadow-md">
+      <div className="p-6 sm:p-8 md:p-6 border-b border-slate-50 flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-6 bg-slate-50/30">
         <div className="flex items-center gap-4 sm:gap-6 w-full sm:w-auto">
           <div className="size-10 sm:size-14 bg-blue-600 rounded-xl sm:rounded-[1.2rem] flex items-center justify-center text-white shadow-2xl shadow-blue-500/20 shrink-0">
             <Receipt size={20} className="sm:size-[28px]" />
@@ -118,17 +118,17 @@ export const FinancialTransactions = ({ pendingTransactions, clients, confirmarT
         <table className="w-full text-left border-collapse min-w-[900px]">
           <thead>
             <tr className="bg-white text-slate-400 border-b border-slate-50">
-              <th className="px-10 py-6 font-black uppercase text-[10px] tracking-[0.2em]">Identificação do Cliente</th>
-              <th className="px-10 py-6 font-black uppercase text-[10px] tracking-[0.2em]">Valor da Transação</th>
-              <th className="px-10 py-6 font-black uppercase text-[10px] tracking-[0.2em] hidden md:table-cell">Descrição / Origem</th>
-              <th className="px-10 py-6 font-black uppercase text-[10px] tracking-[0.2em]">Documento Anexo</th>
-              <th className="px-10 py-6 font-black uppercase text-[10px] tracking-[0.2em] text-right">Ações de Validação</th>
+              <th className="px-5 py-6 font-black uppercase text-[10px] tracking-[0.2em]">Identificação do Cliente</th>
+              <th className="px-5 py-6 font-black uppercase text-[10px] tracking-[0.2em]">Valor da Transação</th>
+              <th className="px-5 py-6 font-black uppercase text-[10px] tracking-[0.2em] hidden md:table-cell">Descrição / Origem</th>
+              <th className="px-5 py-6 font-black uppercase text-[10px] tracking-[0.2em]">Documento Anexo</th>
+              <th className="px-5 py-6 font-black uppercase text-[10px] tracking-[0.2em] text-right">Ações de Validação</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
             {pendingTransactions.map((trans: any) => (
               <tr key={trans.id} className="hover:bg-slate-50/50 transition-all group">
-                <td className="px-10 py-8">
+                <td className="px-5 py-8">
                   <div className="flex items-center gap-4">
                     <div className="size-12 bg-slate-100 rounded-[1rem] flex items-center justify-center text-[#0a0a2e] font-black text-sm group-hover:bg-[#0a0a2e] group-hover:text-white transition-all">
                       {(clients.find((c: any) => c.id === trans.cliente_id)?.nome_completo || '').substring(0, 2).toUpperCase() || 'CL'}
@@ -141,16 +141,16 @@ export const FinancialTransactions = ({ pendingTransactions, clients, confirmarT
                     </div>
                   </div>
                 </td>
-                <td className="px-10 py-8 font-black text-emerald-600 italic text-lg">
+                <td className="px-5 py-8 font-black text-emerald-600 italic text-lg">
                   R$ {trans.valor.toLocaleString('pt-BR')}
                 </td>
-                <td className="px-10 py-8 text-slate-500 hidden md:table-cell max-w-xs">
+                <td className="px-5 py-8 text-slate-500 hidden md:table-cell max-w-xs">
                   <div className="flex items-center gap-2">
                     <span className="bg-slate-100 text-slate-400 px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest">{trans.origem}</span>
                     <p className="text-[11px] font-medium truncate">{trans.descricao}</p>
                   </div>
                 </td>
-                <td className="px-10 py-8">
+                <td className="px-5 py-8">
                   {trans.comprovante_url ? (
                     <a 
                       href={trans.comprovante_url} 
@@ -164,7 +164,7 @@ export const FinancialTransactions = ({ pendingTransactions, clients, confirmarT
                     <span className="bg-slate-50 text-slate-400 px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest italic border border-slate-100">Sem anexo</span>
                   )}
                 </td>
-                <td className="px-10 py-8 text-right">
+                <td className="px-5 py-8 text-right">
                   <div className="flex justify-end gap-3">
                     {['ADM_MASTER', 'ADM_GERENTE', 'GESTOR'].includes(currentProfile?.nivel) && (
                       trans.origem === 'SAQUE' ? (

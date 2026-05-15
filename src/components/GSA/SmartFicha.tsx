@@ -311,7 +311,7 @@ export const SmartFicha: React.FC<SmartFichaProps> = ({ processos, clienteDados,
 
   if (camposFaltantes.length === 0 && documentosFaltantes.every(d => !!clienteDados[d])) {
     return (
-      <div className="p-6 md:p-8 bg-emerald-50 rounded-[2rem] md:rounded-[32px] border border-emerald-100 text-center space-y-4">
+      <div className="p-6 md:p-8 bg-emerald-50 rounded-2xl md:rounded-[32px] border border-emerald-100 text-center space-y-4">
         <div className="size-12 md:size-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto">
           <CheckCircle className="text-emerald-600 size-6 md:size-8" />
         </div>
@@ -334,7 +334,7 @@ export const SmartFicha: React.FC<SmartFichaProps> = ({ processos, clienteDados,
 
   return (
     <div className="space-y-6 md:space-y-8">
-      <div className="p-4 md:p-6 bg-blue-50 rounded-[2rem] md:rounded-[32px] border border-blue-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="p-4 md:p-6 bg-blue-50 rounded-2xl md:rounded-[32px] border border-blue-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex gap-4 items-center">
           <div className="size-10 md:size-12 rounded-xl md:rounded-2xl bg-white flex items-center justify-center shrink-0 shadow-sm">
             <AlertCircle className="text-blue-600 size-5 md:size-6" />

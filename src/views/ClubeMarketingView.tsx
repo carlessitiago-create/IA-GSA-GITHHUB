@@ -46,9 +46,14 @@ export function ClubeMarketingView() {
 
     const fetchUserReferrals = async () => {
       try {
-        const q = query(collection(db, 'referrals'), where('cliente_origem_id', '==', profile.uid), orderBy('timestamp', 'desc'));
+        const q = query(collection(db, 'referrals'), where('cliente_origem_id', '==', profile.uid));
         const snapshot = await getDocs(q);
-        const refs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Referral));
+        let refs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Referral));
+        refs.sort((a,b) => {
+           const timeA = a.timestamp?.toMillis ? a.timestamp.toMillis() : 0;
+           const timeB = b.timestamp?.toMillis ? b.timestamp.toMillis() : 0;
+           return timeB - timeA;
+        });
         setMyReferrals(refs);
         setReferralCount(refs.length);
       } catch (err) {
@@ -121,10 +126,16 @@ export function ClubeMarketingView() {
       setEmailIndicado('');
       
       // Refresh referrals list
-      const q = query(collection(db, 'referrals'), where('cliente_origem_id', '==', profile.uid), orderBy('timestamp', 'desc'));
+      const q = query(collection(db, 'referrals'), where('cliente_origem_id', '==', profile.uid));
       const snapshot = await getDocs(q);
-      setMyReferrals(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Referral)));
-      setReferralCount(snapshot.size);
+      let refs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Referral));
+      refs.sort((a,b) => {
+         const timeA = a.timestamp?.toMillis ? a.timestamp.toMillis() : 0;
+         const timeB = b.timestamp?.toMillis ? b.timestamp.toMillis() : 0;
+         return timeB - timeA;
+      });
+      setMyReferrals(refs);
+      setReferralCount(refs.length);
     } catch (error) {
       console.error(error);
       Swal.fire('Erro', 'Não foi possível registrar a indicação.', 'error');
@@ -188,9 +199,9 @@ export function ClubeMarketingView() {
     <div className="space-y-8">
       {/* HERO SECTION */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 sm:gap-8">
-        <div className="xl:col-span-2 bg-gradient-to-br from-indigo-600 to-blue-800 p-8 sm:p-12 rounded-[2.5rem] sm:rounded-[3.5rem] text-white relative overflow-hidden shadow-2xl shadow-indigo-500/20">
+        <div className="xl:col-span-2 bg-gradient-to-br from-indigo-600 to-blue-800 p-8 sm:p-6 rounded-2xl sm:rounded-3xl text-white relative overflow-hidden shadow-2xl shadow-indigo-500/20">
           <div className="relative z-10 space-y-4 sm:space-y-6">
-            <h2 className="text-3xl sm:text-5xl font-black italic uppercase mb-2 tracking-tighter leading-tight">
+            <h2 className="text-3xl sm:text-3xl font-black italic uppercase mb-2 tracking-tighter leading-tight">
               {profile?.nivel === 'CLIENTE' ? 'Elite de Prêmios' : 'Clube GSA Premium'}
             </h2>
             <p className="opacity-80 text-sm sm:text-lg max-w-md leading-relaxed">
@@ -222,7 +233,7 @@ export function ClubeMarketingView() {
           <Gift className="absolute -right-12 -bottom-12 !text-[150px] sm:!text-[250px] opacity-10 rotate-12 pointer-events-none" />
         </div>
 
-        <div className="bg-white dark:bg-slate-800 p-6 sm:p-10 rounded-[2.5rem] sm:rounded-[3.5rem] border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col justify-between gap-6">
+        <div className="bg-white dark:bg-slate-800 p-6 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col justify-between gap-6">
           <div className="space-y-3 sm:space-y-4">
             <div className="flex items-center gap-3">
               <Target className="text-blue-600 size-6" />
@@ -253,7 +264,7 @@ export function ClubeMarketingView() {
 
       {/* RANKING OR REFERRAL FORM SECTION */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 sm:gap-8">
-        <div className="xl:col-span-2 bg-white dark:bg-slate-800 p-6 sm:p-10 rounded-[2.5rem] sm:rounded-[3.5rem] border border-slate-200 dark:border-slate-700 shadow-sm space-y-6 sm:space-y-8">
+        <div className="xl:col-span-2 bg-white dark:bg-slate-800 p-6 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-6 sm:space-y-8">
           {profile?.nivel === 'CLIENTE' ? (
             <div className="space-y-8">
               <div className="flex justify-between items-center">
@@ -325,7 +336,7 @@ export function ClubeMarketingView() {
                 </div>
               </form>
 
-              <div className="p-6 bg-blue-50 dark:bg-blue-900/20 rounded-[2rem] border border-blue-100 dark:border-blue-900/30 flex items-center gap-4">
+              <div className="p-6 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border border-blue-100 dark:border-blue-900/30 flex items-center gap-4">
                 <div className="size-12 bg-white dark:bg-slate-800 rounded-xl flex items-center justify-center shadow-sm shrink-0">
                   <Gift className="text-blue-600" size={24} />
                 </div>
@@ -366,7 +377,7 @@ export function ClubeMarketingView() {
                       </div>
                     </div>
                   )) : (
-                    <div className="text-center py-10 border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-[2rem]">
+                    <div className="text-center py-10 border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-2xl">
                       <p className="text-slate-400 text-sm italic font-medium">Você ainda não fez nenhuma indicação.</p>
                     </div>
                   )}
@@ -416,7 +427,7 @@ export function ClubeMarketingView() {
         </div>
 
         <div className="space-y-6">
-          <div className="bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-[2rem] sm:rounded-[3rem] border border-slate-200 dark:border-slate-700 shadow-sm space-y-6">
+          <div className="bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-6">
             <h3 className="text-base sm:text-lg font-black text-slate-800 dark:text-white uppercase italic flex items-center gap-2">
               <Award className="text-indigo-600 size-5" />
               {profile?.nivel === 'CLIENTE' ? 'Elite de Prêmios' : 'Próximos Prêmios'}
@@ -448,7 +459,7 @@ export function ClubeMarketingView() {
           </div>
 
           {rules && (
-            <div className="bg-emerald-50 dark:bg-emerald-900/20 p-6 sm:p-8 rounded-[2rem] sm:rounded-[3rem] border border-emerald-100 dark:border-emerald-900/30 space-y-4">
+            <div className="bg-emerald-50 dark:bg-emerald-900/20 p-6 sm:p-8 rounded-2xl sm:rounded-3xl border border-emerald-100 dark:border-emerald-900/30 space-y-4">
               <h3 className="text-xs sm:text-sm font-black text-emerald-800 dark:text-emerald-200 uppercase italic flex items-center gap-2">
                 <TrendingUp className="size-4" /> Como Ganhar Pontos?
               </h3>
@@ -494,7 +505,7 @@ export function ClubeMarketingView() {
             </div>
           )}
 
-          <div className="bg-slate-900 p-6 sm:p-8 rounded-[2rem] sm:rounded-[3rem] text-white space-y-4 sm:space-y-6 text-center">
+          <div className="bg-slate-900 p-6 sm:p-8 rounded-2xl sm:rounded-3xl text-white space-y-4 sm:space-y-6 text-center">
             <div className="size-12 sm:size-16 bg-blue-600 rounded-2xl sm:rounded-3xl flex items-center justify-center mx-auto shadow-xl shadow-blue-600/20">
               <Share2 className="size-6 sm:size-8" />
             </div>

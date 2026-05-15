@@ -81,7 +81,7 @@ export const ProfileView: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <div className="bg-white dark:bg-slate-800 p-8 md:p-12 rounded-[3rem] shadow-sm border border-slate-100 dark:border-slate-700">
+      <div className="bg-white dark:bg-slate-800 p-8 md:p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700">
         <div className="flex items-center gap-4 mb-10">
           <div className="size-14 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-600/20">
             <User className="size-7 sm:size-8" />
@@ -148,7 +148,7 @@ export const ProfileView: React.FC = () => {
               />
             </div>
             
-            <div className="md:col-span-2 p-8 bg-slate-50 dark:bg-slate-900/30 rounded-[2rem] border border-slate-100 dark:border-slate-700 space-y-6">
+            <div className="md:col-span-2 p-8 bg-slate-50 dark:bg-slate-900/30 rounded-2xl border border-slate-100 dark:border-slate-700 space-y-6">
               <div className="flex items-center gap-3">
                 <input 
                   type="checkbox" 
@@ -195,7 +195,7 @@ export const ProfileView: React.FC = () => {
           <button 
             type="submit"
             disabled={loading}
-            className="w-full md:w-auto bg-[#0a0a2e] text-white px-12 py-5 rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-xl shadow-blue-900/20 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3"
+            className="w-full md:w-auto bg-[#0a0a2e] text-white px-6 py-5 rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-xl shadow-blue-900/20 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3"
           >
             {loading ? (
               <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>

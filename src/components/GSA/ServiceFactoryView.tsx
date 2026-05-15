@@ -218,7 +218,7 @@ export const ServiceFactoryView: React.FC = () => {
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#0a0a2e] p-8 rounded-[2.5rem] text-white shadow-2xl"
+        className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#0a0a2e] p-8 rounded-2xl text-white shadow-2xl"
       >
         <div>
           <div className="flex items-center gap-2 mb-2">
@@ -262,7 +262,7 @@ export const ServiceFactoryView: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* FORMULÁRIO DE CONFIGURAÇÃO (Lado Esquerdo) */}
         <div className="lg:col-span-4 space-y-6">
-          <div className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm sticky top-8">
+          <div className="bg-white dark:bg-slate-900 p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm sticky top-8">
             <h3 className="text-lg font-black text-slate-800 dark:text-white uppercase italic mb-6 flex items-center gap-2">
               <Settings className="text-blue-600" size={20} /> {editingId ? 'Editar Serviço' : 'Configuração'}
             </h3>
@@ -410,7 +410,7 @@ export const ServiceFactoryView: React.FC = () => {
                 />
               </div>
 
-              <div className="bg-blue-50 dark:bg-blue-900/10 p-6 rounded-[2rem] space-y-4 border border-blue-100 dark:border-blue-900/30">
+              <div className="bg-blue-50 dark:bg-blue-900/10 p-6 rounded-2xl space-y-4 border border-blue-100 dark:border-blue-900/30">
                 <div className="flex items-center justify-between">
                   <p className="text-[11px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest flex items-center gap-2">
                     <FileText size={14} /> Engenharia de Requisitos: Documentos
@@ -458,7 +458,7 @@ export const ServiceFactoryView: React.FC = () => {
                 </div>
               </div>
 
-              <div className="bg-emerald-50 dark:bg-emerald-900/10 p-6 rounded-[2rem] space-y-4 border border-emerald-100 dark:border-emerald-900/30">
+              <div className="bg-emerald-50 dark:bg-emerald-900/10 p-6 rounded-2xl space-y-4 border border-emerald-100 dark:border-emerald-900/30">
                 <div className="flex items-center justify-between">
                   <p className="text-[11px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest flex items-center gap-2">
                     <ClipboardCheck size={14} /> Engenharia de Requisitos: Dados
@@ -590,7 +590,7 @@ export const ServiceFactoryView: React.FC = () => {
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9 }}
-                  className="bg-white dark:bg-slate-900 rounded-[2.5rem] overflow-hidden border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-xl transition-all flex flex-col group"
+                  className="bg-white dark:bg-slate-900 rounded-2xl overflow-hidden border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-xl transition-all flex flex-col group"
                 >
                   <div className="relative aspect-video">
                     <img 

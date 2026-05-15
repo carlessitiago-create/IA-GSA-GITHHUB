@@ -96,7 +96,7 @@ export function NewSalePage() {
 
   return (
     <div className="max-w-4xl mx-auto p-6">
-      <div className="bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl overflow-hidden border border-slate-100 dark:border-slate-800">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl overflow-hidden border border-slate-100 dark:border-slate-800">
         {/* INDICADOR DE PASSOS */}
         <div className="bg-slate-50 dark:bg-slate-800/50 p-8 border-b border-slate-100 dark:border-slate-800 flex justify-between">
            {[1, 2, 3].map(step => (
@@ -111,7 +111,7 @@ export function NewSalePage() {
            ))}
         </div>
 
-        <div className="p-10">
+        <div className="p-6">
           {/* PASSO 1 */}
           {saleStep === 1 && (
             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
@@ -168,7 +168,7 @@ export function NewSalePage() {
                   ))}
                </div>
                {selectedService && (
-                 <div className="p-8 bg-slate-50 dark:bg-slate-800 rounded-[2rem] space-y-4">
+                 <div className="p-8 bg-slate-50 dark:bg-slate-800 rounded-2xl space-y-4">
                     <label className="text-[10px] font-black text-slate-500 uppercase">Valor de Venda (R$)</label>
                     <input type="number" value={valorVenda} onChange={e => setValorVenda(Number(e.target.value))} className="w-full text-3xl font-black bg-transparent border-none focus:ring-0" />
                     <div className="pt-4 border-t border-slate-200 flex justify-between items-center">

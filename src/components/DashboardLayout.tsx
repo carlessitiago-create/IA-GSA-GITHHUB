@@ -10,12 +10,26 @@ import { confirmarTransacao, marcarFaturaVencida, atualizarInfosFatura } from '.
 import { sendNotification, AppNotification, markAsRead, listenToNotifications, playNotificationSound } from '../services/notificationService';
 import { listarTodosUsuarios } from '../services/userService';
 import Swal from 'sweetalert2';
+import GlobalChatWidget from './GSA/GlobalChatWidget';
 
 export const DashboardLayout: React.FC = () => {
   const { user, profile, logout, loading } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 1024);
+
+  // Resize listener to handle responsive defaults
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        setIsSidebarOpen(true);
+      } else {
+        setIsSidebarOpen(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
 
   // Estados de Dados (Movidos do DashboardFinanceiro)
@@ -96,36 +110,38 @@ export const DashboardLayout: React.FC = () => {
     if (nivel === 'ADM_MASTER' || nivel === 'ADM_GERENTE') {
       qTrans = query(
         collection(db, 'financial_transactions'),
-        where('confirmado_pelo_administrador', '==', false),
-        orderBy('timestamp', 'desc')
+        where('confirmado_pelo_administrador', '==', false)
       );
     } else if (nivel === 'GESTOR' && uid) {
       qTrans = query(
         collection(db, 'financial_transactions'),
         where('confirmado_pelo_administrador', '==', false),
-        where('id_superior', '==', uid),
-        orderBy('timestamp', 'desc')
+        where('id_superior', '==', uid)
       );
     } else if (nivel === 'VENDEDOR' && uid) {
       qTrans = query(
         collection(db, 'financial_transactions'),
         where('confirmado_pelo_administrador', '==', false),
-        where('vendedor_id', '==', uid),
-        orderBy('timestamp', 'desc')
+        where('vendedor_id', '==', uid)
       );
     } else if (uid) {
       qTrans = query(
         collection(db, 'financial_transactions'),
         where('confirmado_pelo_administrador', '==', false),
-        where('cliente_id', '==', uid),
-        orderBy('timestamp', 'desc')
+        where('cliente_id', '==', uid)
       );
     }
 
     let unsubTrans = () => {};
     if (qTrans) {
       unsubTrans = onSnapshot(qTrans, (snapshot) => {
-        setPendingTransactions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        data.sort((a, b) => {
+          const tA = a.timestamp?.toMillis ? a.timestamp.toMillis() : 0;
+          const tB = b.timestamp?.toMillis ? b.timestamp.toMillis() : 0;
+          return tB - tA;
+        });
+        setPendingTransactions(data);
       }, (error) => {
         console.error("Erro de permissão no Firestore (transactions): ", error);
       });
@@ -138,19 +154,26 @@ export const DashboardLayout: React.FC = () => {
     } else if (nivel === 'GESTOR' && uid) {
       qSales = query(
         collection(db, 'sales'), 
-        or(where('id_superior', '==', uid), where('vendedor_id', '==', uid)),
-        orderBy('timestamp', 'desc')
+        or(where('id_superior', '==', uid), where('vendedor_id', '==', uid))
       );
     } else if (nivel === 'VENDEDOR' && uid) {
-      qSales = query(collection(db, 'sales'), where('vendedor_id', '==', uid), orderBy('timestamp', 'desc'));
+      qSales = query(collection(db, 'sales'), where('vendedor_id', '==', uid));
     } else if (uid) {
-      qSales = query(collection(db, 'sales'), where('cliente_id', '==', uid), orderBy('timestamp', 'desc'));
+      qSales = query(collection(db, 'sales'), where('cliente_id', '==', uid));
     }
 
     let unsubSales = () => {};
     if (qSales) {
       unsubSales = onSnapshot(qSales, (snapshot) => {
-        setSales(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        if (nivel !== 'ADM_MASTER' && nivel !== 'ADM_GERENTE' && nivel !== 'ADM_ANALISTA') {
+          data.sort((a, b) => {
+            const tA = a.timestamp?.toMillis ? a.timestamp.toMillis() : 0;
+            const tB = b.timestamp?.toMillis ? b.timestamp.toMillis() : 0;
+            return tB - tA;
+          });
+        }
+        setSales(data);
       }, (error) => {
         console.error("Erro de permissão no Firestore (sales): ", error);
       });
@@ -163,19 +186,26 @@ export const DashboardLayout: React.FC = () => {
     } else if (nivel === 'GESTOR' && uid) {
       qProc = query(
         collection(db, 'order_processes'), 
-        or(where('id_superior', '==', uid), where('vendedor_id', '==', uid)),
-        orderBy('data_venda', 'desc')
+        or(where('id_superior', '==', uid), where('vendedor_id', '==', uid))
       );
     } else if (nivel === 'VENDEDOR' && uid) {
-      qProc = query(collection(db, 'order_processes'), where('vendedor_id', '==', uid), orderBy('data_venda', 'desc'));
+      qProc = query(collection(db, 'order_processes'), where('vendedor_id', '==', uid));
     } else if (uid) {
-      qProc = query(collection(db, 'order_processes'), where('cliente_id', '==', uid), orderBy('data_venda', 'desc'));
+      qProc = query(collection(db, 'order_processes'), where('cliente_id', '==', uid));
     }
     
     let unsubProc = () => {};
     if (qProc) {
       unsubProc = onSnapshot(qProc, (snapshot) => {
-        setProcesses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        if (nivel !== 'ADM_MASTER' && nivel !== 'ADM_GERENTE') {
+          data.sort((a, b) => {
+            const tA = a.data_venda?.toMillis ? a.data_venda.toMillis() : 0;
+            const tB = b.data_venda?.toMillis ? b.data_venda.toMillis() : 0;
+            return tB - tA;
+          });
+        }
+        setProcesses(data);
       }, (error) => {
         console.error("Erro de permissão no Firestore (processes): ", error);
       });
@@ -186,17 +216,25 @@ export const DashboardLayout: React.FC = () => {
     if (nivel === 'ADM_MASTER' || nivel === 'ADM_GERENTE') {
       qShowcase = query(collection(db, 'showcase_leads'), orderBy('timestamp', 'desc'));
     } else if (nivel === 'GESTOR' && uid) {
-      qShowcase = query(collection(db, 'showcase_leads'), where('vendedor_id', '==', uid), orderBy('timestamp', 'desc'));
+      qShowcase = query(collection(db, 'showcase_leads'), where('vendedor_id', '==', uid));
     } else if (nivel === 'VENDEDOR' && uid) {
-      qShowcase = query(collection(db, 'showcase_leads'), where('vendedor_id', '==', uid), orderBy('timestamp', 'desc'));
+      qShowcase = query(collection(db, 'showcase_leads'), where('vendedor_id', '==', uid));
     } else if (uid) {
-      qShowcase = query(collection(db, 'showcase_leads'), where('cliente_id', '==', uid), orderBy('timestamp', 'desc'));
+      qShowcase = query(collection(db, 'showcase_leads'), where('cliente_id', '==', uid));
     }
 
     let unsubShowcase = () => {};
     if (qShowcase) {
       unsubShowcase = onSnapshot(qShowcase, (snapshot) => {
-        setShowcaseLeads(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        if (nivel !== 'ADM_MASTER' && nivel !== 'ADM_GERENTE') {
+          data.sort((a, b) => {
+            const tA = a.timestamp?.toMillis ? a.timestamp.toMillis() : 0;
+            const tB = b.timestamp?.toMillis ? b.timestamp.toMillis() : 0;
+            return tB - tA;
+          });
+        }
+        setShowcaseLeads(data);
       }, (error) => {
         console.error("Erro de permissão no Firestore (showcase): ", error);
       });
@@ -205,19 +243,21 @@ export const DashboardLayout: React.FC = () => {
     // Fetch pendencies
     let qPend = null;
     if (nivel === 'ADM_MASTER' || nivel === 'ADM_GERENTE') {
-      qPend = query(collection(db, 'pendencies'), where('status_pendencia', '!=', 'RESOLVIDO'));
+      qPend = query(collection(db, 'pendencies'));
     } else if (nivel === 'GESTOR' && uid) {
-      qPend = query(collection(db, 'pendencies'), where('id_superior', '==', uid), where('status_pendencia', '!=', 'RESOLVIDO'));
+      qPend = query(collection(db, 'pendencies'), where('id_superior', '==', uid));
     } else if (nivel === 'VENDEDOR' && uid) {
-      qPend = query(collection(db, 'pendencies'), where('vendedor_id', '==', uid), where('status_pendencia', '!=', 'RESOLVIDO'));
+      qPend = query(collection(db, 'pendencies'), where('vendedor_id', '==', uid));
     } else if (uid) {
-      qPend = query(collection(db, 'pendencies'), where('cliente_id', '==', uid), where('status_pendencia', '!=', 'RESOLVIDO'));
+      qPend = query(collection(db, 'pendencies'), where('cliente_id', '==', uid));
     }
 
     let unsubPend = () => {};
     if (qPend) {
       unsubPend = onSnapshot(qPend, (snapshot) => {
-        setPendencies(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        data = data.filter(p => p.status_pendencia !== 'RESOLVIDO');
+        setPendencies(data);
       }, (error) => {
         console.error("Erro de permissão no Firestore (pendencies): ", error);
       });
@@ -230,15 +270,22 @@ export const DashboardLayout: React.FC = () => {
     } else if (uid) {
       qHistory = query(
         collection(db, 'status_history'),
-        where('visibilidade_uids', 'array-contains', uid),
-        orderBy('timestamp', 'desc')
+        where('visibilidade_uids', 'array-contains', uid)
       );
     }
 
     let unsubHistory = () => {};
     if (qHistory) {
       unsubHistory = onSnapshot(qHistory, (snapshot) => {
-        setStatusHistory(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        if (nivel !== 'ADM_MASTER' && nivel !== 'ADM_GERENTE' && nivel !== 'ADM_ANALISTA') {
+          data.sort((a, b) => {
+            const tA = a.timestamp?.toMillis ? a.timestamp.toMillis() : 0;
+            const tB = b.timestamp?.toMillis ? b.timestamp.toMillis() : 0;
+            return tB - tA;
+          });
+        }
+        setStatusHistory(data);
       }, (error) => {
         console.error("Erro de permissão no Firestore (history): ", error);
       });
@@ -340,27 +387,34 @@ export const DashboardLayout: React.FC = () => {
 
       {/* Sidebar Container */}
       <div className={`
-        fixed inset-y-0 left-0 z-50 lg:relative lg:translate-x-0 transition-transform duration-300 ease-in-out
-        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        fixed inset-y-0 left-0 z-50 transition-all duration-300 ease-in-out
+        ${isSidebarOpen ? 'translate-x-0 w-[280px]' : '-translate-x-full w-[280px]'}
+        lg:relative lg:translate-x-0
+        ${isSidebarOpen ? 'lg:w-[280px]' : 'lg:w-0'}
+        overflow-hidden
       `}>
-        <Sidebar 
-          view={currentView} 
-          setView={(v: string) => navigate(`/${v}`)} 
-          currentProfile={profile} 
-          isOpen={isSidebarOpen} 
-          setIsOpen={setIsSidebarOpen} 
-        />
+        <div className="w-[280px] h-full h-screen">
+          <Sidebar 
+            view={currentView} 
+            setView={(v: string) => navigate(`/${v}`)} 
+            currentProfile={profile} 
+            isOpen={isSidebarOpen} 
+            setIsOpen={setIsSidebarOpen}
+            onClose={closeSidebar}
+          />
+        </div>
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col h-screen overflow-hidden w-full bg-slate-50">
-        <Header {...headerProps} />
-        <main className="flex-1 overflow-y-auto px-6 py-8 sm:px-8 sm:py-10 md:px-12 md:py-14">
+      <div className="flex-1 flex flex-col h-screen overflow-hidden w-full bg-slate-50 min-w-0">
+        <Header {...headerProps} onMenuToggle={toggleSidebar} />
+        <main className="flex-1 overflow-x-hidden overflow-y-auto px-4 py-6 sm:px-6 sm:py-8 md:px-8 md:py-10">
           <div className="max-w-[1700px] mx-auto w-full">
             <Outlet context={contextProps} />
           </div>
         </main>
       </div>
+      <GlobalChatWidget />
     </div>
   );
 };

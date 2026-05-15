@@ -542,6 +542,12 @@ export const OperationalView: React.FC = () => {
   });
 
   const totalFila = processos.filter(p => p.status_atual !== 'Concluído').length;
+  const totalPendente = processos.filter(p => p.status_atual === 'Pendente').length;
+  const totalEmAnalise = processos.filter(p => p.status_atual === 'Em Análise').length;
+  const totalProtocolado = processos.filter(p => p.status_atual === 'Protocolado').length;
+  const totalEmAndamento = processos.filter(p => p.status_atual === 'Em Andamento').length;
+  const totalAguardandoDoc = processos.filter(p => p.status_atual === 'Aguardando Documentação').length;
+
   const totalAtraso = processos.filter(p => {
     if (p.status_atual === 'Concluído') return false;
     const dataVenda = p.data_venda?.toDate ? p.data_venda.toDate() : new Date();
@@ -559,46 +565,52 @@ export const OperationalView: React.FC = () => {
   }).length;
 
   const [displayFila, setDisplayFila] = useState(0);
+  const [displayPendente, setDisplayPendente] = useState(0);
+  const [displayEmAnalise, setDisplayEmAnalise] = useState(0);
+  const [displayProtocolado, setDisplayProtocolado] = useState(0);
+  const [displayEmAndamento, setDisplayEmAndamento] = useState(0);
+  const [displayAguardandoDoc, setDisplayAguardandoDoc] = useState(0);
   const [displayAtraso, setDisplayAtraso] = useState(0);
   const [displayConcluido, setDisplayConcluido] = useState(0);
 
   useEffect(() => {
     if (loading) return;
     
-    let timerFila: NodeJS.Timeout;
-    let timerAtraso: NodeJS.Timeout;
-    let timerConcluido: NodeJS.Timeout;
+    const animateStat = (target: number, setter: React.Dispatch<React.SetStateAction<number>>) => {
+      if (target > 0) {
+        let start = 0; const duration = 1000;
+        const inc = target / (duration / 16);
+        const timer = setInterval(() => { 
+          start += inc; 
+          if (start >= target) { 
+            setter(target); 
+            clearInterval(timer); 
+          } else { 
+            setter(Math.floor(start)); 
+          } 
+        }, 16);
+        return timer;
+      } else {
+        setter(0);
+        return null;
+      }
+    };
 
-    if (totalFila > 0) {
-      let start = 0; const end = totalFila; const duration = 1000;
-      const inc = end / (duration / 16);
-      timerFila = setInterval(() => { start += inc; if (start >= end) { setDisplayFila(end); clearInterval(timerFila); } else { setDisplayFila(Math.floor(start)); } }, 16);
-    } else {
-      setDisplayFila(0);
-    }
-    
-    if (totalAtraso > 0) {
-      let start = 0; const end = totalAtraso; const duration = 1000;
-      const inc = end / (duration / 16);
-      timerAtraso = setInterval(() => { start += inc; if (start >= end) { setDisplayAtraso(end); clearInterval(timerAtraso); } else { setDisplayAtraso(Math.floor(start)); } }, 16);
-    } else {
-      setDisplayAtraso(0);
-    }
-    
-    if (totalConcluidoHoje > 0) {
-      let start = 0; const end = totalConcluidoHoje; const duration = 1000;
-      const inc = end / (duration / 16);
-      timerConcluido = setInterval(() => { start += inc; if (start >= end) { setDisplayConcluido(end); clearInterval(timerConcluido); } else { setDisplayConcluido(Math.floor(start)); } }, 16);
-    } else {
-      setDisplayConcluido(0);
-    }
+    const timers = [
+      animateStat(totalFila, setDisplayFila),
+      animateStat(totalPendente, setDisplayPendente),
+      animateStat(totalEmAnalise, setDisplayEmAnalise),
+      animateStat(totalProtocolado, setDisplayProtocolado),
+      animateStat(totalEmAndamento, setDisplayEmAndamento),
+      animateStat(totalAguardandoDoc, setDisplayAguardandoDoc),
+      animateStat(totalAtraso, setDisplayAtraso),
+      animateStat(totalConcluidoHoje, setDisplayConcluido)
+    ];
 
     return () => {
-      if (timerFila) clearInterval(timerFila);
-      if (timerAtraso) clearInterval(timerAtraso);
-      if (timerConcluido) clearInterval(timerConcluido);
+      timers.forEach(t => t && clearInterval(t));
     };
-  }, [loading, totalFila, totalAtraso, totalConcluidoHoje]);
+  }, [loading, totalFila, totalPendente, totalEmAnalise, totalProtocolado, totalEmAndamento, totalAguardandoDoc, totalAtraso, totalConcluidoHoje]);
 
   if (loading) {
     return (
@@ -614,8 +626,8 @@ export const OperationalView: React.FC = () => {
   return (
     <div className="space-y-10 pb-20">
       {/* HEADER OPERACIONAL (Layout 4.0 Glow) */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 bg-gradient-to-br from-[#020617] to-[#0a0a2e] p-6 md:p-12 rounded-[2rem] md:rounded-[3rem] border border-slate-800 shadow-[0_20px_50px_rgba(0,0,0,0.5)] relative overflow-hidden group">
-        <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none group-hover:rotate-12 transition-transform duration-1000">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 bg-gradient-to-br from-[#020617] to-[#0a0a2e] p-6 md:p-6 rounded-2xl md:rounded-3xl border border-slate-800 shadow-[0_20px_50px_rgba(0,0,0,0.5)] relative overflow-hidden group">
+        <div className="absolute top-0 right-0 p-6 opacity-5 pointer-events-none group-hover:rotate-12 transition-transform duration-1000">
           <Activity size={240} className="text-blue-500" />
         </div>
         
@@ -644,21 +656,46 @@ export const OperationalView: React.FC = () => {
         </div>
         
         {/* MINI DASHBOARD VIP ANALISTA */}
-        <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-3 relative z-10 w-full lg:w-auto mt-4 lg:mt-0">
-          <div className="bg-[#0B0F19] px-4 md:px-6 py-4 rounded-2xl border border-slate-800/50 shadow-inner flex flex-col items-center justify-center relative overflow-hidden group/card shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+        <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-2 sm:gap-3 relative z-10 w-full mt-4 lg:mt-0">
+          <div className="bg-[#0B0F19] px-3 md:px-4 py-3 rounded-2xl border border-slate-800/50 shadow-inner flex flex-col items-center justify-center relative overflow-hidden group/card shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+             <div className="absolute inset-0 bg-gradient-to-t from-slate-600/10 to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity"></div>
+             <p className="text-[9px] sm:text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 text-center whitespace-nowrap">Em Fila</p>
+             <p className="text-xl md:text-2xl font-bold text-slate-400 tracking-tight drop-shadow-[0_0_10px_rgba(148,163,184,0.3)]">{displayFila.toString().padStart(2, '0')}</p>
+          </div>
+          <div className="bg-[#0B0F19] px-3 md:px-4 py-3 rounded-2xl border border-blue-900/20 shadow-inner flex flex-col items-center justify-center relative overflow-hidden group/card shadow-[0_0_20px_rgba(0,0,0,0.5)]">
              <div className="absolute inset-0 bg-gradient-to-t from-blue-900/10 to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity"></div>
-             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Em Fila</p>
-             <p className="text-2xl md:text-3xl font-bold text-blue-400 tracking-tight drop-shadow-[0_0_10px_rgba(59,130,246,0.3)]">{displayFila.toString().padStart(2, '0')}</p>
+             <p className="text-[9px] sm:text-[10px] font-bold text-blue-500/70 uppercase tracking-widest mb-1 text-center whitespace-nowrap">Pendente</p>
+             <p className="text-xl md:text-2xl font-bold text-blue-500 tracking-tight drop-shadow-[0_0_10px_rgba(59,130,246,0.3)]">{displayPendente.toString().padStart(2, '0')}</p>
           </div>
-          <div className="bg-[#0B0F19] px-4 md:px-6 py-4 rounded-2xl border border-rose-900/20 shadow-inner flex flex-col items-center justify-center relative overflow-hidden group/card shadow-[0_0_20px_rgba(0,0,0,0.5)]">
-             <div className="absolute inset-0 bg-gradient-to-t from-rose-900/10 to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity"></div>
-            <p className="text-[10px] font-bold text-rose-500/70 uppercase tracking-widest mb-1">Atraso SLA</p>
-            <p className="text-2xl md:text-3xl font-bold text-rose-500 tracking-tight drop-shadow-[0_0_10px_rgba(225,29,72,0.3)]">{displayAtraso.toString().padStart(2, '0')}</p>
+          <div className="bg-[#0B0F19] px-3 md:px-4 py-3 rounded-2xl border border-cyan-900/20 shadow-inner flex flex-col items-center justify-center relative overflow-hidden group/card shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+             <div className="absolute inset-0 bg-gradient-to-t from-cyan-900/10 to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity"></div>
+             <p className="text-[9px] sm:text-[10px] font-bold text-cyan-500/70 uppercase tracking-widest mb-1 text-center whitespace-nowrap">Em Análise</p>
+             <p className="text-xl md:text-2xl font-bold text-cyan-500 tracking-tight drop-shadow-[0_0_10px_rgba(6,182,212,0.3)]">{displayEmAnalise.toString().padStart(2, '0')}</p>
           </div>
-          <div className="col-span-2 sm:col-span-1 bg-[#0B0F19] px-4 md:px-6 py-4 rounded-2xl border border-emerald-900/20 shadow-inner flex flex-col items-center justify-center relative overflow-hidden group/card shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+          <div className="bg-[#0B0F19] px-3 md:px-4 py-3 rounded-2xl border border-amber-900/20 shadow-inner flex flex-col items-center justify-center relative overflow-hidden group/card shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+             <div className="absolute inset-0 bg-gradient-to-t from-amber-900/10 to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity"></div>
+             <p className="text-[9px] sm:text-[10px] font-bold text-amber-500/70 uppercase tracking-widest mb-1 text-center whitespace-nowrap">Aguar. Doc</p>
+             <p className="text-xl md:text-2xl font-bold text-amber-500 tracking-tight drop-shadow-[0_0_10px_rgba(245,158,11,0.3)]">{displayAguardandoDoc.toString().padStart(2, '0')}</p>
+          </div>
+          <div className="bg-[#0B0F19] px-3 md:px-4 py-3 rounded-2xl border border-orange-900/20 shadow-inner flex flex-col items-center justify-center relative overflow-hidden group/card shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+             <div className="absolute inset-0 bg-gradient-to-t from-orange-900/10 to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity"></div>
+             <p className="text-[9px] sm:text-[10px] font-bold text-orange-500/70 uppercase tracking-widest mb-1 text-center whitespace-nowrap">Andamento</p>
+             <p className="text-xl md:text-2xl font-bold text-orange-500 tracking-tight drop-shadow-[0_0_10px_rgba(249,115,22,0.3)]">{displayEmAndamento.toString().padStart(2, '0')}</p>
+          </div>
+          <div className="bg-[#0B0F19] px-3 md:px-4 py-3 rounded-2xl border border-indigo-900/20 shadow-inner flex flex-col items-center justify-center relative overflow-hidden group/card shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+             <div className="absolute inset-0 bg-gradient-to-t from-indigo-900/10 to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity"></div>
+             <p className="text-[9px] sm:text-[10px] font-bold text-indigo-500/70 uppercase tracking-widest mb-1 text-center whitespace-nowrap">Protocolo</p>
+             <p className="text-xl md:text-2xl font-bold text-indigo-500 tracking-tight drop-shadow-[0_0_10px_rgba(99,102,241,0.3)]">{displayProtocolado.toString().padStart(2, '0')}</p>
+          </div>
+          <div className="bg-[#0B0F19] px-3 md:px-4 py-3 rounded-2xl border border-emerald-900/20 shadow-inner flex flex-col items-center justify-center relative overflow-hidden group/card shadow-[0_0_20px_rgba(0,0,0,0.5)]">
              <div className="absolute inset-0 bg-gradient-to-t from-emerald-900/10 to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity"></div>
-            <p className="text-[10px] font-bold text-emerald-500/70 uppercase tracking-widest mb-1">Concluídos</p>
-            <p className="text-2xl md:text-3xl font-bold text-emerald-500 tracking-tight drop-shadow-[0_0_10px_rgba(52,211,153,0.3)]">{displayConcluido.toString().padStart(2, '0')}</p>
+            <p className="text-[9px] sm:text-[10px] font-bold text-emerald-500/70 uppercase tracking-widest mb-1 text-center whitespace-nowrap">Concluído</p>
+            <p className="text-xl md:text-2xl font-bold text-emerald-500 tracking-tight drop-shadow-[0_0_10px_rgba(52,211,153,0.3)]">{displayConcluido.toString().padStart(2, '0')}</p>
+          </div>
+          <div className="bg-[#0B0F19] px-3 md:px-4 py-3 rounded-2xl border border-rose-900/20 shadow-inner flex flex-col items-center justify-center relative overflow-hidden group/card shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+             <div className="absolute inset-0 bg-gradient-to-t from-rose-900/10 to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity"></div>
+            <p className="text-[9px] sm:text-[10px] font-bold text-rose-500/70 uppercase tracking-widest mb-1 text-center whitespace-nowrap">Atraso SLA</p>
+            <p className="text-xl md:text-2xl font-bold text-rose-500 tracking-tight drop-shadow-[0_0_10px_rgba(225,29,72,0.3)]">{displayAtraso.toString().padStart(2, '0')}</p>
           </div>
         </div>
       </div>
@@ -895,7 +932,7 @@ export const OperationalView: React.FC = () => {
         })}
 
         {filteredProcessos.length === 0 && (
-          <div className="py-32 text-center bg-white rounded-[3.5rem] border-2 border-dashed border-slate-100 shadow-inner">
+          <div className="py-32 text-center bg-white rounded-3xl border-2 border-dashed border-slate-100 shadow-inner">
             <div className="size-24 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
               <AlertCircle size={40} className="text-slate-200" />
             </div>
@@ -913,7 +950,7 @@ export const OperationalView: React.FC = () => {
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="bg-white w-full max-w-7xl md:max-w-[90vw] max-h-[95vh] rounded-[2rem] md:rounded-[3.5rem] overflow-hidden shadow-2xl flex flex-col relative border border-slate-100"
+              className="bg-white w-full max-w-7xl md:max-w-[90vw] max-h-[95vh] rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl flex flex-col relative border border-slate-100"
             >
               <button 
                 onClick={() => setSelectedProcess(null)}
@@ -922,7 +959,7 @@ export const OperationalView: React.FC = () => {
                 <X size={20} className="md:size-6" />
               </button>
 
-              <div className="p-6 md:p-10 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
+              <div className="p-6 md:p-6 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
                 <div className="flex items-center gap-4 md:gap-6">
                   <div className="size-12 md:size-16 bg-blue-600 rounded-2xl md:rounded-[1.5rem] flex items-center justify-center text-white shadow-2xl shadow-blue-500/20 shrink-0">
                     <ShieldCheck className="size-6 md:size-8" />
@@ -945,10 +982,10 @@ export const OperationalView: React.FC = () => {
                 )}
               </div>
 
-              <div className="flex-1 overflow-y-auto p-5 md:p-10 space-y-6 md:space-y-10 custom-scrollbar">
+              <div className="flex-1 overflow-y-auto p-5 md:p-6 space-y-6 md:space-y-10 custom-scrollbar">
                 {/* Cabeçalho do Cliente */}
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-8">
-                  <div className="md:col-span-8 bg-slate-50 p-6 md:p-8 rounded-3xl md:rounded-[2.5rem] border border-slate-100 shadow-inner">
+                  <div className="md:col-span-8 bg-slate-50 p-6 md:p-8 rounded-3xl md:rounded-2xl border border-slate-100 shadow-inner">
                     <div className="flex items-center gap-3 mb-4 md:mb-6">
                       <div className="size-8 bg-white rounded-xl flex items-center justify-center shadow-sm">
                         <UserCheck className="text-blue-600" size={16} />
@@ -1084,14 +1121,14 @@ export const OperationalView: React.FC = () => {
                       )}
                     </div>
                   </div>
-                  <div className="md:col-span-4 bg-[#0a0a2e] p-6 md:p-8 rounded-3xl md:rounded-[2.5rem] text-white flex flex-col justify-center shadow-2xl shadow-blue-900/30">
+                  <div className="md:col-span-4 bg-[#0a0a2e] p-6 md:p-8 rounded-3xl md:rounded-2xl text-white flex flex-col justify-center shadow-2xl shadow-blue-900/30">
                     <span className="text-[9px] font-black text-blue-300 uppercase tracking-widest mb-1 md:mb-2">Status</span>
                     <h4 className="text-xl md:text-2xl font-black uppercase italic leading-none text-blue-400">{selectedProcess.status_atual}</h4>
                   </div>
                 </div>
 
                 {/* Bloco de Tipo de Processo */}
-                <div className="bg-emerald-50 p-6 md:p-8 rounded-3xl md:rounded-[2.5rem] border border-emerald-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="bg-emerald-50 p-6 md:p-8 rounded-3xl md:rounded-2xl border border-emerald-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div>
                     <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest mb-1 md:mb-2 block">Tipo de Processo (Serviço)</span>
                     <h4 className="text-lg md:text-xl font-black text-emerald-900 uppercase italic">
@@ -1106,7 +1143,7 @@ export const OperationalView: React.FC = () => {
                 </div>
 
                 {/* Grid Duplo para Mobile e Desktop */}
-                <div className="flex flex-col lg:flex-row gap-6 md:gap-10 h-auto lg:h-[650px] min-h-0">
+                <div className="flex flex-col lg:flex-row gap-6 md:gap-6 h-auto lg:h-[650px] min-h-0">
                   {/* Checklist de Documentação */}
                   <div className="w-full lg:w-[35%] flex flex-col space-y-4 md:space-y-6">
                     <div className="flex items-center justify-between px-2">
@@ -1210,17 +1247,17 @@ export const OperationalView: React.FC = () => {
               </div>
             </div>
 
-            <div className="p-6 md:p-10 bg-slate-50/50 border-t border-slate-100 flex flex-wrap justify-center sm:justify-end gap-3 md:gap-4 shrink-0">
+            <div className="p-6 md:p-6 bg-slate-50/50 border-t border-slate-100 flex flex-wrap justify-center sm:justify-end gap-3 md:gap-4 shrink-0">
                 <button 
                   onClick={() => setSelectedProcess(null)}
-                  className="px-6 md:px-10 py-4 md:py-5 rounded-2xl text-[9px] md:text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-[#0a0a2e] transition-all"
+                  className="px-6 md:px-5 py-4 md:py-5 rounded-2xl text-[9px] md:text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-[#0a0a2e] transition-all"
                 >
                   Fechar
                 </button>
                 {!isProcessReady(selectedProcess) && isAdm && (
                   <button 
                     onClick={() => handleNotificarPendencias(selectedProcess)}
-                    className="px-6 md:px-10 py-4 md:py-5 bg-amber-50 text-amber-600 border border-amber-100 rounded-2xl text-[9px] md:text-[10px] font-black uppercase tracking-widest hover:bg-amber-100 shadow-sm transition-all flex items-center justify-center gap-2"
+                    className="px-6 md:px-5 py-4 md:py-5 bg-amber-50 text-amber-600 border border-amber-100 rounded-2xl text-[9px] md:text-[10px] font-black uppercase tracking-widest hover:bg-amber-100 shadow-sm transition-all flex items-center justify-center gap-2"
                   >
                     <AlertTriangle size={14} />
                     Cobrar
@@ -1229,13 +1266,13 @@ export const OperationalView: React.FC = () => {
                 <button 
                   onClick={() => handleDownloadPDF(selectedProcess)}
                   disabled={generatingPdf}
-                  className="px-6 md:px-10 py-4 md:py-5 bg-white border border-slate-100 text-[#0a0a2e] rounded-2xl text-[9px] md:text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="px-6 md:px-5 py-4 md:py-5 bg-white border border-slate-100 text-[#0a0a2e] rounded-2xl text-[9px] md:text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {generatingPdf ? <Loader2 className="animate-spin" size={14} /> : <FileDown size={14} />}
                   Ficha Técnica
                 </button>
                 {isAdm && (
-                  <button className="px-6 md:px-10 py-4 md:py-5 bg-[#0a0a2e] text-white rounded-2xl text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] hover:scale-105 active:scale-95 shadow-2xl shadow-blue-900/30 transition-all">
+                  <button className="px-6 md:px-5 py-4 md:py-5 bg-[#0a0a2e] text-white rounded-2xl text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] hover:scale-105 active:scale-95 shadow-2xl shadow-blue-900/30 transition-all">
                     Protocolo Final
                   </button>
                 )}

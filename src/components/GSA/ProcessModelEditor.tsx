@@ -61,7 +61,7 @@ export const ProcessModelEditor: React.FC<ProcessModelEditorProps> = ({ modelo, 
   };
 
   return (
-    <div className="p-6 bg-white dark:bg-slate-900 rounded-[2rem] shadow-xl border border-slate-100 dark:border-slate-800">
+    <div className="p-6 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-800">
       <div className="flex justify-between items-center mb-6">
         <h3 className="text-lg font-black text-slate-800 dark:text-white uppercase italic flex items-center gap-2">
           <Edit3 size={20} className="text-blue-600" /> Editar Requisitos: {modelo.nome}

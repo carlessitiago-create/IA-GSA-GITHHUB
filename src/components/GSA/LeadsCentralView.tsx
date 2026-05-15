@@ -330,13 +330,13 @@ export const LeadsCentralView: React.FC = () => {
 
   return (
     <div className="space-y-8 md:space-y-10 pb-20">
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 bg-white p-6 sm:p-8 md:p-10 rounded-3xl sm:rounded-[2rem] md:rounded-[3rem] border border-slate-100 shadow-sm overflow-hidden">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 bg-white p-6 sm:p-8 md:p-6 rounded-3xl sm:rounded-2xl md:rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
         <div className="space-y-4 w-full lg:w-auto">
           <div className="flex items-center gap-3">
             <div className="size-10 sm:size-12 bg-[#0a0a2e] rounded-xl sm:rounded-[1.2rem] flex items-center justify-center shadow-xl shadow-blue-900/20 shrink-0">
               <Target className="size-5 sm:size-6 text-white" />
             </div>
-            <h2 className="text-2xl sm:text-3xl md:text-5xl font-black text-[#0a0a2e] uppercase tracking-tighter italic leading-none truncate">
+            <h2 className="text-2xl sm:text-3xl md:text-3xl font-black text-[#0a0a2e] uppercase tracking-tighter italic leading-none truncate">
               Leads
             </h2>
           </div>
@@ -356,7 +356,7 @@ export const LeadsCentralView: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-center gap-3 bg-slate-50/50 sm:bg-white p-2 rounded-2xl sm:rounded-[1.5rem] md:rounded-[2rem] border border-slate-100 shadow-sm w-full lg:w-auto">
+        <div className="flex flex-col sm:flex-row items-center gap-3 bg-slate-50/50 sm:bg-white p-2 rounded-2xl sm:rounded-[1.5rem] md:rounded-2xl border border-slate-100 shadow-sm w-full lg:w-auto">
           <div className="relative w-full sm:w-64 md:w-72">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 size-4" />
             <input 
@@ -407,7 +407,7 @@ export const LeadsCentralView: React.FC = () => {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: idx * 0.05, duration: 0.5 }}
-            className="bg-white rounded-3xl sm:rounded-[2rem] md:rounded-[2.5rem] border border-slate-100 p-5 sm:p-6 md:p-8 shadow-sm hover:shadow-xl transition-all duration-500 flex flex-col md:flex-row lg:flex-row items-center justify-between gap-6 md:gap-8 group"
+            className="bg-white rounded-3xl sm:rounded-2xl md:rounded-2xl border border-slate-100 p-5 sm:p-6 md:p-8 shadow-sm hover:shadow-xl transition-all duration-500 flex flex-col md:flex-row lg:flex-row items-center justify-between gap-6 md:gap-8 group"
           >
             <div className="flex items-center gap-4 md:gap-6 flex-1 w-full min-w-0">
               <div className="size-14 sm:size-16 md:size-20 bg-slate-50 rounded-2xl sm:rounded-[1.2rem] md:rounded-[1.8rem] flex items-center justify-center text-[#0a0a2e] font-black text-xl sm:text-2xl md:text-3xl shadow-inner border border-slate-100 group-hover:bg-blue-50 group-hover:text-blue-600 transition-all duration-500 shrink-0">
@@ -443,7 +443,7 @@ export const LeadsCentralView: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 lg:flex lg:flex-wrap items-center gap-4 sm:gap-6 md:gap-10 lg:gap-12 flex-1 w-full lg:w-auto border-t md:border-t-0 border-slate-50 pt-5 md:pt-0">
+            <div className="grid grid-cols-2 lg:flex lg:flex-wrap items-center gap-4 sm:gap-6 md:gap-6 lg:gap-6 flex-1 w-full lg:w-auto border-t md:border-t-0 border-slate-50 pt-5 md:pt-0">
               <div className="space-y-1">
                 <span className="block text-[7px] sm:text-[8px] font-black text-slate-300 uppercase tracking-[0.2em]">Status</span>
                 <span className={`inline-flex px-2 sm:px-3 py-1 rounded-full text-[7px] sm:text-[9px] font-black uppercase tracking-widest border shadow-sm ${
@@ -541,7 +541,7 @@ export const LeadsCentralView: React.FC = () => {
         ))}
 
         {filteredItems.length === 0 && (
-          <div className="py-32 text-center bg-white rounded-[3.5rem] border-2 border-dashed border-slate-100 shadow-inner">
+          <div className="py-32 text-center bg-white rounded-3xl border-2 border-dashed border-slate-100 shadow-inner">
             <div className="size-24 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
               <AlertCircle className="text-slate-200 size-8 sm:size-10" />
             </div>
@@ -559,9 +559,9 @@ export const LeadsCentralView: React.FC = () => {
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="bg-white w-full max-w-lg rounded-[3rem] overflow-hidden shadow-2xl border border-slate-100"
+              className="bg-white w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl border border-slate-100"
             >
-              <div className="p-10 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
+              <div className="p-6 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
                 <div className="space-y-1">
                   <h3 className="text-2xl font-black text-[#0a0a2e] uppercase tracking-tighter italic">Atribuir Especialista</h3>
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Selecione quem cuidará deste lead</p>
@@ -623,7 +623,7 @@ export const LeadsCentralView: React.FC = () => {
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="bg-white w-full max-w-2xl rounded-[3rem] overflow-hidden shadow-2xl border border-slate-100"
+              className="bg-white w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl border border-slate-100"
             >
               <div className="p-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
                 <div className="space-y-1">

@@ -162,7 +162,7 @@ export function Login() {
 
   return (
     <div className="min-h-screen bg-[#0a0a2e] flex items-center justify-center p-4">
-      <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-white p-10 rounded-[2rem] shadow-2xl max-w-md w-full text-center">
+      <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-white p-6 rounded-2xl shadow-2xl max-w-md w-full text-center">
         <div className="bg-[#0a0a2e] w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-xl shadow-[#0a0a2e]/20">
           <Shield className="text-white w-10 h-10" />
         </div>
@@ -229,7 +229,7 @@ export function Login() {
 
         {/* MODAL DE CONSULTA PÚBLICA */}
         {showPublicSearch && (
-          <div className="fixed inset-0 z-[200] bg-[#0a0a2e] overflow-y-auto p-4 md:p-12">
+          <div className="fixed inset-0 z-[200] bg-[#0a0a2e] overflow-y-auto p-4 md:p-6">
             <button 
               onClick={() => setShowPublicSearch(false)}
               className="fixed top-8 right-8 text-white/50 hover:text-white transition-all z-[210] p-2 hover:bg-white/10 rounded-full"
@@ -249,7 +249,7 @@ export function Login() {
 export function PendingApproval({ profile, onLogout }: { profile: any, onLogout: () => void }) {
   return (
     <div className="min-h-screen bg-[#0a0a2e] flex items-center justify-center p-4">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-10 rounded-[2.5rem] shadow-2xl max-w-md w-full text-center">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-6 rounded-2xl shadow-2xl max-w-md w-full text-center">
         <div className="bg-amber-100 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-8">
           <Clock className="text-amber-600 w-10 h-10" />
         </div>
@@ -268,7 +268,7 @@ export function PendingApproval({ profile, onLogout }: { profile: any, onLogout:
 export function AccountRefused({ onLogout }: { onLogout: () => void }) {
   return (
     <div className="min-h-screen bg-[#0a0a2e] flex items-center justify-center p-4">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-10 rounded-[2.5rem] shadow-2xl max-w-md w-full text-center">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-6 rounded-2xl shadow-2xl max-w-md w-full text-center">
         <div className="bg-red-100 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-8">
           <XCircle className="text-red-600 w-10 h-10" />
         </div>
@@ -284,7 +284,7 @@ export function AccountRefused({ onLogout }: { onLogout: () => void }) {
 export function AccountSuspended({ status, onLogout }: { status: string, onLogout: () => void }) {
   return (
     <div className="min-h-screen bg-[#0a0a2e] flex items-center justify-center p-4">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-10 rounded-[2.5rem] shadow-2xl max-w-md w-full text-center">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-6 rounded-2xl shadow-2xl max-w-md w-full text-center">
         <div className="bg-slate-100 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-8">
           <Lock className="text-slate-600 w-10 h-10" />
         </div>
@@ -356,7 +356,7 @@ export function CompleteProfile({ profile: initialProfile }: { profile: any }) {
 
   return (
     <div className="min-h-screen bg-[#0a0a2e] flex items-center justify-center p-4">
-      <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-white p-10 rounded-[2.5rem] shadow-2xl max-w-md w-full text-center">
+      <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-white p-6 rounded-2xl shadow-2xl max-w-md w-full text-center">
         <h1 className="text-2xl font-black text-[#0a0a2e] mb-2 uppercase tracking-tight italic">Completar Cadastro</h1>
         <p className="text-slate-500 mb-8">Precisamos de mais algumas informações para validar seu acesso.</p>
         <form onSubmit={handleComplete} className="space-y-4 text-left">

@@ -123,7 +123,7 @@ export const LeadsView: React.FC = () => {
         </button>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
         <div className="w-full overflow-x-auto pb-4 custom-scrollbar">
           <table className="w-full min-w-[800px] text-left">
             <thead>

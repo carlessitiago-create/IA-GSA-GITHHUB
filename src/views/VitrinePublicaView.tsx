@@ -234,7 +234,7 @@ export const VitrinePublicaView: React.FC = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="text-5xl md:text-7xl font-black uppercase italic tracking-tighter leading-[0.9] text-slate-900"
+              className="text-3xl md:text-7xl font-black uppercase italic tracking-tighter leading-[0.9] text-slate-900"
             >
               Transforme sua <br />
               <span className="text-blue-600 underline decoration-blue-200 underline-offset-8">Operação Digital</span>
@@ -255,7 +255,7 @@ export const VitrinePublicaView: React.FC = () => {
               transition={{ delay: 0.3 }}
               className="flex flex-wrap gap-4"
             >
-              <a href="#servicos" className="bg-blue-600 text-white px-10 py-5 rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-xl shadow-blue-600/20 hover:bg-blue-700 hover:scale-105 active:scale-95 transition-all flex items-center gap-3">
+              <a href="#servicos" className="bg-blue-600 text-white px-5 py-5 rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-xl shadow-blue-600/20 hover:bg-blue-700 hover:scale-105 active:scale-95 transition-all flex items-center gap-3">
                 Ver Serviços <ArrowRight size={18} />
               </a>
             </motion.div>
@@ -272,7 +272,7 @@ export const VitrinePublicaView: React.FC = () => {
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex flex-col md:flex-row justify-between items-end gap-8 mb-16">
             <div className="space-y-4">
-              <h3 className="text-3xl md:text-5xl font-black uppercase italic tracking-tighter text-slate-900">
+              <h3 className="text-3xl md:text-3xl font-black uppercase italic tracking-tighter text-slate-900">
                 Nossas <span className="text-blue-600">Soluções</span>
               </h3>
               <p className="text-slate-500 max-w-md">Escolha o serviço ideal para o momento atual da sua empresa.</p>
@@ -293,7 +293,7 @@ export const VitrinePublicaView: React.FC = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: idx * 0.1 }}
-                className="bg-white rounded-[2.5rem] overflow-hidden border border-slate-200 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 group"
+                className="bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 group"
               >
                 <div className="aspect-video relative overflow-hidden">
                   <img 
@@ -346,7 +346,7 @@ export const VitrinePublicaView: React.FC = () => {
 
       {/* FOOTER */}
       <footer className="bg-slate-900 text-white py-20">
-        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12">
+        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-6">
           <div className="md:col-span-2 space-y-6">
             <div className="flex items-center gap-3">
               <div className="size-10 bg-blue-600 rounded-xl flex items-center justify-center">
@@ -398,9 +398,9 @@ export const VitrinePublicaView: React.FC = () => {
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="bg-white w-full max-w-xl rounded-[3rem] overflow-hidden shadow-2xl border border-slate-100"
+              className="bg-white w-full max-w-xl rounded-3xl overflow-hidden shadow-2xl border border-slate-100"
             >
-              <div className="p-10 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
+              <div className="p-6 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
                 <div className="space-y-1">
                   <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter italic">Solicitar Orçamento</h3>
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
@@ -415,7 +415,7 @@ export const VitrinePublicaView: React.FC = () => {
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit} className="p-10 space-y-6">
+              <form onSubmit={handleSubmit} className="p-6 space-y-6">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Seu Nome Completo</label>
                   <div className="relative">

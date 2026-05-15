@@ -21,7 +21,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({ venda, onUpdate }) => 
       cancelButtonText: "Cancelar",
       customClass: {
         container: 'font-sans',
-        popup: 'rounded-[2rem]',
+        popup: 'rounded-2xl',
         confirmButton: 'rounded-xl px-6 py-3 font-black uppercase text-[10px] tracking-widest',
         cancelButton: 'rounded-xl px-6 py-3 font-black uppercase text-[10px] tracking-widest'
       }
@@ -56,7 +56,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({ venda, onUpdate }) => 
           text: "O Vendedor e o Gestor receberam um alerta crítico.",
           confirmButtonColor: "#0a0a2e",
           customClass: {
-            popup: 'rounded-[2rem]',
+            popup: 'rounded-2xl',
             confirmButton: 'rounded-xl px-6 py-3 font-black uppercase text-[10px] tracking-widest'
           }
         });
@@ -85,7 +85,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({ venda, onUpdate }) => 
       cancelButtonText: "Cancelar",
       customClass: {
         container: 'font-sans',
-        popup: 'rounded-[2rem]',
+        popup: 'rounded-2xl',
         confirmButton: 'rounded-xl px-6 py-3 font-black uppercase text-[10px] tracking-widest',
         cancelButton: 'rounded-xl px-6 py-3 font-black uppercase text-[10px] tracking-widest'
       }
@@ -121,7 +121,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({ venda, onUpdate }) => 
           text: "A venda foi marcada como Paga e o processo foi liberado.",
           confirmButtonColor: "#0a0a2e",
           customClass: {
-            popup: 'rounded-[2rem]',
+            popup: 'rounded-2xl',
             confirmButton: 'rounded-xl px-6 py-3 font-black uppercase text-[10px] tracking-widest'
           }
         });

@@ -86,11 +86,11 @@ const AlertCenter: React.FC<AlertCenterProps> = ({ onResolveClick }) => {
       {allAvisos.map(aviso => (
         <div 
           key={aviso.id} 
-          className={`p-6 sm:p-8 md:p-10 rounded-3xl sm:rounded-[3rem] shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 md:gap-8 relative overflow-hidden group border ${
+          className={`p-6 sm:p-8 md:p-6 rounded-3xl sm:rounded-3xl shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 md:gap-8 relative overflow-hidden group border ${
             aviso.type === 'process' ? 'bg-amber-50/50 border-amber-100' : 'bg-rose-50/50 border-rose-100'
           }`}
         >
-          <div className="absolute top-0 right-0 p-6 sm:p-10 opacity-5 pointer-events-none group-hover:rotate-12 transition-transform duration-700">
+          <div className="absolute top-0 right-0 p-6 sm:p-6 opacity-5 pointer-events-none group-hover:rotate-12 transition-transform duration-700">
             {aviso.type === 'process' ? <ClipboardList size={100} className="text-amber-600 sm:size-[120px]" /> : <AlertCircle size={100} className="text-rose-600 sm:size-[120px]" />}
           </div>
 
@@ -127,7 +127,7 @@ const AlertCenter: React.FC<AlertCenterProps> = ({ onResolveClick }) => {
                     window.location.href = '/pendencias';
                 }
             }}
-            className={`w-full md:w-auto text-white px-8 sm:px-12 py-4 sm:py-5 rounded-2xl sm:rounded-[1.8rem] font-black text-[10px] sm:text-xs uppercase tracking-[0.2em] transition-all shadow-2xl relative z-10 shrink-0 ${
+            className={`w-full md:w-auto text-white px-8 sm:px-6 py-4 sm:py-5 rounded-2xl sm:rounded-[1.8rem] font-black text-[10px] sm:text-xs uppercase tracking-[0.2em] transition-all shadow-2xl relative z-10 shrink-0 ${
               aviso.type === 'process' ? 'bg-amber-500 hover:bg-amber-600 shadow-amber-900/20' : 'bg-[#0a0a2e] hover:bg-rose-600 shadow-blue-900/20'
             } hover:scale-105 active:scale-95`}
           >

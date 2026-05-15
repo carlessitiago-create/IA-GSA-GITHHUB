@@ -37,8 +37,8 @@ export function DashboardFinanceiro() {
       )}
 
       <div className="responsive-container pb-20">
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 sm:gap-8 bg-white p-6 sm:p-8 md:p-10 rounded-3xl sm:rounded-[2.5rem] md:rounded-[3rem] border border-slate-100 shadow-sm relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-8 sm:p-12 opacity-5 pointer-events-none group-hover:rotate-12 transition-transform duration-1000">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 sm:gap-8 bg-white p-6 sm:p-8 md:p-6 rounded-3xl sm:rounded-2xl md:rounded-3xl border border-slate-100 shadow-sm relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-8 sm:p-6 opacity-5 pointer-events-none group-hover:rotate-12 transition-transform duration-1000">
             <TrendingUp className="size-24 sm:size-32 md:size-[180px] text-[#0a0a2e]" />
           </div>
 
@@ -48,7 +48,7 @@ export function DashboardFinanceiro() {
                 <DollarSign size={20} className="md:size-7 text-white" />
               </div>
               <div className="min-w-0">
-                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#0a0a2e] tracking-tight leading-none truncate">
+                <h1 className="text-2xl sm:text-3xl md:text-2xl font-bold text-[#0a0a2e] tracking-tight leading-none truncate">
                   Financeiro
                 </h1>
                 <p className="text-slate-500 text-[10px] sm:text-xs font-semibold uppercase tracking-wider mt-1">Control v4.0</p>
@@ -174,7 +174,7 @@ export function DashboardFinanceiro() {
             <motion.div 
               whileHover={{ y: -5 }}
               onClick={() => navigate('/operacional')}
-              className="bg-white p-8 rounded-[2.5rem] border border-blue-100 shadow-sm transition-all hover:shadow-xl cursor-pointer group"
+              className="bg-white p-8 rounded-2xl border border-blue-100 shadow-sm transition-all hover:shadow-xl cursor-pointer group"
             >
               <div className="flex justify-between items-center mb-6">
                 <div className="size-14 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-600/20">
@@ -194,7 +194,7 @@ export function DashboardFinanceiro() {
             <motion.div 
               whileHover={{ y: -5 }}
               onClick={() => navigate('/equipe')}
-              className="bg-white p-8 rounded-[2.5rem] border border-emerald-100 shadow-sm transition-all hover:shadow-xl cursor-pointer group"
+              className="bg-white p-8 rounded-2xl border border-emerald-100 shadow-sm transition-all hover:shadow-xl cursor-pointer group"
             >
               <div className="flex justify-between items-center mb-6">
                 <div className="size-14 bg-emerald-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-emerald-600/20">
@@ -213,7 +213,7 @@ export function DashboardFinanceiro() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 gap-8 sm:gap-12 mt-12">
+        <div className="grid grid-cols-1 gap-8 sm:gap-6 mt-12">
           <FinancialTransactions {...props} />
           <OpenInvoices {...props} />
           <RecentSales {...props} />

@@ -117,7 +117,7 @@ export const VitrineView: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="p-12 flex justify-center">
+      <div className="p-6 flex justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
       </div>
     );
@@ -126,7 +126,7 @@ export const VitrineView: React.FC = () => {
   return (
     <div className="space-y-12 pb-24">
       {/* HERO / DESTAQUE (Layout 4.0) */}
-      <section className="relative h-[300px] sm:h-[350px] md:h-[450px] rounded-[2rem] sm:rounded-[3rem] md:rounded-[3.5rem] overflow-hidden flex items-center p-6 sm:p-12 md:p-20 shadow-2xl shadow-blue-900/10 group">
+      <section className="relative h-[300px] sm:h-[350px] md:h-[450px] rounded-2xl sm:rounded-3xl md:rounded-3xl overflow-hidden flex items-center p-6 sm:p-6 md:p-20 shadow-2xl shadow-blue-900/10 group">
         <img 
           src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=1200" 
           className="absolute inset-0 w-full h-full object-cover transition-transform duration-[2s] group-hover:scale-110"
@@ -136,7 +136,7 @@ export const VitrineView: React.FC = () => {
         <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a2e] via-[#0a0a2e]/90 to-transparent"></div>
         
         {/* Decorative elements */}
-        <div className="absolute top-0 right-0 p-12 opacity-10 hidden md:block">
+        <div className="absolute top-0 right-0 p-6 opacity-10 hidden md:block">
           <Verified size={200} className="text-white" />
         </div>
 
@@ -151,7 +151,7 @@ export const VitrineView: React.FC = () => {
               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-100">Tecnologia GSA IA v4.0</span>
             </div>
             
-            <h2 className="text-2xl sm:text-4xl md:text-6xl lg:text-7xl font-black italic uppercase leading-[0.9] text-white tracking-tighter">
+            <h2 className="text-2xl sm:text-2xl md:text-6xl lg:text-7xl font-black italic uppercase leading-[0.9] text-white tracking-tighter">
               Inteligência <br/>
               <span className="text-blue-500">para o seu <br className="md:hidden"/> crédito.</span>
             </h2>
@@ -204,9 +204,9 @@ export const VitrineView: React.FC = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.1, duration: 0.5 }}
                 onClick={() => setSelectedService(s)}
-                className="group bg-white rounded-[2.5rem] p-5 flex flex-col cursor-pointer border border-slate-100 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500"
+                className="group bg-white rounded-2xl p-5 flex flex-col cursor-pointer border border-slate-100 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500"
               >
-                <div className="relative rounded-[2rem] overflow-hidden aspect-video mb-6 shadow-inner">
+                <div className="relative rounded-2xl overflow-hidden aspect-video mb-6 shadow-inner">
                   <img 
                     src={`https://img.youtube.com/vi/${getYoutubeId(s.video_youtube_url || '')}/maxresdefault.jpg`} 
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
@@ -254,7 +254,7 @@ export const VitrineView: React.FC = () => {
               </motion.div>
             ))
           ) : (
-            <div className="col-span-full py-20 text-center bg-white rounded-[3rem] border border-dashed border-slate-200">
+            <div className="col-span-full py-20 text-center bg-white rounded-3xl border border-dashed border-slate-200">
               <LayoutGrid className="size-12 text-slate-200 mx-auto mb-4" />
               <p className="text-slate-400 font-bold">Nenhum serviço disponível no momento para este filtro.</p>
             </div>
@@ -270,7 +270,7 @@ export const VitrineView: React.FC = () => {
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="bg-white w-full max-w-6xl rounded-[2rem] sm:rounded-[3rem] md:rounded-[3.5rem] overflow-hidden shadow-2xl border border-slate-100 relative max-h-[95vh] flex flex-col"
+              className="bg-white w-full max-w-6xl rounded-2xl sm:rounded-3xl md:rounded-3xl overflow-hidden shadow-2xl border border-slate-100 relative max-h-[95vh] flex flex-col"
             >
               <button 
                 onClick={() => setSelectedService(null)}
@@ -294,14 +294,14 @@ export const VitrineView: React.FC = () => {
                 </div>
                 
                 {/* Info Area */}
-                <div className="lg:col-span-5 p-6 sm:p-8 md:p-10 lg:p-14 flex flex-col justify-center bg-white lg:overflow-y-auto lg:h-full">
+                <div className="lg:col-span-5 p-6 sm:p-8 md:p-6 lg:p-14 flex flex-col justify-center bg-white lg:overflow-y-auto lg:h-full">
                   <div className="space-y-6">
                     <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-50 rounded-full">
                       <Verified size={16} className="text-blue-600" />
                       <span className="text-[10px] font-black text-blue-700 uppercase tracking-widest">Protocolo GSA IA Garantido</span>
                     </div>
                     
-                    <h3 className="text-3xl md:text-4xl lg:text-5xl font-black italic uppercase text-[#0a0a2e] leading-none tracking-tighter">
+                    <h3 className="text-3xl md:text-2xl lg:text-3xl font-black italic uppercase text-[#0a0a2e] leading-none tracking-tighter">
                       {selectedService.nome_servico}
                     </h3>
                     
@@ -310,7 +310,7 @@ export const VitrineView: React.FC = () => {
                     </div>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-6 border-y border-slate-50">
-                      <div className="bg-slate-50 p-4 md:p-6 rounded-[2rem] border border-slate-100">
+                      <div className="bg-slate-50 p-4 md:p-6 rounded-2xl border border-slate-100">
                         <p className="text-[9px] font-black text-slate-400 uppercase mb-2 tracking-widest">Prazo Médio</p>
                         <div className="flex items-center gap-3">
                           <div className="size-8 md:size-10 bg-white rounded-xl flex items-center justify-center shadow-sm">
@@ -321,7 +321,7 @@ export const VitrineView: React.FC = () => {
                           </p>
                         </div>
                       </div>
-                      <div className="bg-slate-50 p-4 md:p-6 rounded-[2rem] border border-slate-100">
+                      <div className="bg-slate-50 p-4 md:p-6 rounded-2xl border border-slate-100">
                         <p className="text-[9px] font-black text-slate-400 uppercase mb-2 tracking-widest">Garantia Ativa</p>
                         <div className="flex items-center gap-3">
                           <div className="size-8 md:size-10 bg-white rounded-xl flex items-center justify-center shadow-sm">

@@ -113,7 +113,7 @@ export const MyClubView: React.FC = () => {
     <div className="space-y-6 sm:space-y-8 pb-10 sm:pb-20 px-1 sm:px-0">
       {/* Header com Saldo e Progresso */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-gradient-to-br from-gray-900 to-black p-6 sm:p-8 md:p-10 rounded-3xl text-white relative overflow-hidden shadow-xl">
+        <div className="lg:col-span-2 bg-gradient-to-br from-gray-900 to-black p-6 sm:p-8 md:p-6 rounded-3xl text-white relative overflow-hidden shadow-xl">
           <div className="relative z-10">
             <div className="flex items-center gap-3 mb-6 sm:mb-8">
               <div className="p-2 sm:p-2.5 bg-yellow-400 rounded-lg sm:rounded-xl">
@@ -123,7 +123,7 @@ export const MyClubView: React.FC = () => {
             </div>
             
             <div className="flex items-end gap-2 mb-8 sm:mb-10">
-              <span className="text-5xl sm:text-6xl md:text-7xl font-black tracking-tighter leading-none">{saldo}</span>
+              <span className="text-3xl sm:text-6xl md:text-7xl font-black tracking-tighter leading-none">{saldo}</span>
               <span className="text-sm sm:text-lg md:text-xl font-black text-yellow-400 mb-1 sm:mb-2 uppercase tracking-widest italic">Pontos</span>
             </div>
 
@@ -250,7 +250,7 @@ export const MyClubView: React.FC = () => {
               </div>
             ))}
             {history.length === 0 && (
-              <div className="bg-white p-12 rounded-2xl border border-gray-100 text-center text-gray-400 italic text-sm">
+              <div className="bg-white p-6 rounded-2xl border border-gray-100 text-center text-gray-400 italic text-sm">
                 Nenhuma movimentação encontrada.
               </div>
             )}

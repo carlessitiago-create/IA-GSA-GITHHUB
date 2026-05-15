@@ -62,7 +62,7 @@ const TeamIntelligence: React.FC<{ user: User }> = ({ user }) => {
   }, [user]);
 
   if (loading) return (
-    <div className="p-10 text-center">
+    <div className="p-6 text-center">
       <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mx-auto mb-4"></div>
       <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">Processando métricas da equipe...</p>
     </div>
@@ -72,16 +72,16 @@ const TeamIntelligence: React.FC<{ user: User }> = ({ user }) => {
     <div className="space-y-8">
       {/* Resumo da Equipe */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-[#0a0a2e] p-8 rounded-[2.5rem] text-white shadow-xl relative overflow-hidden">
+        <div className="bg-[#0a0a2e] p-8 rounded-2xl text-white shadow-xl relative overflow-hidden">
           <div className="relative z-10">
             <p className="text-[10px] font-black uppercase opacity-50 tracking-widest mb-2">Faturamento Total da Equipe</p>
-            <h3 className="text-4xl font-black text-emerald-400">R$ {totalEquipe.toLocaleString('pt-BR')}</h3>
+            <h3 className="text-2xl font-black text-emerald-400">R$ {totalEquipe.toLocaleString('pt-BR')}</h3>
             <p className="text-xs mt-4 opacity-70 italic">Baseado em {ranking.reduce((acc, s) => acc + s.quantidadeVendas, 0)} vendas concluídas.</p>
           </div>
           <TrendingUp className="absolute -right-4 -bottom-4 size-32 opacity-10" />
         </div>
 
-        <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
             <div>
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Melhor Performance</p>
                 <h3 className="text-2xl font-black text-slate-800 truncate max-w-[200px]">{ranking[0]?.nome || "Nenhum dado"}</h3>
@@ -94,7 +94,7 @@ const TeamIntelligence: React.FC<{ user: User }> = ({ user }) => {
       </div>
 
       {/* Ranking de Vendedores */}
-      <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
         <div className="p-6 border-b flex justify-between items-center bg-slate-50/50">
           <div className="flex items-center gap-2">
             <UsersIcon size={16} className="text-blue-600" />

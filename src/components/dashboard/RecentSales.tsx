@@ -5,8 +5,8 @@ export const RecentSales = ({ sales, currentProfile }: any) => {
   const isAnalyst = currentProfile?.nivel === 'ADM_ANALISTA' || currentProfile?.nivel === 'ADM_MASTER' || currentProfile?.nivel === 'ADM_GERENTE';
 
   return (
-    <div className="bg-white rounded-3xl sm:rounded-[2.5rem] border border-slate-100 overflow-hidden shadow-sm transition-all hover:shadow-md">
-      <div className="p-6 sm:p-10 border-b border-slate-50 bg-slate-50/30">
+    <div className="bg-white rounded-3xl sm:rounded-2xl border border-slate-100 overflow-hidden shadow-sm transition-all hover:shadow-md">
+      <div className="p-6 sm:p-6 border-b border-slate-50 bg-slate-50/30">
         <h3 className="text-lg sm:text-2xl font-black text-[#0a0a2e] uppercase tracking-tighter italic leading-none">Vendas Recentes</h3>
         <p className="text-slate-400 text-[8px] sm:text-[10px] font-black uppercase tracking-widest mt-1 sm:mt-2">Últimas transações no ecossistema</p>
       </div>
@@ -70,38 +70,38 @@ export const RecentSales = ({ sales, currentProfile }: any) => {
         <table className="w-full text-left border-collapse min-w-[900px]">
           <thead>
             <tr className="bg-white text-slate-400 border-b border-slate-50">
-              <th className="px-10 py-6 font-black uppercase text-[10px] tracking-[0.2em]">Data Registro</th>
-              <th className="px-10 py-6 font-black uppercase text-[10px] tracking-[0.2em]">Protocolo</th>
-              <th className="px-10 py-6 font-black uppercase text-[10px] tracking-[0.2em]">Cliente</th>
-              <th className="px-10 py-6 font-black uppercase text-[10px] tracking-[0.2em]">Serviço Contratado</th>
-              <th className="px-10 py-6 font-black uppercase text-[10px] tracking-[0.2em]">Valor Liquido</th>
-              <th className="px-10 py-6 font-black uppercase text-[10px] tracking-[0.2em]">Status</th>
-              {isAnalyst && <th className="px-10 py-6 font-black uppercase text-[10px] tracking-[0.2em] text-right">Ações</th>}
+              <th className="px-5 py-6 font-black uppercase text-[10px] tracking-[0.2em]">Data Registro</th>
+              <th className="px-5 py-6 font-black uppercase text-[10px] tracking-[0.2em]">Protocolo</th>
+              <th className="px-5 py-6 font-black uppercase text-[10px] tracking-[0.2em]">Cliente</th>
+              <th className="px-5 py-6 font-black uppercase text-[10px] tracking-[0.2em]">Serviço Contratado</th>
+              <th className="px-5 py-6 font-black uppercase text-[10px] tracking-[0.2em]">Valor Liquido</th>
+              <th className="px-5 py-6 font-black uppercase text-[10px] tracking-[0.2em]">Status</th>
+              {isAnalyst && <th className="px-5 py-6 font-black uppercase text-[10px] tracking-[0.2em] text-right">Ações</th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
             {sales.slice(0, 10).map((sale: any) => (
               <tr key={sale.id} className="hover:bg-slate-50/50 transition-colors group">
-                <td className="px-10 py-6">
+                <td className="px-5 py-6">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">
                     {sale.data_criacao?.toDate ? sale.data_criacao.toDate().toLocaleDateString('pt-BR') : 'N/A'}
                   </p>
                 </td>
-                <td className="px-10 py-6">
+                <td className="px-5 py-6">
                   <span className="text-[11px] font-black text-blue-600 bg-blue-50 px-3 py-1 rounded-lg border border-blue-100 uppercase tracking-widest">
                     #{sale.protocolo}
                   </span>
                 </td>
-                <td className="px-10 py-6">
+                <td className="px-5 py-6">
                   <p className="text-sm font-black text-[#0a0a2e] uppercase italic tracking-tight group-hover:text-blue-600 transition-colors">{sale.cliente_nome}</p>
                 </td>
-                <td className="px-10 py-6">
+                <td className="px-5 py-6">
                   <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{sale.servico_nome}</p>
                 </td>
-                <td className="px-10 py-6">
+                <td className="px-5 py-6">
                   <p className="text-base font-black text-[#0a0a2e] italic tracking-tighter">R$ {sale.valor_total.toLocaleString('pt-BR')}</p>
                 </td>
-                <td className="px-10 py-6">
+                <td className="px-5 py-6">
                   <div className="flex flex-col gap-2">
                     <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest w-fit shadow-sm border ${
                       sale.status_pagamento === 'Pago' ? 'bg-emerald-500 text-white border-emerald-400' : 
@@ -118,7 +118,7 @@ export const RecentSales = ({ sales, currentProfile }: any) => {
                   </div>
                 </td>
                 {isAnalyst && (
-                  <td className="px-10 py-6 text-right">
+                  <td className="px-5 py-6 text-right">
                     <ActionPanel venda={sale} />
                   </td>
                 )}

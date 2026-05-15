@@ -505,7 +505,7 @@ const SaaSLandingPage: React.FC = () => {
     if (manualRedirectLink) {
       return (
         <div className="min-h-screen bg-[#0a0a2e] flex items-center justify-center p-6 text-center font-sans">
-          <div className="max-w-md w-full bg-[#161b33]/80 backdrop-blur-xl p-10 rounded-[2.5rem] border border-blue-500/50 shadow-[0_0_50px_rgba(59,130,246,0.1)] relative overflow-hidden">
+          <div className="max-w-md w-full bg-[#161b33]/80 backdrop-blur-xl p-6 rounded-2xl border border-blue-500/50 shadow-[0_0_50px_rgba(59,130,246,0.1)] relative overflow-hidden">
             
             <div className="absolute -top-24 -right-24 w-48 h-48 bg-blue-600/10 rounded-full blur-3xl"></div>
             <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-blue-600/10 rounded-full blur-3xl"></div>
@@ -568,7 +568,7 @@ const SaaSLandingPage: React.FC = () => {
     if (paymentStatus === 'PAID') {
       return (
         <div className="min-h-screen bg-[#0f172a] flex items-center justify-center p-6 text-center overflow-hidden">
-          <div className="max-w-xl w-full bg-slate-800/80 backdrop-blur-xl p-12 rounded-[40px] border-2 border-green-500 shadow-[0_0_80px_rgba(34,197,94,0.15)] relative">
+          <div className="max-w-xl w-full bg-slate-800/80 backdrop-blur-xl p-6 rounded-[40px] border-2 border-green-500 shadow-[0_0_80px_rgba(34,197,94,0.15)] relative">
             
             {/* Ícone Animado */}
             <div className="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-8 shadow-[0_0_40px_rgba(34,197,94,0.4)] animate-bounce">
@@ -577,7 +577,7 @@ const SaaSLandingPage: React.FC = () => {
               </svg>
             </div>
 
-            <h2 className="text-4xl font-black text-white mb-4 tracking-tight uppercase">
+            <h2 className="text-2xl font-black text-white mb-4 tracking-tight uppercase">
               PAGAMENTO CONFIRMADO!
             </h2>
             
@@ -599,7 +599,7 @@ const SaaSLandingPage: React.FC = () => {
             </div>
 
             {/* Detalhe Decorativo */}
-            <div className="absolute -top-10 -right-10 w-40 h-40 bg-green-500/10 rounded-full blur-3xl"></div>
+            <div className="absolute -top-6 -right-10 w-40 h-40 bg-green-500/10 rounded-full blur-3xl"></div>
             <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-blue-500/10 rounded-full blur-3xl"></div>
           </div>
         </div>
@@ -608,7 +608,7 @@ const SaaSLandingPage: React.FC = () => {
 
     return (
       <div className="min-h-screen bg-[#0a0a2e] flex items-center justify-center p-6 font-sans">
-        <div className="bg-[#161b33] p-10 rounded-[2.5rem] border border-green-500/30 max-w-md w-full text-center shadow-[0_0_60px_rgba(34,197,94,0.1)] relative overflow-hidden">
+        <div className="bg-[#161b33] p-6 rounded-2xl border border-green-500/30 max-w-md w-full text-center shadow-[0_0_60px_rgba(34,197,94,0.1)] relative overflow-hidden">
           
           <div className="absolute -top-24 -left-24 w-48 h-48 bg-green-600/5 rounded-full blur-3xl"></div>
 
@@ -768,7 +768,7 @@ const SaaSLandingPage: React.FC = () => {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
-              className="text-5xl sm:text-6xl md:text-8xl font-black uppercase tracking-tighter leading-[0.9] text-white"
+              className="text-3xl sm:text-6xl md:text-8xl font-black uppercase tracking-tighter leading-[0.9] text-white"
             >
               DESCUBRA O QUE <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-500">BLOQUEIA SEU CRÉDITO</span>
@@ -832,7 +832,7 @@ const SaaSLandingPage: React.FC = () => {
           >
             <button 
               onClick={() => document.getElementById('ofertas')?.scrollIntoView({ behavior: 'smooth' })}
-              className="group bg-gradient-to-r from-green-500 to-emerald-600 text-slate-950 px-10 py-5 rounded-2xl font-black uppercase text-lg tracking-widest hover:scale-105 transition-all flex items-center gap-3 mx-auto shadow-[0_20px_40px_-10px_rgba(34,197,94,0.3)]"
+              className="group bg-gradient-to-r from-green-500 to-emerald-600 text-slate-950 px-5 py-5 rounded-2xl font-black uppercase text-lg tracking-widest hover:scale-105 transition-all flex items-center gap-3 mx-auto shadow-[0_20px_40px_-10px_rgba(34,197,94,0.3)]"
             >
               Quero meu diagnóstico agora 
               <ArrowRight className="group-hover:translate-x-1 transition-transform" />
@@ -849,7 +849,7 @@ const SaaSLandingPage: React.FC = () => {
         </div>
 
         <div className="max-w-4xl mx-auto px-6 text-center space-y-8 relative z-10">
-          <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter">
+          <h2 className="text-3xl md:text-3xl font-black uppercase tracking-tighter">
             O QUE <span className="text-green-500">REALMENTE</span> TE IMPEDE?
           </h2>
           
@@ -874,7 +874,7 @@ const SaaSLandingPage: React.FC = () => {
               <motion.div 
                 key={i} 
                 whileHover={{ y: -8, scale: 1.02 }}
-                className="relative group bg-gradient-to-b from-slate-800/60 to-slate-950/80 backdrop-blur-2xl p-10 rounded-[2.5rem] border border-white/5 flex flex-col items-center gap-6 shadow-2xl overflow-hidden"
+                className="relative group bg-gradient-to-b from-slate-800/60 to-slate-950/80 backdrop-blur-2xl p-6 rounded-2xl border border-white/5 flex flex-col items-center gap-6 shadow-2xl overflow-hidden"
               >
                 <div className="absolute inset-0 bg-gradient-to-tr from-green-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                 
@@ -896,7 +896,7 @@ const SaaSLandingPage: React.FC = () => {
             ))}
           </div>
 
-          <div className="inline-flex items-center gap-4 px-8 py-6 bg-green-500/10 rounded-[2rem] border border-green-500/20 shadow-[0_0_30px_rgba(34,197,94,0.1)]">
+          <div className="inline-flex items-center gap-4 px-8 py-6 bg-green-500/10 rounded-2xl border border-green-500/20 shadow-[0_0_30px_rgba(34,197,94,0.1)]">
             <Zap className="text-green-500 shrink-0" size={28} />
             <p className="text-xl md:text-2xl font-black uppercase tracking-tight text-green-500">
               Existe um sistema interno que você não vê.
@@ -907,13 +907,13 @@ const SaaSLandingPage: React.FC = () => {
 
       {/* ANALOGIA */}
       <section className="py-10 px-6">
-        <div className="max-w-5xl mx-auto bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-900 p-8 md:p-16 rounded-[3rem] shadow-[0_40px_100px_rgba(37,99,235,0.2)] relative overflow-hidden group">
+        <div className="max-w-5xl mx-auto bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-900 p-8 md:p-16 rounded-3xl shadow-[0_40px_100px_rgba(37,99,235,0.2)] relative overflow-hidden group">
           <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10"></div>
           <div className="relative z-10 space-y-10 text-center">
             <div className="size-20 bg-white/10 backdrop-blur-xl rounded-3xl flex items-center justify-center mx-auto mb-8 border border-white/20">
               <Target className="text-white" size={40} />
             </div>
-            <p className="text-xl md:text-4xl font-black leading-[1.2] text-white tracking-tighter uppercase">
+            <p className="text-xl md:text-2xl font-black leading-[1.2] text-white tracking-tighter uppercase">
               "Nenhum médico trata sem exame. <br />
               <span className="text-blue-200">Por que você tentaria resolver sua vida financeira no escuro?"</span>
             </p>
@@ -943,7 +943,7 @@ const SaaSLandingPage: React.FC = () => {
               <motion.div 
                 key={i} 
                 whileHover={{ scale: 1.02 }}
-                className="bg-slate-800/50 backdrop-blur-sm p-12 rounded-[3rem] border border-white/5 space-y-6 hover:border-green-500/30 transition-all shadow-2xl"
+                className="bg-slate-800/50 backdrop-blur-sm p-6 rounded-3xl border border-white/5 space-y-6 hover:border-green-500/30 transition-all shadow-2xl"
               >
                 <div className="size-14 bg-green-500/10 rounded-2xl flex items-center justify-center">
                   <item.icon className="text-green-500" size={32} />
@@ -966,7 +966,7 @@ const SaaSLandingPage: React.FC = () => {
           
           {/* Header de Valor Real */}
           <div className="text-center mb-16 space-y-8">
-            <h2 className="text-4xl md:text-9xl font-black uppercase tracking-tighter text-white leading-none">
+            <h2 className="text-2xl md:text-9xl font-black uppercase tracking-tighter text-white leading-none">
               O INVESTIMENTO <br className="hidden md:block" />
               <span className="text-slate-400">QUE VIRA CRÉDITO</span>
             </h2>
@@ -982,7 +982,7 @@ const SaaSLandingPage: React.FC = () => {
                 </p>
               </div>
 
-              <div className="relative bg-rose-600 border-4 border-rose-500 py-6 px-10 md:px-16 rounded-3xl w-full max-w-4xl flex items-center justify-center shadow-[0_0_50px_-10px_rgba(244,63,94,0.6)] transform transition-transform hover:scale-105 my-8 overflow-hidden group">
+              <div className="relative bg-rose-600 border-4 border-rose-500 py-6 px-5 md:px-16 rounded-3xl w-full max-w-4xl flex items-center justify-center shadow-[0_0_50px_-10px_rgba(244,63,94,0.6)] transform transition-transform hover:scale-105 my-8 overflow-hidden group">
                 <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
                 <div className="relative z-10 flex flex-col md:flex-row items-center justify-center gap-4 text-center md:text-left">
                   <div className="flex items-center justify-center relative">
@@ -1060,7 +1060,7 @@ const SaaSLandingPage: React.FC = () => {
                   <span className="text-slate-500 line-through text-xs font-bold opacity-50 block mb-1">DE R$ {plan.oldPrice}</span>
                   <div className="flex items-baseline gap-1">
                     <span className="text-sm font-black text-green-500">R$</span>
-                    <span className="text-4xl font-black text-green-500">{plan.price.split(',')[0]}</span>
+                    <span className="text-2xl font-black text-green-500">{plan.price.split(',')[0]}</span>
                     {plan.price.includes(',') && <span className="text-xl font-black text-green-500">,{plan.price.split(',')[1]}</span>}
                     <span className="text-slate-400 text-[10px] font-bold uppercase tracking-widest ml-2">/ único</span>
                   </div>
@@ -1109,7 +1109,7 @@ const SaaSLandingPage: React.FC = () => {
               </div>
             </div>
             
-            <div className="flex flex-col items-center gap-6 bg-white/5 p-12 rounded-[3rem] border-2 border-green-500/30 min-w-[340px] shadow-[0_0_50px_rgba(34,197,94,0.1)] group hover:border-green-500/50 transition-all relative overflow-hidden">
+            <div className="flex flex-col items-center gap-6 bg-white/5 p-6 rounded-3xl border-2 border-green-500/30 min-w-[340px] shadow-[0_0_50px_rgba(34,197,94,0.1)] group hover:border-green-500/50 transition-all relative overflow-hidden">
               <div className="absolute inset-0 bg-green-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
               <div className="relative">
                 <div className="absolute inset-0 bg-green-500/30 blur-3xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
@@ -1130,15 +1130,15 @@ const SaaSLandingPage: React.FC = () => {
         <div className="max-w-4xl mx-auto text-center space-y-10">
           <motion.div 
             whileHover={{ rotate: 10, scale: 1.1 }}
-            className="size-28 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-[2.5rem] flex items-center justify-center mx-auto shadow-[0_20px_50px_rgba(37,99,235,0.3)]"
+            className="size-28 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto shadow-[0_20px_50px_rgba(37,99,235,0.3)]"
           >
             <Trophy className="text-white" size={56} />
           </motion.div>
           <div className="space-y-6">
-            <h2 className="text-4xl md:text-8xl font-black uppercase tracking-tighter leading-none italic">
+            <h2 className="text-2xl md:text-8xl font-black uppercase tracking-tighter leading-none italic">
               CLUBE DE <span className="text-blue-500">PONTOS GSA</span>
             </h2>
-            <p className="text-xl md:text-4xl font-black text-white tracking-tight italic opacity-90">
+            <p className="text-xl md:text-2xl font-black text-white tracking-tight italic opacity-90">
               "Quanto mais você resolve… <span className="text-slate-400">mais você ganha"</span>
             </p>
           </div>
@@ -1165,7 +1165,7 @@ const SaaSLandingPage: React.FC = () => {
 
         <button 
           onClick={() => document.getElementById('ofertas')?.scrollIntoView({ behavior: 'smooth' })}
-          className="bg-green-500 text-slate-900 px-8 py-6 sm:px-16 sm:py-8 rounded-2xl sm:rounded-[2rem] font-black uppercase text-lg sm:text-xl tracking-[0.2em] shadow-2xl shadow-green-500/30 hover:bg-green-400 hover:scale-105 active:scale-95 transition-all flex items-center gap-4 mx-auto"
+          className="bg-green-500 text-slate-900 px-8 py-6 sm:px-16 sm:py-8 rounded-2xl sm:rounded-2xl font-black uppercase text-lg sm:text-xl tracking-[0.2em] shadow-2xl shadow-green-500/30 hover:bg-green-400 hover:scale-105 active:scale-95 transition-all flex items-center gap-4 mx-auto"
         >
           QUERO DESCOBRIR MEU DIAGNÓSTICO AGORA <ChevronRight size={32} />
         </button>
