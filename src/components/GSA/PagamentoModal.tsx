@@ -41,6 +41,7 @@ export const PagamentoModal: React.FC<PagamentoModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [pixData, setPixData] = useState<{ qr_code: string; copy_paste: string } | null>(null);
   const [walletBalance, setWalletBalance] = useState(0);
+  const [saleId, setSaleId] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen && profile?.uid) {
@@ -53,6 +54,7 @@ export const PagamentoModal: React.FC<PagamentoModalProps> = ({
     if (isNaN(amount) || amount <= 0) return Swal.fire('Erro', 'Valor da venda inválido.', 'error');
     
     setLoading(true);
+
     try {
       if (method === 'CARTEIRA') {
         if (walletBalance < amount) {
@@ -79,6 +81,7 @@ export const PagamentoModal: React.FC<PagamentoModalProps> = ({
           timestamp: new Date(),
           ...paymentInfo 
         });
+
       } else {
         // PIX Flow
         // 1. Criar a venda segura no backend primeiro para ter o saleId
@@ -101,18 +104,37 @@ export const PagamentoModal: React.FC<PagamentoModalProps> = ({
           vendaId: saleId
         });
 
-        // 3. Atualizar o estado para exibir o QR Code
-        setPixData({ 
-          qr_code: `data:image/png;base64,${res.qr_code_base64}`, // O Asaas manda base64 direto
-          copy_paste: res.copy_paste 
-        });
+        console.log("PAYMENT_RESPONSE_DEBUG (RESPOSTA PURA DO ASAAS):", JSON.stringify(res, null, 2));                
 
-        onSuccess({ 
-          method: 'PIX', 
-          amount, 
-          saleId,
-          timestamp: new Date(),
-          ...paymentInfo 
+        setSaleId(saleId);
+
+        // 3. Extração à Prova de Balas do Asaas
+        // Tenta diversas combinações de chaves comuns que o Asaas ou wrappers podem retornar.
+        const extractField = (obj: any, keys: string[]): string | undefined => {
+          for (const key of keys) {
+            if (obj && obj[key]) return obj[key];
+            if (obj && obj.data && obj.data[key]) return obj.data[key];
+            if (obj && obj.qrCode && obj.qrCode[key]) return obj.qrCode[key];
+            if (obj && obj.data && obj.data.qrCode && obj.data.qrCode[key]) return obj.data.qrCode[key];
+          }
+          return undefined;
+        };
+
+        const qrBase64Keys = ['encodedImage', 'qr_code_base64', 'qrCodeBase64', 'qr_code'];
+        const copyPasteKeys = ['payload', 'copy_paste', 'pixCopyPaste', 'copyPaste'];
+
+        const qrBase64 = extractField(res, qrBase64Keys);
+        const copyPaste = extractField(res, copyPasteKeys);
+          
+        console.log("PAYMENT_DATA_EXTRACTED (DADOS TRATADOS):", { qrBase64, copyPaste, res });
+
+        if (!qrBase64 || !copyPaste) {
+          throw new Error(`O banco/gateway não retornou os dados da chave PIX necessários. Resposta obtida: ${JSON.stringify(res).substring(0, 100)}`);
+        }
+
+        setPixData({ 
+          qr_code: qrBase64 ? (qrBase64.startsWith('data:image') ? qrBase64 : `data:image/png;base64,${qrBase64}`) : '',
+          copy_paste: copyPaste || ''
         });
       }
     } catch (error: any) {
@@ -250,7 +272,6 @@ export const PagamentoModal: React.FC<PagamentoModalProps> = ({
                 </div>
 
                 <div className="relative group">
-                  {/* Glow do botão */}
                   <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl blur opacity-30 group-hover:opacity-60 transition duration-500"></div>
                   <button 
                     onClick={handleConfirm}
@@ -278,12 +299,14 @@ export const PagamentoModal: React.FC<PagamentoModalProps> = ({
                   <div className="relative">
                     <div className="absolute -inset-2 bg-gradient-to-tr from-blue-500 to-emerald-500 rounded-3xl blur opacity-20"></div>
                     <div className="relative size-48 bg-white p-3 rounded-2xl shadow-xl">
-                      <img 
-                        src={pixData.qr_code} 
-                        alt="QR Code PIX" 
-                        className="w-full h-full rounded-xl"
-                        referrerPolicy="no-referrer"
-                      />
+                      {pixData.qr_code && (
+                        <img 
+                          src={pixData.qr_code} 
+                          alt="QR Code PIX" 
+                          className="w-full h-full rounded-xl"
+                          referrerPolicy="no-referrer"
+                        />
+                      )}
                     </div>
                   </div>
                   
@@ -307,7 +330,19 @@ export const PagamentoModal: React.FC<PagamentoModalProps> = ({
                 </div>
 
                 <button 
-                  onClick={onClose}
+                  onClick={() => {
+                    if(saleId) {
+                      onSuccess({ 
+                        method: 'PIX', 
+                        amount, 
+                        saleId,
+                        timestamp: new Date(),
+                        ...paymentInfo 
+                      });
+                    } else {
+                      onClose();
+                    }
+                  }}
                   className="w-full bg-slate-800 text-slate-300 border border-slate-700 py-4 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-slate-700 hover:text-white transition-all"
                 >
                   <CheckCircle2 size={16} className="inline-block mr-2 -mt-0.5"/> JÁ REALIZEI O PAGAMENTO

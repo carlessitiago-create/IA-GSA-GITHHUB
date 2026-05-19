@@ -40,28 +40,20 @@ const getPublicClient = async (documento: string, dataNascimento?: string, codig
     }
 
     if (datasParaTentar.length > 0) {
-      for (const dt of datasParaTentar) {
-        // Tenta com Mascara
-        let q = query(
-          collection(db, coll.name),
-          where(coll.field, '==', documento),
-          where('data_nascimento', '==', dt),
-          limit(1)
-        );
-        let snap = await getDocs(q);
-        if (!snap.empty) return snap.docs[0];
-
-        // Tenta sem Mascara
-        if (documento !== docSemMascara) {
-          q = query(
-            collection(db, coll.name),
-            where(coll.field, '==', docSemMascara),
-            where('data_nascimento', '==', dt),
-            limit(1)
-          );
-          snap = await getDocs(q);
-          if (!snap.empty) return snap.docs[0];
-        }
+      let q = query(collection(db, coll.name), where(coll.field, '==', documento), limit(10));
+      let snap = await getDocs(q);
+      for (const d of snap.docs) {
+         const data = d.data();
+         if (!data.data_nascimento || datasParaTentar.includes(data.data_nascimento)) return d;
+      }
+      
+      if (documento !== docSemMascara) {
+         q = query(collection(db, coll.name), where(coll.field, '==', docSemMascara), limit(10));
+         snap = await getDocs(q);
+         for (const d of snap.docs) {
+             const data = d.data();
+             if (!data.data_nascimento || datasParaTentar.includes(data.data_nascimento)) return d;
+         }
       }
     }
   }
@@ -108,18 +100,17 @@ export const consultaPublicaProcesso = async (documento: string, dataNascimento?
     }
     
     if (!snapProc && datasParaTentar.length > 0) {
-      for (const dt of datasParaTentar) {
-        const qProt = query(
-          collection(db, 'order_processes'),
-          where('protocolo', '==', documento.toUpperCase()),
-          where('data_nascimento', '==', dt),
-          limit(1)
-        );
-        const res = await getDocs(qProt);
-        if (!res.empty) {
-          snapProc = res;
-          break;
-        }
+      const qProt = query(
+        collection(db, 'order_processes'),
+        where('protocolo', '==', documento.toUpperCase()),
+        limit(10)
+      );
+      const res = await getDocs(qProt);
+      for (const d of res.docs) {
+         if (!d.data().data_nascimento || datasParaTentar.includes(d.data().data_nascimento)) {
+             snapProc = { docs: [d], empty: false };
+             break;
+         }
       }
     }
   }
@@ -151,33 +142,27 @@ export const consultaPublicaProcesso = async (documento: string, dataNascimento?
     }
 
     if ((!snapProc || snapProc.empty) && datasParaTentar.length > 0) {
-      for (const dt of datasParaTentar) {
-        // Tenta com Mascara
-        const qProcMasc = query(
-          collection(db, 'order_processes'),
-          where('cliente_cpf_cnpj', '==', documento),
-          where('data_nascimento', '==', dt),
-          limit(5)
-        );
-        const resMasc = await getDocs(qProcMasc);
-        if (!resMasc.empty) {
-          snapProc = resMasc;
-          break;
-        }
+      const qProcMasc = query(collection(db, 'order_processes'), where('cliente_cpf_cnpj', '==', documento), limit(10));
+      const resMasc = await getDocs(qProcMasc);
+      let found = false;
+      let validDocs = [];
+      for (const d of resMasc.docs) {
+          if (!d.data().data_nascimento || datasParaTentar.includes(d.data().data_nascimento)) validDocs.push(d);
+      }
+      if (validDocs.length > 0) {
+          snapProc = { docs: validDocs, empty: false };
+          found = true;
+      }
 
-        // Tenta sem Mascara se falhou
-        if (documento !== docSemMascara) {
-          const qProcSemMasc = query(
-            collection(db, 'order_processes'),
-            where('cliente_cpf_cnpj', '==', docSemMascara),
-            where('data_nascimento', '==', dt),
-            limit(5)
-          );
-          const resSemMasc = await getDocs(qProcSemMasc);
-          if (!resSemMasc.empty) {
-            snapProc = resSemMasc;
-            break;
-          }
+      if (!found && documento !== docSemMascara) {
+        const qProcSemMasc = query(collection(db, 'order_processes'), where('cliente_cpf_cnpj', '==', docSemMascara), limit(10));
+        const resSemMasc = await getDocs(qProcSemMasc);
+        validDocs = [];
+        for (const d of resSemMasc.docs) {
+            if (!d.data().data_nascimento || datasParaTentar.includes(d.data().data_nascimento)) validDocs.push(d);
+        }
+        if (validDocs.length > 0) {
+            snapProc = { docs: validDocs, empty: false };
         }
       }
     }
@@ -205,18 +190,13 @@ export const consultaPublicaProcesso = async (documento: string, dataNascimento?
     }
 
     if ((!snapProc || snapProc.empty) && datasParaTentar.length > 0) {
-      for (const dt of datasParaTentar) {
-        const qProc = query(
-          collection(db, 'order_processes'),
-          where('cliente_id', '==', clienteId),
-          where('data_nascimento', '==', dt),
-          limit(10)
-        );
-        const res = await getDocs(qProc);
-        if (!res.empty) {
-          snapProc = res;
-          break;
-        }
+      const qProc = query(collection(db, 'order_processes'), where('cliente_id', '==', clienteId), limit(20));
+      const res = await getDocs(qProc);
+      for (const d of res.docs) {
+         if (!d.data().data_nascimento || datasParaTentar.includes(d.data().data_nascimento)) {
+            if (!snapProc || snapProc.empty) snapProc = { docs: [d], empty: false };
+            else snapProc.docs.push(d);
+         }
       }
     }
 

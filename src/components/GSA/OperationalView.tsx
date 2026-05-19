@@ -147,6 +147,67 @@ export const OperationalView: React.FC = () => {
     }
   };
 
+  const selecionarResponsavel = async (role: string, field: 'vendedor' | 'gestor' | 'analista') => {
+    if (!isAdm || !selectedProcess) return;
+    
+    try {
+      const { collection, getDocs, query, where, updateDoc, doc: fsDoc } = await import('firebase/firestore');
+      const { db } = await import('../../firebase');
+      
+      let usersQuery = query(collection(db, 'usuarios'), where('nivel', '==', role));
+      let snap = await getDocs(usersQuery);
+      
+      // If analista, include ADM_MASTER, etc.
+      if (role === 'ADM_ANALISTA') {
+          const snap2 = await getDocs(query(collection(db, 'usuarios'), where('nivel', '==', 'ADM_MASTER')));
+          snap = { docs: [...snap.docs, ...snap2.docs] } as any;
+      }
+      
+      let options: Record<string, string> = { "REMOVE": "Nenhum (Remover)" };
+      
+      snap.docs.forEach((d: any) => {
+        options[d.id] = d.data().nome_completo || d.data().nome || d.id;
+      });
+
+      const { value: userId } = await Swal.fire({
+        title: `Selecione o ${field.charAt(0).toUpperCase() + field.slice(1)}`,
+        input: 'select',
+        inputOptions: options,
+        showCancelButton: true
+      });
+
+      if (userId) {
+         const updates: any = {};
+         
+         if (userId === "REMOVE") {
+            updates[`${field}_id`] = null;
+            updates[`${field}_nome`] = null;
+         } else {
+            updates[`${field}_id`] = userId;
+            updates[`${field}_nome`] = options[userId];
+         }
+         
+         await updateDoc(fsDoc(db, 'order_processes', selectedProcess.id!), updates);
+         
+         const { registrarLogAuditoria } = await import('../../services/orderService');
+         await registrarLogAuditoria(
+           selectedProcess.id!, 
+           `Responsável (${field}) alterado para: ${userId === 'REMOVE' ? 'Nenhum' : options[userId]}`, 
+           profile?.uid || '', 
+           profile?.nome_completo || 'Analista'
+         );
+         
+         setSelectedProcess({ ...selectedProcess, ...updates });
+         
+         setProcessos(prev => prev.map(p => p.id === selectedProcess.id ? { ...p, ...updates } : p));
+         
+         Swal.fire('Sucesso', 'Responsável atualizado com sucesso.', 'success');
+      }
+    } catch (e) {
+      console.warn("Erro ao buscar usuários", e);
+    }
+  };
+
   const handleMudarServico = async () => {
     if (!selectedProcess || !isAdm) return;
     try {
@@ -1092,30 +1153,59 @@ export const OperationalView: React.FC = () => {
                         </div>
                       </div>
                       {isAdm && (
-                        <div className="space-y-1">
-                          <p className="text-[8px] font-black text-slate-300 uppercase tracking-widest">WhatsApp</p>
-                          <div className="flex items-center gap-2">
-                            <p className="text-xs md:text-sm font-black text-slate-600 uppercase tracking-tight">{selectedClient?.whatsapp || selectedClient?.telefone || 'N/A'}</p>
-                            <button 
-                              onClick={async () => {
-                                const { value: novoTel } = await Swal.fire({
-                                  title: 'Editar WhatsApp do Cliente',
-                                  input: 'text',
-                                  inputValue: selectedClient?.whatsapp || selectedClient?.telefone,
-                                  showCancelButton: true
-                                });
-                                if (novoTel !== undefined) {
-                                  const cleanTel = novoTel.replace(/\D/g, '');
-                                  const { updateCliente } = await import('../../services/leadService');
-                                  await updateCliente(selectedProcess.cliente_id, { whatsapp: cleanTel, telefone: cleanTel });
-                                  setSelectedClient({...selectedClient, whatsapp: cleanTel, telefone: cleanTel});
-                                  Swal.fire('Atualizado', 'WhatsApp alterado com sucesso.', 'success');
-                                }
-                              }}
-                              className="p-1 hover:bg-white rounded-lg text-slate-300 hover:text-blue-600 transition-all"
-                            >
-                              <Edit3 size={12} />
-                            </button>
+                        <div className="flex gap-4 md:gap-6 flex-wrap">
+                          <div className="space-y-1">
+                            <p className="text-[8px] font-black text-slate-300 uppercase tracking-widest">WhatsApp</p>
+                            <div className="flex items-center gap-2">
+                              <p className="text-xs md:text-sm font-black text-slate-600 uppercase tracking-tight">{selectedClient?.whatsapp || selectedClient?.telefone || 'N/A'}</p>
+                              <button 
+                                onClick={async () => {
+                                  const { value: novoTel } = await Swal.fire({
+                                    title: 'Editar WhatsApp do Cliente',
+                                    input: 'text',
+                                    inputValue: selectedClient?.whatsapp || selectedClient?.telefone,
+                                    showCancelButton: true
+                                  });
+                                  if (novoTel !== undefined) {
+                                    const cleanTel = novoTel.replace(/\D/g, '');
+                                    const { updateCliente } = await import('../../services/leadService');
+                                    await updateCliente(selectedProcess.cliente_id, { whatsapp: cleanTel, telefone: cleanTel });
+                                    setSelectedClient({...selectedClient, whatsapp: cleanTel, telefone: cleanTel});
+                                    Swal.fire('Atualizado', 'WhatsApp alterado com sucesso.', 'success');
+                                  }
+                                }}
+                                className="p-1 hover:bg-white rounded-lg text-slate-300 hover:text-blue-600 transition-all"
+                              >
+                                <Edit3 size={12} />
+                              </button>
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-1">
+                            <p className="text-[8px] font-black text-slate-300 uppercase tracking-widest">E-mail</p>
+                            <div className="flex items-center gap-2">
+                              <p className="text-xs md:text-sm font-black text-slate-600 uppercase tracking-tight truncate max-w-[150px]">{selectedClient?.email || 'N/A'}</p>
+                              <button 
+                                onClick={async () => {
+                                  const { value: novoEmail } = await Swal.fire({
+                                    title: 'Editar E-mail',
+                                    input: 'email',
+                                    inputValue: selectedClient?.email,
+                                    showCancelButton: true
+                                  });
+                                  if (novoEmail) {
+                                    const cleanEmail = novoEmail.trim();
+                                    const { updateCliente } = await import('../../services/leadService');
+                                    await updateCliente(selectedProcess.cliente_id, { email: cleanEmail });
+                                    setSelectedClient({...selectedClient, email: cleanEmail});
+                                    Swal.fire('Atualizado', 'E-mail alterado com sucesso.', 'success');
+                                  }
+                                }}
+                                className="p-1 hover:bg-white rounded-lg text-slate-300 hover:text-blue-600 transition-all"
+                              >
+                                <Edit3 size={12} />
+                              </button>
+                            </div>
                           </div>
                         </div>
                       )}
@@ -1140,6 +1230,43 @@ export const OperationalView: React.FC = () => {
                        Alterar Serviço
                      </button>
                   )}
+                </div>
+
+                {/* Bloco de Responsáveis */}
+                <div className="bg-slate-50 p-4 md:p-6 rounded-2xl border border-slate-100 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                     <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Vendedor</span>
+                     <div className="flex items-center gap-2">
+                       <p className="text-sm font-black text-slate-700 truncate">{selectedProcess.vendedor_nome || 'N/A'}</p>
+                       {isAdm && (
+                         <button onClick={() => selecionarResponsavel('VENDEDOR', 'vendedor')} className="p-1 hover:bg-slate-200 rounded-md text-slate-400 hover:text-blue-600 transition-colors shrink-0">
+                            <Edit3 size={12} />
+                         </button>
+                       )}
+                     </div>
+                  </div>
+                  <div>
+                     <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Gestor</span>
+                     <div className="flex items-center gap-2">
+                       <p className="text-sm font-black text-slate-700 truncate">{selectedProcess.gestor_nome || 'N/A'}</p>
+                       {isAdm && (
+                         <button onClick={() => selecionarResponsavel('GESTOR', 'gestor')} className="p-1 hover:bg-slate-200 rounded-md text-slate-400 hover:text-blue-600 transition-colors shrink-0">
+                            <Edit3 size={12} />
+                         </button>
+                       )}
+                     </div>
+                  </div>
+                  <div>
+                     <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Analista</span>
+                     <div className="flex items-center gap-2">
+                       <p className="text-sm font-black text-slate-700 truncate">{selectedProcess.analista_nome || 'N/A'}</p>
+                       {isAdm && (
+                         <button onClick={() => selecionarResponsavel('ADM_ANALISTA', 'analista')} className="p-1 hover:bg-slate-200 rounded-md text-slate-400 hover:text-blue-600 transition-colors shrink-0">
+                            <Edit3 size={12} />
+                         </button>
+                       )}
+                     </div>
+                  </div>
                 </div>
 
                 {/* Grid Duplo para Mobile e Desktop */}

@@ -56,7 +56,8 @@ export const ServiceFactoryView: React.FC = () => {
     pontos_vendedor: 50,
     pontos_gestor: 20,
     requisitos_documentos: [],
-    requisitos_campos: []
+    requisitos_campos: [],
+    is_limpa_nome: false
   });
 
   useEffect(() => {
@@ -144,6 +145,7 @@ export const ServiceFactoryView: React.FC = () => {
         ...formData,
         slug,
         ativo: true,
+        is_limpa_nome: !!formData.is_limpa_nome,
       } as ServiceData;
 
       if (editingId) {
@@ -176,7 +178,8 @@ export const ServiceFactoryView: React.FC = () => {
         pontos_vendedor: 50,
         pontos_gestor: 20,
         requisitos_documentos: [],
-        requisitos_campos: []
+        requisitos_campos: [],
+        is_limpa_nome: false
       });
       setEditingId(null);
     } catch (error: any) {
@@ -249,7 +252,8 @@ export const ServiceFactoryView: React.FC = () => {
                 pontos_vendedor: 50,
                 pontos_gestor: 20,
                 requisitos_documentos: [],
-                requisitos_campos: []
+                requisitos_campos: [],
+                is_limpa_nome: false
               });
             }}
             className="bg-blue-600 hover:bg-blue-500 px-6 py-3 rounded-2xl font-black uppercase text-xs tracking-widest transition-all shadow-lg shadow-blue-500/20 flex items-center gap-2"
@@ -388,6 +392,26 @@ export const ServiceFactoryView: React.FC = () => {
                     </div>
                   </div>
                 )}
+              </div>
+
+              <div className="flex items-start gap-3 p-4 bg-slate-900/60 rounded-xl border border-slate-700/80 mt-4 transition-all hover:border-blue-500/50">
+                <div className="flex items-center h-5">
+                  <input
+                    type="checkbox"
+                    id="is_limpa_nome"
+                    checked={formData.is_limpa_nome || false}
+                    onChange={(e) => setFormData({ ...formData, is_limpa_nome: e.target.checked })}
+                    className="w-4 h-4 text-blue-600 bg-slate-800 border-slate-700 rounded focus:ring-blue-500 focus:ring-offset-slate-900 cursor-pointer"
+                  />
+                </div>
+                <div className="text-sm">
+                  <label htmlFor="is_limpa_nome" className="font-semibold text-white block cursor-pointer select-none">
+                    Marcar como Serviço de Limpa Nome 🔥
+                  </label>
+                  <p className="text-gray-400 text-xs mt-1 leading-relaxed">
+                    Ativa automaticamente a esteira exclusiva de lotes (batches), monitoramento individual dos 5 órgãos (SPC, Serasa, Boa Vista, Cenprot SP e Nacional) e o disparo das automações com link de indicação após a conclusão.
+                  </p>
+                </div>
               </div>
 
               <div>

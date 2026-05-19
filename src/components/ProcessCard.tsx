@@ -182,6 +182,14 @@ export const ProcessCard: React.FC<ProcessCardProps> = ({ proc, pendencies, hist
       className={`bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden border-l-4 ${statusColor}`}
     >
       <div className="p-4">
+        {/* 🔴 IDENTIFICADOR VISUAL DE LIMPA NOME 🔴 */}
+        {proc.is_limpa_nome && (
+          <div className="absolute -top-2 -right-2 bg-red-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-lg flex items-center gap-1 border-2 border-white dark:border-slate-900 z-10">
+            <ShieldAlert size={10} />
+            LIMPA NOME
+          </div>
+        )}
+        
         <div className="flex justify-between items-start mb-2">
           <div className="flex-1">
             <h4 className="font-bold text-slate-800 dark:text-white uppercase text-sm leading-tight">{proc.servico_nome}</h4>
@@ -301,38 +309,57 @@ export const ProcessCard: React.FC<ProcessCardProps> = ({ proc, pendencies, hist
         )}
 
         <div className="space-y-3">
-            <div className="flex justify-between items-center">
-            <div className="flex flex-col">
-              <span className="text-[10px] font-bold uppercase text-slate-500">Progresso do Processo</span>
-              <span className="text-sm font-bold">{progressPercent}%</span>
+          {proc.is_limpa_nome && proc.progresso_baixa !== undefined ? (
+            <div className="space-y-1">
+              <div className="flex justify-between text-[10px] font-bold uppercase text-slate-500">
+                <span>Progresso das Baixas</span>
+                <span className="text-blue-600 dark:text-blue-400">{proc.progresso_baixa}%</span>
+              </div>
+              <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                <motion.div 
+                  className="h-full bg-blue-500" 
+                  initial={{ width: 0 }}
+                  animate={{ width: `${proc.progresso_baixa}%` }}
+                  transition={{ duration: 1.5, ease: "easeInOut" }}
+                />
+              </div>
             </div>
-            <div className="flex items-center gap-3">
-              <button 
-                onClick={() => setShowDetailModal(true)} 
-                className="text-blue-600 dark:text-blue-400 text-xs font-semibold uppercase tracking-wide hover:underline"
-              >
-                Ver Detalhes
-              </button>
-              <button 
-                onClick={() => setIsExpanded(!isExpanded)} 
-                className="text-slate-900 dark:text-slate-100 text-xs font-medium hover:underline"
-              >
-                {isExpanded ? 'Ver Menos' : 'Auditoria'}
-              </button>
-            </div>
-          </div>
-          
-          <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
-            <motion.div 
-              className="h-full"
-              initial={{ width: 0 }}
-              animate={{ 
-                width: `${progressPercent}%`,
-                backgroundColor: getProgressColor(progressPercent)
-              }}
-              transition={{ duration: 1.5, ease: "easeInOut" }}
-            />
-          </div>
+          ) : (
+            <>
+              <div className="flex justify-between items-center">
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-bold uppercase text-slate-500">Progresso do Processo</span>
+                  <span className="text-sm font-bold">{progressPercent}%</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button 
+                    onClick={() => setShowDetailModal(true)} 
+                    className="text-blue-600 dark:text-blue-400 text-xs font-semibold uppercase tracking-wide hover:underline"
+                  >
+                    Ver Detalhes
+                  </button>
+                  <button 
+                    onClick={() => setIsExpanded(!isExpanded)} 
+                    className="text-slate-900 dark:text-slate-100 text-xs font-medium hover:underline"
+                  >
+                    {isExpanded ? 'Ver Menos' : 'Auditoria'}
+                  </button>
+                </div>
+              </div>
+              
+              <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                <motion.div 
+                  className="h-full"
+                  initial={{ width: 0 }}
+                  animate={{ 
+                    width: `${progressPercent}%`,
+                    backgroundColor: getProgressColor(progressPercent)
+                  }}
+                  transition={{ duration: 1.5, ease: "easeInOut" }}
+                />
+              </div>
+            </>
+          )}
         </div>
 
         {proc.status_atual === 'Concluído' && (

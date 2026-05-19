@@ -37,6 +37,8 @@ export interface ServiceData {
   slug?: string;
   requisitos_documentos?: string[];
   requisitos_campos?: string[];
+  tags?: string[];
+  is_limpa_nome?: boolean;
 }
 
 const COLLECTION_NAME = 'services';

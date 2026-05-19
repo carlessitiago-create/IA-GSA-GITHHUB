@@ -4,7 +4,7 @@ import {
   Shield, Users, PlusCircle, LayoutDashboard, History, Settings, 
   Package, DollarSign, TrendingUp, Bell, ClipboardList, Gift, 
   ShoppingBag, LogOut, ChevronRight, Activity, AlertTriangle, X,
-  Factory, Trophy, Search, User, Mail, UserPlus
+  Factory, Trophy, Search, User, Mail, UserPlus, Layers
 } from 'lucide-react';
 
 
@@ -59,7 +59,7 @@ export function Sidebar({ currentProfile, logout, onClose }: any) {
               <MenuItem to="vendas-internas" icon={PlusCircle} label="Nova Venda" />
             )}
             {role.startsWith('ADM') && (
-              <MenuItem to="nova-venda-admin" icon={UserPlus} label="Novo Cliente e Venda Administrativa" color="text-indigo-400" />
+              <MenuItem to="nova-venda-admin" icon={UserPlus} label="Venda Administrativa" color="text-indigo-400" />
             )}
             {/* Atacado - Em Massa */}
             {(role.startsWith('ADM') || currentProfile?.permissoes_venda === 'ATACADO' || currentProfile?.permissoes_venda === 'AMBOS') && (
@@ -84,6 +84,7 @@ export function Sidebar({ currentProfile, logout, onClose }: any) {
               <>
                 <MenuItem to="pendencias" icon={AlertTriangle} label="Pendências" color="text-amber-500" />
                 <MenuItem to="auditoria" icon={Shield} label="Auditoria SLA" />
+                <MenuItem to="gestao-lotes" icon={Layers} label="Gestão de Lotes" color="text-sky-500" />
               </>
             )}
           </div>

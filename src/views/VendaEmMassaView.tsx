@@ -1,26 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-  Upload, 
-  FileText, 
-  Trash2, 
-  Plus, 
-  CheckCircle2, 
-  CreditCard, 
-  Loader2, 
-  AlertCircle,
-  Package,
-  ArrowRight,
-  TrendingUp,
-  ShieldCheck,
-  Search
+  Upload, FileText, Trash2, Plus, CheckCircle2, CreditCard, Loader2, AlertCircle,
+  Package, TrendingUp, Search, Clock, Download
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../components/AuthContext';
 import { db } from '../firebase';
-import { collection, query, where, getDocs, onSnapshot, orderBy } from 'firebase/firestore';
+import { collection, query, where, getDocs, onSnapshot, orderBy, limit } from 'firebase/firestore';
 import * as XLSX from 'xlsx';
 import Swal from 'sweetalert2';
-import { processarVenda } from '../services/vendaService';
 import { PagamentoModal } from '../components/GSA/PagamentoModal';
 
 interface BulkItem {
@@ -48,17 +36,30 @@ export const VendaEmMassaView: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'nova' | 'historico'>('nova');
   const [totalAmount, setTotalAmount] = useState(0);
 
+  // ESTADO DO LOTE LIMPA NOME
+  const [loteAtivo, setLoteAtivo] = useState<any>(null);
+
   useEffect(() => {
     setTotalAmount(items.length * (selectedService?.venda_price || 0));
   }, [items, selectedService]);
 
+  // Busca o lote ativo em tempo real
+  useEffect(() => {
+    const qLote = query(collection(db, 'lotes_limpa_nome'), where('status', '==', 'ABERTO'), limit(1));
+    const unsubLote = onSnapshot(qLote, (snapshot) => {
+      if (!snapshot.empty) setLoteAtivo({ id: snapshot.docs[0].id, ...snapshot.docs[0].data() });
+      else setLoteAtivo(null);
+    });
+    return () => unsubLote();
+  }, []);
+
   // Fetch costs and services
   useEffect(() => {
     const q = query(collection(db, 'services'), orderBy('nome_servico', 'asc'));
-    onSnapshot(q, (snapshot) => {
+    const unsubscribe = onSnapshot(q, (snapshot) => {
       const servicesData = snapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() } as any))
-        .filter(service => service.is_mass_sale_active === true) // Only active for bulk
+        .filter(service => service.is_mass_sale_active === true)
         .map(service => {
           let price = 0;
           const nivel = profile?.nivel || '';
@@ -83,21 +84,40 @@ export const VendaEmMassaView: React.FC = () => {
         });
       }
     });
+    return () => unsubscribe();
   }, [profile]);
 
   // Fetch previous batches
   useEffect(() => {
     if (!profile?.uid) return;
-    const q = query(
-      collection(db, 'bulk_sales_batches'), 
-      where('vendedor_id', '==', profile.uid),
-      orderBy('timestamp', 'desc')
-    );
+    const q = query(collection(db, 'bulk_sales_batches'), where('vendedor_id', '==', profile.uid));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      setBatches(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      data.sort((a, b) => {
+        const tA = a.timestamp?.toMillis ? a.timestamp.toMillis() : 0;
+        const tB = b.timestamp?.toMillis ? b.timestamp.toMillis() : 0;
+        return tB - tA;
+      });
+      setBatches(data);
     });
     return () => unsubscribe();
   }, [profile]);
+
+  // Função para gerar e baixar o modelo de Excel
+  const baixarModeloExcel = () => {
+    const ws = XLSX.utils.aoa_to_sheet([
+      ['NOME_OU_RAZAO_SOCIAL', 'CPF_OU_CNPJ'],
+      ['João da Silva', '12345678909'],
+      ['Empresa Exemplo LTDA', '12345678000199']
+    ]);
+    
+    // Ajustar largura das colunas
+    ws['!cols'] = [{ wch: 35 }, { wch: 25 }];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Modelo_Importacao");
+    XLSX.writeFile(wb, "Modelo_Planilha_Envios.xlsx");
+  };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -106,7 +126,7 @@ export const VendaEmMassaView: React.FC = () => {
     const reader = new FileReader();
     reader.onload = (evt) => {
       try {
-        const bstr = evt.target?.result;
+        const bstr = evt.target?.result as string;
         const wb = XLSX.read(bstr, { type: 'binary' });
         const wsname = wb.SheetNames[0];
         const ws = wb.Sheets[wsname];
@@ -123,13 +143,7 @@ export const VendaEmMassaView: React.FC = () => {
 
         setItems(prev => [...prev, ...newItems]);
         if (fileInputRef.current) fileInputRef.current.value = '';
-        Swal.fire({
-          title: 'Importação Concluída',
-          text: `${newItems.length} itens foram adicionados à lista.`,
-          icon: 'success',
-          timer: 2000,
-          showConfirmButton: false
-        });
+        Swal.fire({ title: 'Importação Concluída', text: `${newItems.length} itens importados.`, icon: 'success', timer: 2000, showConfirmButton: false });
       } catch (err) {
         Swal.fire('Erro', 'Não foi possível ler o arquivo.', 'error');
       }
@@ -139,39 +153,22 @@ export const VendaEmMassaView: React.FC = () => {
 
   const handleManualConfirm = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newManualItem.nome || !newManualItem.documento) {
-      return Swal.fire('Atenção', 'Preencha todos os campos do beneficiário.', 'warning');
-    }
+    if (!newManualItem.nome || !newManualItem.documento) return Swal.fire('Atenção', 'Preencha todos os campos.', 'warning');
     
-    // Validação básica de documento
     const doc = newManualItem.documento.replace(/[^\d]/g, '');
-    if (doc.length !== 11 && doc.length !== 14) {
-      return Swal.fire('Erro', 'CPF/CNPJ inválido (deve ter 11 ou 14 dígitos).', 'error');
-    }
+    if (doc.length !== 11 && doc.length !== 14) return Swal.fire('Erro', 'CPF/CNPJ inválido.', 'error');
 
-    setItems(prev => [{
-      id: crypto.randomUUID(),
-      nome: newManualItem.nome.toUpperCase(),
-      documento: doc,
-      status: 'Validado'
-    }, ...prev]);
-
+    setItems(prev => [{ id: crypto.randomUUID(), nome: newManualItem.nome.toUpperCase(), documento: doc, status: 'Validado' }, ...prev]);
     setNewManualItem({ nome: '', documento: '' });
     setIsRegisteringManual(false);
   };
 
-  const removeItem = (id: string) => {
-    setItems(prev => prev.filter(item => item.id !== id));
-  };
+  const removeItem = (id: string) => setItems(prev => prev.filter(item => item.id !== id));
 
   const validateItems = () => {
     const validated = items.map(item => {
-      if (!item.nome || item.nome.length < 3) {
-        return { ...item, status: 'Erro', error: 'Nome inválido' } as BulkItem;
-      }
-      if (!item.documento || (item.documento.length !== 11 && item.documento.length !== 14)) {
-        return { ...item, status: 'Erro', error: 'CPF/CNPJ inválido' } as BulkItem;
-      }
+      if (!item.nome || item.nome.length < 3) return { ...item, status: 'Erro', error: 'Nome inválido' } as BulkItem;
+      if (!item.documento || (item.documento.length !== 11 && item.documento.length !== 14)) return { ...item, status: 'Erro', error: 'CPF/CNPJ inválido' } as BulkItem;
       return { ...item, status: 'Validado', error: undefined } as BulkItem;
     });
     setItems(validated);
@@ -179,34 +176,19 @@ export const VendaEmMassaView: React.FC = () => {
   };
 
   const handleCheckout = async () => {
-    if (!selectedService) {
-      return Swal.fire('Atenção', 'Selecione o serviço antes de continuar.', 'warning');
-    }
-    if (items.length === 0) {
-      return Swal.fire('Atenção', 'Adicione pelo menos um processo à lista.', 'warning');
-    }
-    
-    if (!validateItems()) {
-      return Swal.fire('Atenção', 'Corrija os erros na lista antes de prosseguir.', 'warning');
-    }
+    if (!selectedService) return Swal.fire('Atenção', 'Selecione o serviço.', 'warning');
+    if (items.length === 0) return Swal.fire('Atenção', 'Adicione processos.', 'warning');
+    if (!validateItems()) return Swal.fire('Atenção', 'Corrija os erros na lista.', 'warning');
 
-    // Determina o preço unitário com base no nível do usuário e na configuração de massa
     let precoUnitario = selectedService.venda_price || 0;
-    
-    // Fallback extra se o venda_price foi zero mas o serviço está ativo
     if (precoUnitario <= 0) {
-      if (['ADM_MASTER', 'ADM_GERENTE', 'GESTOR'].includes(profile?.nivel || '')) {
-        precoUnitario = selectedService.preco_massa_gestor || selectedService.preco_base_gestor || 0;
-      } else {
-        precoUnitario = selectedService.preco_massa_vendedor || selectedService.preco_base_vendedor || 0;
-      }
+      precoUnitario = ['ADM_MASTER', 'ADM_GERENTE', 'GESTOR'].includes(profile?.nivel || '') 
+        ? (selectedService.preco_massa_gestor || selectedService.preco_base_gestor || 0)
+        : (selectedService.preco_massa_vendedor || selectedService.preco_base_vendedor || 0);
     }
 
     const total = Number((items.length * precoUnitario).toFixed(2));
-    
-    if (isNaN(total) || total <= 0) {
-      return Swal.fire('Erro', 'O valor total da venda é inválido. Verifique os preços dos serviços.', 'error');
-    }
+    if (isNaN(total) || total <= 0) return Swal.fire('Erro', 'Valor da venda inválido.', 'error');
 
     setPaymentData({
       valor: total,
@@ -226,7 +208,6 @@ export const VendaEmMassaView: React.FC = () => {
     
     const protocoloBatch = `LOTE-${Date.now().toString(36).toUpperCase()}-${Math.floor(Math.random() * 1000)}`;
 
-    // 1. Create a Master Bulk Sale record (Batch)
     const batchRef = await addDoc(collection(db, 'bulk_sales_batches'), cleanData({
       vendedor_id: profile?.uid || 'desconhecido',
       vendedor_nome: profile?.nome_completo || 'Vendedor',
@@ -241,14 +222,9 @@ export const VendaEmMassaView: React.FC = () => {
       venda_id: vendaId,
       timestamp: serverTimestamp(),
       data_envio: serverTimestamp(),
-      itens: items.map(item => ({
-        nome: item.nome || '',
-        documento: item.documento || '',
-        status: item.status || 'Validado'
-      }))
+      itens: items.map(item => ({ nome: item.nome || '', documento: item.documento || '', status: item.status || 'Validado' }))
     }));
 
-    // 2. Register individual processes
     const statusInicial = metodo === 'CARTEIRA' || statusPagamento === 'Pago' ? 'Em Análise' : 'Aguardando Pagamento';
     const statusFin = metodo === 'CARTEIRA' || statusPagamento === 'Pago' ? 'PAGO' : 'PENDENTE';
 
@@ -277,8 +253,6 @@ export const VendaEmMassaView: React.FC = () => {
 
   const handlePaymentSuccess = async (saleData: any) => {
     setIsProcessing(true);
-    setShowPayment(false);
-    
     try {
       const protocoloBatch = await handleCreateBatchAndProcesses(
         saleData.saleId || '', 
@@ -286,50 +260,38 @@ export const VendaEmMassaView: React.FC = () => {
         saleData.method === 'CARTEIRA' ? 'Pago' : 'Pendente'
       );
 
-      Swal.fire({
-        title: saleData.method === 'CARTEIRA' ? 'Lote Pago!' : 'Lote Registrado!',
-        text: `Protocolo: ${protocoloBatch}. ${saleData.method === 'CARTEIRA' ? 'Processamento iniciado.' : 'Aguardando confirmação do PIX.'}`,
-        icon: 'success',
-        confirmButtonColor: '#0a0a2e'
-      });
-      setItems([]);
-      setActiveTab('historico');
+      if (saleData.method === 'CARTEIRA') {
+        setShowPayment(false); 
+        Swal.fire({ title: 'Lote Pago!', text: `Protocolo: ${protocoloBatch}. Processamento iniciado.`, icon: 'success', confirmButtonColor: '#0a0a2e' });
+        setItems([]);
+        setActiveTab('historico');
+      } else {
+        setItems([]);
+        setActiveTab('historico');
+      }
     } catch (error) {
-      console.error("Erro no processamento em massa:", error);
+      console.error("Erro:", error);
       Swal.fire('Erro', 'Ocorreu um erro ao processar a venda em massa.', 'error');
+      setShowPayment(false);
     } finally {
       setIsProcessing(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="h-96 flex items-center justify-center">
-        <Loader2 className="animate-spin text-blue-600 size-10" />
-      </div>
-    );
-  }
+  if (loading) return <div className="h-96 flex items-center justify-center"><Loader2 className="animate-spin text-blue-600 size-10" /></div>;
 
   return (
     <div className="space-y-8 pb-24">
       {/* HEADER */}
-      <motion.div 
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-[#0a0a2e] p-8 sm:p-6 rounded-2xl sm:rounded-3xl text-white relative overflow-hidden shadow-2xl"
-      >
+      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="bg-[#0a0a2e] p-8 sm:p-6 rounded-2xl sm:rounded-3xl text-white relative overflow-hidden shadow-2xl">
         <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-8">
           <div className="space-y-4 text-center md:text-left">
             <div className="inline-flex items-center gap-2 bg-blue-500/20 backdrop-blur-md border border-blue-400/30 px-4 py-1.5 rounded-full">
               <Package className="text-blue-400 size-4" />
               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-100">Venda por Atacado</span>
             </div>
-            <h2 className="text-3xl sm:text-3xl font-black italic uppercase tracking-tighter leading-none">
-              Emissão em <br/>
-              <span className="text-blue-400">Massa.</span>
-            </h2>
+            <h2 className="text-3xl sm:text-3xl font-black italic uppercase tracking-tighter leading-none">Emissão em <br/><span className="text-blue-400">Massa.</span></h2>
           </div>
-
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-white/10 backdrop-blur-xl border border-white/10 p-6 rounded-3xl text-center">
               <p className="text-[10px] font-black text-blue-300 uppercase tracking-widest mb-1">Itens na Fila</p>
@@ -346,17 +308,11 @@ export const VendaEmMassaView: React.FC = () => {
 
       {/* TABS */}
       <div className="flex gap-4 border-b border-slate-100 px-4">
-        <button 
-          onClick={() => setActiveTab('nova')}
-          className={`pb-4 px-4 text-xs font-black uppercase tracking-widest transition-all relative ${activeTab === 'nova' ? 'text-[#0a0a2e]' : 'text-slate-400 hover:text-slate-600'}`}
-        >
+        <button onClick={() => setActiveTab('nova')} className={`pb-4 px-4 text-xs font-black uppercase tracking-widest transition-all relative ${activeTab === 'nova' ? 'text-[#0a0a2e]' : 'text-slate-400 hover:text-slate-600'}`}>
           Nova Emissão
           {activeTab === 'nova' && <motion.div layoutId="tab" className="absolute bottom-0 left-0 right-0 h-1 bg-[#0a0a2e] rounded-full" />}
         </button>
-        <button 
-          onClick={() => setActiveTab('historico')}
-          className={`pb-4 px-4 text-xs font-black uppercase tracking-widest transition-all relative ${activeTab === 'historico' ? 'text-[#0a0a2e]' : 'text-slate-400 hover:text-slate-600'}`}
-        >
+        <button onClick={() => setActiveTab('historico')} className={`pb-4 px-4 text-xs font-black uppercase tracking-widest transition-all relative ${activeTab === 'historico' ? 'text-[#0a0a2e]' : 'text-slate-400 hover:text-slate-600'}`}>
           Histórico de Envios
           {activeTab === 'historico' && <motion.div layoutId="tab" className="absolute bottom-0 left-0 right-0 h-1 bg-[#0a0a2e] rounded-full" />}
         </button>
@@ -364,76 +320,85 @@ export const VendaEmMassaView: React.FC = () => {
 
       <AnimatePresence mode="wait">
         {activeTab === 'nova' ? (
-          <motion.div 
-            key="nova"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 20 }}
-            className="grid grid-cols-1 lg:grid-cols-3 gap-8"
-          >
-            {/* CONFIGURAÇÃO */}
+          <motion.div key="nova" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            {/* COLUNA ESQUERDA: CONFIGURAÇÕES E OPÇÕES DE ENVIO */}
             <div className="lg:col-span-1 space-y-6">
+              
+              {/* BLOCO 1: SERVIÇO E ALERTA DE LOTE */}
               <div className="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm space-y-6">
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="size-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600">
-                    <Package size={20} />
-                  </div>
+                  <div className="size-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600"><Package size={20} /></div>
                   <h3 className="text-lg font-black uppercase italic tracking-tight">1. Selecione o Serviço</h3>
                 </div>
 
                 <div className="space-y-4">
                   {services.map(service => (
-                    <button
-                      key={service.id}
-                      onClick={() => setSelectedService(service)}
-                      className={`w-full p-4 rounded-2xl border-2 transition-all text-left flex justify-between items-center group ${
-                        selectedService?.id === service.id 
-                        ? 'border-blue-600 bg-blue-50/50 shadow-lg shadow-blue-500/10' 
-                        : 'border-slate-50 bg-slate-50/30 hover:border-slate-200'
-                      }`}
-                    >
+                    <button key={service.id} onClick={() => setSelectedService(service)} className={`w-full p-4 rounded-2xl border-2 transition-all text-left flex justify-between items-center group ${selectedService?.id === service.id ? 'border-blue-600 bg-blue-50/50 shadow-lg shadow-blue-500/10' : 'border-slate-50 bg-slate-50/30 hover:border-slate-200'}`}>
                       <div>
-                        <p className={`text-xs font-black uppercase italic tracking-tight ${selectedService?.id === service.id ? 'text-blue-700' : 'text-slate-700'}`}>
-                          {service.nome_servico}
-                        </p>
+                        <p className={`text-xs font-black uppercase italic tracking-tight ${selectedService?.id === service.id ? 'text-blue-700' : 'text-slate-700'}`}>{service.nome_servico}</p>
                         <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">Custo: R$ {service.venda_price.toLocaleString('pt-BR')}</p>
                       </div>
                       {selectedService?.id === service.id && <CheckCircle2 className="text-blue-600 size-5" />}
                     </button>
                   ))}
                 </div>
+
+                {/* 🟢 ALERTA DE LOTE (LIMPA NOME) 🟢 */}
+                {selectedService?.is_limpa_nome && (
+                  <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className={`p-5 rounded-2xl border flex gap-4 items-start ${loteAtivo ? 'bg-blue-50 border-blue-200' : 'bg-amber-50 border-amber-200'}`}>
+                    <div className={`p-2 rounded-xl ${loteAtivo ? 'bg-blue-100 text-blue-600' : 'bg-amber-100 text-amber-600'}`}>
+                      {loteAtivo ? <CheckCircle2 size={20} /> : <Clock size={20} />}
+                    </div>
+                    <div>
+                      <h4 className={`text-xs font-black uppercase tracking-widest ${loteAtivo ? 'text-blue-800' : 'text-amber-800'}`}>
+                        {loteAtivo ? `LOTE ABERTO: ${loteAtivo.nome}` : 'LOTES ENCERRADOS'}
+                      </h4>
+                      <p className={`text-[11px] mt-1 font-medium leading-relaxed ${loteAtivo ? 'text-blue-600' : 'text-amber-700'}`}>
+                        {loteAtivo 
+                          ? `Esta lista será incluída no lote atual. O encerramento do lote ocorrerá em: ${new Date(loteAtivo.data_encerramento).toLocaleString('pt-BR')}.` 
+                          : 'Pode realizar a emissão da lista. Ela ficará aguardando na fila e será adicionada ao PRÓXIMO LOTE a ser aberto.'}
+                      </p>
+                    </div>
+                  </motion.div>
+                )}
               </div>
 
+              {/* BLOCO 2: INSERÇÃO DE DADOS (PLANILHA OU MANUAL) */}
               <div className="bg-gradient-to-br from-[#0a0a2e] to-blue-900 p-8 rounded-2xl text-white shadow-xl space-y-6 relative overflow-hidden">
-                <div className="relative z-10 space-y-6">
+                <div className="relative z-10 space-y-5">
                   <div className="flex items-center gap-3">
-                    <div className="size-10 bg-white/10 rounded-xl flex items-center justify-center">
-                      <Upload size={20} />
-                    </div>
-                    <h3 className="text-lg font-black uppercase italic">2. Importar Lista</h3>
+                    <div className="size-10 bg-white/10 rounded-xl flex items-center justify-center"><FileText size={20} /></div>
+                    <h3 className="text-lg font-black uppercase italic">2. Inserir Dados</h3>
                   </div>
                   <p className="text-xs text-blue-100/70 leading-relaxed font-medium">
-                    Crie uma planilha Excel com as colunas: <br/>
-                    <span className="text-white font-black italic">A: Nome/Empresa | B: CPF/CNPJ</span>
+                    Escolha como deseja adicionar os nomes e CPFs/CNPJs ao lote:
                   </p>
                   
-                  <input 
-                    type="file" 
-                    ref={fileInputRef}
-                    className="hidden" 
-                    accept=".xlsx, .xls, .csv"
-                    onChange={handleFileUpload}
-                  />
-                  
-                  <button 
-                    onClick={() => fileInputRef.current?.click()}
-                    className="w-full bg-white text-blue-900 py-4 rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-blue-50 transition-all flex items-center justify-center gap-2"
-                  >
-                    <Upload size={16} /> Selecionar Planilha
-                  </button>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button onClick={() => fileInputRef.current?.click()} className="bg-white/10 hover:bg-white/20 border border-white/20 p-4 rounded-xl flex flex-col items-center justify-center gap-2 transition-all group">
+                      <Upload size={20} className="text-blue-300 group-hover:scale-110 transition-transform" />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-center">Subir<br/>Planilha</span>
+                    </button>
+
+                    <button onClick={() => setIsRegisteringManual(true)} className="bg-white/10 hover:bg-white/20 border border-white/20 p-4 rounded-xl flex flex-col items-center justify-center gap-2 transition-all group">
+                      <Plus size={20} className="text-emerald-300 group-hover:scale-110 transition-transform" />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-center">Digitar<br/>Manual</span>
+                    </button>
+                  </div>
+
+                  <div className="pt-4 border-t border-white/10">
+                    <button onClick={baixarModeloExcel} className="w-full bg-transparent border border-white/30 text-white py-3 rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-white/10 transition-all flex items-center justify-center gap-2">
+                      <Download size={14} /> Baixar Modelo Excel
+                    </button>
+                  </div>
+
+                  {/* Input invisível para o upload */}
+                  <input type="file" ref={fileInputRef} className="hidden" accept=".xlsx, .xls, .csv" onChange={handleFileUpload} />
                 </div>
                 <FileText className="absolute -right-8 -bottom-8 size-40 text-white/5 rotate-12" />
               </div>
+
             </div>
 
             {/* LISTA DE ITENS */}
@@ -441,26 +406,18 @@ export const VendaEmMassaView: React.FC = () => {
               <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden min-h-[500px] flex flex-col font-sans">
                 <div className="p-8 border-b border-slate-50 flex flex-col sm:flex-row items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
-                    <div className="size-10 bg-slate-100 rounded-xl flex items-center justify-center text-[#0a0a2e]">
-                      <FileText size={20} />
-                    </div>
+                    <div className="size-10 bg-slate-100 rounded-xl flex items-center justify-center text-[#0a0a2e]"><FileText size={20} /></div>
                     <div>
                       <h3 className="text-lg font-bold italic uppercase text-[#0a0a2e] tracking-tight">Lista de Processos</h3>
                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Confira os dados antes de pagar</p>
                     </div>
                   </div>
-                  
-                  <button 
-                    onClick={() => setIsRegisteringManual(true)}
-                    className="bg-[#0a0a2e] text-white px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:scale-105 active:scale-95 transition-all flex items-center gap-2 shadow-lg shadow-blue-900/20"
-                  >
+                  <button onClick={() => setIsRegisteringManual(true)} className="bg-[#0a0a2e] text-white px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:scale-105 active:scale-95 transition-all flex items-center gap-2 shadow-lg shadow-blue-900/20">
                     <Plus size={14} /> Add Manual
                   </button>
                 </div>
 
-                {/* Desktop and Mobile List */}
                 <div className="flex-1 overflow-hidden">
-                  {/* Desktop Table View */}
                   <div className="hidden sm:block overflow-x-auto">
                     <table className="w-full text-left border-collapse min-w-[600px]">
                       <thead>
@@ -474,35 +431,16 @@ export const VendaEmMassaView: React.FC = () => {
                       <tbody className="divide-y divide-slate-50">
                         <AnimatePresence initial={false}>
                           {items.map((item) => (
-                            <motion.tr 
-                              key={item.id}
-                              initial={{ opacity: 0, x: -10 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              exit={{ opacity: 0, x: 10 }}
-                              className="hover:bg-slate-50/30 transition-colors group"
-                            >
-                              <td className="px-8 py-6">
-                                <span className="text-sm font-black text-[#0a0a2e] uppercase italic tracking-tight">{item.nome}</span>
-                              </td>
-                              <td className="px-8 py-6">
-                                <span className="text-sm font-bold text-slate-600">{item.documento}</span>
-                              </td>
+                            <motion.tr key={item.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} className="hover:bg-slate-50/30 transition-colors group">
+                              <td className="px-8 py-6"><span className="text-sm font-black text-[#0a0a2e] uppercase italic tracking-tight">{item.nome}</span></td>
+                              <td className="px-8 py-6"><span className="text-sm font-bold text-slate-600">{item.documento}</span></td>
                               <td className="px-8 py-6 text-center">
-                                <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
-                                  item.status === 'Validado' ? 'bg-emerald-50 text-emerald-600' :
-                                  item.status === 'Erro' ? 'bg-rose-50 text-rose-600' : 'bg-slate-100 text-slate-400'
-                                }`}>
-                                  {item.status === 'Erro' ? <AlertCircle size={10} /> : <CheckCircle2 size={10} />}
-                                  {item.status === 'Erro' ? item.error : 'VALIDADO'}
+                                <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${item.status === 'Validado' ? 'bg-emerald-50 text-emerald-600' : item.status === 'Erro' ? 'bg-rose-50 text-rose-600' : 'bg-slate-100 text-slate-400'}`}>
+                                  {item.status === 'Erro' ? <AlertCircle size={10} /> : <CheckCircle2 size={10} />}{item.status === 'Erro' ? item.error : 'VALIDADO'}
                                 </div>
                               </td>
                               <td className="px-8 py-6 text-right">
-                                <button 
-                                  onClick={() => removeItem(item.id)}
-                                  className="size-8 bg-rose-50 text-rose-400 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-rose-600 hover:text-white transition-all transition-opacity mx-auto"
-                                >
-                                  <Trash2 size={14} />
-                                </button>
+                                <button onClick={() => removeItem(item.id)} className="size-8 bg-rose-50 text-rose-400 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-rose-600 hover:text-white transition-all transition-opacity mx-auto"><Trash2 size={14} /></button>
                               </td>
                             </motion.tr>
                           ))}
@@ -511,40 +449,19 @@ export const VendaEmMassaView: React.FC = () => {
                     </table>
                   </div>
 
-                  {/* Mobile Card View */}
                   <div className="sm:hidden divide-y divide-slate-100 overflow-y-auto max-h-[400px]">
                     <AnimatePresence initial={false}>
                       {items.map((item) => (
-                        <motion.div 
-                          key={item.id}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, scale: 0.95 }}
-                          className="p-5 space-y-3 bg-white"
-                        >
+                        <motion.div key={item.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} className="p-5 space-y-3 bg-white">
                           <div className="flex justify-between items-start gap-4">
                             <div className="min-w-0">
-                              <p className="text-sm font-black text-[#0a0a2e] uppercase italic tracking-tight truncate leading-tight">
-                                {item.nome}
-                              </p>
-                              <p className="text-[10px] font-bold text-slate-400 mt-1">
-                                DOC: {item.documento}
-                              </p>
+                              <p className="text-sm font-black text-[#0a0a2e] uppercase italic tracking-tight truncate leading-tight">{item.nome}</p>
+                              <p className="text-[10px] font-bold text-slate-400 mt-1">DOC: {item.documento}</p>
                             </div>
-                            <button 
-                              onClick={() => removeItem(item.id)}
-                              className="size-8 bg-rose-50 text-rose-500 rounded-xl flex items-center justify-center active:scale-90 transition-all shrink-0"
-                            >
-                              <Trash2 size={14} />
-                            </button>
+                            <button onClick={() => removeItem(item.id)} className="size-8 bg-rose-50 text-rose-500 rounded-xl flex items-center justify-center active:scale-90 transition-all shrink-0"><Trash2 size={14} /></button>
                           </div>
-                          
-                          <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${
-                            item.status === 'Validado' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
-                            item.status === 'Erro' ? 'bg-rose-50 text-rose-600 border border-rose-100' : 'bg-slate-100 text-slate-400'
-                          }`}>
-                            {item.status === 'Erro' ? <AlertCircle size={10} /> : <CheckCircle2 size={10} />}
-                            {item.status === 'Erro' ? item.error : 'VALIDADO'}
+                          <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${item.status === 'Validado' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : item.status === 'Erro' ? 'bg-rose-50 text-rose-600 border border-rose-100' : 'bg-slate-100 text-slate-400'}`}>
+                            {item.status === 'Erro' ? <AlertCircle size={10} /> : <CheckCircle2 size={10} />}{item.status === 'Erro' ? item.error : 'VALIDADO'}
                           </div>
                         </motion.div>
                       ))}
@@ -554,13 +471,8 @@ export const VendaEmMassaView: React.FC = () => {
                   {items.length === 0 && (
                     <div className="px-8 py-20 text-center">
                       <div className="flex flex-col items-center gap-4">
-                        <div className="size-20 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-200">
-                          <Search size={40} />
-                        </div>
-                        <p className="text-xs font-black uppercase text-slate-300 tracking-widest italic leading-relaxed">
-                          Nenhum item na fila. <br/> 
-                          Importe uma planilha ou adicione manualmente.
-                        </p>
+                        <div className="size-20 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-200"><Search size={40} /></div>
+                        <p className="text-xs font-black uppercase text-slate-300 tracking-widest italic leading-relaxed">Nenhum item na fila. <br/> Escolha uma das opções ao lado para adicionar os processos.</p>
                       </div>
                     </div>
                   )}
@@ -580,13 +492,8 @@ export const VendaEmMassaView: React.FC = () => {
                       </div>
                     </div>
 
-                    <button 
-                      onClick={handleCheckout}
-                      disabled={isProcessing}
-                      className="w-full sm:w-auto bg-emerald-600 text-white px-6 py-5 rounded-2xl font-black uppercase text-xs tracking-widest flex items-center justify-center gap-3 hover:bg-emerald-700 hover:scale-105 active:scale-95 transition-all shadow-xl shadow-emerald-500/20"
-                    >
-                      {isProcessing ? <Loader2 className="animate-spin" size={20} /> : <CreditCard size={20} />}
-                      PAGAR E EMITIR AGORA
+                    <button onClick={handleCheckout} disabled={isProcessing} className="w-full sm:w-auto bg-emerald-600 text-white px-6 py-5 rounded-2xl font-black uppercase text-xs tracking-widest flex items-center justify-center gap-3 hover:bg-emerald-700 hover:scale-105 active:scale-95 transition-all shadow-xl shadow-emerald-500/20">
+                      {isProcessing ? <Loader2 className="animate-spin" size={20} /> : <CreditCard size={20} />} PAGAR E EMITIR AGORA
                     </button>
                   </div>
                 )}
@@ -594,20 +501,13 @@ export const VendaEmMassaView: React.FC = () => {
             </div>
           </motion.div>
         ) : (
-          <motion.div 
-            key="historico"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden"
-          >
+          <motion.div key="historico" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
             <div className="p-8 border-b border-slate-50">
               <h3 className="text-lg font-black italic uppercase text-[#0a0a2e] tracking-tight">Histórico de Emissões em Massa</h3>
               <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Acompanhe seus lotes enviados</p>
             </div>
-
+            
             <div className="overflow-hidden">
-              {/* Desktop View */}
               <div className="hidden sm:block overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
@@ -642,7 +542,6 @@ export const VendaEmMassaView: React.FC = () => {
                 </table>
               </div>
 
-              {/* Mobile View */}
               <div className="sm:hidden divide-y divide-slate-100">
                 {batches.map(batch => (
                   <div key={batch.id} className="p-6 space-y-4">
@@ -691,19 +590,8 @@ export const VendaEmMassaView: React.FC = () => {
       <AnimatePresence>
         {isRegisteringManual && (
           <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsRegisteringManual(false)}
-              className="absolute inset-0 bg-[#0a0a2e]/60 backdrop-blur-md"
-            />
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 overflow-hidden"
-            >
+            <motion.div onClick={() => setIsRegisteringManual(false)} className="absolute inset-0 bg-[#0a0a2e]/60 backdrop-blur-md" />
+            <motion.div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 overflow-hidden">
               <div className="flex items-center gap-4 mb-8">
                 <div className="size-12 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-600/20">
                   <Plus className="text-white" size={24} />
@@ -713,45 +601,17 @@ export const VendaEmMassaView: React.FC = () => {
                   <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Adicionar beneficiário à lista</p>
                 </div>
               </div>
-
               <form onSubmit={handleManualConfirm} className="space-y-6">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase text-slate-400 ml-4 tracking-widest">Nome / Nome da Empresa</label>
-                  <input 
-                    type="text" 
-                    required
-                    value={newManualItem.nome}
-                    onChange={e => setNewManualItem({...newManualItem, nome: e.target.value})}
-                    placeholder="Ex: João Silva ou GSA Diagnóstico"
-                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-5 text-sm font-black uppercase italic focus:ring-4 focus:ring-blue-500/10 outline-none transition-all"
-                  />
+                  <input type="text" required value={newManualItem.nome} onChange={e => setNewManualItem({...newManualItem, nome: e.target.value})} className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-5 text-sm font-black uppercase italic outline-none" />
                 </div>
-
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase text-slate-400 ml-4 tracking-widest">CPF / CNPJ</label>
-                  <input 
-                    type="text" 
-                    required
-                    maxLength={14}
-                    value={newManualItem.documento}
-                    onChange={e => setNewManualItem({...newManualItem, documento: e.target.value.replace(/[^\d]/g, '')})}
-                    placeholder="Somente números"
-                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-5 text-sm font-bold focus:ring-4 focus:ring-blue-500/10 outline-none transition-all"
-                  />
+                  <input type="text" required maxLength={14} value={newManualItem.documento} onChange={e => setNewManualItem({...newManualItem, documento: e.target.value.replace(/[^\d]/g, '')})} className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-5 text-sm font-bold outline-none" />
                 </div>
-
                 <div className="flex gap-4 pt-4">
-                  <button 
-                    type="button"
-                    onClick={() => setIsRegisteringManual(false)}
-                    className="flex-1 bg-slate-100 text-slate-400 py-5 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-slate-200 transition-all"
-                  >
-                    Cancelar
-                  </button>
-                  <button 
-                    type="submit"
-                    className="flex-1 bg-[#0a0a2e] text-white py-5 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-blue-900/20 hover:scale-105 active:scale-95 transition-all"
-                  >
+                  <button type="submit" className="flex-1 bg-[#0a0a2e] text-white py-5 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-blue-900/20 hover:scale-105 active:scale-95 transition-all">
                     Confirmar Registro
                   </button>
                 </div>
@@ -769,13 +629,7 @@ export const VendaEmMassaView: React.FC = () => {
           onSuccess={handlePaymentSuccess}
           amount={paymentData.valor}
           description={paymentData.servico_nome}
-          paymentInfo={{
-            vendedor_id: profile?.uid || '',
-            venda_tipo: 'ATACADO',
-            servico_id: paymentData.servico?.id,
-            quantidade: paymentData.itens_massa.length,
-            is_bulk: true
-          }}
+          paymentInfo={{ vendedor_id: profile?.uid || '', venda_tipo: 'ATACADO', servico_id: paymentData.servico?.id, quantidade: paymentData.itens_massa.length, is_bulk: true }}
         />
       )}
     </div>

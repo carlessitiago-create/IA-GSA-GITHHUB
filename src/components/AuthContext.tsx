@@ -210,6 +210,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         await setDoc(doc(db, 'usuarios', newUser.uid), newProfile);
         
+        try {
+            const { vincularHistoricoPublico } = await import('../services/userService');
+            await vincularHistoricoPublico(newUser.uid, cpf);
+        } catch (err) {
+            console.warn('Erro ao chamar vincularHistoricoPublico:', err);
+        }
+        
         // Notifica o ADM Master - Cadastro Público via E-mail
         const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
         await addDoc(collection(db, 'notifications'), cleanData({

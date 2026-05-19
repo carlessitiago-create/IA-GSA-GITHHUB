@@ -14,4 +14,5 @@ export interface ConsultationType {
   active: boolean;
   api_provider: string;
   required_input_type?: string; // 'cpf', 'cnpj', 'cpf_cnpj', 'placa', 'nome'
+  is_limpa_nome?: boolean; // 👈 Adicionado para identificar serviços com fluxo de Lotes
 }

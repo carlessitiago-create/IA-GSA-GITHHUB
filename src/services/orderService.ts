@@ -86,6 +86,11 @@ export interface OrderProcess {
   anexo_conclusao_url?: string;
   referral_id?: string;
   lead_id?: string;
+  is_limpa_nome?: boolean;
+  progresso_baixa?: number;
+  lote_id?: string;
+  orgaos_status?: Record<string, string>;
+  servico_tags?: string[];
 }
 
 export interface StatusHistory {
@@ -759,27 +764,37 @@ export async function criarProcessoDireto(data: Partial<OrderProcess>) {
 
 export async function listarTodosProcessos(profile?: any) {
   try {
-    let q = query(collection(db, PROCESSES_COLLECTION), orderBy('data_venda', 'desc'));
+    let q: any = collection(db, PROCESSES_COLLECTION);
 
     if (profile) {
       if (profile.nivel === 'GESTOR') {
         q = query(
           collection(db, PROCESSES_COLLECTION),
-          or(where('id_superior', '==', profile.uid), where('vendedor_id', '==', profile.uid)),
-          orderBy('data_venda', 'desc')
+          or(where('id_superior', '==', profile.uid), where('vendedor_id', '==', profile.uid))
         );
       } else if (profile.nivel === 'VENDEDOR') {
         q = query(
           collection(db, PROCESSES_COLLECTION),
-          where('vendedor_id', '==', profile.uid),
-          orderBy('data_venda', 'desc')
+          where('vendedor_id', '==', profile.uid)
         );
+      } else if (['ADM_MASTER', 'ADM_GERENTE', 'ADM_ANALISTA'].includes(profile.nivel)) {
+        q = query(collection(db, PROCESSES_COLLECTION), orderBy('data_venda', 'desc'));
       }
-      // ADM_MASTER, ADM_GERENTE and ADM_ANALISTA see all
+    } else {
+      q = query(collection(db, PROCESSES_COLLECTION), orderBy('data_venda', 'desc'));
     }
 
     const snapshot = await getDocs(q);
     const processos = snapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as OrderProcess) }));
+    
+    // Sort array when orderBy was not possible in query
+    if (profile && ['GESTOR', 'VENDEDOR'].includes(profile.nivel)) {
+       processos.sort((a,b) => {
+          const tA = a.data_venda?.toMillis ? a.data_venda.toMillis() : 0;
+          const tB = b.data_venda?.toMillis ? b.data_venda.toMillis() : 0;
+          return tB - tA;
+       });
+    }
     
     // Dynamic Fallback para preencher pendencias se tiver vazio
     const { PROCESS_REQUIREMENTS } = await import('../constants/processRequirements');
@@ -810,11 +825,16 @@ export async function listarProcessosCliente(clienteId: string) {
   try {
     const q = query(
       collection(db, PROCESSES_COLLECTION), 
-      where('cliente_id', '==', clienteId),
-      orderBy('data_venda', 'desc')
+      where('cliente_id', '==', clienteId)
     );
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as OrderProcess));
+    const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as OrderProcess));
+    items.sort((a,b) => {
+        const tA = a.data_venda?.toMillis ? a.data_venda.toMillis() : 0;
+        const tB = b.data_venda?.toMillis ? b.data_venda.toMillis() : 0;
+        return tB - tA;
+    });
+    return items;
   } catch (error) {
     handleFirestoreError(error, OperationType.LIST, PROCESSES_COLLECTION);
     throw error;

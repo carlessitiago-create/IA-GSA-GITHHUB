@@ -2,6 +2,8 @@ import { collection, addDoc, serverTimestamp, doc, getDoc, query, where, getDocs
 import { db, cleanData } from '../firebase';
 import { sendNotification } from './notificationService';
 import { PROCESS_REQUIREMENTS } from '../constants/processRequirements';
+import { getLoteAtivo } from './loteService';
+import { ServiceData } from './serviceFactory';
 
 export interface ProposalOption {
   valor: number;
@@ -185,7 +187,12 @@ export const updateProposalStatus = async (slug: string, status: ProposalData['s
 
     // 1. Criar Cliente (se não existir ou apenas para registro da venda)
     // Para simplificar, vamos criar o OrderProcess direto com os dados da proposta
-    await addDoc(collection(db, 'order_processes'), {
+    const servicoSnap = await getDoc(doc(db, 'services', proposal.servico_id));
+    const servico = servicoSnap.exists() ? servicoSnap.data() as ServiceData : null;
+    const isLimpaNome = servico?.tags?.includes('limpa_nome');
+    const lote = isLimpaNome ? await getLoteAtivo() : null;
+
+    const processData: any = {
       protocolo,
       cliente_nome: finalLeadNome,
       cliente_cpf_cnpj: cpf,
@@ -206,6 +213,21 @@ export const updateProposalStatus = async (slug: string, status: ProposalData['s
         data: new Date().toISOString(),
         observacao: 'Venda realizada via Proposta Pública'
       }]
-    });
+    };
+
+    if (isLimpaNome) {
+      processData.is_limpa_nome = true;
+      processData.lote_id = lote?.id || null;
+      processData.progresso_baixa = 0;
+      processData.orgaos_status = {
+         spc_brasil: 'AGUARDANDO',
+         serasa: 'AGUARDANDO',
+         boa_vista: 'AGUARDANDO',
+         cenprot_sp: 'AGUARDANDO',
+         cenprot_nacional: 'AGUARDANDO'
+      };
+    }
+
+    await addDoc(collection(db, 'order_processes'), processData);
   }
 };

@@ -544,6 +544,48 @@ export const PublicPortal = ({ previewConfig }: { previewConfig?: PublicPortalCo
                 </div>
               )}
 
+              {/* PENDÊNCIAS ATIVAS */}
+              {pendenciasAtivas.length > 0 && (
+                <div className="bg-amber-50 rounded-2xl p-8 shadow-xl border border-amber-200">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="size-12 bg-amber-500 text-white flex items-center justify-center rounded-xl shadow-lg">
+                      <AlertOctagon size={24} />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-black text-amber-900 uppercase italic">Pendências Ativas</h3>
+                      <p className="text-amber-700/80 text-xs font-bold uppercase tracking-widest leading-none mt-1">Ação Necessária</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    {pendenciasAtivas.map(pend => (
+                      <div key={pend.id} className="bg-white p-5 rounded-2xl border border-amber-100 shadow-sm">
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                          <div>
+                            <span className="inline-block px-2 py-1 bg-amber-100 text-amber-700 text-[10px] font-black uppercase rounded-md mb-2">
+                              Pendente
+                            </span>
+                            <p className="text-slate-800 font-bold mb-1">{pend.descricao}</p>
+                            <p className="text-xs text-slate-500">
+                              Gerada em {pend.timestamp?.toDate ? pend.timestamp.toDate().toLocaleDateString('pt-BR') : 'Recentemente'}
+                            </p>
+                          </div>
+                          
+                          <div className="w-full sm:w-auto">
+                              <button 
+                                 onClick={() => window.open(`https://wa.me/${config?.whatsapp_suporte_geral || config?.whatsapp_negociacao}?text=Olá, quero resolver uma pendência: ${pend.descricao}`, '_blank')}
+                                 className="w-full sm:w-auto px-6 py-3 bg-green-500 hover:bg-green-600 text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all flex justify-center items-center gap-2"
+                              >
+                                 Resolver no WhatsApp
+                              </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* AVISO JURÍDICO (Se em atraso) */}
               {processo?.dias_atraso > 10 && (
                 <div className="bg-rose-600 rounded-2xl p-8 text-white shadow-2xl border-4 border-rose-500 animate-pulse-slow">

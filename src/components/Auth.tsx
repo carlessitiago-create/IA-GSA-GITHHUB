@@ -338,6 +338,13 @@ export function CompleteProfile({ profile: initialProfile }: { profile: any }) {
         status_conta: 'PENDENTE'
       }, { merge: true });
       
+      try {
+        const { vincularHistoricoPublico } = await import('../services/userService');
+        await vincularHistoricoPublico(uid, cleanCpf);
+      } catch (e) {
+        console.warn('Erro ao vincular histórico:', e);
+      }
+      
       Swal.fire({
         icon: 'success',
         title: 'Perfil Atualizado!',

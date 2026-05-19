@@ -1,10 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Users, Package, CreditCard, ChevronRight, ChevronLeft, 
   HelpCircle, CheckCircle, AlertTriangle, Clock, Upload, Copy, Check,
-  ShoppingBag
+  ShoppingBag, Info
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { useAuth } from '../components/AuthContext';
@@ -13,7 +13,7 @@ import { useClients } from '../hooks/useClients';
 import { validateDocument, formatDocument, validatePhone, formatPhone } from '../utils/validators';
 import { processarVendaSeguraFront } from '../services/vendaService';
 import { verificarPropriedadeLead } from '../services/leadService';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, collection, query, where, onSnapshot, limit } from 'firebase/firestore';
 import { db } from '../firebase';
 
 export function NewSalePage() {
@@ -31,7 +31,6 @@ export function NewSalePage() {
   const [nome, setNome] = useState('');
   const [documento, setDocumento] = useState('');
   const [telefone, setTelefone] = useState('');
-  const [dataNascimento, setDataNascimento] = useState('');
   const [checkResult, setCheckResult] = useState<any>(null);
   const [selectedClientId, setSelectedClientId] = useState('');
 
@@ -39,9 +38,21 @@ export function NewSalePage() {
   const [selectedService, setSelectedService] = useState<any>(null);
   const [valorVenda, setValorVenda] = useState(0);
   const [metodoPagamento, setMetodoPagamento] = useState<'PIX' | 'CARTEIRA'>('PIX');
-  const [comprovanteUrl, setComprovanteUrl] = useState('');
+
+  // ESTADO DO LOTE LIMPA NOME
+  const [loteAtivo, setLoteAtivo] = useState<any>(null);
 
   const activeServices = services.filter((s: any) => s.ativo && s.ciclo_status === 'LIBERADO');
+
+  // Busca o lote ativo em tempo real
+  useEffect(() => {
+    const qLote = query(collection(db, 'lotes_limpa_nome'), where('status', '==', 'ABERTO'), limit(1));
+    const unsub = onSnapshot(qLote, (snapshot) => {
+      if (!snapshot.empty) setLoteAtivo({ id: snapshot.docs[0].id, ...snapshot.docs[0].data() });
+      else setLoteAtivo(null);
+    });
+    return () => unsub();
+  }, []);
 
   const handleCheckLead = async () => {
     if (!documento || !telefone) return;
@@ -69,24 +80,25 @@ export function NewSalePage() {
         metodoPagamento
       );
 
-      // Salva o managerId na venda para filtros de equipe
       if (profile) {
         try {
           const updateData: any = {
             vendedor_id: profile.uid,
             vendedor_nome: profile.nome_completo
           };
-          if (profile.id_superior) {
-            updateData.id_superior = profile.id_superior;
-          }
+          if (profile.id_superior) updateData.id_superior = profile.id_superior;
           await updateDoc(doc(db, 'sales', result.saleId), updateData);
-        } catch (err) {
-          console.error("Erro ao vincular gestor/vendedor à venda:", err);
-        }
+        } catch (err) { console.error("Erro ao vincular gestor/vendedor à venda:", err); }
       }
 
-      Swal.fire('Sucesso!', `Venda registrada. Protocolo: ${result.protocolo}`, 'success');
-      navigate('/processes_history');
+      if (metodoPagamento === 'CARTEIRA') {
+        Swal.fire('Sucesso!', `Venda registrada e paga com saldo. Protocolo: ${result.protocolo}`, 'success');
+        navigate('/processes_history');
+      } else {
+        // Se for PIX, o modal cuida disso externamente na sua aplicação, 
+        // ou redireciona para um painel onde ele vê o QRCode
+        navigate('/processes_history'); 
+      }
     } catch (error: any) {
       Swal.fire('Erro', error.message, 'error');
     } finally {
@@ -97,7 +109,6 @@ export function NewSalePage() {
   return (
     <div className="max-w-4xl mx-auto p-6">
       <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl overflow-hidden border border-slate-100 dark:border-slate-800">
-        {/* INDICADOR DE PASSOS */}
         <div className="bg-slate-50 dark:bg-slate-800/50 p-8 border-b border-slate-100 dark:border-slate-800 flex justify-between">
            {[1, 2, 3].map(step => (
              <div key={step} className={`flex items-center gap-3 ${saleStep >= step ? 'text-blue-600' : 'text-slate-300'}`}>
@@ -167,6 +178,26 @@ export function NewSalePage() {
                     </button>
                   ))}
                </div>
+
+               {/* 🟢 ALERTA DE LOTE (LIMPA NOME) 🟢 */}
+               {selectedService?.is_limpa_nome && (
+                 <div className={`p-5 rounded-2xl border flex gap-4 items-start ${loteAtivo ? 'bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800' : 'bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800'}`}>
+                    <div className={`p-2 rounded-xl ${loteAtivo ? 'bg-blue-100 text-blue-600 dark:bg-blue-800 dark:text-blue-300' : 'bg-amber-100 text-amber-600 dark:bg-amber-800 dark:text-amber-300'}`}>
+                      {loteAtivo ? <CheckCircle size={20} /> : <Clock size={20} />}
+                    </div>
+                    <div>
+                       <h4 className={`text-xs font-black uppercase tracking-widest ${loteAtivo ? 'text-blue-800 dark:text-blue-300' : 'text-amber-800 dark:text-amber-300'}`}>
+                         {loteAtivo ? `LOTE ABERTO: ${loteAtivo.nome}` : 'LOTES ENCERRADOS NO MOMENTO'}
+                       </h4>
+                       <p className={`text-[11px] mt-1 font-medium ${loteAtivo ? 'text-blue-600 dark:text-blue-400' : 'text-amber-700 dark:text-amber-400'}`}>
+                         {loteAtivo 
+                           ? `O processo será enviado e notificado automaticamente neste lote. Prazo de encerramento do lote: ${new Date(loteAtivo.data_encerramento).toLocaleString('pt-BR')}.` 
+                           : 'Você pode registrar e efetuar o pagamento normalmente. O processo ficará aguardando e será incluído automaticamente assim que o PRÓXIMO LOTE for aberto pela administração.'}
+                       </p>
+                    </div>
+                 </div>
+               )}
+
                {selectedService && (
                  <div className="p-8 bg-slate-50 dark:bg-slate-800 rounded-2xl space-y-4">
                     <label className="text-[10px] font-black text-slate-500 uppercase">Valor de Venda (R$)</label>

@@ -143,24 +143,90 @@ export async function enviarEmailResetSenha(email: string) {
 export const vincularHistoricoPublico = async (uid: string, cpf: string) => {
   if (!cpf) return;
   try {
-    const q = query(
-      collection(db, 'referrals'), 
-      where('cliente_origem_id', '==', cpf), 
-      where('cadastrado', '==', false)
-    );
-    const snapshot = await getDocs(q);
-    
-    if (!snapshot.empty) {
-      const batch = writeBatch(db);
-      snapshot.docs.forEach(docSnap => {
-        batch.update(docSnap.ref, { 
-          cliente_origem_id: uid, // Agora vincula ao ID real do Firebase
-          cadastrado: true 
+    const cleanCpf = cpf.replace(/\D/g, '');
+    const batch = writeBatch(db);
+    let count = 0;
+
+    // 1. Referrals
+    const qRef = query(collection(db, 'referrals'), where('cliente_origem_id', '==', cleanCpf), where('cadastrado', '==', false));
+    const snapRef = await getDocs(qRef);
+    snapRef.docs.forEach(docSnap => {
+      batch.update(docSnap.ref, { cliente_origem_id: uid, cadastrado: true });
+      count++;
+    });
+
+    let lastVendedorId = null;
+    let lastIdSuperior = null;
+
+    // 2. Order Processes
+    const limitMax = 50;
+    const collectionsToUpdate = [
+      { name: 'order_processes', field: 'cliente_cpf_cnpj' },
+      { name: 'sales', field: 'cliente_cpf_cnpj' },
+      { name: 'pendencies', field: 'cliente_cpf_cnpj' }
+    ] as const;
+
+    for (const coll of collectionsToUpdate) {
+      try {
+        const qDocs = query(collection(db, coll.name), where(coll.field, '==', cleanCpf), limit(limitMax));
+        const snap = await getDocs(qDocs);
+        snap.docs.forEach(docSnap => {
+          const data = docSnap.data();
+          if (data.cliente_id !== uid) {
+            batch.update(docSnap.ref, { cliente_id: uid });
+            count++;
+          }
+          if (data.vendedor_id && !lastVendedorId) lastVendedorId = data.vendedor_id;
+          if (data.id_superior && !lastIdSuperior) lastIdSuperior = data.id_superior;
         });
-      });
+      } catch (e) {
+        console.warn(`Erro ao vincular histórico em ${coll.name}:`, e);
+      }
+    }
+
+    if (lastVendedorId || lastIdSuperior) {
+       const userUpdate: any = {};
+       if (lastVendedorId) userUpdate.vendedor_id = lastVendedorId;
+       // Often id_superior acts as the manager or the direct seller if no manager.
+       if (lastIdSuperior) userUpdate.id_superior = lastIdSuperior;
+       else if (lastVendedorId) userUpdate.id_superior = lastVendedorId; // Fallback
+
+       try {
+           batch.update(doc(db, 'usuarios', uid), userUpdate);
+       } catch (e) {
+           console.warn('Erro ao atualizar usuario com hierarquia', e);
+       }
+    }
+
+    // 3. Wallets e Transactions
+    try {
+        // As vezes wallet está salva pelo CPF na collection
+        const walletQuery = query(collection(db, 'wallets'), where('cliente_id', '==', cleanCpf), limit(1));
+        const walletSnap = await getDocs(walletQuery);
+        if (!walletSnap.empty) {
+             const walletDoc = walletSnap.docs[0];
+             batch.update(walletDoc.ref, { cliente_id: uid });
+             count++;
+        }
+        
+        const transQuery = query(collection(db, 'financial_transactions'), where('cliente_id', '==', cleanCpf), limit(limitMax));
+        const transSnap = await getDocs(transQuery);
+        transSnap.docs.forEach(docSnap => {
+             const data = docSnap.data();
+             if (data.cliente_id !== uid) {
+                 batch.update(docSnap.ref, { cliente_id: uid });
+                 count++;
+             }
+        });
+    } catch (e) {
+        console.warn(`Erro ao vincular transactions:`, e);
+    }
+
+    if (count > 0) {
       await batch.commit();
+      console.log(`vincularHistoricoPublico: Vinculou ${count} registros ao UID ${uid}`);
     }
   } catch (error) {
-    console.error("Erro ao vincular indicações:", error);
+    console.error("Erro ao vincular histórico:", error);
   }
 };

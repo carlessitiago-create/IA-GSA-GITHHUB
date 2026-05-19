@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { formatDocument, formatPhone } from '../utils/validators';
 import { ServiceData, validarPrecoServico } from '../services/serviceFactory';
 import { ProposalGenerator } from '../components/GSA/ProposalGenerator';
+import { useLoteAtivo } from '../hooks/useLoteAtivo';
 
 interface Service {
   id: string;
@@ -19,6 +20,7 @@ interface Service {
 }
 
 export function VendasPDVView() {
+  const { loteAtivo } = useLoteAtivo();
   const context = useOutletContext<any>() || {};
   const { preSelectedService, setPreSelectedService } = context;
   
@@ -467,11 +469,20 @@ export function VendasPDVView() {
     }
   };
 
-  const filteredClients = clients.filter(c => 
-    (c.nome_completo || '').toLowerCase().includes(searchTermClient.toLowerCase()) || 
-    c.cpf?.includes(searchTermClient) ||
-    (c.email || '').toLowerCase().includes(searchTermClient.toLowerCase())
-  );
+  const lowerSearch = searchTermClient.toLowerCase();
+  const numericSearch = searchTermClient.replace(/\D/g, '');
+
+  const filteredClients = clients.filter(c => {
+    if (!searchTermClient) return true;
+    const matchName = (c.nome_completo || c.nome || '').toLowerCase().includes(lowerSearch);
+    let matchDoc = false;
+    if (numericSearch.length > 2) {
+       matchDoc = (c.cpf || c.documento || '').replace(/\D/g, '').includes(numericSearch);
+    }
+    const matchEmail = (c.email || '').toLowerCase() === lowerSearch; // Exact or very close
+    
+    return matchName || matchDoc || matchEmail;
+  });
 
   return (
     <div className="w-full max-w-7xl mx-auto pb-10 sm:pb-20 px-4 sm:px-6">
@@ -735,6 +746,22 @@ export function VendasPDVView() {
                   <h3 className="text-lg sm:text-xl font-black text-[#0a0a2e] uppercase italic tracking-tight">Selecionar Serviço</h3>
                 </div>
               </div>
+
+              {selectedService?.tags?.includes('limpa_nome') && (
+                <div className={`p-4 rounded-xl border ${loteAtivo ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-amber-50 border-amber-200 text-amber-700'}`}>
+                  {loteAtivo ? (
+                    <div>
+                      <strong>Lote Aberto!</strong> Sua lista será enviada neste lote.
+                      Encerramento previsto para: {loteAtivo.data_encerramento?.toDate ? loteAtivo.data_encerramento.toDate().toLocaleDateString() : 'A definir'}.
+                    </div>
+                  ) : (
+                    <div>
+                      <strong>Atenção:</strong> Os lotes atuais estão fechados e em processamento.
+                      Seu cadastro ficará na fila e será enviado automaticamente no <strong>próximo lote</strong>.
+                    </div>
+                  )}
+                </div>
+              )}
               
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {services.map(service => (

@@ -709,6 +709,52 @@ export const registrarVendaAdministrativa = onCall(async (request) => {
 
 export * from './notifications';
 
+export const onProcessoAtualizado = functions.firestore
+  .document('order_processes/{processoId}')
+  .onUpdate(async (change, context) => {
+    const dadosAntes = change.before.data();
+    const dadosDepois = change.after.data();
+
+    // Verifica se é um processo de limpa nome e se acabou de atingir 100%
+    if (dadosDepois.is_limpa_nome && dadosAntes.progresso_baixa !== 100 && dadosDepois.progresso_baixa === 100) {
+      
+      const clienteId = dadosDepois.cliente_id;
+      // Gera o link de indicação rastreável
+      const linkIndicacao = `https://seusistema.com.br/cadastro?ref=${clienteId}`;
+
+      // Monta o E-mail comemorativo
+      const templateEmail = `
+        <h2>Parabéns! Suas baixas foram completadas! 🚀</h2>
+        <p>Passando para agradecer pela confiança e parceria. Há anos caminhamos juntos nesse segmento, superando desafios e construindo resultados reais! 👊🔥</p>
+        <p>Sei que os últimos dias foram desafiadores, mas o mercado acaba de receber a resposta: as BAIXAS foram concluídas com sucesso no seu CPF/CNPJ.</p>
+        <p>Acreditamos em quem está no campo de batalha diariamente. Nosso compromisso é um só: resultado, parceria e crescimento mútuo. Deus abençoe!</p>
+        <hr/>
+        <h3>Gere Renda Extra com sua Credibilidade!</h3>
+        <p>Agora que você teve resultado comprovado, que tal indicar mais pessoas para que elas também possam ter a credibilidade de volta?</p>
+        <p>Compartilhe o seu link exclusivo abaixo. Cada cliente que fechar conosco através dele, gerará comissões e bônus diretamente no seu painel!</p>
+        <p><strong>Seu link de indicação:</strong> <a href="${linkIndicacao}">${linkIndicacao}</a></p>
+      `;
+
+      // Envia notificação Push via FCM (Firebase Cloud Messaging)
+      await admin.messaging().sendToTopic(`client_${clienteId}`, {
+        notification: {
+          title: "Nome Limpo! 🎉",
+          body: "Todas as baixas do seu processo foram concluídas. Verifique seu e-mail!"
+        }
+      });
+
+      // Registrar e-mail na collection 'mail'
+      await admin.firestore().collection('mail').add({
+        to: dadosDepois.cliente_email,
+        message: {
+          subject: 'Resultado Entregue: Processo Finalizado! 🎯',
+          html: templateEmail
+        }
+      });
+    }
+});
+
+
 const transporter = nodemailer.createTransport({
   service: 'gmail', auth: { user: 'teu-email@gmail.com', pass: 'tua-senha-de-app' }
 });

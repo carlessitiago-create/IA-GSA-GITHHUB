@@ -124,12 +124,14 @@ export function GestaoEquipeView() {
           </p>
         </div>
 
-          <button 
-            onClick={() => navigate('/configuracoes-notificacoes')}
-            className="relative z-10 w-full lg:w-auto bg-amber-500 text-white px-6 sm:px-8 py-4 sm:py-6 rounded-xl sm:rounded-2xl font-black text-[9px] sm:text-xs uppercase tracking-[0.3em] flex items-center justify-center gap-2 sm:gap-4 hover:scale-105 active:scale-95 transition-all shadow-2xl shadow-amber-900/30 group"
-          >
-            <Mail size={18} className="group-hover:scale-110 transition-transform" /> NOTIFICAÇÕES
-          </button>
+          { (profile?.nivel === 'ADM_MASTER' || profile?.nivel === 'ADM_GERENTE') && (
+            <button 
+              onClick={() => navigate('/configuracoes-notificacoes')}
+              className="relative z-10 w-full lg:w-auto bg-amber-500 text-white px-6 sm:px-8 py-4 sm:py-6 rounded-xl sm:rounded-2xl font-black text-[9px] sm:text-xs uppercase tracking-[0.3em] flex items-center justify-center gap-2 sm:gap-4 hover:scale-105 active:scale-95 transition-all shadow-2xl shadow-amber-900/30 group"
+            >
+              <Mail size={18} className="group-hover:scale-110 transition-transform" /> NOTIFICAÇÕES
+            </button>
+          )}
           
           <button 
             onClick={() => {

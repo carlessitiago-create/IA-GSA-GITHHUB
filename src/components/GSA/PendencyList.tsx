@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { collection, query, where, onSnapshot, orderBy, doc, updateDoc, Timestamp, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../AuthContext';
-import { AlertCircle, CheckCircle2, Clock, User, Shield, ArrowRight, Upload, ClipboardList, ChevronRight } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Clock, User, Shield, ArrowRight, Upload, ClipboardList, ChevronRight, Search } from 'lucide-react';
 import { PendingIssue, OrderProcess } from '../../services/orderService';
 import Swal from 'sweetalert2';
 import { FileUploader } from './FileUploader';
@@ -15,6 +15,7 @@ export const PendencyList: React.FC = () => {
   const [processPendencies, setProcessPendencies] = useState<OrderProcess[]>([]);
   const [loading, setLoading] = useState(true);
   const [showSmartFicha, setShowSmartFicha] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     if (!profile) return;
@@ -26,7 +27,7 @@ export const PendencyList: React.FC = () => {
     let qManual;
     const pendenciesRef = collection(db, 'pendencies');
 
-    if (nivel === 'ADM_MASTER' || nivel === 'ADM_ANALISTA' || nivel === 'ADM_GERENTE') {
+    if (nivel?.startsWith('ADM')) {
       qManual = query(pendenciesRef, orderBy('criadaEm', 'desc'));
     } else if (nivel === 'GESTOR' && uid) {
       qManual = query(pendenciesRef, where('id_superior', '==', uid));
@@ -46,7 +47,7 @@ export const PendencyList: React.FC = () => {
       if (nivel === 'CLIENTE' && uid) {
          items = items.filter(p => p.status_pendencia === 'ENVIADO_CLIENTE');
       }
-      if (nivel !== 'ADM_MASTER' && nivel !== 'ADM_ANALISTA' && nivel !== 'ADM_GERENTE') {
+      if (!nivel?.startsWith('ADM')) {
          items.sort((a,b) => {
            const timeA = a.criadaEm?.toMillis ? a.criadaEm.toMillis() : 0;
            const timeB = b.criadaEm?.toMillis ? b.criadaEm.toMillis() : 0;
@@ -61,7 +62,7 @@ export const PendencyList: React.FC = () => {
     const processesRef = collection(db, 'order_processes');
     const pendingStatuses = ['Aguardando Documentação', 'Pendente'];
 
-    if (nivel === 'ADM_MASTER' || nivel === 'ADM_ANALISTA' || nivel === 'ADM_GERENTE') {
+    if (nivel?.startsWith('ADM')) {
       qProc = query(processesRef, where('status_atual', 'in', pendingStatuses));
     } else if (nivel === 'GESTOR' && uid) {
       qProc = query(processesRef, where('id_superior', '==', uid));
@@ -73,7 +74,7 @@ export const PendencyList: React.FC = () => {
 
     const unsubProc = qProc ? onSnapshot(qProc, (snapshot) => {
       let procs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as OrderProcess));
-      if (nivel !== 'ADM_MASTER' && nivel !== 'ADM_ANALISTA' && nivel !== 'ADM_GERENTE') {
+      if (!nivel?.startsWith('ADM')) {
         procs = procs.filter(p => pendingStatuses.includes(p.status_atual || ''));
       }
       
@@ -175,7 +176,63 @@ export const PendencyList: React.FC = () => {
 
   const activeManualPendencies = pendencies.filter(p => p.status_pendencia !== 'RESOLVIDO');
   const resolvedPendencies = pendencies.filter(p => p.status_pendencia === 'RESOLVIDO');
-  const totalActive = activeManualPendencies.length + processPendencies.length;
+  
+  const lowerSearchTerm = searchTerm.toLowerCase();
+  const numericSearchTerm = searchTerm.replace(/\D/g, '');
+
+  const filteredProcessPendencies = processPendencies.filter(proc => {
+    if (!searchTerm) return true;
+    const matchName = (proc.cliente_nome?.toLowerCase() || '').includes(lowerSearchTerm);
+    const matchType = (proc.servico_nome?.toLowerCase() || '').includes(lowerSearchTerm);
+    let matchDoc = false;
+    if (numericSearchTerm.length >= 3) {
+        matchDoc = (proc.cliente_cpf_cnpj || '').replace(/\D/g, '').includes(numericSearchTerm);
+    }
+    return matchName || matchType || matchDoc;
+  });
+
+  const filteredActiveManualPendencies = activeManualPendencies.filter(p => {
+    if (!searchTerm) return true;
+    const matchDesc = (p.descricao?.toLowerCase() || '').includes(lowerSearchTerm);
+    const matchStatus = (p.status_pendencia?.toLowerCase() || '').includes(lowerSearchTerm);
+    
+    // Attempt to match with related process
+    const relatedProc = processPendencies.find(proc => proc.id === p.processo_id);
+    let matchSub = false;
+    if (relatedProc) {
+        const matchName = (relatedProc.cliente_nome?.toLowerCase() || '').includes(lowerSearchTerm);
+        const matchType = (relatedProc.servico_nome?.toLowerCase() || '').includes(lowerSearchTerm);
+        let matchDoc = false;
+        if (numericSearchTerm.length >= 3) {
+            matchDoc = (relatedProc.cliente_cpf_cnpj || '').replace(/\D/g, '').includes(numericSearchTerm);
+        }
+        matchSub = matchName || matchType || matchDoc;
+    }
+
+    return matchDesc || matchStatus || matchSub;
+  });
+
+  const filteredResolvedPendencies = resolvedPendencies.filter(p => {
+    if (!searchTerm) return true;
+    const matchDesc = (p.descricao?.toLowerCase() || '').includes(lowerSearchTerm);
+    const matchStatus = (p.status_pendencia?.toLowerCase() || '').includes(lowerSearchTerm);
+
+    const relatedProc = processPendencies.find(proc => proc.id === p.processo_id);
+    let matchSub = false;
+    if (relatedProc) {
+        const matchName = (relatedProc.cliente_nome?.toLowerCase() || '').includes(lowerSearchTerm);
+        const matchType = (relatedProc.servico_nome?.toLowerCase() || '').includes(lowerSearchTerm);
+        let matchDoc = false;
+        if (numericSearchTerm.length >= 3) {
+            matchDoc = (relatedProc.cliente_cpf_cnpj || '').replace(/\D/g, '').includes(numericSearchTerm);
+        }
+        matchSub = matchName || matchType || matchDoc;
+    }
+
+    return matchDesc || matchStatus || matchSub;
+  });
+
+  const totalActive = filteredActiveManualPendencies.length + filteredProcessPendencies.length;
 
   return (
     <div className="space-y-12 pb-20">
@@ -219,12 +276,24 @@ export const PendencyList: React.FC = () => {
       </div>
 
       <div className="space-y-8">
-        <div className="flex items-center justify-between px-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between px-6 gap-4">
           <div className="flex items-center gap-4">
             <div className="size-2 bg-rose-500 rounded-full animate-pulse" />
             <h4 className="text-sm font-black text-[#0a0a2e] uppercase tracking-widest italic">Fila de Resolução Operacional</h4>
           </div>
-          <span className="bg-slate-100 text-slate-500 text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest border border-slate-200">{totalActive} AGUARDANDO</span>
+          <div className="flex items-center gap-4 w-full md:w-auto">
+             <div className="relative w-full md:w-80">
+               <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+               <input
+                 type="text"
+                 placeholder="Pesquisar nome, CPF, CNPJ ou tipo..."
+                 value={searchTerm}
+                 onChange={(e) => setSearchTerm(e.target.value)}
+                 className="pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 shadow-sm w-full transition-all font-medium"
+               />
+             </div>
+             <span className="bg-slate-100 text-slate-500 text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest border border-slate-200 whitespace-nowrap">{totalActive} AGUARDANDO</span>
+          </div>
         </div>
         
         {totalActive === 0 && (
@@ -239,7 +308,7 @@ export const PendencyList: React.FC = () => {
 
         <div className="grid grid-cols-1 gap-6">
           {/* 1. Pendências de Processos (Dados/Docs Faltantes) */}
-          {processPendencies.map((proc, idx) => (
+          {filteredProcessPendencies.map((proc, idx) => (
             <motion.div 
               key={`proc-${proc.id}`}
               initial={{ opacity: 0, x: -20 }}
@@ -292,13 +361,51 @@ export const PendencyList: React.FC = () => {
                   >
                     Resolver via SmartFicha <ArrowRight size={18} />
                   </button>
+                  
+                  {profile?.nivel?.startsWith('ADM') && (
+                    <button 
+                      onClick={async () => {
+                        const { isConfirmed } = await Swal.fire({
+                          title: 'Resolver Pendência?',
+                          text: 'Deseja marcar este processo como Em Análise (Manual)?',
+                          icon: 'question',
+                          showCancelButton: true,
+                          confirmButtonColor: '#3085d6',
+                          cancelButtonColor: '#d33',
+                          confirmButtonText: 'Sim, resolver'
+                        });
+                        
+                        if (isConfirmed) {
+                          try {
+                            const { atualizarStatusProcesso } = await import('../../services/orderService');
+                            await atualizarStatusProcesso(
+                              proc.id!, 
+                              'Em Análise', 
+                              profile.uid, 
+                              profile.nome || 'Admin', 
+                              proc.status_atual || 'Pendente', 
+                              undefined, 
+                              'Marcado como Em Análise manualmente pela aba de Pendências.', 
+                              'PENDÊNCIA RESOLVIDA MANUALMENTE'
+                            );
+                            Swal.fire('Sucesso!', 'Processo agora está Em Análise.', 'success');
+                          } catch (e: any) {
+                            Swal.fire('Erro', e.message, 'error');
+                          }
+                        }
+                      }}
+                      className="flex-1 flex items-center justify-center gap-4 bg-blue-600 hover:bg-blue-700 text-white px-5 py-4 rounded-[1.8rem] font-black uppercase text-[11px] tracking-[0.2em] transition-all shadow-xl hover:scale-105 active:scale-95"
+                    >
+                      Liberar (Em Análise) <CheckCircle2 size={16} />
+                    </button>
+                  )}
                 </div>
               </div>
             </motion.div>
           ))}
 
           {/* 2. Pendências Manuais */}
-          {activeManualPendencies.map((p, idx) => (
+          {filteredActiveManualPendencies.map((p, idx) => (
             <motion.div 
               key={p.id}
               initial={{ opacity: 0, x: -20 }}
@@ -381,7 +488,7 @@ export const PendencyList: React.FC = () => {
             <h4 className="text-sm font-black text-[#0a0a2e] uppercase tracking-widest italic">Histórico de Resoluções GSA</h4>
           </div>
           <div className="grid grid-cols-1 gap-4">
-            {resolvedPendencies.map((p, idx) => (
+            {filteredResolvedPendencies.map((p, idx) => (
               <motion.div 
                 key={p.id}
                 initial={{ opacity: 0 }}

@@ -17,8 +17,46 @@ import * as XLSX from 'xlsx';
 import { UploadCloud, FileSpreadsheet, Download, Search, Clock, Calendar, User, FileText, CheckCircle } from 'lucide-react';
 
 export const IncluirVendaDireta = () => {
-    const [importMode, setImportMode] = useState<'manual' | 'planilha'>('manual');
+    const [importMode, setImportMode] = useState<'manual' | 'planilha' | 'existente'>('manual');
     const [planilhaFile, setPlanilhaFile] = useState<File | null>(null);
+
+    const [searchTerm, setSearchTerm] = useState('');
+    const [clientsList, setClientsList] = useState<any[]>([]);
+    const [selectedExistingClient, setSelectedExistingClient] = useState<any | null>(null);
+    const [loadingClients, setLoadingClients] = useState(false);
+
+    useEffect(() => {
+        if (importMode === 'existente' && clientsList.length === 0) {
+            fetchClientsList();
+        }
+    }, [importMode]);
+
+    const fetchClientsList = async () => {
+        setLoadingClients(true);
+        try {
+            const [clientsSnap, usuariosSnap] = await Promise.all([
+                getDocs(collection(db, 'clients')),
+                getDocs(query(collection(db, 'usuarios'), where('nivel', '==', 'CLIENTE')))
+            ]);
+            
+            const arr1 = clientsSnap.docs.map(doc => ({ id: doc.id, ...doc.data(), _source: 'clients' }));
+            const arr2 = usuariosSnap.docs.map(doc => ({ id: doc.id, ...doc.data(), _source: 'usuarios' }));
+            
+            const merged = [...arr1, ...arr2];
+            const uniqueMap = new Map();
+            merged.forEach((c: any) => {
+                const docKey = (c.documento || c.cpf || c.cnpj || c.id).replace(/\D/g, '');
+                if (!uniqueMap.has(docKey) || uniqueMap.get(docKey)._source === 'clients') {
+                    uniqueMap.set(docKey, c);
+                }
+            });
+            setClientsList(Array.from(uniqueMap.values()));
+        } catch (e) {
+            console.error("Erro ao buscar clientes", e);
+        } finally {
+            setLoadingClients(false);
+        }
+    };
 
     const [nomeCliente, setNomeCliente] = useState('');
     const [cpfCliente, setCpfCliente] = useState('');
@@ -583,6 +621,149 @@ export const IncluirVendaDireta = () => {
         }
     };
 
+    const handleCreateExistente = async () => {
+        if (!selectedExistingClient || !servicoId || !dataServico) {
+            Swal.fire('Erro', 'Selecione um cliente, o serviço e a data.', 'error');
+            return;
+        }
+
+        const finalVendedorId = vendedorId || gestorId || auth.currentUser?.uid;
+        if (!finalVendedorId) {
+            Swal.fire('Erro', 'Vendedor não identificado.', 'error');
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const batch = writeBatch(db);
+            const timestamp = serverTimestamp();
+            
+            const clientData = selectedExistingClient;
+            const clienteId = clientData.id;
+            const nomeClienteEx = clientData.nome || clientData.nome_completo || "";
+            const cleanMainDoc = clientData.documento || clientData.cpf || clientData.cnpj || "";
+            const isPj = cleanMainDoc.length > 11;
+            const nascClienteEx = clientData.data_nascimento || "";
+            const codigoInternoEx = clientData.codigo_interno || "";
+
+            let servicoNome = "Serviço";
+            let defaultModelId = "";
+            let requisitosCampos: string[] = [];
+            let requisitosDocs: string[] = [];
+
+            const svcDoc = await getDoc(doc(db, 'services', servicoId));
+            if (svcDoc.exists()) {
+                const sData = svcDoc.data();
+                servicoNome = sData.nome_servico || sData.nome || servicoNome;
+                defaultModelId = sData.modelo_id || "";
+                requisitosCampos = sData.requisitos_campos || [];
+                requisitosDocs = sData.requisitos_documentos || [];
+            }
+            
+            let arrCamposFaltantes: string[] = requisitosCampos;
+            let arrDocsFaltantes: string[] = requisitosDocs;
+            
+            if (defaultModelId && (!requisitosCampos.length && !requisitosDocs.length)) {
+                try {
+                    const modelDoc = await getDoc(doc(db, 'process_models', defaultModelId));
+                    if (modelDoc.exists()) {
+                        arrCamposFaltantes = modelDoc.data().campos || [];
+                        arrDocsFaltantes = modelDoc.data().documentos || [];
+                    }
+                } catch (e) {
+                    console.error("Erro ao buscar modelo:", e);
+                }
+            }
+
+            let vendedorNome = "Vendedor";
+            let idSuperior = finalVendedorId;
+            const vendDoc = await getDoc(doc(db, 'usuarios', finalVendedorId));
+            if (vendDoc.exists()) {
+                vendedorNome = vendDoc.data()?.nome_completo || vendDoc.data()?.nome || vendedorNome;
+                idSuperior = vendDoc.data()?.id_superior || finalVendedorId;
+            }
+
+            const providedFields = Object.keys(clientData);
+            const currentCamposFaltantes = arrCamposFaltantes.filter(c => !providedFields.includes(c));
+
+            const saleRef = doc(collection(db, 'sales'));
+            const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+            const protocolo = `ADM-${dateStr}-${Math.floor(Math.random() * 10000)}`;
+            
+            batch.set(saleRef, {
+                protocolo,
+                cliente_id: clienteId,
+                cliente_nome: nomeClienteEx,
+                vendedor_id: finalVendedorId,
+                vendedor_nome: vendedorNome,
+                id_superior: idSuperior,
+                valor_total: 0,
+                metodo_pagamento: 'MANUAL',
+                status_pagamento: 'Pago',
+                timestamp: timestamp,
+                pago_em: timestamp,
+                origem: 'ADM_INTERNAL'
+            });
+
+            const processRef = doc(collection(db, 'order_processes'));
+            
+            const processData: any = {
+                protocolo,
+                venda_id: saleRef.id,
+                servico_id: servicoId,
+                servico_nome: servicoNome,
+                modelo_id: defaultModelId,
+                cliente_id: clienteId,
+                cliente_nome: nomeClienteEx,
+                cliente_cpf_cnpj: cleanMainDoc,
+                data_nascimento: nascClienteEx || "",
+                codigo_interno: codigoInternoEx || "",
+                vendedor_id: finalVendedorId,
+                vendedor_nome: vendedorNome,
+                id_superior: idSuperior,
+                status_atual: (currentCamposFaltantes.length > 0 || arrDocsFaltantes.length > 0) ? 'Pendente' : 'Em Análise',
+                status_financeiro: 'PAGO',
+                data_execucao: dataServico,
+                data_venda: timestamp,
+                dados_faltantes: currentCamposFaltantes,
+                pendencias_iniciais: arrDocsFaltantes
+            };
+
+            if (isPj) {
+                processData.cnpj = cleanMainDoc;
+                processData.nome_empresa = clientData.nome_empresa || nomeClienteEx;
+                if (clientData.cpf) {
+                    processData.cpf = clientData.cpf;
+                }
+            } else {
+                processData.cpf = cleanMainDoc;
+                if (clientData.cnpj) {
+                    processData.cnpj = clientData.cnpj;
+                    processData.nome_empresa = clientData.nome_empresa || "";
+                }
+            }
+
+            batch.set(processRef, processData);
+
+            await batch.commit();
+            
+            Swal.fire('Sucesso', 'Venda e Processo criados com sucesso!', 'success');
+            setSelectedExistingClient(null); 
+            setSearchTerm('');
+            setServicoId(''); 
+            setVendedorId(''); 
+            setGestorId(''); 
+            setDataServico('');
+            loadRecentProcesses();
+            
+        } catch (error: any) {
+            console.error('Erro ao processar venda existente:', error);
+            Swal.fire('Erro', 'Falha ao processar venda: ' + (error.message || 'Erro desconhecido'), 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const filteredProcesses = recentProcesses.filter(p => {
         if (!filterText) return true;
         const lower = filterText.toLowerCase();
@@ -599,7 +780,7 @@ export const IncluirVendaDireta = () => {
             <div className="p-6 bg-slate-800 rounded-2xl shadow-xl border border-slate-700">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                 <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                    Novo Cliente e Venda Administrativa
+                    Venda Administrativa
                 </h2>
                 <div className="flex bg-slate-900 rounded-lg p-1 border border-slate-700">
                     <button 
@@ -607,6 +788,12 @@ export const IncluirVendaDireta = () => {
                         onClick={() => setImportMode('manual')}
                     >
                         Cadastro Manual
+                    </button>
+                    <button 
+                        className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${importMode === 'existente' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
+                        onClick={() => setImportMode('existente')}
+                    >
+                        Cliente Existente
                     </button>
                     <button 
                         className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${importMode === 'planilha' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
@@ -722,6 +909,86 @@ export const IncluirVendaDireta = () => {
                             </div>
                         )}
                     </>
+                ) : importMode === 'existente' ? (
+                    <div className="bg-slate-900/50 p-6 rounded-xl border border-slate-700 space-y-4">
+                        <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                            <Search className="text-blue-500" size={24} />
+                            Buscar Cliente Existente
+                        </h3>
+                        {loadingClients ? (
+                            <p className="text-slate-400 text-sm">Carregando lista de clientes...</p>
+                        ) : (
+                            <>
+                                <div>
+                                    <input 
+                                        className="w-full p-3 bg-slate-900 border border-slate-600 rounded-xl text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all placeholder:text-slate-500" 
+                                        placeholder="Digite o nome, CPF ou CNPJ para buscar..." 
+                                        value={searchTerm} 
+                                        onChange={(e) => setSearchTerm(e.target.value)} 
+                                    />
+                                </div>
+                                {searchTerm.length > 2 && !selectedExistingClient && (
+                                    <div className="max-h-48 overflow-y-auto bg-slate-800 border border-slate-700 rounded-xl p-2 space-y-1">
+                                        {clientsList.filter(c => {
+                                            const lowerTerm = searchTerm.toLowerCase();
+                                            const numericTerm = searchTerm.replace(/\D/g, '');
+                                            const matchName = (c.nome?.toLowerCase() || '').includes(lowerTerm) || 
+                                                              (c.nome_completo?.toLowerCase() || '').includes(lowerTerm);
+                                            
+                                            let matchDoc = false;
+                                            if (numericTerm.length >= 3) {
+                                                matchDoc = (c.documento || '').includes(numericTerm) || 
+                                                           (c.cpf || '').includes(numericTerm) || 
+                                                           (c.cnpj || '').includes(numericTerm);
+                                            }
+                                            return matchName || matchDoc;
+                                        }).slice(0, 15).map(c => (
+                                            <div 
+                                                key={c.id} 
+                                                onClick={() => setSelectedExistingClient(c)}
+                                                className="p-3 hover:bg-slate-700 cursor-pointer rounded-lg text-slate-300"
+                                            >
+                                                <p className="font-bold text-white">{c.nome || c.nome_completo} {c.nome_empresa ? `(${c.nome_empresa})` : ''}</p>
+                                                <p className="text-xs">DOC: {c.documento || c.cpf || c.cnpj}</p>
+                                            </div>
+                                        ))}
+                                        {clientsList.filter(c => {
+                                            const lowerTerm = searchTerm.toLowerCase();
+                                            const numericTerm = searchTerm.replace(/\D/g, '');
+                                            const matchName = (c.nome?.toLowerCase() || '').includes(lowerTerm) || 
+                                                              (c.nome_completo?.toLowerCase() || '').includes(lowerTerm);
+                                            
+                                            let matchDoc = false;
+                                            if (numericTerm.length >= 3) {
+                                                matchDoc = (c.documento || '').includes(numericTerm) || 
+                                                           (c.cpf || '').includes(numericTerm) || 
+                                                           (c.cnpj || '').includes(numericTerm);
+                                            }
+                                            return matchName || matchDoc;
+                                        }).length === 0 && (
+                                            <div className="p-3 text-slate-500 text-sm">Nenhum cliente encontrado.</div>
+                                        )}
+                                    </div>
+                                )}
+                                {selectedExistingClient && (
+                                    <div className="p-4 border border-blue-500/30 bg-blue-500/10 rounded-xl">
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <p className="font-bold text-white">{selectedExistingClient.nome || selectedExistingClient.nome_completo}</p>
+                                                <p className="text-sm text-slate-400">DOC: {selectedExistingClient.documento || selectedExistingClient.cpf || selectedExistingClient.cnpj}</p>
+                                            </div>
+                                            <button 
+                                                className="text-xs text-blue-400 hover:text-blue-300 border border-blue-400/30 rounded px-2 py-1 transition-colors"
+                                                onClick={() => setSelectedExistingClient(null)}
+                                            >
+                                                Trocar Cliente
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    </div>
                 ) : (
                     <div className="bg-slate-900/50 p-6 rounded-xl border border-slate-700 space-y-6">
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -777,7 +1044,7 @@ export const IncluirVendaDireta = () => {
                     </div>
                 )}
 
-                {importMode === 'manual' && (
+                {(importMode === 'manual' || importMode === 'existente') && (
                     <div>
                         <label className="block text-sm font-medium text-slate-300 mb-1">Serviço Adquirido / A Produzir</label>
                         <select 
@@ -831,7 +1098,7 @@ export const IncluirVendaDireta = () => {
                 <div className="pt-4">
                     <button 
                         className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl transition-all shadow-lg hover:shadow-blue-500/30 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" 
-                        onClick={importMode === 'manual' ? handleCreate : handleMassCreate} 
+                        onClick={importMode === 'manual' ? handleCreate : importMode === 'existente' ? handleCreateExistente : handleMassCreate} 
                         disabled={loading}
                     >
                         {loading && (
@@ -844,7 +1111,9 @@ export const IncluirVendaDireta = () => {
                             ? 'Processando e Criando Fila...' 
                             : importMode === 'manual' 
                                 ? 'Cadastrar Cliente e Iniciar Produção' 
-                                : 'Importar e Iniciar Produção em Lote'
+                                : importMode === 'existente'
+                                    ? 'Confirmar Venda e Iniciar Produção'
+                                    : 'Importar e Iniciar Produção em Lote'
                         }
                     </button>
                 </div>

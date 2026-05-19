@@ -44,6 +44,7 @@ const ClientWalletView = lazy(() => import("./components/GSA/ClientWalletView").
 const ClientDashboardView = lazy(() => import("./components/GSA/ClientDashboardView").then(m => ({ default: m.ClientDashboardView })));
 const TabelaCustasView = lazy(() => import("./views/TabelaCustasView").then(m => ({ default: m.TabelaCustasView })));
 const VendaEmMassaView = lazy(() => import("./views/VendaEmMassaView").then(m => ({ default: m.VendaEmMassaView })));
+const GestaoLotesView = lazy(() => import("./views/GestaoLotesView").then(m => ({ default: m.GestaoLotesView })));
 const GerenciadorNotificacoesView = lazy(() => import("./views/GerenciadorNotificacoesView").then(m => ({ default: m.GerenciadorNotificacoes })));
 const NovaVendaAdminView = lazy(() => import("./views/NovaVendaAdminView").then(m => ({ default: m.NovaVendaAdminView })));
 
@@ -187,6 +188,7 @@ const App: React.FC = () => {
             <Route path="/inteligencia" element={<IntelligenceDashboardView />} />
             <Route path="/vendas-internas" element={<VendasPDVView />} />
             <Route path="/venda-massa" element={<VendaEmMassaView />} />
+            <Route path="/gestao-lotes" element={<GestaoLotesView />} />
             <Route path="/nova-venda-admin" element={<NovaVendaAdminView />} />
             <Route path="/leads" element={<LeadsCentralView />} />
             <Route path="/operacional" element={<OperationalView />} />

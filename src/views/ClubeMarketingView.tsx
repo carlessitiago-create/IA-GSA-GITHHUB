@@ -33,12 +33,12 @@ export function ClubeMarketingView() {
       try {
         const q = query(
           collection(db, 'usuarios'), 
-          where('nivel', '==', 'CLIENTE'),
-          orderBy('saldo_pontos', 'desc'),
-          limit(5)
+          where('nivel', '==', 'CLIENTE')
         );
         const snapshot = await getDocs(q);
-        setTopReferrers(snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as UserProfile)));
+        const allClients = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as UserProfile));
+        allClients.sort((a,b) => (b.saldo_pontos || 0) - (a.saldo_pontos || 0));
+        setTopReferrers(allClients.slice(0, 5));
       } catch (err) {
         console.error("Error fetching top referrers:", err);
       }
