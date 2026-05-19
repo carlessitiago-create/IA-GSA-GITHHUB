@@ -563,6 +563,7 @@ export const gerarPagamentoAsaas = onCall(
     const safeCpf = cpf ? String(cpf).replace(/\D/g, '') : '';
 
     console.log(`[ASAAS_PIX] Iniciando para venda: ${vendaId}, Cliente: ${email}`);
+    console.log(`[ASAAS_PIX] TOKEN_CHECK: ${token ? 'Presente' : 'Ausente'}`);
 
     try {
       // 1. Busca ou cria o cliente no Asaas
@@ -593,11 +594,13 @@ export const gerarPagamentoAsaas = onCall(
       };
       
       const paymentRes = await axios.post(`${ASAAS_URL}/payments`, paymentData, { headers });
+      console.log(`[ASAAS_PIX] paymentRes.data:`, JSON.stringify(paymentRes.data));
       const paymentId = paymentRes.data.id;
       console.log(`[ASAAS_PIX] Cobrança criada: ${paymentId}`);
 
       // 3. Busca o QR Code
       const qrRes = await axios.get(`${ASAAS_URL}/payments/${paymentId}/pixQrCode`, { headers });
+      console.log(`[ASAAS_PIX] qrRes.data:`, JSON.stringify(qrRes.data));
       
       // 4. Atualiza a venda no banco
       await db.collection('sales').doc(vendaId).update(cleanDataForFirestore({
@@ -615,7 +618,7 @@ export const gerarPagamentoAsaas = onCall(
         gateway: 'ASAAS'
       };
     } catch (error: any) {
-      console.error("[ASAAS_PIX] Erro na API:", error.response?.data || error.message);
+      console.error("[ASAAS_PIX] Erro na API:", JSON.stringify(error.response?.data || error.message));
       throw new HttpsError('aborted', `Falha na integração Asaas: ${error.response?.data?.errors?.[0]?.description || error.message}`);
     }
   })
