@@ -4,7 +4,7 @@ import {
   Shield, Users, PlusCircle, LayoutDashboard, History, Settings, 
   Package, DollarSign, TrendingUp, Bell, ClipboardList, Gift, 
   ShoppingBag, LogOut, ChevronRight, Activity, AlertTriangle, X,
-  Factory, Trophy, Search, User, Mail, UserPlus, Layers
+  Factory, Trophy, Search, User, Mail, UserPlus, Layers, CreditCard, Banknote
 } from 'lucide-react';
 
 
@@ -66,6 +66,7 @@ export function Sidebar({ currentProfile, logout, onClose }: any) {
               <MenuItem to="venda-massa" icon={Package} label="Venda em Massa" color="text-indigo-400" />
             )}
             <MenuItem to="leads" icon={TrendingUp} label="Leads e Indicações" />
+            <MenuItem to="gestao-credito" icon={Banknote} label="Crédito Corporativo" color="text-green-400" />
             <MenuItem to="vitrine" icon={ShoppingBag} label="Vitrine GSA" />
             {role !== 'ADM_ANALISTA' && <MenuItem to="clube" icon={Gift} label={role.startsWith('ADM') ? "Clube de Pontos" : "Clube de Vantagens"} />}
           </div>
@@ -149,6 +150,7 @@ export function Sidebar({ currentProfile, logout, onClose }: any) {
             <MenuItem to="clube-cliente" icon={Gift} label="Indique e Ganhe" />
             <MenuItem to="vitrine-cliente" icon={ShoppingBag} label="Vitrine de Serviços" />
             <MenuItem to="processos-cliente" icon={ClipboardList} label="Meus Processos" />
+            <MenuItem to="gestao-credito" icon={Banknote} label="Crédito Corporativo" color="text-green-400" />
             <MenuItem to="carteira" icon={DollarSign} label="Minha Carteira" color="text-emerald-500" />
           </div>
         )}
@@ -172,7 +174,17 @@ export function Sidebar({ currentProfile, logout, onClose }: any) {
             <p className="text-[11px] font-semibold text-blue-400 mt-0.5">{role.replace('_', ' ')}</p>
           </div>
         </div>
-        <button onClick={logout} className="w-full flex items-center justify-center gap-2 py-2.5 bg-red-500/10 text-red-500 rounded-lg text-xs font-semibold hover:bg-red-500 hover:text-white transition-all">
+        <button 
+          onClick={async () => {
+            if (onClose) onClose();
+            try {
+              await logout();
+            } catch (error) {
+              console.error("Erro ao deslogar:", error);
+            }
+          }} 
+          className="w-full flex items-center justify-center gap-2 py-2.5 bg-red-500/10 text-red-500 rounded-lg text-xs font-semibold hover:bg-red-500 hover:text-white transition-all focus:outline-none"
+        >
           <LogOut size={16} /> Sair do Sistema
         </button>
       </div>

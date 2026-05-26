@@ -7,7 +7,7 @@ import { PendingIssue, OrderProcess } from '../../services/orderService';
 import Swal from 'sweetalert2';
 import { FileUploader } from './FileUploader';
 import { SmartFicha } from './SmartFicha';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export const PendencyList: React.FC = () => {
   const { profile } = useAuth();
@@ -382,7 +382,7 @@ export const PendencyList: React.FC = () => {
                               proc.id!, 
                               'Em Análise', 
                               profile.uid, 
-                              profile.nome || 'Admin', 
+                              profile.nome_completo || 'Admin', 
                               proc.status_atual || 'Pendente', 
                               undefined, 
                               'Marcado como Em Análise manualmente pela aba de Pendências.', 

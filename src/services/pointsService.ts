@@ -165,12 +165,16 @@ export const getPointHistory = async (userId: string) => {
   try {
     const q = query(
       collection(db, 'points_history'),
-      where('userId', '==', userId),
-      orderBy('data', 'desc'),
-      limit(50)
+      where('userId', '==', userId)
     );
     const snap = await getDocs(q);
-    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    data.sort((a: any, b: any) => {
+      const timeA = a.data?.toMillis ? a.data.toMillis() : 0;
+      const timeB = b.data?.toMillis ? b.data.toMillis() : 0;
+      return timeB - timeA;
+    });
+    return data.slice(0, 50);
   } catch (error) {
     console.error("Erro ao carregar histórico:", error);
     return [];

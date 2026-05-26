@@ -18,7 +18,7 @@ import {
 import { useAuth } from '../components/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { getPointsRules, getClubRewards, getPointHistory, redeemReward } from '../services/pointsService';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Swal from 'sweetalert2';
 import { transformImageUrl } from '../utils/imageUtils';
 import { ProgressaoClube } from '../components/GSA/ProgressaoClube';

@@ -5,7 +5,7 @@ import { getSaasConfig, SaasConfig, updateSaasConfig } from '../../services/conf
 import { wipeSystemData } from '../../services/wipeSystem';
 import { getDiagnosticoOrigin } from '../../lib/urlUtils';
 import { Settings, Link, Info, Save, CheckCircle, DollarSign } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Swal from 'sweetalert2';
 
 export const AdminSaasSettings: React.FC = () => {

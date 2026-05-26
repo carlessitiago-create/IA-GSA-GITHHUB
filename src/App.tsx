@@ -42,11 +42,14 @@ const ClubeMarketingView = lazy(() => import("./views/ClubeMarketingView").then(
 const ClientProcessesView = lazy(() => import("./components/GSA/ClientProcessesView").then(m => ({ default: m.ClientProcessesView })));
 const ClientWalletView = lazy(() => import("./components/GSA/ClientWalletView").then(m => ({ default: m.ClientWalletView })));
 const ClientDashboardView = lazy(() => import("./components/GSA/ClientDashboardView").then(m => ({ default: m.ClientDashboardView })));
+const CreditoDashboardView = lazy(() => import("./views/CreditoDashboardView").then(m => ({ default: m.CreditoDashboardView })));
 const TabelaCustasView = lazy(() => import("./views/TabelaCustasView").then(m => ({ default: m.TabelaCustasView })));
 const VendaEmMassaView = lazy(() => import("./views/VendaEmMassaView").then(m => ({ default: m.VendaEmMassaView })));
 const GestaoLotesView = lazy(() => import("./views/GestaoLotesView").then(m => ({ default: m.GestaoLotesView })));
 const GerenciadorNotificacoesView = lazy(() => import("./views/GerenciadorNotificacoesView").then(m => ({ default: m.GerenciadorNotificacoes })));
 const NovaVendaAdminView = lazy(() => import("./views/NovaVendaAdminView").then(m => ({ default: m.NovaVendaAdminView })));
+const CheckoutCreditoView = lazy(() => import("./views/CheckoutCreditoView").then(m => ({ default: m.CheckoutCreditoView })));
+const QuizCreditoPublicoView = lazy(() => import("./views/QuizCreditoPublicoView").then(m => ({ default: m.QuizCreditoPublicoView })));
 
 import { PendingApproval, AccountRefused, AccountSuspended, CompleteProfile } from "./components/Auth";
 
@@ -170,6 +173,8 @@ const App: React.FC = () => {
         {/* O Login só é acionado se digitado explicitamente (/login) ou caso não tenha sessão nas rotas abaixo */}
         <Route path="/login" element={<LoginView />} />
         <Route path="/consulta" element={<PublicPortal />} />
+        <Route path="/credito" element={<QuizCreditoPublicoView />} />
+        <Route path="/checkout-credito" element={<CheckoutCreditoView />} />
         <Route path="/vendas/p/:slug" element={<ProposalLandingPage />} />
         <Route path="/vendasp/:slug" element={<ProposalLandingPage />} />
         <Route path="/p/:slug" element={<ProposalLandingPage />} />
@@ -218,6 +223,7 @@ const App: React.FC = () => {
             <Route path="/clube-cliente" element={<ClubeMarketingView />} />
             <Route path="/processos-cliente" element={<ClientProcessesView />} />
             <Route path="/carteira" element={<ClientWalletView />} />
+            <Route path="/gestao-credito" element={<CreditoDashboardView />} />
             <Route path="/dashboard-cliente" element={<ClientDashboardView />} />
             <Route path="/perfil-cliente" element={<ProfileView />} />
           </Route>

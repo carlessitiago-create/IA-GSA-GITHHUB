@@ -3,7 +3,7 @@ import { useAuth, UserProfile } from '../components/AuthContext';
 import { db } from '../firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import Swal from 'sweetalert2';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { User, CreditCard, Mail, Calendar, Phone, Building2, Save } from 'lucide-react';
 import { formatDocument, formatPhone } from '../utils/validators';
 

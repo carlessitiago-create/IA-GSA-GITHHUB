@@ -8,7 +8,8 @@ import {
   query,
   orderBy,
   where,
-  writeBatch
+  writeBatch,
+  limit
 } from 'firebase/firestore';
 import { createUserWithEmailAndPassword, signOut, sendPasswordResetEmail } from 'firebase/auth';
 import { db, secondaryAuth, auth, handleFirestoreError, OperationType } from '../firebase';

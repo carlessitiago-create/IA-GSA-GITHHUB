@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { 
   Search, 
@@ -286,7 +286,7 @@ export const TrackingView: React.FC<TrackingViewProps> = ({ saleId, onBack }) =>
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      let items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      let items: any[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       items.sort((a,b) => {
          const timeA = a.timestamp?.toMillis ? a.timestamp.toMillis() : 0;
          const timeB = b.timestamp?.toMillis ? b.timestamp.toMillis() : 0;

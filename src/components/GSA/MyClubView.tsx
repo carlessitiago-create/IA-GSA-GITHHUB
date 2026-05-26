@@ -21,7 +21,7 @@ import {
 } from '../../services/pointsService';
 import { useAuth } from '../AuthContext';
 import Swal from 'sweetalert2';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { transformImageUrl } from '../../utils/imageUtils';
 
 export const MyClubView: React.FC = () => {

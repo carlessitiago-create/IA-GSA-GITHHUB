@@ -401,6 +401,7 @@ export const DashboardLayout: React.FC = () => {
             isOpen={isSidebarOpen} 
             setIsOpen={setIsSidebarOpen}
             onClose={closeSidebar}
+            logout={logout}
           />
         </div>
       </div>

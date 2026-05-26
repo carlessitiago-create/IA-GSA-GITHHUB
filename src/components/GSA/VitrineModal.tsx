@@ -1,6 +1,6 @@
 import React from 'react';
 import { X } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import Swal from 'sweetalert2';
 
 interface VitrineModalProps {

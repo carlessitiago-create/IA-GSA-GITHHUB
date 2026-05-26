@@ -9,7 +9,7 @@ import {
   Search,
   LogOut
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface HeaderProps {
   view: string;

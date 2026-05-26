@@ -15,7 +15,7 @@ import { db } from '../firebase';
 import { collection, onSnapshot, query, orderBy, doc, updateDoc, getDocs, where } from 'firebase/firestore';
 import { useAuth } from '../components/AuthContext';
 import Swal from 'sweetalert2';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export const TabelaCustasView: React.FC = () => {
   const { profile } = useAuth();

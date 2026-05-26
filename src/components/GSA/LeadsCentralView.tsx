@@ -38,7 +38,7 @@ import {
 import { listarEspecialistas, UserProfile, createSecondaryUser } from '../../services/userService';
 import { adicionarABlacklist, verificarBlacklist } from '../../services/blacklistService';
 import { useAuth } from '../AuthContext';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Swal from 'sweetalert2';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';

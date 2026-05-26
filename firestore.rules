@@ -1,8 +1,23 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Regras para a captação de leads de crédito (Isca Digital Pública)
+    match /leads/{leadId} {
+      // Permite que usuários não autenticados criem novos leads
+      allow create: if true;
+      // Garante que apenas usuários autenticados possam ler, atualizar ou deletar
+      allow read, update, delete: if request.auth != null;
+    }
+
+    match /leads_credito/{leadId} {
+      allow create: if true; // Permite a isca digital capturar leads abertamente
+      allow read, update, delete: if request.auth != null && 
+        (request.auth.token.role == 'admin_master' || request.auth.token.role == 'gestor' || request.auth.token.role == 'vendedor' || request.auth.token.role == 'analista' || request.auth.token.nivel in ['ADM_MASTER', 'GESTOR', 'VENDEDOR', 'ADM_ANALISTA']);
+    }
+
+    // Regra global restrita a usuários autenticados para segurança
     match /{document=**} {
-      allow read, write: if true;
+      allow read, write: if request.auth != null;
     }
   }
 }

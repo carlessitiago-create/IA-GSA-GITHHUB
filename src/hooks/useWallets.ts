@@ -1,26 +1,72 @@
 import { useState, useEffect } from 'react';
-import { collection, query, onSnapshot, orderBy } from 'firebase/firestore';
+import { collection, query, onSnapshot, where } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
-import { Wallet } from '../services/financialService';
+import { useAuth } from '../components/AuthContext';
+import { getOrCreateWallet, registrarTransacao } from '../services/financialService';
+
+export interface Wallet {
+  id?: string;
+  cliente_id: string;
+  saldo_atual: number;
+  saldo_bonus: number;
+  saldoDisponivel: number;
+}
 
 export const useWallets = () => {
-  const [wallets, setWallets] = useState<Wallet[]>([]);
+  const { profile } = useAuth();
+  const [wallet, setWallet] = useState<Wallet>({ cliente_id: '', saldo_atual: 0, saldo_bonus: 0, saldoDisponivel: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const qWallets = query(collection(db, 'wallets'), orderBy('saldo_atual', 'desc'));
+    if (!profile?.uid) {
+      setLoading(false);
+      return;
+    }
+
+    const qWallets = query(collection(db, 'wallets'), where('cliente_id', '==', profile.uid));
     const unsubscribe = onSnapshot(qWallets, (snapshot) => {
-      setWallets(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Wallet)));
+      if (!snapshot.empty) {
+        const docSnap = snapshot.docs[0];
+        const data = docSnap.data();
+        setWallet({ 
+          id: docSnap.id, 
+          cliente_id: data.cliente_id,
+          saldo_atual: data.saldo_atual || 0,
+          saldo_bonus: data.saldo_bonus || 0,
+          saldoDisponivel: (data.saldo_atual || 0) + (data.saldo_bonus || 0)
+        });
+      } else {
+        // Fallback para wallet vazia se não existir
+        setWallet({ cliente_id: profile.uid, saldo_atual: 0, saldo_bonus: 0, saldoDisponivel: 0 });
+      }
       setLoading(false);
-    }, (error) => {
-      setError('Erro ao carregar carteiras.');
+    }, (err) => {
+      setError('Erro ao carregar carteira.');
       setLoading(false);
-      handleFirestoreError(error, OperationType.GET, 'wallets');
+      handleFirestoreError(err, OperationType.GET, 'wallets');
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [profile?.uid]);
 
-  return { wallets, loading, error };
+  const usarSaldoParaAbatimento = async (valorServico: number) => {
+    if (!profile?.uid) return false;
+    try {
+      await registrarTransacao(
+        profile.uid,
+        -valorServico,
+        'DEBITO',
+        'PAGAMENTO_MANUAL',
+        'Abatimento de serviço via saldo interno',
+        true
+      );
+      return true;
+    } catch (err) {
+      console.error(err);
+      return false;
+    }
+  };
+
+  return { wallet, loading, error, usarSaldoParaAbatimento };
 };

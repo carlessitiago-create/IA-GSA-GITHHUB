@@ -357,17 +357,10 @@ export async function confirmarTransacao(transactionId: string, confirmadoPor: s
                 const rules = await getPointsRules();
                 const bonusValue = referralData.bonus_valor || rules.indicacao || 100;
 
-                // Credita o bônus financeiro ao cliente que indicou
-                await creditarBonusIndicacao(
-                  referralData.cliente_origem_id,
-                  bonusValue,
-                  `Bônus por indicação aprovada: ${referralData.nome_indicado}`
-                );
-
-                // Credita pontos também
+                // Em vez de dar saldo em carteira, credita apenas em PONTOS
                 await addPontos(
                   referralData.cliente_origem_id,
-                  rules.indicacao || 50,
+                  bonusValue,
                   `Indicação Aprovada: ${referralData.nome_indicado}`
                 );
 
@@ -378,7 +371,7 @@ export async function confirmarTransacao(transactionId: string, confirmadoPor: s
                 await sendNotification({
                   usuario_id: referralData.cliente_origem_id,
                   titulo: "🎉 PARABÉNS! Indicação Aprovada!",
-                  mensagem: `O pagamento de ${referralData.nome_indicado} foi confirmado! Você acaba de ganhar R$ ${bonusValue.toLocaleString('pt-BR')} de bônus. Parabéns, mais uma indicação foi aprovada! Que tal fazer a próxima indicação agora?`,
+                  mensagem: `O pagamento de ${referralData.nome_indicado} foi confirmado! Você acaba de ganhar ${bonusValue} de bônus em PONTOS. Acompanhe pelo seu Clube de Vantagens e troque por prêmios ou PIX!`,
                   tipo: 'FINANCIAL'
                 });
               }

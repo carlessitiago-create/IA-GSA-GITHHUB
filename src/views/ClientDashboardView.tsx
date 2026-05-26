@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   ClipboardList, 
   Clock, 
@@ -22,7 +23,7 @@ import {
   Flame,
   ArrowUpRight
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { aceitarPropostaLeadVitrine, atualizarStatusLeadVitrine, LeadStatus } from '../services/marketingService';
 import { getOrCreateWallet, Wallet } from '../services/financialService';
 import { useAuth } from '../components/AuthContext';
@@ -38,6 +39,7 @@ interface ClientDashboardViewProps {
 
 export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({ processes, pendencies, showcaseLeads }) => {
   const { profile } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<'todos' | 'ativos' | 'concluidos'>('todos');
   const [showSmartFicha, setShowSmartFicha] = useState<string | null>(null);

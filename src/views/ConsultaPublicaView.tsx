@@ -7,7 +7,7 @@ import { ptBR } from 'date-fns/locale';
 import { useAuth } from '../components/AuthContext';
 import { getIndicaOrigin, getConsultaOrigin } from '../lib/urlUtils';
 import { SmartFicha } from '../components/GSA/SmartFicha';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Swal from 'sweetalert2';
 import confetti from 'canvas-confetti';
 import { ClubePromoBanner } from '../components/GSA/ClubePromoBanner';

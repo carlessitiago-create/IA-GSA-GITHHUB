@@ -14,7 +14,7 @@ import { ServiceData, listarServicosAtivos } from '../../services/serviceFactory
 import { solicitarOrcamentoVitrine } from '../../services/marketingService';
 import { useAuth } from '../AuthContext';
 import Swal from 'sweetalert2';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 
 const getYoutubeId = (url: string) => {
@@ -239,15 +239,15 @@ export const VitrineView: React.FC = () => {
                     {s.descricao || 'Descrição do serviço em processo de atualização pela nossa equipe técnica...'}
                   </p>
 
-                  <div className="flex items-center justify-between pt-5 border-t border-slate-50">
+                  <div className="flex items-center justify-between pt-5 mt-auto border-t border-slate-50">
                     <div className="flex items-center gap-2">
                       <div className="size-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-all">
                         <Info size={14} />
                       </div>
-                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest group-hover:text-[#0a0a2e] transition-colors">Detalhes Técnicos</span>
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover:text-[#0a0a2e] transition-colors">Detalhes Técnicos</span>
                     </div>
-                    <div className="size-10 rounded-2xl bg-slate-50 flex items-center justify-center group-hover:bg-[#0a0a2e] group-hover:text-white transition-all shadow-sm">
-                      <ArrowRight size={18} />
+                    <div className="px-4 py-2 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm font-bold text-xs uppercase tracking-wider">
+                      Acessar <ArrowRight size={14} className="ml-2" />
                     </div>
                   </div>
                 </div>
@@ -270,31 +270,32 @@ export const VitrineView: React.FC = () => {
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="bg-white w-full max-w-6xl rounded-2xl sm:rounded-3xl md:rounded-3xl overflow-hidden shadow-2xl border border-slate-100 relative max-h-[95vh] flex flex-col"
+              className="bg-white w-full max-w-6xl rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border border-slate-100 relative flex flex-col max-h-[95vh] lg:h-[800px]"
             >
               <button 
                 onClick={() => setSelectedService(null)}
-                className="absolute top-4 right-4 sm:top-8 sm:right-8 z-50 size-10 sm:size-12 bg-white/90 backdrop-blur-md hover:bg-white rounded-full flex items-center justify-center text-[#0a0a2e] shadow-xl border border-slate-100 transition-all"
+                className="absolute top-4 right-4 sm:top-8 sm:right-8 z-50 size-10 sm:size-12 bg-white/90 backdrop-blur-md hover:bg-white rounded-full flex items-center justify-center text-[#0a0a2e] shadow-xl border border-slate-100 transition-all focus:outline-none"
               >
                 <X size={20} className="sm:size-6" />
               </button>
 
-              <div className="grid grid-cols-1 lg:grid-cols-12 h-full overflow-y-auto lg:overflow-hidden">
-                {/* Vídeo Area */}
-                <div className="lg:col-span-7 bg-black relative overflow-hidden aspect-video lg:aspect-auto lg:h-full">
-                  <iframe 
-                    width="100%" 
-                    height="100%" 
-                    src={`https://www.youtube.com/embed/${getYoutubeId(selectedService.video_youtube_url || '')}?autoplay=1&rel=0&modestbranding=1`} 
-                    frameBorder="0" 
-                    allow="autoplay; encrypted-media" 
-                    allowFullScreen
-                    className="absolute inset-0 w-full h-full"
-                  ></iframe>
-                </div>
-                
-                {/* Info Area */}
-                <div className="lg:col-span-5 p-6 sm:p-8 md:p-6 lg:p-14 flex flex-col justify-center bg-white lg:overflow-y-auto lg:h-full">
+              <div className="flex-1 overflow-y-auto bg-white flex flex-col lg:block">
+                <div className="grid grid-cols-1 lg:grid-cols-12 min-h-full flex-1">
+                  {/* Vídeo Area */}
+                  <div className="lg:col-span-7 bg-black relative lg:h-full h-[35vh] min-h-[250px] w-full shrink-0">
+                    <iframe 
+                      width="100%" 
+                      height="100%" 
+                      src={`https://www.youtube.com/embed/${getYoutubeId(selectedService.video_youtube_url || '')}?autoplay=1&rel=0&modestbranding=1`} 
+                      frameBorder="0" 
+                      allow="autoplay; encrypted-media" 
+                      allowFullScreen
+                      className="absolute inset-0 w-full h-full"
+                    ></iframe>
+                  </div>
+                  
+                  {/* Info Area */}
+                  <div className="lg:col-span-5 p-6 sm:p-8 md:p-6 lg:p-14 flex flex-col justify-center bg-white overflow-visible">
                   <div className="space-y-6">
                     <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-50 rounded-full">
                       <Verified size={16} className="text-blue-600" />
@@ -334,7 +335,7 @@ export const VitrineView: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="pt-4 flex flex-col sm:flex-row gap-4">
+                    <div className="pt-8 flex flex-col-reverse sm:flex-row gap-4">
                       <button 
                         onClick={() => setSelectedService(null)}
                         className="flex-1 px-8 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest border border-slate-100 text-slate-400 hover:bg-slate-50 transition-all"
@@ -351,6 +352,7 @@ export const VitrineView: React.FC = () => {
                     </div>
                   </div>
                 </div>
+              </div>
               </div>
             </motion.div>
           </div>

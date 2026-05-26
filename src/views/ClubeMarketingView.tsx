@@ -216,7 +216,7 @@ export function ClubeMarketingView() {
                 </div>
                 <div>
                   <p className="text-[8px] sm:text-[10px] font-black uppercase mb-0.5 sm:mb-1 opacity-70">Bônus por Indicação</p>
-                  <p className="text-lg sm:text-2xl font-black">R$ {bonusValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                  <p className="text-lg sm:text-2xl font-black">{bonusValue} PTS</p>
                 </div>
               </div>
               <div className="bg-white/10 backdrop-blur-md p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-white/10 flex items-center gap-3 sm:gap-4 flex-1 min-w-[140px]">
@@ -341,7 +341,7 @@ export function ClubeMarketingView() {
                   <Gift className="text-blue-600" size={24} />
                 </div>
                 <p className="text-xs font-bold text-blue-800 dark:text-blue-200 leading-relaxed">
-                  Você receberá <span className="text-blue-600 font-black">R$ {bonusValue.toLocaleString('pt-BR')}</span> em sua carteira assim que seu amigo concluir o primeiro pagamento.
+                  Você receberá <span className="text-blue-600 font-black">{bonusValue} pontos</span> em seu saldo assim que a sua indicação for aprovada. Os pontos podem ser trocados por prêmios ou PIX!
                 </p>
               </div>
 

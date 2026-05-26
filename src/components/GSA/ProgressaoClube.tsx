@@ -1,6 +1,6 @@
 // src/components/GSA/ProgressaoClube.tsx
 import React from 'react';
-import { motion } from 'motion/react'; 
+import { motion } from 'framer-motion'; 
 
 interface ProgressaoClubeProps {
   pontosAtuais: number;

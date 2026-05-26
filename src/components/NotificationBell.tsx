@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Bell, X, Check, Trash2, Clock } from 'lucide-react';
 import { listenToNotifications, markAsRead, AppNotification, playNotificationSound } from '../services/notificationService';
 import { useAuth } from './AuthContext';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export const NotificationBell: React.FC<{ currentProfile: any }> = ({ currentProfile }) => {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);

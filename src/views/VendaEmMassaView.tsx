@@ -3,7 +3,7 @@ import {
   Upload, FileText, Trash2, Plus, CheckCircle2, CreditCard, Loader2, AlertCircle,
   Package, TrendingUp, Search, Clock, Download
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../components/AuthContext';
 import { db } from '../firebase';
 import { collection, query, where, getDocs, onSnapshot, orderBy, limit } from 'firebase/firestore';
@@ -92,7 +92,7 @@ export const VendaEmMassaView: React.FC = () => {
     if (!profile?.uid) return;
     const q = query(collection(db, 'bulk_sales_batches'), where('vendedor_id', '==', profile.uid));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const data: any[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       data.sort((a, b) => {
         const tA = a.timestamp?.toMillis ? a.timestamp.toMillis() : 0;
         const tB = b.timestamp?.toMillis ? b.timestamp.toMillis() : 0;

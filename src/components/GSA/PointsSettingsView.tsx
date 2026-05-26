@@ -5,7 +5,7 @@ import { Trophy, Save, Image as ImageIcon, Plus, Trash2, Edit2, ArrowUp, ArrowDo
 import Swal from 'sweetalert2';
 import { transformImageUrl } from '../../utils/imageUtils';
 import { storage } from '../../firebase';
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytesResumable, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 export const PointsSettingsView = () => {
   const [rules, setRules] = useState<any>({
@@ -55,44 +55,92 @@ export const PointsSettingsView = () => {
     }
   };
 
-  const uploadImage = (file: File, onProgress?: (percent: number) => void): Promise<string> => {
+  const compressImageToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
-      // Limite de 5MB para evitar travamentos
-      if (file.size > 5 * 1024 * 1024) {
-        reject(new Error('O arquivo é muito grande (máximo 5MB)'));
-        return;
-      }
-
-      const storageRef = ref(storage, `club_prizes/${Date.now()}_${file.name}`);
-      const uploadTask = uploadBytesResumable(storageRef, file);
-
-      uploadTask.on('state_changed', 
-        (snapshot) => {
-          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          if (onProgress) onProgress(progress);
-          console.log(`Upload do prêmio: ${progress.toFixed(0)}%`);
-        }, 
-        (error: any) => {
-          console.error("Erro no upload task:", error);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
           
-          if (error.code === 'storage/unauthorized') {
-            reject(new Error('Sem permissão para salvar no Storage. Verifique as regras de segurança.'));
-          } else if (error.code === 'storage/canceled') {
-            reject(new Error('Upload cancelado.'));
-          } else {
-            reject(new Error('Falha na comunicação com o servidor de imagens. Verifique sua rede.'));
+          // Max dimensions
+          const MAX_SIZE = 800;
+          if (width > height && width > MAX_SIZE) {
+            height *= MAX_SIZE / width;
+            width = MAX_SIZE;
+          } else if (height > MAX_SIZE) {
+            width *= MAX_SIZE / height;
+            height = MAX_SIZE;
           }
-        }, 
-        async () => {
-          try {
-            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-            resolve(downloadURL);
-          } catch (err) {
-            reject(new Error('Erro ao obter link da imagem após upload.'));
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject(new Error('Canvas context null'));
+            return;
           }
-        }
-      );
+          
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          // Start compression at 0.7
+          let quality = 0.7;
+          let dataUrl = canvas.toDataURL('image/jpeg', quality);
+          
+          // Loop until the size is under ~800KB (800000 bytes)
+          while (dataUrl.length > 800000 && quality > 0.1) {
+            quality -= 0.1;
+            dataUrl = canvas.toDataURL('image/jpeg', quality);
+          }
+          
+          if (dataUrl.length > 1000000) {
+            reject(new Error('Imagem final ainda é muito grande para salvar no banco de dados.'));
+            return;
+          }
+          
+          resolve(dataUrl);
+        };
+        img.onerror = () => reject(new Error('Erro ao processar imagem'));
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = () => reject(new Error('Erro ao ler arquivo'));
+      reader.readAsDataURL(file);
     });
+  };
+
+  const uploadImage = async (file: File, onProgress?: (percent: number) => void): Promise<string> => {
+    if (file.size > 50 * 1024 * 1024) {
+      throw new Error('O arquivo é muito grande (máximo 50MB)');
+    }
+
+    const storageRef = ref(storage, `club_prizes/${Date.now()}_${file.name}`);
+    if (onProgress) onProgress(10);
+    
+    try {
+      const uploadPromise = uploadBytes(storageRef, file);
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('timeout')), 5000)
+      );
+      
+      await Promise.race([uploadPromise, timeoutPromise]);
+      
+      if (onProgress) onProgress(100);
+      const downloadURL = await getDownloadURL(storageRef);
+      return downloadURL;
+    } catch (error: any) {
+      console.warn("Falha no upload do Firebase Storage, tentando compressão via Base64...", error);
+      
+      try {
+        if (onProgress) onProgress(50);
+        const base64Url = await compressImageToBase64(file);
+        if (onProgress) onProgress(100);
+        return base64Url;
+      } catch (fallbackError) {
+        throw new Error('Servidor de imagem indisponível e falha na compressão local.');
+      }
+    }
   };
 
   const adicionarPremio = () => {

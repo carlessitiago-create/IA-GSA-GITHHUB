@@ -6,7 +6,7 @@ import { gerarPagamentoPixGateway, processarVenda } from '../services/vendaServi
 import { ShoppingCart, User, Package, CheckCircle, Search, UserPlus, X, ShieldCheck, Loader2, CreditCard, Banknote, QrCode, FileText, ChevronRight, ArrowLeft, AlertCircle, Copy, Clock, Shield } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { useAuth, UserProfile } from '../components/AuthContext';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { formatDocument, formatPhone } from '../utils/validators';
 import { ServiceData, validarPrecoServico } from '../services/serviceFactory';
 import { ProposalGenerator } from '../components/GSA/ProposalGenerator';

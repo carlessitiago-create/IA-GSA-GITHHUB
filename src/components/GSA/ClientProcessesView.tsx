@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { listarProcessosCliente, OrderProcess } from '../../services/orderService';
 import { useAuth } from '../AuthContext';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { SmartFicha } from './SmartFicha';

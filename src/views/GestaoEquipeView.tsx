@@ -5,7 +5,7 @@ import GerenciarUsuarios from '../components/Admin/GerenciarUsuarios';
 import { User, Shield, Eye, UserPlus, Search, Users, Edit3, MoreVertical, X, Mail } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { useAuth, UserProfile } from '../components/AuthContext';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 
 export function GestaoEquipeView() {

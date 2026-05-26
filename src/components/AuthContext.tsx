@@ -16,6 +16,7 @@ import { auth, db, OperationType, handleFirestoreError, cleanData } from '../fir
 export interface UserProfile {
   uid: string;
   nome_completo: string;
+  nome?: string; // Add optional nome
   email: string;
   cpf: string;
   data_nascimento: string;
@@ -23,6 +24,9 @@ export interface UserProfile {
   whatsapp?: string;
   nivel: 'ADM_MASTER' | 'ADM_GERENTE' | 'ADM_ANALISTA' | 'GESTOR' | 'VENDEDOR' | 'CLIENTE';
   id_superior?: string;
+  vendedor_id?: string; // Add optional vendedor_id
+  documento?: string; // Add optional documento
+  timestamp?: any; // Add optional timestamp
   tem_empresa: boolean;
   nome_empresa?: string;
   cnpj?: string;

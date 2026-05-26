@@ -27,7 +27,7 @@ import {
   ChevronRight,
   Target
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Swal from 'sweetalert2';
 
 export const VitrinePublicaView: React.FC = () => {

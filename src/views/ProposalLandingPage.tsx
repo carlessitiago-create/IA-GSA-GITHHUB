@@ -30,7 +30,7 @@ import {
   Layout,
   Copy
 } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import Swal from 'sweetalert2';
 
 export const ProposalLandingPage: React.FC = () => {

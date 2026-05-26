@@ -1,6 +1,6 @@
 import React from 'react';
 import { Gift, Trophy, ArrowRight, Star } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 
 interface ClubePromoBannerProps {
   onAction: () => void;

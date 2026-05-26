@@ -1,6 +1,6 @@
 import React from 'react';
 import { formatDate } from '../lib/dateUtils';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 
 interface PendingTransactionsProps {
   pendingTransactions: any[];

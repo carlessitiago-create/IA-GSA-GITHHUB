@@ -3,7 +3,7 @@ import { useAuth } from "./AuthContext";
 import Swal from "sweetalert2";
 import { ConsultaPublicaView } from "../views/ConsultaPublicaView";
 import { Search, X, Shield, Mail, Lock, User, CreditCard, Calendar, Phone, ArrowLeft } from "lucide-react";
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 
 const LoginView: React.FC = () => {

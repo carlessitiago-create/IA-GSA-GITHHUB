@@ -7,7 +7,7 @@ import { httpsCallable } from "firebase/functions";
 import { functions } from "../../firebase";
 import Swal from "sweetalert2";
 import { UserPlus, Mail, Lock, Shield, Users, ArrowRight, Loader2, Edit3 } from "lucide-react";
-import { motion } from "motion/react";
+import { motion } from "framer-motion";
 import { UserProfile, useAuth } from "../AuthContext";
 
 interface GerenciarUsuariosProps {

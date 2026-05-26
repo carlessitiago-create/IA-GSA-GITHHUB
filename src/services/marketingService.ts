@@ -287,11 +287,15 @@ export async function listarIndicacoesEquipe(gestorId: string) {
   try {
     const q = query(
       collection(db, REFERRALS_COLLECTION), 
-      where('id_superior', '==', gestorId),
-      orderBy('timestamp', 'desc')
+      where('id_superior', '==', gestorId)
     );
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Referral));
+    const results = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Referral));
+    return results.sort((a, b) => {
+      const timeA = a.timestamp?.toMillis ? a.timestamp.toMillis() : 0;
+      const timeB = b.timestamp?.toMillis ? b.timestamp.toMillis() : 0;
+      return timeB - timeA;
+    });
   } catch (error) {
     handleFirestoreError(error, OperationType.LIST, REFERRALS_COLLECTION);
     throw error;
@@ -513,11 +517,15 @@ export async function listarLeadsEquipe(gestorId: string) {
   try {
     const q = query(
       collection(db, SHOWCASE_LEADS_COLLECTION), 
-      where('id_superior', '==', gestorId),
-      orderBy('timestamp', 'desc')
+      where('id_superior', '==', gestorId)
     );
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ShowcaseLead));
+    const results = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ShowcaseLead));
+    return results.sort((a, b) => {
+      const timeA = a.timestamp?.toMillis ? a.timestamp.toMillis() : 0;
+      const timeB = b.timestamp?.toMillis ? b.timestamp.toMillis() : 0;
+      return timeB - timeA;
+    });
   } catch (error) {
     handleFirestoreError(error, OperationType.LIST, SHOWCASE_LEADS_COLLECTION);
     throw error;

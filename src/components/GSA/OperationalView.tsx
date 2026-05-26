@@ -4,7 +4,7 @@ import { format } from 'date-fns';
 import { listarTodosProcessos, OrderProcess, atualizarStatusProcesso, abrirPendenciaCascata, excluirProcesso } from '../../services/orderService';
 import { auth, db } from '../../firebase';
 import { doc, updateDoc } from 'firebase/firestore';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { gerarDocumentoProcesso } from '../../services/pdfGeneratorService';
 import { getClienteData } from '../../services/leadService';
 import { obterModeloProcesso } from '../../services/modelService';

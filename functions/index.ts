@@ -670,15 +670,28 @@ export const webhookMercadoPago = onRequest({ invoker: 'public' }, async (req: a
     if (!vendaId) return res.status(200).send("No reference");
 
     const saleRef = db.collection('sales').doc(vendaId);
-    if (!(await saleRef.get()).exists) return res.status(404).send("Sale not found");
+    const saleSnap = await saleRef.get();
+    
+    const consRef = db.collection('consultation_requests').doc(vendaId);
+    const consSnap = await consRef.get();
+
+    if (!saleSnap.exists && !consSnap.exists) {
+        return res.status(404).send("Sale/Consultation not found");
+    }
 
     const batch = db.batch();
-    batch.update(saleRef, cleanDataForFirestore({ status_pagamento: 'Pago', pago_em: FieldValue.serverTimestamp(), mp_status: 'approved', mp_payment_id: String(paymentId), gateway: 'MERCADO_PAGO' }));
+    
+    if (saleSnap.exists) {
+        batch.update(saleRef, cleanDataForFirestore({ status_pagamento: 'Pago', pago_em: FieldValue.serverTimestamp(), mp_status: 'approved', mp_payment_id: String(paymentId), gateway: 'MERCADO_PAGO' }));
+        const processes = await db.collection('order_processes').where('venda_id', '==', vendaId).get();
+        processes.forEach((doc: any) => {
+          batch.update(doc.ref, cleanDataForFirestore({ status_atual: 'Em Análise', status_financeiro: 'PAGO' }));
+        });
+    }
 
-    const processes = await db.collection('order_processes').where('venda_id', '==', vendaId).get();
-    processes.forEach((doc: any) => {
-      batch.update(doc.ref, cleanDataForFirestore({ status_atual: 'Em Análise', status_financeiro: 'PAGO' }));
-    });
+    if (consSnap.exists) {
+        batch.update(consRef, cleanDataForFirestore({ status: 'paid', status_pagamento: 'Pago', mp_status: 'approved', mp_payment_id: String(paymentId) }));
+    }
 
     batch.set(eventRef, cleanDataForFirestore({ gateway: 'MERCADO_PAGO', paymentId: String(paymentId), vendaId, processedAt: FieldValue.serverTimestamp() }));
     await batch.commit();

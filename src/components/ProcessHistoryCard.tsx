@@ -1,6 +1,6 @@
 import React from 'react';
 import { formatDate as formatAppDate } from '../lib/dateUtils';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { User, Shield, Users, Clock, CheckCircle2 } from 'lucide-react';
 import { OrderProcess } from '../services/orderService';
 import { UserProfile } from '../services/userService';

@@ -135,6 +135,8 @@ export const ClientConsultationUpsell: React.FC<{ hideHeader?: boolean }> = ({ h
 
       // Import Firestore methods
       const { collection, doc, setDoc, serverTimestamp } = await import('firebase/firestore');
+      const db = (await import('../firebase')).db;
+      const requestRef = doc(collection(db, 'consultation_requests'));
       
       const priceToCharge = getPriceForRole(consultation);
 
@@ -147,6 +149,7 @@ export const ClientConsultationUpsell: React.FC<{ hideHeader?: boolean }> = ({ h
           transactionAmount: priceToCharge,
           description: `Consulta GSA: ${consultation.name}`,
           clientEmail: user.email,
+          requestId: requestRef.id
         })
       });
 
@@ -157,7 +160,6 @@ export const ClientConsultationUpsell: React.FC<{ hideHeader?: boolean }> = ({ h
       }
 
       // 2. Guarda no Firestore com o Client SDK (onde as Security Rules validam o utilizador)
-      const requestRef = doc(collection(db, 'consultation_requests'));
       await setDoc(requestRef, {
         id: requestRef.id,
         client_id: user.uid,
@@ -418,39 +420,7 @@ export const ClientConsultationUpsell: React.FC<{ hideHeader?: boolean }> = ({ h
                   A aguardar confirmação de pagamento...
                 </div>
 
-                {/* BOTÃO DE TESTE: SIMULANDO PAGAMENTO */}
-                <button 
-                  onClick={async () => {
-                    try {
-                      // Simular a receção do Webhook localmente via React SDK
-                      const { doc, updateDoc } = await import('firebase/firestore');
-                      const db = (await import('../firebase')).db;
-                      
-                      // 1. Mete como paid (Para mostrar a UI Loading)
-                      await updateDoc(doc(db, 'consultation_requests', pixData.requestId!), {
-                        status: 'paid'
-                      });
 
-                      // 2. Esperar 2 segundos para simular a chamada API real
-                      setTimeout(async () => {
-                        await updateDoc(doc(db, 'consultation_requests', pixData.requestId!), {
-                          status: 'completed',
-                          result_data: { 
-                            Placa: "XYZ-1234", 
-                            "Marca/Modelo": "TESTE CARRO SIMULADO",
-                            "Situação": "Sem restrições (SIMULAÇÃO)" 
-                          }
-                        });
-                      }, 2500);
-                      
-                    } catch (e) {
-                      console.error("Erro simulando: ", e);
-                    }
-                  }}
-                  className="w-full mb-3 py-2 text-white bg-amber-500 font-medium hover:bg-amber-600 rounded-lg text-sm"
-                >
-                  [TESTE] Simular Pagamento Confirmado
-                </button>
 
                 <button 
                   onClick={() => setSelectedConsultation(null)}
