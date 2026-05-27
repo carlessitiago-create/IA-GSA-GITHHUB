@@ -56,7 +56,8 @@ export const Header: React.FC<HeaderProps> = ({
         
         <h2 className="text-lg md:text-xl font-bold text-slate-800 hidden sm:block tracking-tight">
           {selectedClientName ? selectedClientName :
-           view === 'equipe' ? (currentProfile?.nivel === 'VENDEDOR' ? 'Meus Clientes' : currentProfile?.nivel === 'GESTOR' ? 'Minha Equipe' : 'Gestão de Equipe') : 
+           view === 'equipe' ? (currentProfile?.nivel === 'VENDEDOR' ? 'Meu Perfil' : currentProfile?.nivel === 'GESTOR' ? 'Minha Equipe' : 'Gestão de Equipe') : 
+           view === 'clientes' ? 'Gestão de Clientes' : 
            view === 'vendas-internas' ? 'Nova Venda' : 
            view === 'perfil' ? 'Meu Perfil' :
            view === 'operacional' ? 'Fila de Produção' :

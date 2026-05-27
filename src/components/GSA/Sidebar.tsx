@@ -115,6 +115,7 @@ export function Sidebar({ currentProfile, logout, onClose }: any) {
             <MenuItem to="diagnostico" icon={LayoutDashboard} label="Landing Page SaaS" color="text-green-500" />
             {role !== 'ADM_ANALISTA' && <MenuItem to="fabrica" icon={Factory} label="Fábrica de Serviços" />}
             <MenuItem to="equipe" icon={Users} label="Gestão de Equipe" />
+            <MenuItem to="clientes" icon={User} label="Gestão de Clientes" />
             <MenuItem to="inteligencia" icon={LayoutDashboard} label="Inteligência" />
             <MenuItem to="conversao" icon={TrendingUp} label="Conversão" />
             <MenuItem to="gerenciador-notificacoes" icon={Mail} label="Monitoramento GSA" color="text-green-500" />
@@ -126,7 +127,8 @@ export function Sidebar({ currentProfile, logout, onClose }: any) {
         {(role === 'GESTOR' || role === 'VENDEDOR') && (
           <div className="space-y-1 mt-6">
             <p className="px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Minha Gestão</p>
-            <MenuItem to="equipe" icon={Users} label={role === 'VENDEDOR' ? 'Meus Clientes' : 'Minha Equipe'} />
+            {role === 'GESTOR' && <MenuItem to="equipe" icon={Users} label="Minha Equipe" />}
+            <MenuItem to="clientes" icon={User} label="Meus Clientes" />
           </div>
         )}
 

@@ -145,16 +145,28 @@ export const vincularHistoricoPublico = async (uid: string, cpf: string) => {
   if (!cpf) return;
   try {
     const cleanCpf = cpf.replace(/\D/g, '');
+    let formattedCpf = cpf;
+    if (cleanCpf.length === 11) {
+      formattedCpf = cleanCpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+    } else if (cleanCpf.length === 14) {
+      formattedCpf = cleanCpf.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, "$1.$2.$3/$4-$5");
+    }
+    
+    // Array with all variations to search
+    const cpfsToSearch = Array.from(new Set([cpf, cleanCpf, formattedCpf]));
+    
     const batch = writeBatch(db);
     let count = 0;
 
     // 1. Referrals
-    const qRef = query(collection(db, 'referrals'), where('cliente_origem_id', '==', cleanCpf), where('cadastrado', '==', false));
-    const snapRef = await getDocs(qRef);
-    snapRef.docs.forEach(docSnap => {
-      batch.update(docSnap.ref, { cliente_origem_id: uid, cadastrado: true });
-      count++;
-    });
+    for (const cpfVariation of cpfsToSearch) {
+      const qRef = query(collection(db, 'referrals'), where('cliente_origem_id', '==', cpfVariation), where('cadastrado', '==', false));
+      const snapRef = await getDocs(qRef);
+      snapRef.docs.forEach(docSnap => {
+        batch.update(docSnap.ref, { cliente_origem_id: uid, cadastrado: true });
+        count++;
+      });
+    }
 
     let lastVendedorId = null;
     let lastIdSuperior = null;
@@ -168,20 +180,22 @@ export const vincularHistoricoPublico = async (uid: string, cpf: string) => {
     ] as const;
 
     for (const coll of collectionsToUpdate) {
-      try {
-        const qDocs = query(collection(db, coll.name), where(coll.field, '==', cleanCpf), limit(limitMax));
-        const snap = await getDocs(qDocs);
-        snap.docs.forEach(docSnap => {
-          const data = docSnap.data();
-          if (data.cliente_id !== uid) {
-            batch.update(docSnap.ref, { cliente_id: uid });
-            count++;
-          }
-          if (data.vendedor_id && !lastVendedorId) lastVendedorId = data.vendedor_id;
-          if (data.id_superior && !lastIdSuperior) lastIdSuperior = data.id_superior;
-        });
-      } catch (e) {
-        console.warn(`Erro ao vincular histórico em ${coll.name}:`, e);
+      for (const cpfVariation of cpfsToSearch) {
+        try {
+          const qDocs = query(collection(db, coll.name), where(coll.field, '==', cpfVariation), limit(limitMax));
+          const snap = await getDocs(qDocs);
+          snap.docs.forEach(docSnap => {
+            const data = docSnap.data();
+            if (data.cliente_id !== uid) {
+              batch.update(docSnap.ref, { cliente_id: uid });
+              count++;
+            }
+            if (data.vendedor_id && !lastVendedorId) lastVendedorId = data.vendedor_id;
+            if (data.id_superior && !lastIdSuperior) lastIdSuperior = data.id_superior;
+          });
+        } catch (e) {
+          console.warn(`Erro ao vincular histórico em ${coll.name} para ${cpfVariation}:`, e);
+        }
       }
     }
 
@@ -201,8 +215,9 @@ export const vincularHistoricoPublico = async (uid: string, cpf: string) => {
 
     // 3. Wallets e Transactions
     try {
+      for (const cpfVariation of cpfsToSearch) {
         // As vezes wallet está salva pelo CPF na collection
-        const walletQuery = query(collection(db, 'wallets'), where('cliente_id', '==', cleanCpf), limit(1));
+        const walletQuery = query(collection(db, 'wallets'), where('cliente_id', '==', cpfVariation), limit(1));
         const walletSnap = await getDocs(walletQuery);
         if (!walletSnap.empty) {
              const walletDoc = walletSnap.docs[0];
@@ -210,7 +225,7 @@ export const vincularHistoricoPublico = async (uid: string, cpf: string) => {
              count++;
         }
         
-        const transQuery = query(collection(db, 'financial_transactions'), where('cliente_id', '==', cleanCpf), limit(limitMax));
+        const transQuery = query(collection(db, 'financial_transactions'), where('cliente_id', '==', cpfVariation), limit(limitMax));
         const transSnap = await getDocs(transQuery);
         transSnap.docs.forEach(docSnap => {
              const data = docSnap.data();
@@ -219,6 +234,7 @@ export const vincularHistoricoPublico = async (uid: string, cpf: string) => {
                  count++;
              }
         });
+      }
     } catch (e) {
         console.warn(`Erro ao vincular transactions:`, e);
     }

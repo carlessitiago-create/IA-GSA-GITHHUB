@@ -139,6 +139,13 @@ export function VendasPDVView() {
       const { cleanData } = await import('../firebase');
       const docRef = await addDoc(collection(db, 'usuarios'), cleanData(clientData));
       
+      try {
+          const { vincularHistoricoPublico } = await import('../services/userService');
+          await vincularHistoricoPublico(docRef.id, newClient.cpf);
+      } catch (err) {
+          console.warn('Erro ao vincular histórico PDV:', err);
+      }
+
       // Notifica o ADM Master e a Hierarquia
       try {
         const { addDoc, collection, serverTimestamp } = await import('firebase/firestore');

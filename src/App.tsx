@@ -17,6 +17,7 @@ const SaaSLandingPage = lazy(() => import("./views/SaaSLandingPage"));
 // Admin Views
 const FinanceiroView = lazy(() => import("./views/FinanceiroView").then(m => ({ default: m.FinanceiroView })));
 const GestaoEquipeView = lazy(() => import("./views/GestaoEquipeView").then(m => ({ default: m.GestaoEquipeView })));
+const GestaoClientesView = lazy(() => import("./views/GestaoClientesView").then(m => ({ default: m.GestaoClientesView })));
 const IntelligenceDashboardView = lazy(() => import("./views/IntelligenceDashboardView").then(m => ({ default: m.IntelligenceDashboardView })));
 const VendasPDVView = lazy(() => import("./views/VendasPDVView").then(m => ({ default: m.VendasPDVView })));
 const LeadsCentralView = lazy(() => import("./components/GSA/LeadsCentralView").then(m => ({ default: m.LeadsCentralView })));
@@ -190,6 +191,7 @@ const App: React.FC = () => {
           <Route element={<DashboardLayout />}>
             <Route path="/financeiro" element={<DashboardFinanceiro />} />
             <Route path="/equipe" element={<GestaoEquipeView />} />
+            <Route path="/clientes" element={<GestaoClientesView />} />
             <Route path="/inteligencia" element={<IntelligenceDashboardView />} />
             <Route path="/vendas-internas" element={<VendasPDVView />} />
             <Route path="/venda-massa" element={<VendaEmMassaView />} />

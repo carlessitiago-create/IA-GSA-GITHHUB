@@ -122,6 +122,56 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
     setLoading(true);
 
     try {
+      if (cpf) {
+        const { getDocs, query, collection, where } = await import('firebase/firestore');
+        const cpfLimpo = cpf.replace(/\D/g, "");
+        const cpfsToSearch = [cpf, cpfLimpo];
+        
+        let cpfExiste = false;
+        let existUser = null;
+
+        for (const c of cpfsToSearch) {
+           const qCpf = query(collection(db, "usuarios"), where("cpf", "==", c));
+           const snapCpf = await getDocs(qCpf);
+           if (!snapCpf.empty) {
+             const doc = snapCpf.docs[0];
+             if (!userToEdit || doc.id !== userToEdit.uid) {
+               cpfExiste = true;
+               existUser = doc.data();
+               break;
+             }
+           }
+        }
+
+        if (cpfExiste && existUser) {
+           setLoading(false);
+           Swal.fire({
+              icon: 'error',
+              title: 'CPF Duplicado',
+              text: `Este CPF já está cadastrado no sistema (Usuário: ${existUser.nome_completo || existUser.email}). Cadastro bloqueado.`,
+              confirmButtonColor: '#0a0a2e'
+           });
+           
+           if (!userToEdit) {
+             const { addDoc, serverTimestamp } = await import('firebase/firestore');
+             await addDoc(collection(db, 'notifications'), cleanData({
+               usuario_id: 'ADM_MASTER',
+               targetRole: 'ADM_MASTER',
+               title: '⚠️ Tentativa de Cadastro Duplicado',
+               message: `Tentativa de cadastrar o CPF ${cpf} que já pertence a ${existUser.nome_completo || existUser.email}.`,
+               tipo: 'warning',
+               lida: false,
+               read: false,
+               timestamp: serverTimestamp(),
+               createdAt: serverTimestamp(),
+               origem: 'sistema'
+             }));
+           }
+           
+           return;
+        }
+      }
+
       if (userToEdit) {
         // Atualizar usuário existente
         const userData: any = {
@@ -200,6 +250,16 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
         }
 
         await setDoc(doc(db, "usuarios", newUser.uid), userData);
+
+        // MIGRAÇÃO DE PROCESSOS E VENDAS (Silent Cloud Sync)
+        if (role === 'CLIENTE' && cpf) {
+           try {
+              const { vincularHistoricoPublico } = await import('../../services/userService');
+              await vincularHistoricoPublico(newUser.uid, cpf);
+           } catch (migrationErr) {
+              console.error("Erro ao migrar histórico de processos (Dinâmica Inteligente):", migrationErr);
+           }
+        }
 
         // Notifica o ADM Master e a Hierarquia
         try {

@@ -8,7 +8,7 @@ import { useAuth, UserProfile } from '../components/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 
-export function GestaoEquipeView() {
+export function GestaoClientesView() {
   const { profile, simulateUser } = useAuth();
   const navigate = useNavigate();
   const [users, setUsers] = useState<UserProfile[]>([]);
@@ -50,8 +50,7 @@ export function GestaoEquipeView() {
   };
 
   const filteredUsers = users.filter(u => {
-    // Esconder CLIENTE
-    if (u.nivel === 'CLIENTE') return false;
+    if (u.nivel !== 'CLIENTE') return false;
 
     // Se for ADM, vê todos
     if (profile?.nivel === 'ADM_MASTER' || profile?.nivel === 'ADM_GERENTE') {
@@ -59,23 +58,25 @@ export function GestaoEquipeView() {
              (u.email || '').toLowerCase().includes(searchTerm.toLowerCase());
     }
     
-    // Se for GESTOR, vê a si mesmo e seus vendedores
+    // Se for GESTOR, vê seus clientes diretos ou clientes de seus vendedores
     if (profile?.nivel === 'GESTOR') {
-      const isSelf = u.uid === profile.uid;
-      const isMyVendedor = u.nivel === 'VENDEDOR' && u.id_superior === profile.uid;
+      const isMyDirectClient = u.nivel === 'CLIENTE' && u.id_superior === profile.uid;
       
-      if (isSelf || isMyVendedor) {
+      const myVendedoresIds = users.filter(v => v.nivel === 'VENDEDOR' && v.id_superior === profile.uid).map(v => v.uid);
+      const isMyVendedorClient = u.nivel === 'CLIENTE' && myVendedoresIds.includes(u.id_superior || '');
+
+      if (isMyDirectClient || isMyVendedorClient) {
         return (u.nome_completo || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
                (u.email || '').toLowerCase().includes(searchTerm.toLowerCase());
       }
       return false;
     }
 
-    // Se for VENDEDOR, vê a si mesmo
+    // Se for VENDEDOR, vê seus clientes
     if (profile?.nivel === 'VENDEDOR') {
-      const isSelf = u.uid === profile.uid;
+      const isMyClient = u.nivel === 'CLIENTE' && u.id_superior === profile.uid;
       
-      if (isSelf) {
+      if (isMyClient) {
         return (u.nome_completo || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
                (u.email || '').toLowerCase().includes(searchTerm.toLowerCase());
       }
@@ -86,28 +87,28 @@ export function GestaoEquipeView() {
   });
 
   const getTitle = () => {
-    if (profile?.nivel === 'VENDEDOR') return 'Meu Perfil';
-    if (profile?.nivel === 'GESTOR') return 'Minha Equipe';
-    return 'Gestão de Equipe';
+    if (profile?.nivel === 'VENDEDOR') return 'Meus Clientes';
+    if (profile?.nivel === 'GESTOR') return 'Clientes da Equipe';
+    return 'Gestão de Clientes';
   };
 
   const getSubtitle = () => {
-    if (profile?.nivel === 'VENDEDOR') return 'Gerencie seu perfil e acessos.';
-    if (profile?.nivel === 'GESTOR') return 'Gerencie seus vendedores.';
-    return 'Controle de acessos e níveis hierárquicos do ecossistema.';
+    if (profile?.nivel === 'VENDEDOR') return 'Gerencie seus clientes e acompanhe seus processos.';
+    if (profile?.nivel === 'GESTOR') return 'Gerencie clientes da sua rede de vendedores.';
+    return 'Controle de acessos de clientes do ecossistema.';
   };
 
   return (
     <div className="responsive-container pb-10 sm:pb-20">
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 sm:gap-8 bg-white p-6 sm:p-6 md:p-6 rounded-2xl sm:rounded-3xl md:rounded-3xl border border-slate-100 shadow-sm relative overflow-hidden group mb-6 sm:mb-10">
         <div className="absolute top-0 right-0 p-6 opacity-5 pointer-events-none group-hover:rotate-12 transition-transform duration-1000">
-          <Users className="size-[120px] sm:size-[180px] text-[#0a0a2e]" />
+          <User className="size-[120px] sm:size-[180px] text-[#0a0a2e]" />
         </div>
 
         <div className="space-y-2 sm:space-y-4 relative z-10 w-full lg:w-auto">
           <div className="flex items-center gap-3 sm:gap-5">
             <div className="size-10 sm:size-16 bg-[#0a0a2e] rounded-xl sm:rounded-[1.8rem] flex items-center justify-center shadow-2xl shadow-blue-900/20 shrink-0">
-              <Shield size={20} className="sm:size-8 text-white" />
+              <User size={20} className="sm:size-8 text-white" />
             </div>
             <div className="min-w-0">
               <h1 className="text-2xl sm:text-3xl font-black text-[#0a0a2e] uppercase tracking-tighter italic leading-none truncate">
@@ -121,15 +122,6 @@ export function GestaoEquipeView() {
           </p>
         </div>
 
-          { (profile?.nivel === 'ADM_MASTER' || profile?.nivel === 'ADM_GERENTE') && (
-            <button 
-              onClick={() => navigate('/configuracoes-notificacoes')}
-              className="relative z-10 w-full lg:w-auto bg-amber-500 text-white px-6 sm:px-8 py-4 sm:py-6 rounded-xl sm:rounded-2xl font-black text-[9px] sm:text-xs uppercase tracking-[0.3em] flex items-center justify-center gap-2 sm:gap-4 hover:scale-105 active:scale-95 transition-all shadow-2xl shadow-amber-900/30 group"
-            >
-              <Mail size={18} className="group-hover:scale-110 transition-transform" /> NOTIFICAÇÕES
-            </button>
-          )}
-          
           <button 
             onClick={() => {
               if (showAddUser) {
@@ -144,7 +136,7 @@ export function GestaoEquipeView() {
             {showAddUser ? (
               <><X size={18} className="group-hover:rotate-90 transition-transform" /> CANCELAR</>
             ) : (
-              <><UserPlus size={18} className="group-hover:scale-110 transition-transform" /> {profile?.nivel === 'VENDEDOR' ? 'NOVO CLIENTE' : 'ADICIONAR'}</>
+              <><UserPlus size={18} className="group-hover:scale-110 transition-transform" /> NOVO CLIENTE</>
             )}
           </button>
       </div>
@@ -174,10 +166,10 @@ export function GestaoEquipeView() {
               <Users className="size-6 sm:size-10 group-hover:scale-110 transition-transform" />
             </div>
             <div className="min-w-0">
-              <h3 className="text-xl sm:text-3xl font-black text-[#0a0a2e] uppercase italic tracking-tighter leading-none truncate">Usuários</h3>
+              <h3 className="text-xl sm:text-3xl font-black text-[#0a0a2e] uppercase italic tracking-tighter leading-none truncate">Clientes</h3>
               <div className="mt-1.5 sm:mt-3 flex items-center gap-2 truncate">
                 <div className="size-2 bg-emerald-500 rounded-full animate-pulse" />
-                <span className="text-[8px] sm:text-[11px] font-black text-slate-400 uppercase tracking-widest">{users.length} ATIVOS NO NÚCLEO</span>
+                <span className="text-[8px] sm:text-[11px] font-black text-slate-400 uppercase tracking-widest">{filteredUsers.length} ATIVOS</span>
               </div>
             </div>
           </div>
@@ -249,7 +241,7 @@ export function GestaoEquipeView() {
                         className="inline-flex items-center gap-4 bg-white border border-slate-100 text-[#0a0a2e] px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-[#0a0a2e] hover:text-white hover:border-[#0a0a2e] transition-all shadow-sm hover:shadow-2xl hover:-translate-y-1"
                       >
                         <Eye size={18} />
-                        {profile?.nivel === 'VENDEDOR' ? 'Acessar' : 'Simular'}
+                        Simular
                       </button>
                     </div>
                   </td>
@@ -301,7 +293,7 @@ export function GestaoEquipeView() {
                   className="w-full bg-[#0a0a2e] text-white py-4 sm:py-5 rounded-2xl text-[10px] font-black uppercase tracking-[0.4em] flex items-center justify-center gap-3 active:scale-[0.98] transition-all shadow-xl shadow-blue-900/30"
                 >
                   <Eye size={18} />
-                  {profile?.nivel === 'VENDEDOR' ? 'ENTRAR' : 'SIMULAR ACESSO'}
+                  SIMULAR ACESSO
                 </button>
               </div>
             </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, CheckCircle, Clock, Search, Filter, ChevronRight, User, Calendar, FileText, AlertCircle, X, ExternalLink, ShieldCheck, UserCheck, FileDown, Loader2, FolderOpen, AlertTriangle, XCircle, Trash2, Edit3 } from 'lucide-react';
+import { Activity, CheckCircle, Clock, Search, Filter, ChevronRight, User, Calendar, FileText, AlertCircle, X, ExternalLink, ShieldCheck, UserCheck, FileDown, Loader2, FolderOpen, AlertTriangle, XCircle, Trash2, Edit3, UserPlus } from 'lucide-react';
 import { format } from 'date-fns';
 import { listarTodosProcessos, OrderProcess, atualizarStatusProcesso, abrirPendenciaCascata, excluirProcesso } from '../../services/orderService';
 import { auth, db } from '../../firebase';
@@ -420,6 +420,99 @@ export const OperationalView: React.FC = () => {
         } catch (error: any) {
           Swal.fire('Erro', error.message || 'Falha ao atualizar status.', 'error');
         }
+      }
+    }
+  };
+
+  const handleAtribuirCliente = async (processo: OrderProcess) => {
+    if (!isAdm) {
+      Swal.fire('Acesso Restrito', 'Apenas administradores ou analistas podem atribuir processos manualmente.', 'error');
+      return;
+    }
+
+    const { value: inputCpf } = await Swal.fire({
+      title: 'Atribuir a Cliente Existente',
+      input: 'text',
+      inputLabel: 'Informe o CPF ou CNPJ do Cliente (Ex: 000.000.000-00)',
+      inputPlaceholder: 'Apenas números recomendável...',
+      showCancelButton: true,
+      confirmButtonText: 'Buscar e Atribuir',
+      confirmButtonColor: '#4f46e5'
+    });
+
+    if (inputCpf) {
+      try {
+        const cleanDoc = inputCpf.replace(/\D/g, '');
+        if (!cleanDoc) return;
+        
+        const { getDocs, query, collection, where, doc, updateDoc } = await import('firebase/firestore');
+        let q = query(collection(db, 'usuarios'), where('cpf', '==', inputCpf));
+        let snap = await getDocs(q);
+        
+        if (snap.empty) {
+            q = query(collection(db, 'usuarios'), where('cpf', '==', cleanDoc));
+            snap = await getDocs(q);
+        }
+
+        if (snap.empty) {
+            let formattedCpf = cleanDoc;
+            if (cleanDoc.length === 11) {
+              formattedCpf = cleanDoc.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+            } else if (cleanDoc.length === 14) {
+              formattedCpf = cleanDoc.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, "$1.$2.$3/$4-$5");
+            }
+            q = query(collection(db, 'usuarios'), where('cpf', '==', formattedCpf));
+            snap = await getDocs(q);
+        }
+
+        if (snap.empty) {
+            Swal.fire('Não Encontrado', 'Nenhum usuário localizado com este documento.', 'warning');
+            return;
+        }
+
+        const userDoc = snap.docs[0].data();
+        const userId = snap.docs[0].id;
+        
+        const { isConfirmed } = await Swal.fire({
+            title: 'Confirmação',
+            text: `Deseja atribuir este processo para: ${userDoc.nome_completo || userDoc.email}?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Sim, Atribuir',
+            confirmButtonColor: '#4f46e5'
+        });
+
+        if (isConfirmed && processo.id) {
+           await updateDoc(doc(db, 'order_processes', processo.id), {
+               cliente_id: userId,
+               cliente_cpf_cnpj: cleanDoc,
+               cliente_nome: userDoc.nome_completo
+           });
+
+           if (processo.venda_id) {
+              await updateDoc(doc(db, 'sales', processo.venda_id), {
+                  cliente_id: userId,
+                  cliente_cpf_cnpj: cleanDoc,
+                  cliente_nome: userDoc.nome_completo
+              });
+           }
+
+           Swal.fire({
+              toast: true,
+              position: 'top-end',
+              icon: 'success',
+              title: 'Processo atribuído com sucesso!',
+              showConfirmButton: false,
+              timer: 3000
+           });
+           
+           const procs = await listarTodosProcessos(profile || undefined);
+           setProcessos(procs);
+        }
+
+      } catch (err: any) {
+        console.error(err);
+        Swal.fire('Erro', 'Falha ao buscar ou atribuir o cliente.', 'error');
       }
     }
   };
@@ -978,14 +1071,24 @@ export const OperationalView: React.FC = () => {
                   <span className="ml-2 lg:hidden text-xs font-semibold">Pasta</span>
                 </button>
                 {isAdm && (
-                  <button 
-                    onClick={() => handleAbrirPendencia(processo)}
-                    className="bg-white text-rose-500 hover:bg-rose-50 h-10 lg:w-10 rounded-lg transition-all shadow-sm flex items-center justify-center border border-rose-200" 
-                    title="Abrir Pendência"
-                  >
-                    <AlertTriangle size={16} />
-                    <span className="ml-2 lg:hidden text-xs font-semibold">Pendência</span>
-                  </button>
+                  <>
+                    <button 
+                      onClick={() => handleAbrirPendencia(processo)}
+                      className="bg-white text-rose-500 hover:bg-rose-50 h-10 lg:w-10 rounded-lg transition-all shadow-sm flex items-center justify-center border border-rose-200" 
+                      title="Abrir Pendência"
+                    >
+                      <AlertTriangle size={16} />
+                      <span className="ml-2 lg:hidden text-xs font-semibold">Pendência</span>
+                    </button>
+                    <button 
+                      onClick={() => handleAtribuirCliente(processo)}
+                      className="bg-white text-indigo-500 hover:bg-indigo-50 h-10 lg:w-10 rounded-lg transition-all shadow-sm flex items-center justify-center border border-indigo-200" 
+                      title="Atribuir a Cliente"
+                    >
+                      <UserPlus size={16} />
+                      <span className="ml-2 lg:hidden text-xs font-semibold">Atribuir</span>
+                    </button>
+                  </>
                 )}
               </div>
             </motion.div>
