@@ -30,6 +30,9 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
   const [managerId, setManagerId] = useState("");
   const [percentualEmpresa, setPercentualEmpresa] = useState<number>(0);
   const [permissoesVenda, setPermissoesVenda] = useState<'VAREJO' | 'ATACADO' | 'AMBOS'>('VAREJO');
+  const [modeloComissao, setModeloComissao] = useState<'PADRAO' | 'TAXA_SERVICO' | 'COMISSAO_ESPECIAL'>('PADRAO');
+  const [taxaServicoFixa, setTaxaServicoFixa] = useState(0);
+  const [comissaoEspecialPercentual, setComissaoEspecialPercentual] = useState(0);
   const [listaGestores, setListaGestores] = useState<{id: string, nome: string}[]>([]);
   const [loading, setLoading] = useState(false);
   const { forgotPassword, profile: currentAdminProfile } = useAuth();
@@ -63,6 +66,9 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
       setManagerId(userToEdit.id_superior || "");
       setPercentualEmpresa(userToEdit.percentual_empresa || 0);
       setPermissoesVenda(userToEdit.permissoes_venda || "VAREJO");
+      setModeloComissao(userToEdit.modelo_comissao || "PADRAO");
+      setTaxaServicoFixa(userToEdit.taxa_servico_fixa || 0);
+      setComissaoEspecialPercentual(userToEdit.comissao_especial_percentual || 0);
     } else {
       setNome("");
       setEmail("");
@@ -71,6 +77,9 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
       setDataNascimento("");
       setPercentualEmpresa(0);
       setPermissoesVenda("VAREJO");
+      setModeloComissao("PADRAO");
+      setTaxaServicoFixa(0);
+      setComissaoEspecialPercentual(0);
       // Nível padrão baseado em quem está criando
       if (currentAdminProfile?.nivel === 'GESTOR') {
         setRole("VENDEDOR");
@@ -182,7 +191,10 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
           telefone: telefone,
           data_nascimento: dataNascimento,
           percentual_empresa: Number(percentualEmpresa),
-          permissoes_venda: permissoesVenda
+          permissoes_venda: permissoesVenda,
+          modelo_comissao: role === 'GESTOR' ? modeloComissao : 'PADRAO',
+          taxa_servico_fixa: role === 'GESTOR' ? Number(taxaServicoFixa) : 0,
+          comissao_especial_percentual: role === 'GESTOR' ? Number(comissaoEspecialPercentual) : 0
         };
 
         // Preservar ou atualizar id_superior logicamente
@@ -241,7 +253,10 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
           data_cadastro: new Date(),
           status_conta: "APROVADO",
           percentual_empresa: Number(percentualEmpresa),
-          permissoes_venda: permissoesVenda
+          permissoes_venda: permissoesVenda,
+          modelo_comissao: role === 'GESTOR' ? modeloComissao : 'PADRAO',
+          taxa_servico_fixa: role === 'GESTOR' ? Number(taxaServicoFixa) : 0,
+          comissao_especial_percentual: role === 'GESTOR' ? Number(comissaoEspecialPercentual) : 0
         };
 
         // Se for vendedor, vincula ao gestor
@@ -659,6 +674,81 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
                 <ArrowRight size={14} className="rotate-90 sm:size-[18px]" />
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Remuneração do Gestor */}
+        {role === 'GESTOR' && ['ADM_MASTER', 'ADM_GERENTE'].includes(currentAdminProfile?.nivel || '') && (
+          <div className="md:col-span-2 space-y-4 p-4 border border-indigo-100 bg-indigo-50/30 rounded-[1.5rem]">
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-indigo-700 ml-2">Modelo de Remuneração do Gestor</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="space-y-1.5 sm:space-y-2">
+                <label className="text-[8px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 flex items-center gap-2">
+                  <Shield size={10} />
+                  Tipo de Comissão
+                </label>
+                <div className="relative">
+                  <select 
+                    value={modeloComissao} 
+                    onChange={(e) => setModeloComissao(e.target.value as any)}
+                    className="w-full bg-white border border-indigo-100 rounded-xl p-3.5 text-xs font-black outline-none appearance-none focus:ring-4 focus:ring-indigo-500/10 transition-all text-indigo-900"
+                  >
+                    <option value="PADRAO">Padrão (Split Global)</option>
+                    <option value="TAXA_SERVICO">Apenas Taxa Fixa</option>
+                    <option value="COMISSAO_ESPECIAL">Taxa Fixa + % Sobre Lucro</option>
+                  </select>
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-indigo-400">
+                    <ArrowRight size={14} className="rotate-90" />
+                  </div>
+                </div>
+              </div>
+
+              {(modeloComissao === 'TAXA_SERVICO' || modeloComissao === 'COMISSAO_ESPECIAL') && (
+                <div className="space-y-1.5 sm:space-y-2">
+                  <label className="text-[8px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 flex items-center gap-2">
+                    Custo Fixo p/ Empresa (R$)
+                  </label>
+                  <input 
+                    type="number" 
+                    step="0.01"
+                    min="0"
+                    value={taxaServicoFixa} 
+                    onChange={(e) => setTaxaServicoFixa(Number(e.target.value))}
+                    className="w-full bg-white border border-indigo-100 rounded-xl p-3.5 text-xs font-black text-indigo-900 outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all" 
+                    placeholder="R$ 0,00"
+                  />
+                </div>
+              )}
+
+              {modeloComissao === 'COMISSAO_ESPECIAL' && (
+                <div className="space-y-1.5 sm:space-y-2">
+                  <label className="text-[8px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 flex items-center gap-2">
+                    Comissão sobre o Lucro (%)
+                  </label>
+                  <div className="relative">
+                    <input 
+                      type="number" 
+                      step="0.1"
+                      min="0"
+                      max="100"
+                      value={comissaoEspecialPercentual} 
+                      onChange={(e) => setComissaoEspecialPercentual(Number(e.target.value))}
+                      className="w-full bg-white border border-indigo-100 rounded-xl p-3.5 text-xs font-black text-indigo-900 outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all" 
+                      placeholder="0.0%"
+                    />
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-indigo-400 font-black text-xs">
+                      %
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+            <p className="text-[9px] text-slate-500 font-medium px-2 leading-relaxed">
+              {modeloComissao === 'PADRAO' && "O rateio da venda seguirá a parametrização global configurada no Menu Principal > Split de Comissões."}
+              {modeloComissao === 'TAXA_SERVICO' && "O Gestor será cobrado um valor fixo por serviço pela plataforma e todo excedente da venda será dele."}
+              {modeloComissao === 'COMISSAO_ESPECIAL' && "O Gestor será cobrado o Custo Fixo inicial, e sobre o Lucro Restante (Venda - Custo Fixo) ele receberá uma porcentagem."}
+            </p>
           </div>
         )}
 

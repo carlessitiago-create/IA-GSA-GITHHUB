@@ -74,61 +74,57 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({ venda, onUpdate }) => 
     }
   };
 
-  const confirmarPagamento = async () => {
-    const result = await Swal.fire({
-      title: "Confirmar Recebimento?",
-      text: `Você confirma que o pagamento de R$ ${venda.valor_total.toLocaleString('pt-BR')} foi recebido via ${venda.metodo_pagamento}?`,
-      icon: "question",
+  const alterarStatusFinanceiro = async () => {
+    const statuses = {
+      'Pendente': 'Pendente / Aguardando',
+      'Pago': 'Pagamento Recebido',
+      'Vencida': 'Em Atraso / Vencida',
+      'Programado': 'Programado / Parcelado'
+    };
+
+    const { value: selectedStatus } = await Swal.fire({
+      title: "Alterar Status Financeiro",
+      input: "select",
+      inputOptions: statuses,
+      inputPlaceholder: "Selecione o novo status",
       showCancelButton: true,
-      confirmButtonColor: "#10b981", // Verde Sucesso
-      confirmButtonText: "SIM, CONFIRMAR PAGAMENTO",
-      cancelButtonText: "Cancelar",
-      customClass: {
-        container: 'font-sans',
-        popup: 'rounded-2xl',
-        confirmButton: 'rounded-xl px-6 py-3 font-black uppercase text-[10px] tracking-widest',
-        cancelButton: 'rounded-xl px-6 py-3 font-black uppercase text-[10px] tracking-widest'
-      }
+      confirmButtonColor: "#0a0a2e",
+      confirmButtonText: "Salvar Status",
+      cancelButtonText: "Cancelar"
     });
 
-    if (result.isConfirmed) {
+    if (selectedStatus) {
       try {
-        // 1. Atualiza o status da venda para 'Pago'
         await updateDoc(doc(db, "sales", venda.id), {
-          status_pagamento: "Pago",
-          confirmado_por: auth.currentUser?.uid,
-          confirmado_em: Timestamp.now()
+          status_pagamento: selectedStatus,
+          modificado_por: auth.currentUser?.uid,
+          modificado_em: Timestamp.now()
         });
 
-        // 2. Tenta encontrar o processo vinculado e atualizar o status financeiro dele
-        const { query, collection, where, getDocs } = await import('firebase/firestore');
-        const qProc = query(collection(db, 'order_processes'), where('venda_id', '==', venda.id));
-        const snapProc = await getDocs(qProc);
-        
-        if (!snapProc.empty) {
-          const procDoc = snapProc.docs[0];
-          await updateDoc(doc(db, 'order_processes', procDoc.id), {
-            status_financeiro: 'PAGO',
-            // Se o processo estava parado por falta de pagamento, podemos avançar o status_atual
-            // mas geralmente deixamos o analista decidir no OperationalView.
-            // Aqui apenas garantimos que o financeiro está OK.
-          });
+        // Tenta atualizar processo vinculado se for Pago
+        if (selectedStatus === 'Pago') {
+          const { query, collection, where, getDocs } = await import('firebase/firestore');
+          const qProc = query(collection(db, 'order_processes'), where('venda_id', '==', venda.id));
+          const snapProc = await getDocs(qProc);
+          
+          if (!snapProc.empty) {
+            const procDoc = snapProc.docs[0];
+            await updateDoc(doc(db, 'order_processes', procDoc.id), {
+              status_financeiro: 'PAGO'
+            });
+          }
         }
 
         Swal.fire({
           icon: "success",
-          title: "Pagamento Confirmado!",
-          text: "A venda foi marcada como Paga e o processo foi liberado.",
-          confirmButtonColor: "#0a0a2e",
-          customClass: {
-            popup: 'rounded-2xl',
-            confirmButton: 'rounded-xl px-6 py-3 font-black uppercase text-[10px] tracking-widest'
-          }
+          title: "Status Atualizado!",
+          text: `O status financeiro foi alterado para ${statuses[selectedStatus as keyof typeof statuses]}.`,
+          confirmButtonColor: "#0a0a2e"
         });
         
         if (onUpdate) onUpdate();
       } catch (e: any) {
-        console.error("Erro ao confirmar pagamento:", e);
+        console.error("Erro ao alterar status:", e);
         Swal.fire({
           icon: "error",
           title: "Erro",
@@ -141,15 +137,13 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({ venda, onUpdate }) => 
 
   return (
     <div className="flex gap-2 justify-end">
-      {venda.status_pagamento === 'Pendente' && (
-        <button
-          onClick={confirmarPagamento}
-          className="flex items-center gap-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-emerald-100 shadow-sm hover:shadow-md"
-        >
-          <CheckCircle size={14} />
-          Confirmar Pagamento
-        </button>
-      )}
+      <button
+        onClick={alterarStatusFinanceiro}
+        className="flex items-center gap-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-indigo-100 shadow-sm hover:shadow-md"
+      >
+        <CheckCircle size={14} />
+        Status Financeiro
+      </button>
       <button
         onClick={abrirPendencia}
         className="flex items-center gap-2 bg-rose-50 text-rose-600 hover:bg-rose-100 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-rose-100 shadow-sm hover:shadow-md"

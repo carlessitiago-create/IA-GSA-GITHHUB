@@ -12,6 +12,7 @@ import { SmartFicha } from './SmartFicha';
 import Swal from 'sweetalert2';
 import { useAuth } from '../../components/AuthContext';
 import { useRequirements } from '../../hooks/useRequirements';
+import { AbrirPendenciaModal } from './AbrirPendenciaModal';
 
 export const OperationalView: React.FC = () => {
   const { profile } = useAuth();
@@ -25,6 +26,9 @@ export const OperationalView: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [selectedProcess, setSelectedProcess] = useState<OrderProcess | null>(null);
   const [selectedClient, setSelectedClient] = useState<any>(null);
+  
+  const [selectedPendenciaProcess, setSelectedPendenciaProcess] = useState<OrderProcess | null>(null);
+  const [isPendenciaModalOpen, setIsPendenciaModalOpen] = useState(false);
 
   useEffect(() => {
     const loadClientAndSync = async () => {
@@ -522,32 +526,30 @@ export const OperationalView: React.FC = () => {
       Swal.fire('Acesso Restrito', 'Apenas analistas podem reprovar documentos ou abrir pendências.', 'error');
       return;
     }
-    const { value: descricao } = await Swal.fire({
-      title: 'Informar Pendência',
-      input: 'textarea',
-      inputPlaceholder: 'Descreva o problema (Ex: Documento borrado, CPF inválido no site da RF)...',
-      showCancelButton: true,
-      confirmButtonText: 'Notificar Vendedor e Gestor',
-      confirmButtonColor: '#f59e0b'
-    });
+    setSelectedPendenciaProcess(processo);
+    setIsPendenciaModalOpen(true);
+  };
 
-    if (descricao) {
-      try {
-        await abrirPendenciaCascata({
-          vendaId: processo.venda_id,
-          processo_id: processo.id,
-          descricao,
-          criado_por_id: auth.currentUser!.uid
-        });
+  const submitNovaPendencia = async (descricao: string) => {
+    if (!selectedPendenciaProcess) return;
+    try {
+      await abrirPendenciaCascata({
+        vendaId: selectedPendenciaProcess.venda_id,
+        processo_id: selectedPendenciaProcess.id,
+        descricao,
+        criado_por_id: auth.currentUser!.uid
+      });
 
-        // Notificar Cliente e Equipe
-        const { notificarPendenciaManual } = await import('../../services/notificationService');
-        await notificarPendenciaManual(processo, processo.cliente_id, descricao);
+      // Notificar Cliente e Equipe
+      const { notificarPendenciaManual } = await import('../../services/notificationService');
+      await notificarPendenciaManual(selectedPendenciaProcess, selectedPendenciaProcess.cliente_id, descricao);
 
-        Swal.fire('Pendência Aberta', 'O cliente e o vendedor responsável já receberam o alerta.', 'warning');
-      } catch (error: any) {
-        Swal.fire('Erro', error.message || 'Falha ao abrir pendência.', 'error');
-      }
+      Swal.fire('Pendência Aberta', 'O cliente e o vendedor responsável já receberam o alerta.', 'warning');
+      setIsPendenciaModalOpen(false);
+      setSelectedPendenciaProcess(null);
+    } catch (error: any) {
+      Swal.fire('Erro', error.message || 'Falha ao abrir pendência.', 'error');
+      throw error;
     }
   };
 
@@ -704,8 +706,9 @@ export const OperationalView: React.FC = () => {
 
   const totalAtraso = processos.filter(p => {
     if (p.status_atual === 'Concluído') return false;
-    const dataVenda = p.data_venda?.toDate ? p.data_venda.toDate() : new Date();
-    const diffTime = Math.abs(new Date().getTime() - dataVenda.getTime());
+    if (!p.data_inicial) return false; // SLA don't run if not started
+    const dataInicio = p.data_inicial?.toDate ? p.data_inicial.toDate() : new Date();
+    const diffTime = Math.abs(new Date().getTime() - dataInicio.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays > (p.prazo_estimado_dias || 7);
   }).length;
@@ -885,9 +888,17 @@ export const OperationalView: React.FC = () => {
       <div className="grid grid-cols-1 gap-6">
         {filteredProcessos.map((processo, idx) => {
           const dataVenda = processo.data_venda?.toDate ? processo.data_venda.toDate() : new Date();
-          const diffTime = Math.abs(new Date().getTime() - dataVenda.getTime());
-          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-          const isAtrasado = diffDays > (processo.prazo_estimado_dias || 7);
+          const diasDesdeVenda = Math.ceil(Math.abs(new Date().getTime() - dataVenda.getTime()) / (1000 * 60 * 60 * 24));
+          
+          let isAtrasado = false;
+          let diffDays = 0;
+          if (processo.data_inicial) {
+            const dataInicio = processo.data_inicial.toDate();
+            const slaDiffTime = Math.abs(new Date().getTime() - dataInicio.getTime());
+            diffDays = Math.ceil(slaDiffTime / (1000 * 60 * 60 * 24));
+            isAtrasado = diffDays > (processo.prazo_estimado_dias || 7);
+          }
+
           const ready = isProcessReady(processo) && !['Pendente', 'Aguardando Documentação'].includes(processo.status_atual);
 
           return (
@@ -1511,6 +1522,18 @@ export const OperationalView: React.FC = () => {
           </div>
         )}
       </AnimatePresence>
+
+      {selectedPendenciaProcess && (
+        <AbrirPendenciaModal 
+          isOpen={isPendenciaModalOpen} 
+          onClose={() => {
+            setIsPendenciaModalOpen(false);
+            setSelectedPendenciaProcess(null);
+          }}
+          processo={selectedPendenciaProcess}
+          onPendenciaCriada={submitNovaPendencia}
+        />
+      )}
     </div>
   );
 };

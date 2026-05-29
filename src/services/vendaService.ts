@@ -95,7 +95,8 @@ export async function processarVendaSeguraFront(
   valorVendaFinal: number,
   metodoPagamento: 'PIX' | 'CARTEIRA',
   isBulk: boolean = false,
-  quantidade: number = 1
+  quantidade: number = 1,
+  splitComissoes: any = null
 ) {
   try {
     const processarVendaBackend = httpsCallable(functions, 'processarVendaSegura');
@@ -104,14 +105,12 @@ export async function processarVendaSeguraFront(
       throw new Error(`Dados inválidos para Venda Segura. Valor: ${valorVendaFinal}`);
     }
 
-    const { auth } = await import('../firebase');
+    const { auth, cleanData } = await import('../firebase');
     await auth.authStateReady(); // wait for auth state just in case
     
     if (!auth.currentUser) {
         throw new Error("Sessão expirada ou usuário não autenticado no Client.");
     }
-    
-    const token = await auth.currentUser.getIdToken(true); // force refresh
 
     const payload = cleanData({ 
       clienteId,
@@ -119,7 +118,8 @@ export async function processarVendaSeguraFront(
       valorVendaFinal: Number(valorVendaFinal),
       metodoPagamento,
       isBulk,
-      quantidade: Number(quantidade) || 1
+      quantidade: Number(quantidade) || 1,
+      split_comissoes: splitComissoes
     });
 
     const result = await processarVendaBackend(payload);

@@ -5,14 +5,15 @@ import { OpenInvoices } from '../components/dashboard/OpenInvoices';
 import { RecentSales } from '../components/dashboard/RecentSales';
 import { DollarSign, Clock, AlertTriangle, ReceiptText, TrendingUp, ArrowUpRight, Search, Activity } from 'lucide-react';
 import { motion } from 'framer-motion';
-import AlertCenter from '../components/GSA/AlertCenter';
 import { useNavigate } from 'react-router-dom';
 
 export function DashboardFinanceiro() {
   const props = useOutletContext<any>();
   const navigate = useNavigate();
   const { totalPending = 0, totalOpenInvoices = 0, sales = [], processes = [], clients = [], notification, setNotification, currentProfile } = props || {};
-  const overdueInvoices = sales.filter((s: any) => s.status_pagamento === 'Vencida').reduce((acc: number, curr: any) => acc + curr.valor_total, 0);
+  const emAtraso = sales.filter((s: any) => s.status_pagamento === 'Vencida').reduce((acc: number, curr: any) => acc + (curr.valor_total || 0), 0);
+  const contasAReceber = sales.filter((s: any) => ['Pendente', 'Programado', 'Vencida'].includes(s.status_pagamento)).reduce((acc: number, curr: any) => acc + (curr.valor_total || 0), 0);
+  const pendenteConfirmacao = sales.filter((s: any) => s.status_pagamento === 'Pendente').reduce((acc: number, curr: any) => acc + (curr.valor_total || 0), 0) + totalPending;
   
   const isGestorVendedor = currentProfile?.nivel === 'GESTOR' || currentProfile?.nivel === 'VENDEDOR';
   const myProcesses = processes.filter((p: any) => p.status_atual !== 'Concluído');
@@ -20,8 +21,6 @@ export function DashboardFinanceiro() {
 
   return (
     <div className="w-full space-y-8">
-      <AlertCenter onResolveClick={() => navigate('/pendencias')} />
-
       {notification && (
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
@@ -121,9 +120,9 @@ export function DashboardFinanceiro() {
               </div>
             </div>
             <div>
-              <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Comprovantes Pendentes</p>
+              <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Pendente de Confirmação</p>
               <h3 className="text-2xl sm:text-3xl font-bold text-[#0a0a2e] tracking-tight">
-                R$ {totalPending.toLocaleString('pt-BR')}
+                R$ {pendenteConfirmacao.toLocaleString('pt-BR')}
               </h3>
             </div>
           </motion.div>
@@ -141,9 +140,9 @@ export function DashboardFinanceiro() {
               </div>
             </div>
             <div>
-              <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Faturas em Aberto</p>
+              <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Contas a Receber</p>
               <h3 className="text-2xl sm:text-3xl font-bold text-[#0a0a2e] tracking-tight">
-                R$ {totalOpenInvoices.toLocaleString('pt-BR')}
+                R$ {contasAReceber.toLocaleString('pt-BR')}
               </h3>
             </div>
           </motion.div>
@@ -161,9 +160,9 @@ export function DashboardFinanceiro() {
               </div>
             </div>
             <div>
-              <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Faturas Vencidas</p>
+              <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Em Atraso</p>
               <h3 className="text-2xl sm:text-3xl font-bold text-[#0a0a2e] tracking-tight">
-                R$ {overdueInvoices.toLocaleString('pt-BR')}
+                R$ {emAtraso.toLocaleString('pt-BR')}
               </h3>
             </div>
           </motion.div>

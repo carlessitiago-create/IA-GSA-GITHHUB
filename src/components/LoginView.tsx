@@ -167,33 +167,38 @@ const LoginView: React.FC = () => {
   };
 
   const handleForgotPassword = async () => {
-    const { value: emailToReset } = await Swal.fire({
+    const { value: success } = await Swal.fire({
       title: 'Esqueceu sua senha?',
       input: 'email',
       inputPlaceholder: 'seu@email.com',
       showCancelButton: true,
       confirmButtonText: 'Enviar e-mail',
       cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#0a0a2e'
+      confirmButtonColor: '#0a0a2e',
+      showLoaderOnConfirm: true,
+      preConfirm: async (emailToReset) => {
+        if (!emailToReset) {
+          Swal.showValidationMessage('Insira seu e-mail');
+          return false;
+        }
+        try {
+          await forgotPassword(emailToReset);
+          return true;
+        } catch (err) {
+          Swal.showValidationMessage('Não foi possível enviar o e-mail de recuperação.');
+          return false;
+        }
+      },
+      allowOutsideClick: () => !Swal.isLoading()
     });
 
-    if (emailToReset) {
-      try {
-        await forgotPassword(emailToReset);
-        Swal.fire({ 
-          icon: 'success', 
-          title: 'E-mail enviado!', 
-          text: 'Verifique sua caixa de entrada para redefinir sua senha.', 
-          confirmButtonColor: '#0a0a2e' 
-        });
-      } catch (err) {
-        Swal.fire({ 
-          icon: 'error', 
-          title: 'Erro', 
-          text: 'Não foi possível enviar o e-mail de recuperação.', 
-          confirmButtonColor: '#0a0a2e' 
-        });
-      }
+    if (success) {
+      Swal.fire({ 
+        icon: 'success', 
+        title: 'E-mail enviado!', 
+        text: 'Verifique sua caixa de entrada para redefinir sua senha.', 
+        confirmButtonColor: '#0a0a2e' 
+      });
     }
   };
 

@@ -4,6 +4,7 @@ import { useAuth } from "./components/AuthContext";
 import { LoadingScreen } from "./components/LoadingScreen";
 import { DashboardLayout } from "./components/DashboardLayout";
 import { DashboardFinanceiro } from "./pages/DashboardFinanceiro";
+import { SplitCommissionSettingsView } from "./views/SplitCommissionSettingsView";
 import { MAIN_DOMAINS } from "./utils/navigation";
 
 // Lazy Loading Views
@@ -214,6 +215,7 @@ const App: React.FC = () => {
             <Route path="/admin_clube_settings" element={<DashboardView view="admin_clube_settings" />} />
             <Route path="/config_consulta" element={<PortalSettingsView />} />
             <Route path="/configuracoes-notificacoes" element={<AdminNotificationSettingsView />} />
+            <Route path="/parametrizacao-split" element={<SplitCommissionSettingsView />} />
             <Route path="/gerenciador-notificacoes" element={<GerenciadorNotificacoesView />} />
             <Route path="/admin-consultas" element={<AdminConsultationManagerView />} />
             <Route path="/historico-consultas" element={<AdminConsultationHistoryView />} />

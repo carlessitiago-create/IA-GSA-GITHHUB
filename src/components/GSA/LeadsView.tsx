@@ -68,39 +68,52 @@ export const LeadsView: React.FC = () => {
         '<input id="swal-input2" class="swal2-input w-full" placeholder="E-mail">' +
         '<input id="swal-input3" class="swal2-input w-full" placeholder="CPF (Apenas números)">' +
         '</div>',
+      showCancelButton: true,
+      confirmButtonText: 'Cadastrar',
+      cancelButtonText: 'Cancelar',
+      showLoaderOnConfirm: true,
       focusConfirm: false,
-      preConfirm: () => {
-        return [
-          (document.getElementById('swal-input1') as HTMLInputElement).value,
-          (document.getElementById('swal-input2') as HTMLInputElement).value,
-          (document.getElementById('swal-input3') as HTMLInputElement).value
-        ]
-      }
+      didOpen: () => {
+      },
+      preConfirm: async () => {
+        const btn = Swal.getConfirmButton();
+        if (btn) {
+          btn.innerHTML = '<span class="flex items-center gap-2"><svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> Processando...</span>';
+          btn.disabled = true;
+        }
+        
+        const nome = (document.getElementById('swal-input1') as HTMLInputElement).value;
+        const email = (document.getElementById('swal-input2') as HTMLInputElement).value;
+        const cpf = (document.getElementById('swal-input3') as HTMLInputElement).value;
+        
+        if (!nome || !email || !cpf) {
+          Swal.showValidationMessage('Todos os campos são obrigatórios.');
+          return false;
+        }
+
+        try {
+          await addDoc(collection(db, 'usuarios'), {
+            nome_completo: nome,
+            email,
+            cpf: cpf,
+            nivel: 'CLIENTE',
+            saldo_pontos: 0,
+            cadastrado_por: auth.currentUser?.uid,
+            data_cadastro: serverTimestamp(),
+            status_conta: 'APROVADO'
+          });
+          return true;
+        } catch (error: any) {
+          console.error("Erro ao cadastrar cliente:", error);
+          Swal.showValidationMessage('Não foi possível cadastrar o cliente.');
+          return false;
+        }
+      },
+      allowOutsideClick: () => !Swal.isLoading()
     });
 
     if (formValues) {
-      const [nome, email, cpf] = formValues;
-      if (!nome || !email || !cpf) {
-        Swal.fire('Erro', 'Todos os campos são obrigatórios.', 'error');
-        return;
-      }
-
-      try {
-        await addDoc(collection(db, 'usuarios'), {
-          nome_completo: nome,
-          email,
-          cpf: cpf,
-          nivel: 'CLIENTE',
-          saldo_pontos: 0,
-          cadastrado_por: auth.currentUser?.uid,
-          data_cadastro: serverTimestamp(),
-          status_conta: 'APROVADO'
-        });
-        Swal.fire('Sucesso!', 'Cliente cadastrado com sucesso.', 'success');
-      } catch (error) {
-        console.error("Erro ao cadastrar cliente:", error);
-        Swal.fire('Erro', 'Não foi possível cadastrar o cliente.', 'error');
-      }
+      Swal.fire('Sucesso!', 'Cliente cadastrado com sucesso.', 'success');
     }
   };
 

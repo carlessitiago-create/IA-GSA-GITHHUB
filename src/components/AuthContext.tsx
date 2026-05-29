@@ -36,6 +36,9 @@ export interface UserProfile {
   saldo_carteira?: number;
   percentual_empresa?: number;
   permissoes_venda?: 'VAREJO' | 'ATACADO' | 'AMBOS';
+  modelo_comissao?: 'PADRAO' | 'TAXA_SERVICO' | 'COMISSAO_ESPECIAL';
+  taxa_servico_fixa?: number;
+  comissao_especial_percentual?: number;
 }
 
 interface AuthContextType {

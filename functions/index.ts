@@ -436,7 +436,7 @@ export const processVenda = onCall(
 export const processarVendaSegura = onCall(
   safeExecute("VENDA_SEGURA", async (request) => {
     const uid = assertAuth(request);
-    const { clienteId, servicoId, valorVendaFinal, metodoPagamento, isBulk = false, quantidade = 1 } = request.data;
+    const { clienteId, servicoId, valorVendaFinal, metodoPagamento, isBulk = false, quantidade = 1, split_comissoes } = request.data;
 
     if (!clienteId || !servicoId || valorVendaFinal === undefined || valorVendaFinal === null) throw new HttpsError('invalid-argument', 'Dados incompletos.');
 
@@ -488,6 +488,54 @@ export const processarVendaSegura = onCall(
         }));
       }
 
+      // Buscar config do Gestor para calcular o Split
+      let gestorUser: any = null;
+      if (user.id_superior) {
+        const gestorSnap = await tx.get(db.collection('usuarios').doc(user.id_superior));
+        if (gestorSnap.exists) gestorUser = gestorSnap.data();
+      } else if (nivel === 'GESTOR') {
+        gestorUser = user;
+      }
+
+      let comissoes_calculadas: any = null;
+      if (split_comissoes) {
+        const base_vendedor = (Number(split_comissoes.vendedor) || 0) / 100;
+        const base_gestor = (Number(split_comissoes.gestor) || 0) / 100;
+        const base_analista = (Number(split_comissoes.analista) || 0) / 100;
+
+        let val_vendedor = valor * base_vendedor;
+        let val_gestor = valor * base_gestor;
+        let val_analista = valor * base_analista;
+        let val_empresa = valor - val_vendedor - val_gestor - val_analista;
+
+        if (gestorUser) {
+           const modelo = gestorUser.modelo_comissao || 'PADRAO';
+           const custo_fixo = (Number(gestorUser.taxa_servico_fixa) || 0) * qty;
+           const pct_lucro = (Number(gestorUser.comissao_especial_percentual) || 0) / 100;
+
+           if (modelo === 'TAXA_SERVICO') {
+              // O gestor paga a taxa fixa para a empresa. O resto é dele (mas o vendedor dele tira a parte dele primeiro, se existir).
+              val_empresa = custo_fixo;
+              val_gestor = valor - custo_fixo - val_vendedor - val_analista;
+              if (val_gestor < 0) val_gestor = 0; // Prevenção de saldo negativo
+           } else if (modelo === 'COMISSAO_ESPECIAL') {
+              // Gestor tem custo fixo e ganha X% sobre o Lucro (Venda - Custo Fixo).
+              const lucroRestante = valor - custo_fixo;
+              val_gestor = lucroRestante > 0 ? (lucroRestante * pct_lucro) : 0;
+              // A empresa ganha o Custo Fixo + a parcela do lucro que não foi pro gestor/analista/vendedor.
+              val_empresa = valor - val_vendedor - val_gestor - val_analista;
+           }
+        }
+
+        comissoes_calculadas = {
+           vendedor: val_vendedor,
+           gestor: val_gestor,
+           analista: val_analista,
+           empresa: val_empresa,
+           modelo_aplicado: gestorUser?.modelo_comissao || 'PADRAO'
+        };
+      }
+
       const saleRef = db.collection('sales').doc();
       const protocolo = `SEC-${Date.now()}`;
       const visibilidade_uids = [uid, clienteId, ...(user.id_superior ? [user.id_superior] : [])];
@@ -497,7 +545,9 @@ export const processarVendaSegura = onCall(
         id_superior: user.id_superior || null, servico_id: servicoId, servico_nome: servico.nome_servico || 'Serviço',
         valor_total: valor, margem_total: valor - ((Number(servico.preco_base_gestor) || 0) * qty),
         metodo_pagamento: metodoPagamento, status_pagamento: metodoPagamento === 'CARTEIRA' ? 'Pago' : 'Pendente',
-        quantidade: qty, origem: 'SISTEMA_V3_ENTERPRISE', visibilidade_uids, created_at: FieldValue.serverTimestamp()
+        quantidade: qty, origem: 'SISTEMA_V3_ENTERPRISE', visibilidade_uids, created_at: FieldValue.serverTimestamp(),
+        split_comissoes: split_comissoes || null,
+        comissoes_calculadas: comissoes_calculadas
       }));
 
       const statusProcesso = metodoPagamento === 'CARTEIRA' ? 'Em Análise' : 'Aguardando Pagamento';

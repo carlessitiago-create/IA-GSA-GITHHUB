@@ -4,7 +4,7 @@ import {
   Shield, Users, PlusCircle, LayoutDashboard, History, Settings, 
   Package, DollarSign, TrendingUp, Bell, ClipboardList, Gift, 
   ShoppingBag, LogOut, ChevronRight, Activity, AlertTriangle, X,
-  Factory, Trophy, Search, User, Mail, UserPlus, Layers, CreditCard, Banknote
+  Factory, Trophy, Search, User, Mail, UserPlus, Layers, CreditCard, Banknote, SplitSquareVertical
 } from 'lucide-react';
 
 
@@ -136,7 +136,7 @@ export function Sidebar({ currentProfile, logout, onClose }: any) {
         {(role.startsWith('ADM') || role === 'GESTOR' || role === 'VENDEDOR') && (
           <div className="space-y-1 mt-6">
             <p className="px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Financeiro</p>
-            <MenuItem to="financeiro" icon={DollarSign} label="Conciliação" color="text-emerald-500" />
+            <MenuItem to="financeiro" icon={DollarSign} label={(role === 'VENDEDOR' || role === 'GESTOR') ? "Minhas Vendas" : "Financeiro"} color="text-emerald-500" />
             {(role === 'ADM_MASTER' || role === 'ADM_GERENTE' || role === 'GESTOR') && (
               <MenuItem to="custas" icon={DollarSign} label="Tabela de Custas" color="text-amber-500" />
             )}
@@ -161,6 +161,7 @@ export function Sidebar({ currentProfile, logout, onClose }: any) {
         <div className="space-y-1 mt-6 mb-6">
           <p className="px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Sistema</p>
           {role !== 'ADM_ANALISTA' && <MenuItem to="consulta-interna" icon={Search} label="Consulta Pública" />}
+          {(role === 'ADM_MASTER' || role === 'ADM_GERENTE') && <MenuItem to="parametrizacao-split" icon={SplitSquareVertical} label="Split de Comissões" />}
           <MenuItem to="suporte" icon={Bell} label="Suporte" />
           <MenuItem to="perfil" icon={User} label="Meu Perfil" />
         </div>

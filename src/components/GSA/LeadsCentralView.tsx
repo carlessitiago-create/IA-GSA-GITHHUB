@@ -261,43 +261,54 @@ export const LeadsCentralView: React.FC = () => {
         `<input id="swal-input2" class="swal2-input" placeholder="E-mail" value="${item.cliente_email || ''}">` +
         `<input id="swal-input3" class="swal2-input" placeholder="CPF/CNPJ">` +
         `<input id="swal-input4" class="swal2-input" placeholder="Telefone" value="${item.cliente_telefone || item.telefone_indicado}">`,
+      showCancelButton: true,
+      confirmButtonText: 'Cadastrar',
+      cancelButtonText: 'Cancelar',
+      showLoaderOnConfirm: true,
       focusConfirm: false,
-      preConfirm: () => {
-        return [
-          (document.getElementById('swal-input1') as HTMLInputElement).value,
-          (document.getElementById('swal-input2') as HTMLInputElement).value,
-          (document.getElementById('swal-input3') as HTMLInputElement).value,
-          (document.getElementById('swal-input4') as HTMLInputElement).value
-        ]
-      }
+      didOpen: () => {
+        // Prepare confirm button loading state in CSS if not present
+      },
+      preConfirm: async () => {
+        const btn = Swal.getConfirmButton();
+        if (btn) {
+          btn.innerHTML = '<span class="flex items-center gap-2"><svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> Processando...</span>';
+          btn.disabled = true;
+        }
+
+        const nome = (document.getElementById('swal-input1') as HTMLInputElement).value;
+        const email = (document.getElementById('swal-input2') as HTMLInputElement).value;
+        const documento = (document.getElementById('swal-input3') as HTMLInputElement).value;
+        const telefone = (document.getElementById('swal-input4') as HTMLInputElement).value;
+        
+        if (!nome || !email || !documento) {
+          Swal.showValidationMessage('Nome, E-mail e CPF/CNPJ são obrigatórios.');
+          return false;
+        }
+
+        try {
+          await createSecondaryUser({
+            nome_completo: nome,
+            email: email,
+            nivel: 'CLIENTE',
+            id_superior: profile?.uid,
+            vendedor_id: profile?.uid,
+            telefone: telefone,
+            whatsapp: telefone,
+            cpf: documento,
+            status_conta: 'APROVADO'
+          }, profile?.nivel || 'ADM');
+          return true;
+        } catch (error: any) {
+          Swal.showValidationMessage(error.message || 'Erro ao cadastrar cliente.');
+          return false;
+        }
+      },
+      allowOutsideClick: () => !Swal.isLoading()
     });
 
     if (formValues) {
-      const [nome, email, documento, telefone] = formValues;
-      if (!nome || !email || !documento) {
-        Swal.fire('Erro', 'Nome, E-mail e CPF/CNPJ são obrigatórios.', 'error');
-        return;
-      }
-
-      try {
-        Swal.fire({ title: 'Cadastrando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-        
-        await createSecondaryUser({
-          nome_completo: nome,
-          email: email,
-          nivel: 'CLIENTE',
-          id_superior: profile?.uid,
-          vendedor_id: profile?.uid,
-          telefone: telefone,
-          whatsapp: telefone,
-          cpf: documento,
-          status_conta: 'APROVADO'
-        }, profile?.nivel || 'ADM');
-
-        Swal.fire('Sucesso!', 'Cliente cadastrado com sucesso e vinculado a você.', 'success');
-      } catch (error: any) {
-        Swal.fire('Erro', error.message || 'Erro ao cadastrar cliente.', 'error');
-      }
+      Swal.fire('Sucesso!', 'Cliente cadastrado com sucesso e vinculado a você.', 'success');
     }
   };
 

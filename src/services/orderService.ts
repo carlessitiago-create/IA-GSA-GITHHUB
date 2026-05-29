@@ -46,6 +46,7 @@ export interface OrderProcess {
   id?: string;
   venda_id?: string;
   protocolo: string;
+  dados_preenchidos?: any;
   cliente_id: string;
   vendedor_id: string;
   id_superior?: string;

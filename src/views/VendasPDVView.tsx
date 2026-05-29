@@ -42,16 +42,22 @@ export function VendasPDVView() {
   useEffect(() => {
     if (preSelectedService) {
       setSelectedService(preSelectedService);
-      setFinalPrice(preSelectedService.preco_base_vendedor || 0);
-      setStep(1); // Se veio da vitrine, já tem serviço, mas ainda precisa de cliente
+      const minPrice = ['ADM_MASTER', 'ADM_GERENTE', 'ADM_ANALISTA', 'GESTOR'].includes(profile?.nivel || '') 
+        ? preSelectedService.preco_base_gestor 
+        : preSelectedService.preco_base_vendedor;
+      setFinalPrice(minPrice || 0);
+      setStep(1);
     }
-  }, [preSelectedService]);
+  }, [preSelectedService, profile?.nivel]);
 
   useEffect(() => {
     if (selectedService) {
-      setFinalPrice(selectedService.preco_base_vendedor || 0);
+      const minPrice = ['ADM_MASTER', 'ADM_GERENTE', 'ADM_ANALISTA', 'GESTOR'].includes(profile?.nivel || '') 
+        ? selectedService.preco_base_gestor 
+        : selectedService.preco_base_vendedor;
+      setFinalPrice(minPrice || 0);
     }
-  }, [selectedService]);
+  }, [selectedService, profile?.nivel]);
 
   const [isRegisteringClient, setIsRegisteringClient] = useState(false);
   const [newClient, setNewClient] = useState({
@@ -61,6 +67,23 @@ export function VendasPDVView() {
     telefone: '',
     data_nascimento: ''
   });
+
+  const [splitConfig, setSplitConfig] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchSplitConfig = async () => {
+      try {
+        const { doc, getDoc } = await import('firebase/firestore');
+        const splitDoc = await getDoc(doc(db, 'configuracoes', 'geral_split'));
+        if (splitDoc.exists()) {
+          setSplitConfig(splitDoc.data());
+        }
+      } catch (e) {
+        console.error('Error fetching general split config', e);
+      }
+    };
+    fetchSplitConfig();
+  }, []);
 
   const fetchClients = async () => {
     try {
@@ -198,7 +221,7 @@ export function VendasPDVView() {
     }
   };
 
-  const handleFinalizeSale = async (isProposal: boolean = false) => {
+  const handleFinalizeSale = async (actionType: 'PROPOSAL' | 'SALE' | 'PRE_SALE' = 'SALE') => {
     if (!selectedClient || !selectedService) {
       Swal.fire('Erro', 'Selecione um cliente e um serviço para continuar.', 'error');
       return;
@@ -210,6 +233,41 @@ export function VendasPDVView() {
       Swal.fire('Preço Inválido', validacao.erro, 'error');
       return;
     }
+
+    let preSaleData = null;
+    if (actionType === 'PRE_SALE') {
+      const { value: preSaleValues } = await Swal.fire({
+        title: 'Criar Pré-venda',
+        html: `
+          <div class="text-left space-y-4">
+            <div class="space-y-1">
+              <label class="text-[10px] font-bold uppercase text-slate-400 ml-1">Data Prevista de Fechamento</label>
+              <input id="swal-prev-date" class="swal2-input !mt-0 !w-full" type="date">
+            </div>
+            <div class="space-y-1">
+              <label class="text-[10px] font-bold uppercase text-slate-400 ml-1">Promessa de Contratação</label>
+              <textarea id="swal-promessa" class="swal2-textarea !mt-0 !w-full" placeholder="Ex: Cliente aguarda pagamento do salário para fechar"></textarea>
+            </div>
+          </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Confirmar Pré-venda',
+        cancelButtonText: 'Voltar',
+        preConfirm: () => {
+          const date = (document.getElementById('swal-prev-date') as HTMLInputElement).value;
+          const promise = (document.getElementById('swal-promessa') as HTMLTextAreaElement).value;
+          if (!date || !promise) {
+            Swal.showValidationMessage('Preencha a data e a promessa de contratação.');
+            return false;
+          }
+          return { date, promise };
+        }
+      });
+      if (!preSaleValues) return;
+      preSaleData = preSaleValues;
+    }
+
+    const isProposal = actionType === 'PROPOSAL';
 
     // Verificar dados críticos para acompanhamento público
     let finalCpf = selectedClient.cpf;
@@ -285,7 +343,7 @@ export function VendasPDVView() {
       let saleId = '';
       let protocolo = '';
 
-      const isSecureMethod = paymentMethod === 'PIX' || paymentMethod === 'CARTEIRA';
+      const isSecureMethod = (paymentMethod === 'PIX' || paymentMethod === 'CARTEIRA') && actionType === 'SALE';
 
       if (!isProposal && isSecureMethod) {
         // USAR SERVIÇO SEGURO (BACKEND) PARA VENDAS REAIS COM MÉTODOS SUPORTADOS
@@ -294,12 +352,15 @@ export function VendasPDVView() {
           currentClient.uid,
           selectedService.id,
           finalPrice,
-          paymentMethod as 'PIX' | 'CARTEIRA'
+          paymentMethod as 'PIX' | 'CARTEIRA',
+          false,
+          1,
+          splitConfig
         );
         saleId = result.saleId;
         protocolo = result.protocolo;
       } else {
-        // PROPOSTAS OU MÉTODOS NÃO SUPORTADOS PELO BACKEND (BOLETO/CARTÃO)
+        // PROPOSTAS OU PRÉ-VENDAS OU MÉTODOS NÃO SUPORTADOS PELO BACKEND
         const { cleanData } = await import('../firebase');
         const saleData = {
           cliente_id: currentClient.uid,
@@ -318,7 +379,11 @@ export function VendasPDVView() {
           protocolo: isProposal 
             ? `PROP-${Date.now().toString(36).toUpperCase()}` 
             : `GSA-${Date.now().toString(36).toUpperCase()}-${Math.floor(Math.random() * 1000)}`,
-          is_proposta: isProposal
+          is_proposta: isProposal,
+          is_pre_venda: actionType === 'PRE_SALE',
+          pre_venda_data_fechamento: preSaleData?.date || null,
+          pre_venda_promessa: preSaleData?.promise || null,
+          split_comissoes: splitConfig || null
         };
 
         const saleRef = await addDoc(collection(db, 'sales'), cleanData(saleData));
@@ -326,15 +391,23 @@ export function VendasPDVView() {
         protocolo = saleData.protocolo;
       }
 
+      const clientLink = `${window.location.origin}/consulta`;
+
       if (isProposal) {
         Swal.fire({
           icon: 'success',
           title: 'Proposta Gerada!',
-          text: `A proposta foi gerada com sucesso para ${selectedClient.nome_completo}.`,
+          html: `
+            <p>A proposta foi gerada com sucesso para ${selectedClient.nome_completo}.</p>
+            <div class="mt-4 p-4 bg-slate-100 rounded-xl text-center">
+              <p class="text-xs font-bold text-slate-500 uppercase">Link para o Cliente:</p>
+              <a href="${clientLink}" target="_blank" class="text-blue-600 font-bold break-all hover:underline block mt-2">${clientLink}</a>
+            </div>
+          `,
           confirmButtonColor: '#0a0a2e'
         });
       } else {
-        // VENDA REAL
+        // VENDA REAL OU PRÉ-VENDA
         if (!isSecureMethod) {
           // Buscar requisitos do serviço para definir pendências iniciais
           const { PROCESS_REQUIREMENTS } = await import('../constants/processRequirements');
@@ -362,10 +435,13 @@ export function VendasPDVView() {
             dados_faltantes: dadosFaltantes,
             pendencias_iniciais: pendenciasIniciais,
             documentos_enviados: [],
+            is_pre_venda: actionType === 'PRE_SALE',
+            pre_venda_data_fechamento: preSaleData?.date || null,
+            pre_venda_promessa: preSaleData?.promise || null,
             historico_status: [{
               status: (dadosFaltantes.length > 0 || pendenciasIniciais.length > 0) ? 'Aguardando Documentação' : 'Pendente',
               data: new Date().toISOString(),
-              observacao: 'Venda realizada via PDV Direto'
+              observacao: actionType === 'PRE_SALE' ? 'Pré-venda registrada via PDV' : 'Venda realizada via PDV Direto'
             }]
           });
 
@@ -374,16 +450,16 @@ export function VendasPDVView() {
           await addDoc(collection(db, 'notifications'), cleanData({
             usuario_id: 'ADM_MASTER',
             targetRole: 'ADM_MASTER',
-            title: '💰 Nova Venda PDV',
-            message: `${profile?.nome_completo} realizou uma venda de ${selectedService.nome_servico} para ${selectedClient.nome_completo}.`,
+            title: actionType === 'PRE_SALE' ? '⏳ Nova Pré-Venda PDV' : '💰 Nova Venda PDV',
+            message: `${profile?.nome_completo} registrou uma ${actionType === 'PRE_SALE' ? 'pré-venda' : 'venda'} de ${selectedService.nome_servico} para ${selectedClient.nome_completo}.`,
             tipo: 'success',
             lida: false,
             timestamp: serverTimestamp()
           }));
         }
 
-        // SE FOR PIX, GERAR QR CODE REAL
-        if (paymentMethod === 'PIX') {
+        // SE FOR PIX E NÃO FOR PRE-VENDA, GERAR QR CODE REAL
+        if (paymentMethod === 'PIX' && actionType === 'SALE') {
           setLoading(true);
           try {
             const { getSaasConfig } = await import('../services/configService');
@@ -424,6 +500,11 @@ export function VendasPDVView() {
               title: 'Pagamento PIX Gerado!',
               html: `
                 <div class="space-y-6 py-4">
+                  <div class="p-4 border-2 border-blue-100 bg-blue-50 rounded-xl mb-4 text-center">
+                    <p class="text-xs font-bold text-blue-800 uppercase mb-2">Link Para Enviar Documentos:</p>
+                    <a href="${clientLink}" target="_blank" class="text-blue-600 font-bold break-all hover:underline block">${clientLink}</a>
+                    <p class="text-[10px] text-blue-600/70 mt-2">O cliente utilizará o CPF e Data de Nascimento para acessar.</p>
+                  </div>
                   <div class="flex flex-col items-center gap-4">
                     <p class="text-xs text-slate-500 font-bold uppercase tracking-widest">Escaneie o QR Code abaixo</p>
                     <div class="p-4 bg-white rounded-3xl border-2 border-slate-100 shadow-xl">
@@ -443,22 +524,47 @@ export function VendasPDVView() {
                     <div class="size-8 bg-blue-600 rounded-lg flex items-center justify-center text-white shrink-0">
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-zap"><path d="M4 14.89 14 3.5l-2.3 8.1 8.3-1.1-10 11.4 2.3-8.1-8.3 1.1z"/></svg>
                     </div>
-                    <p class="text-[10px] font-black text-blue-700 uppercase tracking-widest text-left">O sistema identificará o pagamento automaticamente via ${pixResult.gateway}.</p>
+                    <p class="text-[10px] text-blue-800 text-left"><strong>Atenção:</strong> O prazo do serviço só começa a contar <strong>após</strong> o pagamento e envio de todos os documentos.</p>
                   </div>
                 </div>
               `,
-              confirmButtonText: 'ENTENDIDO',
-              confirmButtonColor: '#0a0a2e'
+              confirmButtonText: 'Concluir Venda',
+              confirmButtonColor: '#0a0a2e',
+              allowOutsideClick: false
             });
           } catch (pixErr: any) {
              console.error("Erro ao gerar PIX:", pixErr);
-             Swal.fire('Venda Registrada', 'Venda registrada mas não conseguimos gerar o QR Code automático. Por favor, envie o link de pagamento manualmente no módulo financeiro.', 'warning');
+             Swal.fire({
+               icon: 'warning',
+               title: 'Venda Registrada',
+               text: 'Venda registrada mas não conseguimos gerar o QR Code automático. Por favor, envie o link de pagamento manualmente no módulo financeiro.',
+               html: `
+                 <div class="mt-4 p-4 border-2 border-amber-100 bg-amber-50 rounded-xl text-center">
+                   <p class="text-xs font-bold text-amber-800 uppercase mb-2">Link Para Enviar Documentos (Cliente):</p>
+                   <a href="${clientLink}" target="_blank" class="text-amber-700 font-bold break-all hover:underline block">${clientLink}</a>
+                 </div>
+               `
+             });
           }
         } else {
+          // Outros métodos de pagamento ou PRE_SALE
           Swal.fire({
             icon: 'success',
-            title: 'Venda Concluída!',
-            text: `A Ordem de Serviço foi gerada com sucesso para ${selectedClient.nome_completo}.`,
+            title: actionType === 'PRE_SALE' ? 'Pré-venda Registrada!' : 'Venda Concluída!',
+            html: `
+              <p>${actionType === 'PRE_SALE' ? 'Pré-venda salva com sucesso.' : 'A Ordem de Serviço foi gerada com sucesso.'} O pagamento e os documentos estão pendentes.</p>
+              <div class="mt-6 p-4 border-2 border-blue-100 bg-blue-50 rounded-xl text-center shadow-inner">
+                <p class="text-xs font-bold text-blue-800 uppercase mb-2">Link Para o Cliente (Documentos):</p>
+                <a href="${clientLink}" target="_blank" class="text-blue-600 font-bold text-lg hover:underline block">${clientLink}</a>
+                <p class="text-[10px] text-slate-500 mt-2 font-medium">Informe o cliente para acessar com seu CPF e Data de Nascimento.</p>
+              </div>
+              <div class="bg-amber-50 p-4 rounded-xl flex gap-3 mt-4 text-left border border-amber-200">
+                <svg class="text-amber-600 w-6 h-6 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                <p class="text-[10px] text-amber-900 font-semibold leading-relaxed">
+                  <strong>Atenção:</strong> O prazo do serviço só começa a contar <strong>após</strong> o pagamento e envio de todos os documentos.
+                </p>
+              </div>
+            `,
             confirmButtonColor: '#0a0a2e'
           });
         }
@@ -777,7 +883,6 @@ export function VendasPDVView() {
                     whileHover={{ y: -5 }}
                     onClick={() => {
                       setSelectedService(service);
-                      setFinalPrice(service.preco_base_vendedor);
                       setStep(3);
                     }}
                     className={`p-6 sm:p-8 border-2 rounded-2xl sm:rounded-2xl flex flex-col justify-between cursor-pointer transition-all relative overflow-hidden group ${
@@ -835,8 +940,17 @@ export function VendasPDVView() {
                         <span className="absolute left-6 top-1/2 -translate-y-1/2 font-black text-[#0a0a2e] italic">R$</span>
                         <input 
                           type="number" 
-                          value={finalPrice}
-                          onChange={(e) => setFinalPrice(Number(e.target.value))}
+                          step="0.01"
+                          min={(
+                            ['ADM_MASTER', 'ADM_GERENTE', 'ADM_ANALISTA', 'GESTOR'].includes(profile?.nivel || '') 
+                              ? selectedService?.preco_base_gestor 
+                              : selectedService?.preco_base_vendedor
+                          )}
+                          value={finalPrice === 0 ? '' : finalPrice}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setFinalPrice(val === '' ? 0 : Number(val));
+                          }}
                           className="w-full bg-white border border-slate-100 rounded-2xl p-5 pl-14 text-xl font-black italic text-[#0a0a2e] focus:ring-4 focus:ring-blue-500/10 outline-none transition-all"
                         />
                       </div>
@@ -949,7 +1063,7 @@ export function VendasPDVView() {
                       <div className="pt-8 flex flex-col gap-4">
                         <button 
                           disabled={loading}
-                          onClick={() => handleFinalizeSale(true)}
+                          onClick={() => handleFinalizeSale('PROPOSAL')}
                           className="w-full bg-white/10 hover:bg-white/20 border border-white/20 text-white py-5 rounded-2xl font-black uppercase text-[10px] tracking-[0.3em] transition-all flex items-center justify-center gap-3 disabled:opacity-50"
                         >
                           {loading ? <Loader2 className="animate-spin size-4" /> : <FileText size={18} />}
@@ -957,7 +1071,15 @@ export function VendasPDVView() {
                         </button>
                         <button 
                           disabled={loading}
-                          onClick={() => handleFinalizeSale(false)}
+                          onClick={() => handleFinalizeSale('PRE_SALE')}
+                          className="w-full bg-indigo-600/20 hover:bg-indigo-600/40 border border-indigo-500/30 text-indigo-100 py-5 rounded-2xl font-black uppercase text-[10px] tracking-[0.3em] transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+                        >
+                          {loading ? <Loader2 className="animate-spin size-4" /> : <ShieldCheck size={18} />}
+                          Criar Pré-venda
+                        </button>
+                        <button 
+                          disabled={loading}
+                          onClick={() => handleFinalizeSale('SALE')}
                           className="w-full bg-blue-600 hover:bg-blue-500 text-white py-6 rounded-2xl font-black uppercase text-[10px] tracking-[0.3em] shadow-xl shadow-blue-600/20 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
                         >
                           {loading ? <Loader2 className="animate-spin size-4" /> : <ShieldCheck size={18} />}
