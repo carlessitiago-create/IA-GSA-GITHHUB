@@ -266,10 +266,18 @@ export const SmartFicha: React.FC<SmartFichaProps> = ({ processos, clienteDados,
 
   // ... (inside component)
 
+  const allPossibleFields = [
+    'nome_completo', 'cpf', 'rg', 'data_nascimento', 'estado_civil', 'profissao', 'nome_mae',
+    'telefone', 'email', 'renda_mensal',
+    'cep', 'logradouro', 'numero', 'complemento', 'bairro', 'cidade', 'estado',
+    'cnpj', 'nome_empresa', 'faturamentoMensalMedio'
+  ];
+
   const camposFaltantes = Array.from(new Set([
     ...requisitosDinamicos.campos,
     ...(!processos[0]?.cliente_cpf_cnpj ? ['cpf'] : []),
-    ...(!processos[0]?.data_nascimento ? ['data_nascimento'] : [])
+    ...(!processos[0]?.data_nascimento ? ['data_nascimento'] : []),
+    ...(isAdm && showAllFields ? allPossibleFields : [])
   ])).filter(c => {
     // Se o admin solicitou ver todos os campos, não filtra os campos obrigatórios
     if (showAllFields && isAdm) return true;
@@ -293,7 +301,14 @@ export const SmartFicha: React.FC<SmartFichaProps> = ({ processos, clienteDados,
     return true;
   });
 
-  const documentosFaltantes = isAdm && showAllFields ? requisitosDinamicos.documentos : requisitosDinamicos.documentos.filter(d => {
+  const documentosDesejados = isAdm && showAllFields 
+    ? Array.from(new Set([
+        ...requisitosDinamicos.documentos,
+        ...Object.keys(clienteDados).filter(k => requirementsConfig.document_labels[k] && clienteDados[k])
+      ]))
+    : requisitosDinamicos.documentos;
+
+  const documentosFaltantes = isAdm && showAllFields ? documentosDesejados : documentosDesejados.filter(d => {
     if (processos[0] && Array.isArray(processos[0].pendencias_iniciais)) {
       return processos[0].pendencias_iniciais.includes(d);
     }
