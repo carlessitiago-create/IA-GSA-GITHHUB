@@ -32,7 +32,7 @@ export const ClientProcessesView: React.FC = () => {
       }
       setLoading(true);
       try {
-        const data = await listarProcessosCliente(profile.uid);
+        const data = await listarProcessosCliente(profile.uid, profile.cpf);
         setProcessos(data);
       } catch (error) {
         console.error("Erro ao carregar processos:", error);
@@ -315,7 +315,7 @@ export const ClientProcessesView: React.FC = () => {
                       clienteDados={profile} 
                       onUpdate={() => {
                         // Refresh processes
-                        listarProcessosCliente(profile!.uid).then(setProcessos);
+                        listarProcessosCliente(profile!.uid, profile!.cpf).then(setProcessos);
                       }}
                     />
                   </div>

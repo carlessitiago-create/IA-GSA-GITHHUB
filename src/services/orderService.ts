@@ -1,9 +1,9 @@
-import { 
-  collection, 
-  addDoc, 
-  updateDoc, 
-  doc, 
-  serverTimestamp, 
+import {
+  collection,
+  addDoc,
+  updateDoc,
+  doc,
+  serverTimestamp,
   Timestamp,
   query,
   where,
@@ -11,21 +11,26 @@ import {
   getDoc,
   orderBy,
   writeBatch,
-  or
-} from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType, cleanData } from '../firebase';
-import { 
-  addPontos, 
-  processarPontosDeVenda, 
-  distribuirPontosPorServico, 
-  entregarCashbackCliente 
-} from './pointsService';
+  or,
+} from "firebase/firestore";
+import {
+  db,
+  handleFirestoreError,
+  OperationType,
+  cleanData,
+} from "../firebase";
+import {
+  addPontos,
+  processarPontosDeVenda,
+  distribuirPontosPorServico,
+  entregarCashbackCliente,
+} from "./pointsService";
 // import { getPointsForRule } from './clubService';
-import { UserProfile } from './userService';
-import { 
-  notificarStatusProcesso, 
-  notificarNovaPendencia 
-} from './notificationService';
+import { UserProfile } from "./userService";
+import {
+  notificarStatusProcesso,
+  notificarNovaPendencia,
+} from "./notificationService";
 
 export interface SaleData {
   id?: string;
@@ -35,8 +40,13 @@ export interface SaleData {
   vendedor_id: string;
   valor_total: number;
   margem_total: number;
-  metodo_pagamento: 'PIX' | 'CARTEIRA';
-  status_pagamento: 'Pendente' | 'Aguardando Confirmação' | 'Pago' | 'Débito em Carteira' | 'Vencida';
+  metodo_pagamento: "PIX" | "CARTEIRA";
+  status_pagamento:
+    | "Pendente"
+    | "Aguardando Confirmação"
+    | "Pago"
+    | "Débito em Carteira"
+    | "Vencida";
   comprovante_url?: string;
   dias_atraso?: number;
   timestamp: Timestamp;
@@ -52,7 +62,14 @@ export interface OrderProcess {
   id_superior?: string;
   servico_id: string;
   servico_nome?: string;
-  status_atual: 'Pendente' | 'Em Análise' | 'Protocolado' | 'Em Andamento' | 'Concluído' | 'Aguardando Documentação' | 'Aguardando Aprovação';
+  status_atual:
+    | "Pendente"
+    | "Em Análise"
+    | "Protocolado"
+    | "Em Andamento"
+    | "Concluído"
+    | "Aguardando Documentação"
+    | "Aguardando Aprovação";
   preco_base?: number;
   preco_venda?: number;
   margem_lucro?: number;
@@ -83,7 +100,7 @@ export interface OrderProcess {
   dados_faltantes?: string[];
   documentos_enviados?: string[];
   dias_atraso?: number;
-  status_financeiro?: 'PENDENTE' | 'PAGO' | 'VENCIDO';
+  status_financeiro?: "PENDENTE" | "PAGO" | "VENCIDO";
   anexo_conclusao_url?: string;
   referral_id?: string;
   lead_id?: string;
@@ -114,8 +131,8 @@ export interface PendingIssue {
   id_superior: string;
   cliente_id?: string;
   descricao: string;
-  tipo_pendencia?: 'DOCUMENTAL' | 'FINANCEIRA' | 'AMBAS' | string;
-  status_pendencia: 'AGUARDANDO_GESTOR' | 'ENVIADO_CLIENTE' | 'RESOLVIDO';
+  tipo_pendencia?: "DOCUMENTAL" | "FINANCEIRA" | "AMBAS" | string;
+  status_pendencia: "AGUARDANDO_GESTOR" | "ENVIADO_CLIENTE" | "RESOLVIDO";
   criadaEm: Timestamp;
   criado_por_id: string;
   resolvidaEm?: Timestamp;
@@ -135,38 +152,45 @@ export interface PendencyAuditLog {
   pendencia_id: string;
   origem_usuario_id: string;
   origem_nome?: string; // Added to match App.tsx usage
-  destino_papel: 'GESTOR' | 'VENDEDOR' | 'CLIENTE' | 'ADM_ANALISTA';
+  destino_papel: "GESTOR" | "VENDEDOR" | "CLIENTE" | "ADM_ANALISTA";
   mensagem_publica?: string;
   mensagem_interna?: string;
   observacao_adm?: string;
   anexo_url?: string;
   data_log: Timestamp;
   timestamp?: Timestamp; // Added alias to match App.tsx usage
-  tipo_bloco: 'AZUL' | 'AMARELO' | 'VERDE';
+  tipo_bloco: "AZUL" | "AMARELO" | "VERDE";
 }
 
-const SALES_COLLECTION = 'sales';
-const PROCESSES_COLLECTION = 'order_processes';
-const HISTORY_COLLECTION = 'status_history';
-const PENDENCIES_COLLECTION = 'pendencies';
-const AUDIT_LOGS_COLLECTION = 'pendency_audit_logs';
+const SALES_COLLECTION = "sales";
+const PROCESSES_COLLECTION = "order_processes";
+const HISTORY_COLLECTION = "status_history";
+const PENDENCIES_COLLECTION = "pendencies";
+const AUDIT_LOGS_COLLECTION = "pendency_audit_logs";
 
 /**
  * Cria uma nova pendência e registra o log inicial (AZUL)
  */
-export const atualizarProcesso = async (processId: string, data: Partial<OrderProcess>) => {
+export const atualizarProcesso = async (
+  processId: string,
+  data: Partial<OrderProcess>,
+) => {
   try {
-    const processRef = doc(db, 'order_processes', processId);
+    const processRef = doc(db, "order_processes", processId);
     const updateData: any = { ...data };
-    
+
     // If status is being changed to Concluído, set data_conclusao
-    if (data.status_atual === 'Concluído' && !data.data_conclusao) {
+    if (data.status_atual === "Concluído" && !data.data_conclusao) {
       updateData.data_conclusao = serverTimestamp();
     }
 
     await updateDoc(processRef, updateData);
   } catch (error) {
-    handleFirestoreError(error, OperationType.UPDATE, `order_processes/${processId}`);
+    handleFirestoreError(
+      error,
+      OperationType.UPDATE,
+      `order_processes/${processId}`,
+    );
   }
 };
 
@@ -177,7 +201,7 @@ export async function abrirPendenciaCascata(data: {
   vendaId?: string;
   processo_id?: string;
   descricao: string;
-  tipo_pendencia?: 'DOCUMENTAL' | 'FINANCEIRA' | 'AMBAS' | string;
+  tipo_pendencia?: "DOCUMENTAL" | "FINANCEIRA" | "AMBAS" | string;
   criado_por_id: string;
   mensagem_interna?: string;
   mensagem_publica?: string;
@@ -189,7 +213,9 @@ export async function abrirPendenciaCascata(data: {
 
     // Se houver processo_id, tenta buscar os dados do processo
     if (data.processo_id) {
-      const procSnap = await getDoc(doc(db, PROCESSES_COLLECTION, data.processo_id));
+      const procSnap = await getDoc(
+        doc(db, PROCESSES_COLLECTION, data.processo_id),
+      );
       if (procSnap.exists()) {
         processoData = procSnap.data();
         if (!vendaId) vendaId = processoData.venda_id;
@@ -198,47 +224,47 @@ export async function abrirPendenciaCascata(data: {
 
     // Se ainda não houver vendaId, mas tivermos processoData, podemos tentar prosseguir sem vendaId
     // mas a interface PendingIssue exige vendaId. Vamos usar 'STANDALONE' se realmente não houver.
-    const finalVendaId = vendaId || 'STANDALONE';
+    const finalVendaId = vendaId || "STANDALONE";
 
-    let vendedor_id = '';
-    let id_superior = '';
-    let cliente_id = '';
+    let vendedor_id = "";
+    let id_superior = "";
+    let cliente_id = "";
 
-    if (vendaId && vendaId !== 'STANDALONE') {
+    if (vendaId && vendaId !== "STANDALONE") {
       const saleSnap = await getDoc(doc(db, SALES_COLLECTION, vendaId));
       if (saleSnap.exists()) {
         const saleData = saleSnap.data();
-        vendedor_id = saleData.vendedor_id || '';
-        id_superior = saleData.id_superior || '';
-        cliente_id = saleData.cliente_id || '';
+        vendedor_id = saleData.vendedor_id || "";
+        id_superior = saleData.id_superior || "";
+        cliente_id = saleData.cliente_id || "";
       }
     }
 
     // Fallback para dados do processo se não encontramos na venda
     if (!vendedor_id && processoData) {
-      vendedor_id = processoData.vendedor_id || '';
-      id_superior = processoData.id_superior || '';
-      cliente_id = processoData.cliente_id || '';
+      vendedor_id = processoData.vendedor_id || "";
+      id_superior = processoData.id_superior || "";
+      cliente_id = processoData.cliente_id || "";
     }
-    
+
     const batch = writeBatch(db);
     const pendencyRef = doc(collection(db, PENDENCIES_COLLECTION));
     const timestamp = Timestamp.now();
 
     const pendencyData: PendingIssue = {
       venda_id: finalVendaId,
-      processo_id: data.processo_id || '',
+      processo_id: data.processo_id || "",
       vendedor_id,
       id_superior,
       cliente_id,
       descricao: data.descricao,
       tipo_pendencia: data.tipo_pendencia,
-      status_pendencia: 'AGUARDANDO_GESTOR',
+      status_pendencia: "AGUARDANDO_GESTOR",
       criadaEm: timestamp,
       criado_por_id: data.criado_por_id,
-      msg_interna: data.mensagem_interna || '',
-      msg_publica: data.mensagem_publica || '',
-      timestamp: timestamp
+      msg_interna: data.mensagem_interna || "",
+      msg_publica: data.mensagem_publica || "",
+      timestamp: timestamp,
     };
 
     batch.set(pendencyRef, pendencyData);
@@ -247,8 +273,8 @@ export async function abrirPendenciaCascata(data: {
     if (data.processo_id) {
       const processRef = doc(db, PROCESSES_COLLECTION, data.processo_id);
       batch.update(processRef, {
-        status_atual: 'Aguardando Documentação',
-        status_info_extra: `PENDÊNCIA ATIVA: ${data.descricao}`
+        status_atual: "Aguardando Documentação",
+        status_info_extra: `PENDÊNCIA ATIVA: ${data.descricao}`,
       });
     }
 
@@ -257,11 +283,12 @@ export async function abrirPendenciaCascata(data: {
     batch.set(logRef, {
       pendencia_id: pendencyRef.id,
       origem_usuario_id: data.criado_por_id,
-      destino_papel: 'VENDEDOR',
-      mensagem_interna: data.mensagem_interna || `PENDÊNCIA ABERTA: ${data.descricao}`,
-      mensagem_publica: data.mensagem_publica || '',
+      destino_papel: "VENDEDOR",
+      mensagem_interna:
+        data.mensagem_interna || `PENDÊNCIA ABERTA: ${data.descricao}`,
+      mensagem_publica: data.mensagem_publica || "",
       data_log: timestamp,
-      tipo_bloco: 'AZUL'
+      tipo_bloco: "AZUL",
     });
 
     await batch.commit();
@@ -272,7 +299,7 @@ export async function abrirPendenciaCascata(data: {
         await notificarNovaPendencia(processoData, data.descricao);
       }
     } catch (e) {
-      console.warn('Erro ao notificar pendência:', e);
+      console.warn("Erro ao notificar pendência:", e);
     }
 
     return pendencyRef.id;
@@ -282,22 +309,30 @@ export async function abrirPendenciaCascata(data: {
   }
 }
 
-export async function criarPendencia(data: Omit<PendingIssue, 'id' | 'criadaEm'>, origemNome: string) {
+export async function criarPendencia(
+  data: Omit<PendingIssue, "id" | "criadaEm">,
+  origemNome: string,
+) {
   try {
-    if (!data.processo_id) throw new Error('ID do Processo é obrigatório para criar pendência.');
-    
+    if (!data.processo_id)
+      throw new Error("ID do Processo é obrigatório para criar pendência.");
+
     const batch = writeBatch(db);
     const pendencyRef = doc(collection(db, PENDENCIES_COLLECTION));
     const timestamp = Timestamp.now();
 
-    const processSnap = await getDoc(doc(db, PROCESSES_COLLECTION, data.processo_id));
-    const visibilidade_uids = processSnap.exists() ? (processSnap.data().visibilidade_uids || [data.criado_por_id]) : [data.criado_por_id];
+    const processSnap = await getDoc(
+      doc(db, PROCESSES_COLLECTION, data.processo_id),
+    );
+    const visibilidade_uids = processSnap.exists()
+      ? processSnap.data().visibilidade_uids || [data.criado_por_id]
+      : [data.criado_por_id];
 
     batch.set(pendencyRef, {
       ...data,
       visibilidade_uids,
       criadaEm: timestamp,
-      timestamp: timestamp
+      timestamp: timestamp,
     });
 
     const logRef = doc(collection(db, AUDIT_LOGS_COLLECTION));
@@ -305,14 +340,14 @@ export async function criarPendencia(data: Omit<PendingIssue, 'id' | 'criadaEm'>
       pendencia_id: pendencyRef.id,
       origem_usuario_id: data.criado_por_id,
       origem_nome: origemNome,
-      destino_papel: 'GESTOR',
-      mensagem_interna: data.msg_interna || '',
-      mensagem_publica: data.msg_publica || '',
-      observacao_adm: data.observacao_adm || '',
-      anexo_url: data.anexo_url || '',
+      destino_papel: "GESTOR",
+      mensagem_interna: data.msg_interna || "",
+      mensagem_publica: data.msg_publica || "",
+      observacao_adm: data.observacao_adm || "",
+      anexo_url: data.anexo_url || "",
       data_log: timestamp,
       visibilidade_uids,
-      tipo_bloco: 'AZUL'
+      tipo_bloco: "AZUL",
     };
     batch.set(logRef, logData);
 
@@ -324,7 +359,7 @@ export async function criarPendencia(data: Omit<PendingIssue, 'id' | 'criadaEm'>
         await notificarNovaPendencia(processSnap.data(), data.descricao);
       }
     } catch (e) {
-      console.warn('Erro ao notificar pendência:', e);
+      console.warn("Erro ao notificar pendência:", e);
     }
 
     return pendencyRef.id;
@@ -338,14 +373,14 @@ export async function criarPendencia(data: Omit<PendingIssue, 'id' | 'criadaEm'>
  * Atualiza o status de uma pendência e registra log (AMARELO ou VERDE)
  */
 export async function atualizarStatusPendencia(
-  pendenciaId: string, 
-  novoStatus: PendingIssue['status_pendencia'],
+  pendenciaId: string,
+  novoStatus: PendingIssue["status_pendencia"],
   usuarioId: string,
   userRole: string,
   origemNome: string,
   mensagem?: string,
   anexoUrl?: string,
-  mensagemInterna?: string
+  mensagemInterna?: string,
 ) {
   try {
     const batch = writeBatch(db);
@@ -359,25 +394,31 @@ export async function atualizarStatusPendencia(
     batch.update(pendencyRef, updates);
 
     const pendencySnap = await getDoc(pendencyRef);
-    const visibilidade_uids = pendencySnap.exists() ? (pendencySnap.data().visibilidade_uids || [usuarioId]) : [usuarioId];
+    const visibilidade_uids = pendencySnap.exists()
+      ? pendencySnap.data().visibilidade_uids || [usuarioId]
+      : [usuarioId];
 
     const logRef = doc(collection(db, AUDIT_LOGS_COLLECTION));
-    
-    let tipoBloco: 'AZUL' | 'AMARELO' | 'VERDE' = 'AMARELO';
-    let destino: PendencyAuditLog['destino_papel'] = 'GESTOR';
 
-    if (novoStatus === 'RESOLVIDO') {
-      tipoBloco = 'VERDE';
-      destino = 'CLIENTE';
-    } else if (userRole === 'CLIENTE' || userRole === 'VENDEDOR') {
-      tipoBloco = 'VERDE';
-      destino = 'GESTOR';
-    } else if (userRole === 'ADM_ANALISTA') {
-      tipoBloco = 'AZUL';
-      destino = 'GESTOR';
-    } else if (userRole === 'GESTOR' || userRole === 'ADM_GERENTE' || userRole === 'ADM_MASTER') {
-      tipoBloco = 'AMARELO';
-      destino = 'ADM_ANALISTA';
+    let tipoBloco: "AZUL" | "AMARELO" | "VERDE" = "AMARELO";
+    let destino: PendencyAuditLog["destino_papel"] = "GESTOR";
+
+    if (novoStatus === "RESOLVIDO") {
+      tipoBloco = "VERDE";
+      destino = "CLIENTE";
+    } else if (userRole === "CLIENTE" || userRole === "VENDEDOR") {
+      tipoBloco = "VERDE";
+      destino = "GESTOR";
+    } else if (userRole === "ADM_ANALISTA") {
+      tipoBloco = "AZUL";
+      destino = "GESTOR";
+    } else if (
+      userRole === "GESTOR" ||
+      userRole === "ADM_GERENTE" ||
+      userRole === "ADM_MASTER"
+    ) {
+      tipoBloco = "AMARELO";
+      destino = "ADM_ANALISTA";
     }
 
     const logData: any = {
@@ -385,12 +426,12 @@ export async function atualizarStatusPendencia(
       origem_usuario_id: usuarioId,
       origem_nome: origemNome,
       destino_papel: destino,
-      mensagem_publica: mensagem || '',
-      mensagem_interna: mensagemInterna || '',
-      anexo_url: anexoUrl || '',
+      mensagem_publica: mensagem || "",
+      mensagem_interna: mensagemInterna || "",
+      anexo_url: anexoUrl || "",
       data_log: timestamp,
       visibilidade_uids,
-      tipo_bloco: tipoBloco
+      tipo_bloco: tipoBloco,
     };
     batch.set(logRef, logData);
 
@@ -404,29 +445,36 @@ export async function atualizarStatusPendencia(
 /**
  * ADM Força a resolução da pendência
  */
-export async function forcarResolucaoPendencia(pendenciaId: string, usuarioId: string, mensagemResolucao?: string) {
+export async function forcarResolucaoPendencia(
+  pendenciaId: string,
+  usuarioId: string,
+  mensagemResolucao?: string,
+) {
   try {
     const batch = writeBatch(db);
     const pendencyRef = doc(db, PENDENCIES_COLLECTION, pendenciaId);
     const timestamp = Timestamp.now();
 
-    batch.update(pendencyRef, { 
-      status_pendencia: 'RESOLVIDO',
-      msg_interna: mensagemResolucao || 'RESOLUÇÃO FORÇADA PELO ADMINISTRADOR'
+    batch.update(pendencyRef, {
+      status_pendencia: "RESOLVIDO",
+      msg_interna: mensagemResolucao || "RESOLUÇÃO FORÇADA PELO ADMINISTRADOR",
     });
 
     const pendencySnap = await getDoc(pendencyRef);
-    const visibilidade_uids = pendencySnap.exists() ? (pendencySnap.data().visibilidade_uids || [usuarioId]) : [usuarioId];
+    const visibilidade_uids = pendencySnap.exists()
+      ? pendencySnap.data().visibilidade_uids || [usuarioId]
+      : [usuarioId];
 
     const logRef = doc(collection(db, AUDIT_LOGS_COLLECTION));
     const logData: any = {
       pendencia_id: pendenciaId,
       origem_usuario_id: usuarioId,
-      destino_papel: 'GESTOR',
-      mensagem_interna: mensagemResolucao || 'RESOLUÇÃO FORÇADA PELO ADMINISTRADOR',
+      destino_papel: "GESTOR",
+      mensagem_interna:
+        mensagemResolucao || "RESOLUÇÃO FORÇADA PELO ADMINISTRADOR",
       data_log: timestamp,
       visibilidade_uids,
-      tipo_bloco: 'AMARELO'
+      tipo_bloco: "AMARELO",
     };
     batch.set(logRef, logData);
 
@@ -440,12 +488,15 @@ export async function forcarResolucaoPendencia(pendenciaId: string, usuarioId: s
 /**
  * Troca o vendedor responsável pelo processo
  */
-export const trocarResponsavelProcesso = async (processoId: string, novoVendedorId: string) => {
+export const trocarResponsavelProcesso = async (
+  processoId: string,
+  novoVendedorId: string,
+) => {
   try {
     const docRef = doc(db, PROCESSES_COLLECTION, processoId);
     await updateDoc(docRef, {
       vendedor_id: novoVendedorId,
-      data_transferencia: serverTimestamp()
+      data_transferencia: serverTimestamp(),
     });
   } catch (error) {
     handleFirestoreError(error, OperationType.UPDATE, PROCESSES_COLLECTION);
@@ -456,12 +507,16 @@ export const trocarResponsavelProcesso = async (processoId: string, novoVendedor
 /**
  * Edita valores do processo (ADM Gerente)
  */
-export async function editarValoresProcesso(processoId: string, novoPrecoVenda: number, novoPrecoBase: number) {
+export async function editarValoresProcesso(
+  processoId: string,
+  novoPrecoVenda: number,
+  novoPrecoBase: number,
+) {
   try {
     await updateDoc(doc(db, PROCESSES_COLLECTION, processoId), {
       preco_venda: novoPrecoVenda,
       preco_base: novoPrecoBase,
-      margem_lucro: novoPrecoVenda - novoPrecoBase
+      margem_lucro: novoPrecoVenda - novoPrecoBase,
     });
   } catch (error) {
     handleFirestoreError(error, OperationType.UPDATE, PROCESSES_COLLECTION);
@@ -474,7 +529,9 @@ export async function editarValoresProcesso(processoId: string, novoPrecoVenda: 
  */
 export async function atualizarNotasADM(processoId: string, notas: string) {
   try {
-    await updateDoc(doc(db, PROCESSES_COLLECTION, processoId), { adm_notes: notas });
+    await updateDoc(doc(db, PROCESSES_COLLECTION, processoId), {
+      adm_notes: notas,
+    });
   } catch (error) {
     handleFirestoreError(error, OperationType.UPDATE, PROCESSES_COLLECTION);
     throw error;
@@ -487,9 +544,16 @@ export async function atualizarNotasADM(processoId: string, notas: string) {
 export async function listarPendenciasPorProcesso(processoId: string) {
   if (!processoId) return [];
   try {
-    const q = query(collection(db, PENDENCIES_COLLECTION), where('processo_id', '==', processoId), orderBy('timestamp', 'desc'));
+    const q = query(
+      collection(db, PENDENCIES_COLLECTION),
+      where("processo_id", "==", processoId),
+      orderBy("timestamp", "desc"),
+    );
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as PendingIssue) }));
+    return snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...(doc.data() as PendingIssue),
+    }));
   } catch (error) {
     handleFirestoreError(error, OperationType.LIST, PENDENCIES_COLLECTION);
     throw error;
@@ -501,7 +565,11 @@ export async function listarPendenciasPorProcesso(processoId: string) {
  */
 export async function gerarProtocolo(): Promise<string> {
   const ano = new Date().getFullYear();
-  const q = query(collection(db, SALES_COLLECTION), orderBy('timestamp', 'desc'), where('timestamp', '>=', Timestamp.fromDate(new Date(ano, 0, 1))));
+  const q = query(
+    collection(db, SALES_COLLECTION),
+    orderBy("timestamp", "desc"),
+    where("timestamp", ">=", Timestamp.fromDate(new Date(ano, 0, 1))),
+  );
   const snapshot = await getDocs(q);
   const count = snapshot.size + 1001;
   return `#GSA-${ano}-${count}`;
@@ -513,23 +581,23 @@ export async function gerarProtocolo(): Promise<string> {
  * Cria um novo processo originado de uma indicação concluída
  */
 export async function criarProcessoDeIndicacao(
-  clienteOrigemId: string, 
-  nomeIndicado: string, 
-  telefoneIndicado: string, 
+  clienteOrigemId: string,
+  nomeIndicado: string,
+  telefoneIndicado: string,
   vendedorId: string,
-  referralId?: string
+  referralId?: string,
 ) {
   try {
     const batch = writeBatch(db);
     const protocolo = await gerarProtocolo();
-    
+
     // Buscar visibilidade_uids baseada no cliente de origem (quem indicou)
     let visibilidade_uids = [vendedorId];
-    let id_superior = '';
-    if (vendedorId !== 'ADM') {
-      const vendSnap = await getDoc(doc(db, 'usuarios', vendedorId));
+    let id_superior = "";
+    if (vendedorId !== "ADM") {
+      const vendSnap = await getDoc(doc(db, "usuarios", vendedorId));
       if (vendSnap.exists()) {
-        id_superior = vendSnap.data().id_superior || '';
+        id_superior = vendSnap.data().id_superior || "";
         if (id_superior) visibilidade_uids.push(id_superior);
       }
     }
@@ -542,11 +610,11 @@ export async function criarProcessoDeIndicacao(
       id_superior,
       valor_total: 0,
       margem_total: 0,
-      metodo_pagamento: 'PIX',
-      status_pagamento: 'Pendente',
+      metodo_pagamento: "PIX",
+      status_pagamento: "Pendente",
       visibilidade_uids,
       referral_id: referralId || null,
-      timestamp: Timestamp.now()
+      timestamp: Timestamp.now(),
     };
 
     batch.set(saleRef, saleData);
@@ -558,22 +626,23 @@ export async function criarProcessoDeIndicacao(
       cliente_id: clienteOrigemId,
       vendedor_id: vendedorId,
       id_superior,
-      servico_id: 'REFERRAL_PROCESS',
+      servico_id: "REFERRAL_PROCESS",
       servico_nome: `Processo de Indicação: ${nomeIndicado}`,
-      status_atual: 'Pendente',
+      status_atual: "Pendente",
       data_venda: Timestamp.now(),
-      status_financeiro: 'PENDENTE',
-      referral_id: referralId || null
+      status_financeiro: "PENDENTE",
+      referral_id: referralId || null,
     };
 
     // Sincronizar dados de segurança
     try {
-      const { getClienteData } = await import('./leadService');
+      const { getClienteData } = await import("./leadService");
       const cliente = await getClienteData(clienteOrigemId);
       if (cliente) {
-        processData.cliente_cpf_cnpj = cliente.documento || (cliente as any).cpf || '';
-        processData.data_nascimento = cliente.data_nascimento || '';
-        processData.cliente_nome = cliente.nome || '';
+        processData.cliente_cpf_cnpj =
+          cliente.documento || (cliente as any).cpf || "";
+        processData.data_nascimento = cliente.data_nascimento || "";
+        processData.cliente_nome = cliente.nome || "";
       }
     } catch (e) {
       console.warn("Erro ao sincronizar dados na indicação:", e);
@@ -584,13 +653,13 @@ export async function criarProcessoDeIndicacao(
     await batch.commit();
 
     // Notificar o cliente que indicou que um novo processo foi aberto
-    const { sendNotification } = await import('./notificationService');
+    const { sendNotification } = await import("./notificationService");
     if (clienteOrigemId.length > 15) {
       await sendNotification({
         usuario_id: clienteOrigemId,
-        titulo: '🚀 Novo Processo Iniciado!',
+        titulo: "🚀 Novo Processo Iniciado!",
         mensagem: `Sua indicação para ${nomeIndicado} foi concluída e um novo processo (#${protocolo}) foi gerado. Acompanhe o progresso!`,
-        tipo: 'PROCESS'
+        tipo: "PROCESS",
       });
     }
 
@@ -605,45 +674,47 @@ export async function criarProcessoDeIndicacao(
  * Atualiza o status de um processo com auditoria e trava de conclusão
  */
 export async function atualizarStatusProcesso(
-  processoId: string, 
-  novoStatus: OrderProcess['status_atual'], 
+  processoId: string,
+  novoStatus: OrderProcess["status_atual"],
   usuarioId: string,
   nomeAnalista: string, // Novo parâmetro
   statusAnterior: string,
   urlArquivo?: string,
   observacoes?: string,
-  statusInfoExtra?: string
+  statusInfoExtra?: string,
 ) {
   try {
     const batch = writeBatch(db);
     const processRef = doc(db, PROCESSES_COLLECTION, processoId);
-    
+
     const updates: any = {
       status_atual: novoStatus,
-      observacoes_internas: observacoes || '',
+      observacoes_internas: observacoes || "",
       analista_nome: nomeAnalista, // Salva o nome do analista
       analista_id: usuarioId, // Salva o ID do analista logado
-      data_status_atual: serverTimestamp() // Salva o momento da mudança
+      data_status_atual: serverTimestamp(), // Salva o momento da mudança
     };
 
     if (statusInfoExtra !== undefined) {
       updates.status_info_extra = statusInfoExtra;
     }
 
-    if (novoStatus === 'Concluído') {
+    if (novoStatus === "Concluído") {
       updates.data_conclusao = serverTimestamp();
       updates.url_nada_consta = urlArquivo;
       updates.anexo_conclusao_url = urlArquivo;
     }
 
-    if (statusAnterior === 'Pendente' && novoStatus !== 'Pendente') {
+    if (statusAnterior === "Pendente" && novoStatus !== "Pendente") {
       updates.data_inicial = serverTimestamp();
     }
 
     batch.update(processRef, updates);
 
     const processSnap = await getDoc(processRef);
-    const visibilidade_uids = processSnap.exists() ? (processSnap.data().visibilidade_uids || [usuarioId]) : [usuarioId];
+    const visibilidade_uids = processSnap.exists()
+      ? processSnap.data().visibilidade_uids || [usuarioId]
+      : [usuarioId];
 
     const historyRef = doc(collection(db, HISTORY_COLLECTION));
     const historyData = {
@@ -653,7 +724,7 @@ export async function atualizarStatusProcesso(
       usuario_id: usuarioId,
       timestamp: serverTimestamp(),
       visibilidade_uids,
-      status_info_extra: statusInfoExtra || ''
+      status_info_extra: statusInfoExtra || "",
     };
     batch.set(historyRef, historyData);
 
@@ -666,21 +737,24 @@ export async function atualizarStatusProcesso(
         await notificarStatusProcesso(processData, novoStatus);
       }
     } catch (e) {
-      console.warn('Erro ao notificar status:', e);
+      console.warn("Erro ao notificar status:", e);
     }
 
     // Creditar pontos para o Cliente se o processo foi concluído
-    if (novoStatus === 'Concluído') {
+    if (novoStatus === "Concluído") {
       try {
         const processSnap = await getDoc(processRef);
         if (processSnap.exists()) {
           const processData = processSnap.data() as OrderProcess;
-          
+
           // Entrega o cashback configurado no serviço
-          await entregarCashbackCliente(processData.servico_id, processData.cliente_id);
+          await entregarCashbackCliente(
+            processData.servico_id,
+            processData.cliente_id,
+          );
         }
       } catch (e) {
-        console.warn('Erro ao creditar pontos de conclusão:', e);
+        console.warn("Erro ao creditar pontos de conclusão:", e);
       }
     }
   } catch (error) {
@@ -695,25 +769,34 @@ export async function atualizarStatusProcesso(
 export async function excluirProcesso(processoId: string) {
   try {
     const batch = writeBatch(db);
-    
+
     // 1. Delete the process document
     batch.delete(doc(db, PROCESSES_COLLECTION, processoId));
-    
+
     // 2. Delete related history
-    const historyQuery = query(collection(db, HISTORY_COLLECTION), where('processo_id', '==', processoId));
+    const historyQuery = query(
+      collection(db, HISTORY_COLLECTION),
+      where("processo_id", "==", processoId),
+    );
     const historySnapshot = await getDocs(historyQuery);
-    historySnapshot.docs.forEach(d => batch.delete(d.ref));
-    
+    historySnapshot.docs.forEach((d) => batch.delete(d.ref));
+
     // 3. Delete related pendencies
-    const pendenciesQuery = query(collection(db, PENDENCIES_COLLECTION), where('processo_id', '==', processoId));
+    const pendenciesQuery = query(
+      collection(db, PENDENCIES_COLLECTION),
+      where("processo_id", "==", processoId),
+    );
     const pendenciesSnapshot = await getDocs(pendenciesQuery);
-    pendenciesSnapshot.docs.forEach(d => batch.delete(d.ref));
-    
+    pendenciesSnapshot.docs.forEach((d) => batch.delete(d.ref));
+
     // 4. Delete related audit logs
     for (const pendencyDoc of pendenciesSnapshot.docs) {
-      const logsQuery = query(collection(db, AUDIT_LOGS_COLLECTION), where('pendencia_id', '==', pendencyDoc.id));
+      const logsQuery = query(
+        collection(db, AUDIT_LOGS_COLLECTION),
+        where("pendencia_id", "==", pendencyDoc.id),
+      );
       const logsSnapshot = await getDocs(logsQuery);
-      logsSnapshot.docs.forEach(d => batch.delete(d.ref));
+      logsSnapshot.docs.forEach((d) => batch.delete(d.ref));
     }
 
     await batch.commit();
@@ -726,9 +809,15 @@ export async function excluirProcesso(processoId: string) {
 export async function listarProcessosPorVenda(vendaId: string) {
   if (!vendaId) return [];
   try {
-    const q = query(collection(db, PROCESSES_COLLECTION), where('venda_id', '==', vendaId));
+    const q = query(
+      collection(db, PROCESSES_COLLECTION),
+      where("venda_id", "==", vendaId),
+    );
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as OrderProcess) }));
+    return snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...(doc.data() as OrderProcess),
+    }));
   } catch (error) {
     handleFirestoreError(error, OperationType.LIST, PROCESSES_COLLECTION);
     throw error;
@@ -739,26 +828,75 @@ export async function criarProcessoDireto(data: Partial<OrderProcess>) {
   try {
     const processData: any = {
       ...data,
-      status_atual: 'Pendente',
-      data_venda: serverTimestamp()
+      status_atual: "Pendente",
+      data_venda: serverTimestamp(),
     };
 
     // Sincronizar dados de segurança do cliente para permitir consulta pública
-    if (data.cliente_id) {
+    if (data.cliente_id && data.cliente_id !== "STANDALONE") {
       try {
-        const { getClienteData } = await import('./leadService');
+        const { getClienteData } = await import("./leadService");
         const cliente = await getClienteData(data.cliente_id);
         if (cliente) {
-          if (!processData.cliente_cpf_cnpj && cliente.documento) processData.cliente_cpf_cnpj = cliente.documento;
-          if (!processData.data_nascimento && cliente.data_nascimento) processData.data_nascimento = cliente.data_nascimento;
-          if (!processData.cliente_nome && cliente.nome) processData.cliente_nome = cliente.nome;
+          if (!processData.cliente_cpf_cnpj && cliente.documento)
+            processData.cliente_cpf_cnpj = cliente.documento;
+          if (!processData.data_nascimento && cliente.data_nascimento)
+            processData.data_nascimento = cliente.data_nascimento;
+          if (!processData.cliente_nome && cliente.nome)
+            processData.cliente_nome = cliente.nome;
         }
       } catch (e) {
-        console.warn("Erro ao sincronizar dados do cliente na criação do processo:", e);
+        console.warn(
+          "Erro ao sincronizar dados do cliente na criação do processo:",
+          e,
+        );
+      }
+    } else if (processData.cliente_cpf_cnpj) {
+      // Auto-link logic if STANDALONE but has CPF
+      try {
+        const cleanDoc = processData.cliente_cpf_cnpj.replace(/\D/g, "");
+        const cpfsToSearch = [
+          cleanDoc,
+          cleanDoc.length === 11
+            ? cleanDoc.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4")
+            : cleanDoc,
+          processData.cliente_cpf_cnpj,
+        ];
+
+        let foundUid = null;
+        for (const c of cpfsToSearch) {
+          if (!c) continue;
+          const q = query(collection(db, "usuarios"), where("cpf", "==", c));
+          const snapUser = await getDocs(q);
+          if (!snapUser.empty) {
+            foundUid = snapUser.docs[0].id;
+            break;
+          }
+        }
+
+        if (foundUid) {
+          processData.cliente_id = foundUid;
+          if (processData.visibilidade_uids) {
+            processData.visibilidade_uids = [
+              ...processData.visibilidade_uids,
+              foundUid,
+            ];
+          } else {
+            processData.visibilidade_uids = [foundUid];
+          }
+        }
+      } catch (e) {
+        console.warn(
+          "Erro durante o auto-link de CPF no criarProcessoDireto:",
+          e,
+        );
       }
     }
 
-    const processRef = await addDoc(collection(db, PROCESSES_COLLECTION), cleanData(processData));
+    const processRef = await addDoc(
+      collection(db, PROCESSES_COLLECTION),
+      cleanData(processData),
+    );
     return processRef.id;
   } catch (error) {
     handleFirestoreError(error, OperationType.CREATE, PROCESSES_COLLECTION);
@@ -771,52 +909,67 @@ export async function listarTodosProcessos(profile?: any) {
     let q: any = collection(db, PROCESSES_COLLECTION);
 
     if (profile) {
-      if (profile.nivel === 'GESTOR') {
+      if (profile.nivel === "GESTOR") {
         q = query(
           collection(db, PROCESSES_COLLECTION),
-          or(where('id_superior', '==', profile.uid), where('vendedor_id', '==', profile.uid))
+          or(
+            where("id_superior", "==", profile.uid),
+            where("vendedor_id", "==", profile.uid),
+          ),
         );
-      } else if (profile.nivel === 'VENDEDOR') {
+      } else if (profile.nivel === "VENDEDOR") {
         q = query(
           collection(db, PROCESSES_COLLECTION),
-          where('vendedor_id', '==', profile.uid)
+          where("vendedor_id", "==", profile.uid),
         );
-      } else if (['ADM_MASTER', 'ADM_GERENTE', 'ADM_ANALISTA'].includes(profile.nivel)) {
-        q = query(collection(db, PROCESSES_COLLECTION), orderBy('data_venda', 'desc'));
+      } else if (
+        ["ADM_MASTER", "ADM_GERENTE", "ADM_ANALISTA"].includes(profile.nivel)
+      ) {
+        q = query(
+          collection(db, PROCESSES_COLLECTION),
+          orderBy("data_venda", "desc"),
+        );
       }
     } else {
-      q = query(collection(db, PROCESSES_COLLECTION), orderBy('data_venda', 'desc'));
+      q = query(
+        collection(db, PROCESSES_COLLECTION),
+        orderBy("data_venda", "desc"),
+      );
     }
 
     const snapshot = await getDocs(q);
-    const processos = snapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as OrderProcess) }));
-    
+    const processos = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...(doc.data() as OrderProcess),
+    }));
+
     // Sort array when orderBy was not possible in query
-    if (profile && ['GESTOR', 'VENDEDOR'].includes(profile.nivel)) {
-       processos.sort((a,b) => {
-          const tA = a.data_venda?.toMillis ? a.data_venda.toMillis() : 0;
-          const tB = b.data_venda?.toMillis ? b.data_venda.toMillis() : 0;
-          return tB - tA;
-       });
+    if (profile && ["GESTOR", "VENDEDOR"].includes(profile.nivel)) {
+      processos.sort((a, b) => {
+        const tA = a.data_venda?.toMillis ? a.data_venda.toMillis() : 0;
+        const tB = b.data_venda?.toMillis ? b.data_venda.toMillis() : 0;
+        return tB - tA;
+      });
     }
-    
+
     // Dynamic Fallback para preencher pendencias se tiver vazio
-    const { PROCESS_REQUIREMENTS } = await import('../constants/processRequirements');
+    const { PROCESS_REQUIREMENTS } =
+      await import("../constants/processRequirements");
     for (const p of processos) {
-        if (!p.pendencias_iniciais || p.pendencias_iniciais.length === 0) {
-            const fallback = PROCESS_REQUIREMENTS[p.servico_id];
-            if (fallback && fallback.documentos.length > 0) {
-                p.pendencias_iniciais = fallback.documentos;
-            }
+      if (!p.pendencias_iniciais || p.pendencias_iniciais.length === 0) {
+        const fallback = PROCESS_REQUIREMENTS[p.servico_id];
+        if (fallback && fallback.documentos.length > 0) {
+          p.pendencias_iniciais = fallback.documentos;
         }
-        if (!p.dados_faltantes || p.dados_faltantes.length === 0) {
-            const fallback = PROCESS_REQUIREMENTS[p.servico_id];
-            if (fallback && fallback.campos.length > 0) {
-                p.dados_faltantes = fallback.campos;
-            }
+      }
+      if (!p.dados_faltantes || p.dados_faltantes.length === 0) {
+        const fallback = PROCESS_REQUIREMENTS[p.servico_id];
+        if (fallback && fallback.campos.length > 0) {
+          p.dados_faltantes = fallback.campos;
         }
+      }
     }
-    
+
     return processos;
   } catch (error) {
     handleFirestoreError(error, OperationType.LIST, PROCESSES_COLLECTION);
@@ -824,19 +977,72 @@ export async function listarTodosProcessos(profile?: any) {
   }
 }
 
-export async function listarProcessosCliente(clienteId: string) {
-  if (!clienteId) return [];
+export async function listarProcessosCliente(clienteId: string, cpf?: string) {
+  if (!clienteId && !cpf) return [];
   try {
-    const q = query(
-      collection(db, PROCESSES_COLLECTION), 
-      where('cliente_id', '==', clienteId)
-    );
-    const snapshot = await getDocs(q);
-    const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as OrderProcess));
-    items.sort((a,b) => {
-        const tA = a.data_venda?.toMillis ? a.data_venda.toMillis() : 0;
-        const tB = b.data_venda?.toMillis ? b.data_venda.toMillis() : 0;
-        return tB - tA;
+    const itemsMap = new Map<string, OrderProcess>();
+
+    if (clienteId) {
+      const qId = query(
+        collection(db, PROCESSES_COLLECTION),
+        where("cliente_id", "==", clienteId),
+      );
+      const snapshotId = await getDocs(qId);
+      snapshotId.docs.forEach((doc) =>
+        itemsMap.set(doc.id, { id: doc.id, ...doc.data() } as OrderProcess),
+      );
+    }
+
+    if (cpf) {
+      const cleanCpf = cpf.replace(/\D/g, "");
+      if (cleanCpf) {
+        const qCpf = query(
+          collection(db, PROCESSES_COLLECTION),
+          where("cliente_cpf_cnpj", "==", cleanCpf),
+        );
+        const snapshotCpf = await getDocs(qCpf);
+
+        for (const docSnap of snapshotCpf.docs) {
+          const processData = {
+            id: docSnap.id,
+            ...docSnap.data(),
+          } as OrderProcess;
+
+          // Sincronizar o clienteId se ele estiver diferente
+          if (clienteId && processData.cliente_id !== clienteId) {
+            const updates: any = { cliente_id: clienteId };
+
+            // Adicionar à visibilidade caso não esteja
+            if (
+              processData.visibilidade_uids &&
+              !processData.visibilidade_uids.includes(clienteId)
+            ) {
+              updates.visibilidade_uids = [
+                ...processData.visibilidade_uids,
+                clienteId,
+              ];
+            } else if (!processData.visibilidade_uids) {
+              updates.visibilidade_uids = [clienteId];
+            }
+
+            await updateDoc(doc(db, PROCESSES_COLLECTION, docSnap.id), updates);
+            processData.cliente_id = clienteId;
+            if (updates.visibilidade_uids) {
+              processData.visibilidade_uids = updates.visibilidade_uids;
+            }
+          }
+
+          itemsMap.set(docSnap.id, processData);
+        }
+      }
+    }
+
+    const items = Array.from(itemsMap.values());
+
+    items.sort((a, b) => {
+      const tA = a.data_venda?.toMillis ? a.data_venda.toMillis() : 0;
+      const tB = b.data_venda?.toMillis ? b.data_venda.toMillis() : 0;
+      return tB - tA;
     });
     return items;
   } catch (error) {
@@ -848,7 +1054,10 @@ export async function listarProcessosCliente(clienteId: string) {
 export async function listarTodasPendencias() {
   try {
     const snapshot = await getDocs(collection(db, PENDENCIES_COLLECTION));
-    return snapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as PendingIssue) }));
+    return snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...(doc.data() as PendingIssue),
+    }));
   } catch (error) {
     handleFirestoreError(error, OperationType.LIST, PENDENCIES_COLLECTION);
     throw error;
@@ -858,21 +1067,28 @@ export async function listarTodasPendencias() {
 /**
  * Registra um log de auditoria manual para um processo
  */
-export async function registrarLogAuditoria(processoId: string, mensagem: string, usuarioId: string, origemNome: string) {
+export async function registrarLogAuditoria(
+  processoId: string,
+  mensagem: string,
+  usuarioId: string,
+  origemNome: string,
+) {
   try {
     const processSnap = await getDoc(doc(db, PROCESSES_COLLECTION, processoId));
-    const visibilidade_uids = processSnap.exists() ? (processSnap.data().visibilidade_uids || [usuarioId]) : [usuarioId];
-    
+    const visibilidade_uids = processSnap.exists()
+      ? processSnap.data().visibilidade_uids || [usuarioId]
+      : [usuarioId];
+
     const logRef = doc(collection(db, AUDIT_LOGS_COLLECTION));
     const logData: any = {
-      pendencia_id: 'AUDIT_MANUAL',
+      pendencia_id: "AUDIT_MANUAL",
       origem_usuario_id: usuarioId,
       origem_nome: origemNome,
-      destino_papel: 'GESTOR',
+      destino_papel: "GESTOR",
       mensagem_interna: mensagem,
       data_log: Timestamp.now(),
       visibilidade_uids,
-      tipo_bloco: 'VERDE'
+      tipo_bloco: "VERDE",
     };
     await addDoc(collection(db, AUDIT_LOGS_COLLECTION), logData);
   } catch (error) {
@@ -881,12 +1097,16 @@ export async function registrarLogAuditoria(processoId: string, mensagem: string
   }
 }
 
-export async function processarDadosFichaTecnica(processoId: string, clienteId: string, dados: any) {
+export async function processarDadosFichaTecnica(
+  processoId: string,
+  clienteId: string,
+  dados: any,
+) {
   try {
     // 1. Atualizar dados do cliente (Pode estar em 'usuarios' ou 'clients')
-    const userRef = doc(db, 'usuarios', clienteId);
-    const clientRef = doc(db, 'clients', clienteId);
-    
+    const userRef = doc(db, "usuarios", clienteId);
+    const clientRef = doc(db, "clients", clienteId);
+
     // Tenta atualizar em usuários (se for um cliente logado)
     try {
       const userSnap = await getDoc(userRef);
@@ -910,32 +1130,36 @@ export async function processarDadosFichaTecnica(processoId: string, clienteId: 
     // 2. Registrar log de auditoria
     await registrarLogAuditoria(
       processoId,
-      'Ficha técnica atualizada.',
+      "Ficha técnica atualizada.",
       clienteId,
-      'Sistema'
+      "Sistema",
     );
 
     // 3. Atualizar o processo em si
     const processRef = doc(db, PROCESSES_COLLECTION, processoId);
     const processSnap = await getDoc(processRef);
-    
+
     if (processSnap.exists()) {
       const processData = processSnap.data();
       const updates: any = { ...dados };
-      
+
       // Mapear campos específicos para os nomes usados no processo
       if (dados.cpf) updates.cliente_cpf_cnpj = dados.cpf;
-      if (dados.documento && !updates.cliente_cpf_cnpj) updates.cliente_cpf_cnpj = dados.documento;
-      if (dados.data_nascimento) updates.data_nascimento = dados.data_nascimento;
+      if (dados.documento && !updates.cliente_cpf_cnpj)
+        updates.cliente_cpf_cnpj = dados.documento;
+      if (dados.data_nascimento)
+        updates.data_nascimento = dados.data_nascimento;
 
-      // Sincronizar dados do cliente se estiverem faltando no processo 
+      // Sincronizar dados do cliente se estiverem faltando no processo
       // (ajuda em vendas administrativas onde o processo nasce incompleto)
       try {
-        const { getClienteData } = await import('./leadService');
+        const { getClienteData } = await import("./leadService");
         const fullCliente = await getClienteData(clienteId);
         if (fullCliente) {
-          if (!updates.cliente_cpf_cnpj && fullCliente.documento) updates.cliente_cpf_cnpj = fullCliente.documento;
-          if (!updates.data_nascimento && fullCliente.data_nascimento) updates.data_nascimento = fullCliente.data_nascimento;
+          if (!updates.cliente_cpf_cnpj && fullCliente.documento)
+            updates.cliente_cpf_cnpj = fullCliente.documento;
+          if (!updates.data_nascimento && fullCliente.data_nascimento)
+            updates.data_nascimento = fullCliente.data_nascimento;
         }
       } catch (e) {
         console.warn("Erro ao sincronizar dados extras do cliente:", e);
@@ -943,8 +1167,8 @@ export async function processarDadosFichaTecnica(processoId: string, clienteId: 
 
       const docsEnviados = processData.documentos_enviados || [];
       const requisitosDocs = processData.pendencias_iniciais || [];
-      const novosDocs = Object.keys(dados).filter(key => 
-        requisitosDocs.includes(key) && !docsEnviados.includes(key)
+      const novosDocs = Object.keys(dados).filter(
+        (key) => requisitosDocs.includes(key) && !docsEnviados.includes(key),
       );
 
       if (novosDocs.length > 0) {
@@ -953,28 +1177,36 @@ export async function processarDadosFichaTecnica(processoId: string, clienteId: 
 
       // Atualizar dados_faltantes removendo o que foi preenchido
       if (processData.dados_faltantes) {
-        updates.dados_faltantes = processData.dados_faltantes.filter((f: string) => !dados[f]);
+        updates.dados_faltantes = processData.dados_faltantes.filter(
+          (f: string) => !dados[f],
+        );
       }
 
       // Se tudo estiver resolvido, atualizar status
       const totalDocsEnviados = updates.documentos_enviados || docsEnviados;
-      const todosDocsOk = requisitosDocs.every((req: string) => totalDocsEnviados.includes(req));
-      const todosCamposOk = (updates.dados_faltantes || processData.dados_faltantes || []).length === 0;
-      const trackingOk = !!(updates.cliente_cpf_cnpj || processData.cliente_cpf_cnpj) && 
-                         !!(updates.data_nascimento || processData.data_nascimento);
+      const todosDocsOk = requisitosDocs.every((req: string) =>
+        totalDocsEnviados.includes(req),
+      );
+      const todosCamposOk =
+        (updates.dados_faltantes || processData.dados_faltantes || [])
+          .length === 0;
+      const trackingOk =
+        !!(updates.cliente_cpf_cnpj || processData.cliente_cpf_cnpj) &&
+        !!(updates.data_nascimento || processData.data_nascimento);
 
       if (todosDocsOk && todosCamposOk && trackingOk) {
-        updates.status_atual = 'Em Análise';
-        updates.status_info_extra = 'DOCUMENTAÇÃO COMPLETA - AGUARDANDO ANÁLISE';
-      } else if (processData.status_atual !== 'Pendente') {
-        updates.status_atual = 'Pendente';
-        updates.status_info_extra = 'DOCUMENTAÇÃO PENDENTE';
+        updates.status_atual = "Em Análise";
+        updates.status_info_extra =
+          "DOCUMENTAÇÃO COMPLETA - AGUARDANDO ANÁLISE";
+      } else if (processData.status_atual !== "Pendente") {
+        updates.status_atual = "Pendente";
+        updates.status_info_extra = "DOCUMENTAÇÃO PENDENTE";
       }
 
       await updateDoc(processRef, updates);
     }
   } catch (error) {
-    handleFirestoreError(error, OperationType.UPDATE, 'order_processes');
+    handleFirestoreError(error, OperationType.UPDATE, "order_processes");
     throw error;
   }
 }

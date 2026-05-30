@@ -38,7 +38,7 @@ export const ClientDashboardView: React.FC = () => {
         const [w, t, p] = await Promise.all([
           getOrCreateWallet(profile.uid),
           listarHistorico(profile.uid),
-          listarProcessosCliente(profile.uid)
+          listarProcessosCliente(profile.uid, profile.cpf)
         ]);
         setWallet(w);
         setTransactions(t.slice(0, 5)); // Recent 5

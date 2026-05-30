@@ -3,6 +3,7 @@ import { useOutletContext } from 'react-router-dom';
 import { FinancialTransactions } from '../components/dashboard/FinancialTransactions';
 import { OpenInvoices } from '../components/dashboard/OpenInvoices';
 import { RecentSales } from '../components/dashboard/RecentSales';
+import { CollectionDashboard } from '../components/dashboard/CollectionDashboard';
 import { DollarSign, Clock, AlertTriangle, ReceiptText, TrendingUp, ArrowUpRight, Search, Activity } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -213,6 +214,7 @@ export function DashboardFinanceiro() {
         )}
 
         <div className="grid grid-cols-1 gap-8 sm:gap-6 mt-12">
+          <CollectionDashboard {...props} />
           <FinancialTransactions {...props} />
           <OpenInvoices {...props} />
           <RecentSales {...props} />
