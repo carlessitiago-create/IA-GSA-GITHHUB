@@ -530,13 +530,14 @@ export const OperationalView: React.FC = () => {
     setIsPendenciaModalOpen(true);
   };
 
-  const submitNovaPendencia = async (descricao: string) => {
+  const submitNovaPendencia = async (descricao: string, tipo?: string) => {
     if (!selectedPendenciaProcess) return;
     try {
       await abrirPendenciaCascata({
         vendaId: selectedPendenciaProcess.venda_id,
         processo_id: selectedPendenciaProcess.id,
         descricao,
+        tipo_pendencia: tipo,
         criado_por_id: auth.currentUser!.uid
       });
 

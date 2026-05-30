@@ -556,15 +556,46 @@ export const PublicPortal = ({ previewConfig }: { previewConfig?: PublicPortalCo
                       <p className="text-amber-700/80 text-xs font-bold uppercase tracking-widest leading-none mt-1">Ação Necessária</p>
                     </div>
                   </div>
+
+                  {(() => {
+                    const hasDocumental = pendenciasAtivas.some(p => p.tipo_pendencia === 'DOCUMENTAL' || p.tipo_pendencia === 'AMBAS');
+                    const hasFinanceira = pendenciasAtivas.some(p => p.tipo_pendencia === 'FINANCEIRA' || p.tipo_pendencia === 'AMBAS');
+                    let avisoTipo = '';
+                    if (hasDocumental && hasFinanceira) {
+                      avisoTipo = 'Você possui pendências DOCUMENTAIS e FINANCEIRAS.';
+                    } else if (hasDocumental) {
+                      avisoTipo = 'Você possui pendências DOCUMENTAIS.';
+                    } else if (hasFinanceira) {
+                      avisoTipo = 'Você possui pendências FINANCEIRAS.';
+                    }
+                    
+                    return (
+                      <div className="mb-6 p-4 bg-amber-100/50 border border-amber-200 rounded-xl space-y-2">
+                        {avisoTipo && (
+                          <p className="text-amber-900 font-bold text-sm">
+                            ⚠️ {avisoTipo} É necessário realizar o cadastro no sistema para resolver as pendências.
+                          </p>
+                        )}
+                        <p className="text-amber-800 text-xs font-medium">
+                          <strong>Aviso Importante:</strong> O prazo do seu processo só será iniciado após todas as pendências serem resolvidas. Se novas pendências forem geradas, o prazo poderá ser reiniciado.
+                        </p>
+                      </div>
+                    );
+                  })()}
                   
                   <div className="space-y-4">
                     {pendenciasAtivas.map(pend => (
                       <div key={pend.id} className="bg-white p-5 rounded-2xl border border-amber-100 shadow-sm">
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                           <div>
-                            <span className="inline-block px-2 py-1 bg-amber-100 text-amber-700 text-[10px] font-black uppercase rounded-md mb-2">
+                            <span className="inline-block px-2 py-1 bg-amber-100 text-amber-700 text-[10px] font-black uppercase rounded-md mb-2 mr-2">
                               Pendente
                             </span>
+                            {pend.tipo_pendencia && (
+                              <span className="inline-block px-2 py-1 bg-blue-100 text-blue-700 text-[10px] font-black uppercase rounded-md mb-2">
+                                {pend.tipo_pendencia === 'AMBAS' ? 'Doc. e Fin.' : pend.tipo_pendencia}
+                              </span>
+                            )}
                             <p className="text-slate-800 font-bold mb-1">{pend.descricao}</p>
                             <p className="text-xs text-slate-500">
                               Gerada em {pend.timestamp?.toDate ? pend.timestamp.toDate().toLocaleDateString('pt-BR') : 'Recentemente'}

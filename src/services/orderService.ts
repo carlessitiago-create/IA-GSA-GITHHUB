@@ -114,6 +114,7 @@ export interface PendingIssue {
   id_superior: string;
   cliente_id?: string;
   descricao: string;
+  tipo_pendencia?: 'DOCUMENTAL' | 'FINANCEIRA' | 'AMBAS' | string;
   status_pendencia: 'AGUARDANDO_GESTOR' | 'ENVIADO_CLIENTE' | 'RESOLVIDO';
   criadaEm: Timestamp;
   criado_por_id: string;
@@ -176,6 +177,7 @@ export async function abrirPendenciaCascata(data: {
   vendaId?: string;
   processo_id?: string;
   descricao: string;
+  tipo_pendencia?: 'DOCUMENTAL' | 'FINANCEIRA' | 'AMBAS' | string;
   criado_por_id: string;
   mensagem_interna?: string;
   mensagem_publica?: string;
@@ -230,6 +232,7 @@ export async function abrirPendenciaCascata(data: {
       id_superior,
       cliente_id,
       descricao: data.descricao,
+      tipo_pendencia: data.tipo_pendencia,
       status_pendencia: 'AGUARDANDO_GESTOR',
       criadaEm: timestamp,
       criado_por_id: data.criado_por_id,

@@ -10,12 +10,13 @@ interface AbrirPendenciaModalProps {
   isOpen: boolean;
   onClose: () => void;
   processo: OrderProcess;
-  onPendenciaCriada: (descricao: string) => Promise<void>;
+  onPendenciaCriada: (descricao: string, tipo: string) => Promise<void>;
 }
 
 export const AbrirPendenciaModal: React.FC<AbrirPendenciaModalProps> = ({ isOpen, onClose, processo, onPendenciaCriada }) => {
   const [loading, setLoading] = useState(false);
   const [descricaoPendencia, setDescricaoPendencia] = useState('');
+  const [tipoPendencia, setTipoPendencia] = useState<'DOCUMENTAL' | 'FINANCEIRA' | 'AMBAS'>('DOCUMENTAL');
   
   // Local state for editable fields
   const [dadosPreenchidos, setDadosPreenchidos] = useState<{ [key: string]: any }>(processo.dados_preenchidos || {});
@@ -45,7 +46,7 @@ export const AbrirPendenciaModal: React.FC<AbrirPendenciaModalProps> = ({ isOpen
     }
     setLoading(true);
     try {
-      await onPendenciaCriada(descricaoPendencia);
+      await onPendenciaCriada(descricaoPendencia, tipoPendencia);
       onClose();
     } catch (error) {
       // erro tratado no componente pai
@@ -158,14 +159,29 @@ export const AbrirPendenciaModal: React.FC<AbrirPendenciaModalProps> = ({ isOpen
                 Se você encontrou algo errado na documentação ou nas informações preenchidas acima, descreva o problema abaixo para que o vendedor e o cliente sejam notificados.
               </p>
 
-              <div className="flex flex-col space-y-2 flex-1">
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Descrição do Problema</label>
-                <textarea 
-                  value={descricaoPendencia}
-                  onChange={(e) => setDescricaoPendencia(e.target.value)}
-                  placeholder="Ex: CNH está com a frente ilegível, favor reenviar foto da frente com mais luz e foco."
-                  className="w-full flex-1 min-h-[200px] p-4 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 rounded-2xl text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white transition-all shadow-inner resize-none"
-                />
+              <div className="flex flex-col space-y-4 flex-1">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Tipo de Pendência</label>
+                  <select
+                    value={tipoPendencia}
+                    onChange={(e) => setTipoPendencia(e.target.value as 'DOCUMENTAL' | 'FINANCEIRA' | 'AMBAS')}
+                    className="w-full h-12 px-4 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-xl text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white transition-all shadow-sm outline-none"
+                  >
+                    <option value="DOCUMENTAL">Documental</option>
+                    <option value="FINANCEIRA">Financeira</option>
+                    <option value="AMBAS">Ambas (Documental e Financeira)</option>
+                  </select>
+                </div>
+
+                <div className="flex flex-col space-y-2 flex-1">
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Descrição do Problema</label>
+                  <textarea 
+                    value={descricaoPendencia}
+                    onChange={(e) => setDescricaoPendencia(e.target.value)}
+                    placeholder="Ex: CNH está com a frente ilegível, favor reenviar foto da frente com mais luz e foco."
+                    className="w-full flex-1 min-h-[160px] p-4 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 rounded-2xl text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:text-white transition-all shadow-inner resize-none outline-none"
+                  />
+                </div>
               </div>
 
               <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
