@@ -1101,6 +1101,9 @@ export async function processarDadosFichaTecnica(
   processoId: string,
   clienteId: string,
   dados: any,
+  missingCampos?: string[],
+  missingDocs?: string[],
+  allDocsDesejados?: string[],
 ) {
   try {
     // 1. Atualizar dados do cliente (Pode estar em 'usuarios' ou 'clients')
@@ -1175,21 +1178,34 @@ export async function processarDadosFichaTecnica(
         updates.documentos_enviados = [...docsEnviados, ...novosDocs];
       }
 
-      // Atualizar dados_faltantes removendo o que foi preenchido
-      if (processData.dados_faltantes) {
-        updates.dados_faltantes = processData.dados_faltantes.filter(
-          (f: string) => !dados[f],
+      const totalDocsEnviados = updates.documentos_enviados || docsEnviados;
+
+      let todosDocsOk = false;
+      let todosCamposOk = false;
+
+      if (missingCampos !== undefined && missingDocs !== undefined) {
+        updates.dados_faltantes = missingCampos;
+        // Do not overwrite pendencias_iniciais with missing ones
+        if (allDocsDesejados && allDocsDesejados.length > 0) {
+          updates.pendencias_iniciais = allDocsDesejados;
+        }
+        todosCamposOk = missingCampos.length === 0;
+        todosDocsOk = missingDocs.length === 0;
+      } else {
+        // Atualizar dados_faltantes removendo o que foi preenchido
+        if (processData.dados_faltantes) {
+          updates.dados_faltantes = processData.dados_faltantes.filter(
+            (f: string) => !dados[f],
+          );
+        }
+        todosDocsOk = requisitosDocs.every((req: string) =>
+          totalDocsEnviados.includes(req),
         );
+        todosCamposOk =
+          (updates.dados_faltantes || processData.dados_faltantes || [])
+            .length === 0;
       }
 
-      // Se tudo estiver resolvido, atualizar status
-      const totalDocsEnviados = updates.documentos_enviados || docsEnviados;
-      const todosDocsOk = requisitosDocs.every((req: string) =>
-        totalDocsEnviados.includes(req),
-      );
-      const todosCamposOk =
-        (updates.dados_faltantes || processData.dados_faltantes || [])
-          .length === 0;
       const trackingOk =
         !!(updates.cliente_cpf_cnpj || processData.cliente_cpf_cnpj) &&
         !!(updates.data_nascimento || processData.data_nascimento);

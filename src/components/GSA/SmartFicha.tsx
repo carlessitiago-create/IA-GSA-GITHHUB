@@ -1,19 +1,31 @@
 // src/components/GSA/SmartFicha.tsx
 
-import React, { useState, useEffect } from 'react';
-import { FileText, CheckCircle, AlertCircle, Upload, Eye, X, RefreshCw, HelpCircle } from 'lucide-react';
-import { processarDadosFichaTecnica } from '../../services/orderService';
-import { notificarConclusaoFicha, notificarAjudaFicha } from '../../services/notificationService';
-import { PROCESS_REQUIREMENTS } from '../../constants/processRequirements';
-import { FileUploader } from './FileUploader';
-import { storage, db } from '../../firebase';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { getDoc, doc } from 'firebase/firestore';
-import Swal from 'sweetalert2';
-import { useRequirements } from '../../hooks/useRequirements';
-import { analyzeDocument } from '../../services/aiService';
+import React, { useState, useEffect } from "react";
+import {
+  FileText,
+  CheckCircle,
+  AlertCircle,
+  Upload,
+  Eye,
+  X,
+  RefreshCw,
+  HelpCircle,
+} from "lucide-react";
+import { processarDadosFichaTecnica } from "../../services/orderService";
+import {
+  notificarConclusaoFicha,
+  notificarAjudaFicha,
+} from "../../services/notificationService";
+import { PROCESS_REQUIREMENTS } from "../../constants/processRequirements";
+import { FileUploader } from "./FileUploader";
+import { storage, db } from "../../firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { getDoc, doc } from "firebase/firestore";
+import Swal from "sweetalert2";
+import { useRequirements } from "../../hooks/useRequirements";
+import { analyzeDocument } from "../../services/aiService";
 
-import { obterModeloProcesso, ProcessModel } from '../../services/modelService';
+import { obterModeloProcesso, ProcessModel } from "../../services/modelService";
 
 interface SmartFichaProps {
   processos: any[];
@@ -23,16 +35,25 @@ interface SmartFichaProps {
   onConfirmManual?: (docKey: string) => void;
 }
 
-export const SmartFicha: React.FC<SmartFichaProps> = ({ processos, clienteDados, onUpdate, isAdm, onConfirmManual }) => {
+export const SmartFicha: React.FC<SmartFichaProps> = ({
+  processos,
+  clienteDados,
+  onUpdate,
+  isAdm,
+  onConfirmManual,
+}) => {
   const { config: requirementsConfig } = useRequirements();
   const [formData, setFormData] = useState<any>({});
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
-  const [requisitosDinamicos, setRequisitosDinamicos] = useState<{ campos: string[], documentos: string[] }>({ campos: [], documentos: [] });
+  const [requisitosDinamicos, setRequisitosDinamicos] = useState<{
+    campos: string[];
+    documentos: string[];
+  }>({ campos: [], documentos: [] });
   const [loadingReqs, setLoadingReqs] = useState(true);
   const [requestingHelp, setRequestingHelp] = useState(false);
 
-  const processIds = processos.map(p => p.id).join(',');
+  const processIds = processos.map((p) => p.id).join(",");
 
   useEffect(() => {
     const carregarRequisitos = async () => {
@@ -43,32 +64,46 @@ export const SmartFicha: React.FC<SmartFichaProps> = ({ processos, clienteDados,
 
         for (const processo of processos) {
           // 1. Prioriza requisitos salvos no processo (Snapshot da venda)
-          if (processo.dados_faltantes && processo.pendencias_iniciais && 
-             (processo.dados_faltantes.length > 0 || processo.pendencias_iniciais.length > 0)) {
+          if (
+            processo.dados_faltantes &&
+            processo.pendencias_iniciais &&
+            (processo.dados_faltantes.length > 0 ||
+              processo.pendencias_iniciais.length > 0)
+          ) {
             processo.dados_faltantes.forEach((c: string) => todosCampos.add(c));
-            processo.pendencias_iniciais.forEach((d: string) => todosDocs.add(d));
+            processo.pendencias_iniciais.forEach((d: string) =>
+              todosDocs.add(d),
+            );
           } else {
             // 2. Tenta buscar pelo modelo_id se existir no processo
             const targetId = processo.modelo_id || processo.servico_id;
             const modelo = await obterModeloProcesso(targetId);
-            
+
             if (modelo) {
-              modelo.campos.forEach(c => todosCampos.add(c));
-              modelo.documentos.forEach(d => todosDocs.add(d));
+              modelo.campos.forEach((c) => todosCampos.add(c));
+              modelo.documentos.forEach((d) => todosDocs.add(d));
             } else {
               // 3. Tenta buscar na coleção de serviços (Fábrica) se servico_id existir
               if (processo.servico_id) {
-                const serviceSnap = await getDoc(doc(db, 'services', processo.servico_id));
+                const serviceSnap = await getDoc(
+                  doc(db, "services", processo.servico_id),
+                );
                 if (serviceSnap.exists()) {
                   const serviceData = serviceSnap.data();
-                  if (serviceData.requisitos_campos) serviceData.requisitos_campos.forEach((c: string) => todosCampos.add(c));
-                  if (serviceData.requisitos_documentos) serviceData.requisitos_documentos.forEach((d: string) => todosDocs.add(d));
+                  if (serviceData.requisitos_campos)
+                    serviceData.requisitos_campos.forEach((c: string) =>
+                      todosCampos.add(c),
+                    );
+                  if (serviceData.requisitos_documentos)
+                    serviceData.requisitos_documentos.forEach((d: string) =>
+                      todosDocs.add(d),
+                    );
                 } else {
                   // 4. Fallback para estático se não existir no banco
                   const fallback = PROCESS_REQUIREMENTS[processo.servico_id];
                   if (fallback) {
-                    fallback.campos.forEach(c => todosCampos.add(c));
-                    fallback.documentos.forEach(d => todosDocs.add(d));
+                    fallback.campos.forEach((c) => todosCampos.add(c));
+                    fallback.documentos.forEach((d) => todosDocs.add(d));
                   }
                 }
               }
@@ -78,7 +113,7 @@ export const SmartFicha: React.FC<SmartFichaProps> = ({ processos, clienteDados,
 
         setRequisitosDinamicos({
           campos: Array.from(todosCampos),
-          documentos: Array.from(todosDocs)
+          documentos: Array.from(todosDocs),
         });
       } catch (error) {
         console.error("Erro ao carregar requisitos dinâmicos:", error);
@@ -92,7 +127,6 @@ export const SmartFicha: React.FC<SmartFichaProps> = ({ processos, clienteDados,
     }
   }, [processIds]);
 
-
   const handleFieldChange = (campo: string, valor: string) => {
     setFormData((prev: any) => ({ ...prev, [campo]: valor }));
   };
@@ -101,17 +135,20 @@ export const SmartFicha: React.FC<SmartFichaProps> = ({ processos, clienteDados,
     setRequestingHelp(true);
     try {
       const primeiroProcesso = processos[0];
-      await notificarAjudaFicha(primeiroProcesso, clienteDados.nome || clienteDados.nome_completo || 'Cliente');
-      
+      await notificarAjudaFicha(
+        primeiroProcesso,
+        clienteDados.nome || clienteDados.nome_completo || "Cliente",
+      );
+
       Swal.fire({
-        icon: 'success',
-        title: 'Pedido Enviado',
-        text: 'Nossa equipe técnica foi notificada e entrará em contato em breve para te auxiliar.',
+        icon: "success",
+        title: "Pedido Enviado",
+        text: "Nossa equipe técnica foi notificada e entrará em contato em breve para te auxiliar.",
         timer: 3000,
-        showConfirmButton: false
+        showConfirmButton: false,
       });
     } catch (error: any) {
-      Swal.fire('Erro', error.message, 'error');
+      Swal.fire("Erro", error.message, "error");
     } finally {
       setRequestingHelp(false);
     }
@@ -125,7 +162,7 @@ export const SmartFicha: React.FC<SmartFichaProps> = ({ processos, clienteDados,
 
       // 1. Análise de IA (Gemini) - Apenas para imagens
       let analysisResult = null;
-      if (file.type.startsWith('image/')) {
+      if (file.type.startsWith("image/")) {
         try {
           analysisResult = await analyzeDocument(file);
         } catch (aiError) {
@@ -134,25 +171,29 @@ export const SmartFicha: React.FC<SmartFichaProps> = ({ processos, clienteDados,
       }
 
       // 2. Upload para Storage
-      const storageRef = ref(storage, `documentos_clientes/${clientId}/${docLabel}_${Date.now()}`);
+      const storageRef = ref(
+        storage,
+        `documentos_clientes/${clientId}/${docLabel}_${Date.now()}`,
+      );
       await uploadBytes(storageRef, file);
       const url = await getDownloadURL(storageRef);
-      
+
       // 3. Preparar dados de atualização
       const updateData: any = { [docLabel]: url };
-      
+
       // Se a IA extraiu dados, podemos sugerir o preenchimento ou salvar metadados
       let analysisSummary = "";
       if (analysisResult) {
-        const { extractedData, isAuthentic, authenticityScore } = analysisResult;
-        
+        const { extractedData, isAuthentic, authenticityScore } =
+          analysisResult;
+
         // Salvar metadados de validação
         updateData[`${docLabel}_validacao`] = {
-          status: isAuthentic ? 'validado_ia' : 'suspeito_ia',
+          status: isAuthentic ? "validado_ia" : "suspeito_ia",
           score: authenticityScore,
           data_analise: new Date().toISOString(),
           notas: analysisResult.validationNotes,
-          tipo_detectado: analysisResult.documentType
+          tipo_detectado: analysisResult.documentType,
         };
 
         // Mapear dados extraídos para campos da ficha se estiverem vazios
@@ -175,60 +216,72 @@ export const SmartFicha: React.FC<SmartFichaProps> = ({ processos, clienteDados,
       }
 
       // 4. Atualizar ficha no Firestore
-      await processarDadosFichaTecnica(primeiroProcesso.id, clientId, updateData);
-      
+      const newMissingDocs = documentosFaltantes.filter((d) => d !== docLabel);
+      await processarDadosFichaTecnica(
+        primeiroProcesso.id,
+        clientId,
+        updateData,
+        camposFaltantes,
+        newMissingDocs,
+        documentosDesejados,
+      );
+
       // 5. Feedback Visual
       const docName = requirementsConfig.document_labels[docLabel] || docLabel;
-      
+
       if (analysisResult && analysisResult.isAuthentic) {
         Swal.fire({
-          icon: 'success',
-          title: 'Documento Validado!',
+          icon: "success",
+          title: "Documento Validado!",
           html: `
             <div class="text-left space-y-2">
               <p>O documento <b>${docName}</b> foi processado e validado com sucesso.</p>
-              ${analysisSummary ? `<div class="p-3 bg-slate-50 rounded-xl border border-slate-100 mt-2">
+              ${
+                analysisSummary
+                  ? `<div class="p-3 bg-slate-50 rounded-xl border border-slate-100 mt-2">
                 <p class="text-[10px] font-black uppercase text-slate-400 mb-1">Dados Extraídos:</p>
                 <p class="text-xs font-medium text-slate-700 whitespace-pre-line">${analysisSummary}</p>
-              </div>` : ''}
+              </div>`
+                  : ""
+              }
               <p class="text-[10px] text-emerald-600 font-bold uppercase mt-2">✓ Autenticidade Verificada (${analysisResult.authenticityScore}%)</p>
             </div>
           `,
-          confirmButtonText: 'Excelente',
-          confirmButtonColor: '#0a0a2e'
+          confirmButtonText: "Excelente",
+          confirmButtonColor: "#0a0a2e",
         });
       } else if (analysisResult && !analysisResult.isAuthentic) {
         Swal.fire({
-          icon: 'warning',
-          title: 'Atenção na Validação',
+          icon: "warning",
+          title: "Atenção na Validação",
           html: `
             <div class="text-left space-y-2">
               <p>O documento foi enviado, mas nossa análise automática identificou possíveis inconsistências.</p>
               <div class="p-3 bg-rose-50 rounded-xl border border-rose-100 mt-2">
                 <p class="text-[10px] font-black uppercase text-rose-400 mb-1">Observações:</p>
                 <ul class="text-xs font-medium text-rose-700 list-disc ml-4">
-                  ${analysisResult.validationNotes.map(n => `<li>${n}</li>`).join('')}
+                  ${analysisResult.validationNotes.map((n) => `<li>${n}</li>`).join("")}
                 </ul>
               </div>
               <p class="text-[10px] text-slate-500 italic mt-2">O documento passará por uma revisão manual da nossa equipe técnica.</p>
             </div>
           `,
-          confirmButtonText: 'Entendido',
-          confirmButtonColor: '#0a0a2e'
+          confirmButtonText: "Entendido",
+          confirmButtonColor: "#0a0a2e",
         });
       } else {
         Swal.fire({
-          icon: 'success',
-          title: 'Documento Enviado',
+          icon: "success",
+          title: "Documento Enviado",
           text: `${docName} foi carregado com sucesso.`,
           timer: 2000,
-          showConfirmButton: false
+          showConfirmButton: false,
         });
       }
-      
+
       if (onUpdate) onUpdate();
     } catch (error: any) {
-      Swal.fire('Erro', error.message, 'error');
+      Swal.fire("Erro", error.message, "error");
     } finally {
       setUploading(null);
     }
@@ -236,27 +289,38 @@ export const SmartFicha: React.FC<SmartFichaProps> = ({ processos, clienteDados,
 
   const submitFicha = async () => {
     if (Object.keys(formData).length === 0) return;
-    
+
     setSubmitting(true);
     try {
       const clientId = clienteDados.id || clienteDados.uid;
       const primeiroProcesso = processos[0];
-      await processarDadosFichaTecnica(primeiroProcesso.id, clientId, formData);
-      
+      const newMissingCampos = camposFaltantes.filter((c) => !formData[c]);
+      await processarDadosFichaTecnica(
+        primeiroProcesso.id,
+        clientId,
+        formData,
+        newMissingCampos,
+        documentosFaltantes,
+        documentosDesejados,
+      );
+
       // Notificar equipe interna
-      await notificarConclusaoFicha(primeiroProcesso, clienteDados.nome || clienteDados.nome_completo || 'Cliente');
+      await notificarConclusaoFicha(
+        primeiroProcesso,
+        clienteDados.nome || clienteDados.nome_completo || "Cliente",
+      );
 
       Swal.fire({
-        icon: 'success',
-        title: 'Ficha Atualizada',
-        text: 'Suas informações foram salvas com sucesso e o consultor responsável foi notificado.',
+        icon: "success",
+        title: "Ficha Atualizada",
+        text: "Suas informações foram salvas com sucesso e o consultor responsável foi notificado.",
         timer: 3000,
-        showConfirmButton: false
+        showConfirmButton: false,
       });
       setFormData({});
       if (onUpdate) onUpdate();
     } catch (error: any) {
-      Swal.fire('Erro', error.message, 'error');
+      Swal.fire("Erro", error.message, "error");
     } finally {
       setSubmitting(false);
     }
@@ -267,76 +331,135 @@ export const SmartFicha: React.FC<SmartFichaProps> = ({ processos, clienteDados,
   // ... (inside component)
 
   const allPossibleFields = [
-    'nome_completo', 'cpf', 'rg', 'data_nascimento', 'estado_civil', 'profissao', 'nome_mae',
-    'telefone', 'email', 'renda_mensal',
-    'cep', 'logradouro', 'numero', 'complemento', 'bairro', 'cidade', 'estado',
-    'cnpj', 'nome_empresa', 'faturamentoMensalMedio'
+    "nome_completo",
+    "cpf",
+    "rg",
+    "data_nascimento",
+    "estado_civil",
+    "profissao",
+    "nome_mae",
+    "telefone",
+    "email",
+    "renda_mensal",
+    "cep",
+    "logradouro",
+    "numero",
+    "complemento",
+    "bairro",
+    "cidade",
+    "estado",
+    "cnpj",
+    "nome_empresa",
+    "faturamentoMensalMedio",
   ];
 
-  const camposFaltantes = Array.from(new Set([
-    ...requisitosDinamicos.campos,
-    ...(!processos[0]?.cliente_cpf_cnpj ? ['cpf'] : []),
-    ...(!processos[0]?.data_nascimento ? ['data_nascimento'] : []),
-    ...(isAdm && showAllFields ? allPossibleFields : [])
-  ])).filter(c => {
+  const camposFaltantes = Array.from(
+    new Set([
+      ...requisitosDinamicos.campos,
+      ...(!processos[0]?.cliente_cpf_cnpj ? ["cpf"] : []),
+      ...(!processos[0]?.data_nascimento ? ["data_nascimento"] : []),
+      ...(isAdm && showAllFields ? allPossibleFields : []),
+    ]),
+  ).filter((c) => {
     // Se o admin solicitou ver todos os campos, não filtra os campos obrigatórios
     if (showAllFields && isAdm) return true;
 
-    // Para cpf e nascimento, olhamos para a raiz do processo
-    if (c === 'cpf' && !!processos[0]?.cliente_cpf_cnpj) return false; // não falta
-    if (c === 'data_nascimento' && !!processos[0]?.data_nascimento) return false; // não falta
+    // Para cpf e nascimento, olhamos para a raiz do processo primeiro
+    if (c === "cpf" && !!processos[0]?.cliente_cpf_cnpj) return false;
+    if (c === "data_nascimento" && !!processos[0]?.data_nascimento)
+      return false;
 
-    // Se a propriedade dados_faltantes existe como um array, confiamos nela:
-    if (processos[0] && Array.isArray(processos[0].dados_faltantes)) {
-      return processos[0].dados_faltantes.includes(c);
-    }
-    
-    // Fallback: se não temos dados_faltantes mas o requisito existe
-    if (requisitosDinamicos.campos.includes(c)) {
-      if (c === 'cpf_cnpj') return !(clienteDados.cpf || clienteDados.cnpj || clienteDados.documento);
-      if (c === 'nome_empresa' || c === 'razao_social') return !(clienteDados.nome_empresa || clienteDados.razao_social);
-      return !clienteDados[c];
-    }
-    
-    return true;
+    // Confiamos na validação real sobre os dados do cliente
+    if (c === "cpf_cnpj")
+      return !(clienteDados.cpf || clienteDados.cnpj || clienteDados.documento);
+    if (c === "nome_empresa" || c === "razao_social")
+      return !(clienteDados.nome_empresa || clienteDados.razao_social);
+    return !clienteDados[c];
   });
 
-  const documentosDesejados = isAdm && showAllFields 
-    ? Array.from(new Set([
-        ...requisitosDinamicos.documentos,
-        ...Object.keys(clienteDados).filter(k => requirementsConfig.document_labels[k] && clienteDados[k])
-      ]))
-    : requisitosDinamicos.documentos;
+  const documentosDesejados =
+    isAdm && showAllFields
+      ? Array.from(
+          new Set([
+            ...requisitosDinamicos.documentos,
+            ...Object.keys(clienteDados).filter(
+              (k) => requirementsConfig.document_labels[k] && clienteDados[k],
+            ),
+          ]),
+        )
+      : requisitosDinamicos.documentos;
 
-  const documentosFaltantes = isAdm && showAllFields ? documentosDesejados : documentosDesejados.filter(d => {
-    if (processos[0] && Array.isArray(processos[0].pendencias_iniciais)) {
-      return processos[0].pendencias_iniciais.includes(d);
+  const documentosFaltantes =
+    isAdm && showAllFields
+      ? documentosDesejados
+      : documentosDesejados.filter((d) => {
+          return !clienteDados[d];
+        });
+
+  const [hasHealed, setHasHealed] = useState(false);
+
+  useEffect(() => {
+    if (!loadingReqs && processos.length > 0 && !hasHealed) {
+      const p = processos[0];
+      const hasMissing =
+        camposFaltantes.length > 0 || documentosFaltantes.length > 0;
+      if (hasMissing && p.status_atual !== "Pendente") {
+        // Silently self-heal
+        processarDadosFichaTecnica(
+          p.id!,
+          p.cliente_id!,
+          {},
+          camposFaltantes,
+          documentosFaltantes,
+          documentosDesejados,
+        )
+          .then(() => {
+            if (onUpdate) onUpdate();
+          })
+          .catch((e) => console.warn("Self-heal failed", e));
+      }
+      setHasHealed(true);
     }
-    return !clienteDados[d];
-  });
+  }, [
+    loadingReqs,
+    camposFaltantes.length,
+    documentosFaltantes.length,
+    hasHealed,
+    processos,
+  ]);
 
   if (loadingReqs) {
     return (
       <div className="py-12 flex flex-col items-center justify-center space-y-4">
         <RefreshCw className="text-blue-600 animate-spin" size={24} />
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Sincronizando Ficha Técnica...</p>
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+          Sincronizando Ficha Técnica...
+        </p>
       </div>
     );
   }
 
-  if (camposFaltantes.length === 0 && documentosFaltantes.every(d => !!clienteDados[d])) {
+  if (
+    camposFaltantes.length === 0 &&
+    documentosFaltantes.every((d) => !!clienteDados[d])
+  ) {
     return (
       <div className="p-6 md:p-8 bg-emerald-50 rounded-2xl md:rounded-[32px] border border-emerald-100 text-center space-y-4">
         <div className="size-12 md:size-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto">
           <CheckCircle className="text-emerald-600 size-6 md:size-8" />
         </div>
         <div>
-          <h3 className="text-base md:text-lg font-black text-emerald-900 uppercase italic">Documentação Completa!</h3>
-          <p className="text-xs md:text-sm font-medium text-emerald-700">Você já forneceu todas as informações necessárias. O processo agora está em análise pela nossa equipe.</p>
+          <h3 className="text-base md:text-lg font-black text-emerald-900 uppercase italic">
+            Documentação Completa!
+          </h3>
+          <p className="text-xs md:text-sm font-medium text-emerald-700">
+            Você já forneceu todas as informações necessárias. O processo agora
+            está em análise pela nossa equipe.
+          </p>
         </div>
-        
+
         {isAdm && (
-          <button 
+          <button
             onClick={() => setShowAllFields(true)}
             className="mt-4 px-4 py-2 bg-white text-emerald-600 border border-emerald-200 rounded-lg text-xs font-bold uppercase hover:bg-emerald-100 transition-colors"
           >
@@ -356,16 +479,20 @@ export const SmartFicha: React.FC<SmartFichaProps> = ({ processos, clienteDados,
           </div>
           <div className="min-w-0">
             <h3 className="text-[10px] md:text-sm font-black text-blue-900 uppercase italic truncate">
-              {showAllFields ? "Ficha Técnica Completa" : "Formulário de Auto-preenchimento"}
+              {showAllFields
+                ? "Ficha Técnica Completa"
+                : "Formulário de Auto-preenchimento"}
             </h3>
             <p className="text-[9px] md:text-xs font-medium text-blue-700 leading-relaxed">
-              {showAllFields ? "Revise ou altere todos os campos do processo" : "Identificamos que faltam informações para o processo. Complete os campos abaixo."}
+              {showAllFields
+                ? "Revise ou altere todos os campos do processo"
+                : "Identificamos que faltam informações para o processo. Complete os campos abaixo."}
             </p>
           </div>
         </div>
-        
+
         {isAdm && !showAllFields && (
-          <button 
+          <button
             onClick={() => setShowAllFields(true)}
             className="px-3 py-1.5 bg-white text-blue-600 border border-blue-200 rounded-lg text-[10px] font-bold uppercase hover:bg-blue-100 transition-colors whitespace-nowrap"
           >
@@ -373,7 +500,7 @@ export const SmartFicha: React.FC<SmartFichaProps> = ({ processos, clienteDados,
           </button>
         )}
         {isAdm && showAllFields && (
-          <button 
+          <button
             onClick={() => setShowAllFields(false)}
             className="px-3 py-1.5 bg-white text-blue-600 border border-blue-200 rounded-lg text-[10px] font-bold uppercase hover:bg-blue-100 transition-colors whitespace-nowrap"
           >
@@ -385,20 +512,34 @@ export const SmartFicha: React.FC<SmartFichaProps> = ({ processos, clienteDados,
       {/* Secção de Dados */}
       {camposFaltantes.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
-          {camposFaltantes.map(campo => (
+          {camposFaltantes.map((campo) => (
             <div key={campo} className="space-y-1">
-              <label className="text-[8px] md:text-[9px] font-black text-slate-400 uppercase ml-2">{requirementsConfig.field_labels[campo] || campo.replace(/_/g, ' ')}</label>
-              <input 
+              <label className="text-[8px] md:text-[9px] font-black text-slate-400 uppercase ml-2">
+                {requirementsConfig.field_labels[campo] ||
+                  campo.replace(/_/g, " ")}
+              </label>
+              <input
                 className="w-full bg-slate-50 border-none rounded-xl p-2.5 md:p-3 text-[10px] md:text-sm focus:ring-2 focus:ring-blue-900/10 placeholder:text-slate-300"
                 placeholder={`Preencher ${requirementsConfig.field_labels[campo] || campo}...`}
                 onChange={(e) => handleFieldChange(campo, e.target.value)}
-                value={formData[campo] !== undefined ? formData[campo] : (
-                  campo === 'cpf' ? (clienteDados.cpf || clienteDados.documento || '') :
-                  campo === 'cpf_cnpj' ? (clienteDados.cpf || clienteDados.cnpj || clienteDados.documento || '') :
-                  campo === 'nome_empresa' || campo === 'razao_social' ? (clienteDados.nome_empresa || clienteDados.razao_social || '') :
-                  campo === 'data_nascimento' ? (clienteDados.data_nascimento || '') :
-                  (clienteDados[campo] || '')
-                )}
+                value={
+                  formData[campo] !== undefined
+                    ? formData[campo]
+                    : campo === "cpf"
+                      ? clienteDados.cpf || clienteDados.documento || ""
+                      : campo === "cpf_cnpj"
+                        ? clienteDados.cpf ||
+                          clienteDados.cnpj ||
+                          clienteDados.documento ||
+                          ""
+                        : campo === "nome_empresa" || campo === "razao_social"
+                          ? clienteDados.nome_empresa ||
+                            clienteDados.razao_social ||
+                            ""
+                          : campo === "data_nascimento"
+                            ? clienteDados.data_nascimento || ""
+                            : clienteDados[campo] || ""
+                }
               />
             </div>
           ))}
@@ -408,11 +549,11 @@ export const SmartFicha: React.FC<SmartFichaProps> = ({ processos, clienteDados,
       {/* Secção de Documentos */}
       {documentosFaltantes.length > 0 && (
         <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
-          {documentosFaltantes.map(docLabel => (
-            <FileUploader 
-              key={docLabel} 
-              label={requirementsConfig.document_labels[docLabel] || docLabel} 
-              status={clienteDados[docLabel] ? 'resolvido' : 'pendente'}
+          {documentosFaltantes.map((docLabel) => (
+            <FileUploader
+              key={docLabel}
+              label={requirementsConfig.document_labels[docLabel] || docLabel}
+              status={clienteDados[docLabel] ? "resolvido" : "pendente"}
               existingUrl={clienteDados[docLabel]}
               isUploading={uploading === docLabel}
               onUpload={(file) => handleFileUpload(docLabel, file)}
@@ -424,20 +565,24 @@ export const SmartFicha: React.FC<SmartFichaProps> = ({ processos, clienteDados,
       )}
 
       <div className="flex flex-col sm:flex-row gap-3 pt-4">
-        <button 
+        <button
           onClick={submitFicha}
           disabled={submitting || Object.keys(formData).length === 0}
           className="flex-1 bg-[#0a0a2e] text-white py-3.5 md:py-4 rounded-xl md:rounded-2xl font-black uppercase text-[10px] md:text-xs tracking-widest hover:bg-slate-800 shadow-xl disabled:opacity-50 transition-all"
         >
-          {submitting ? 'Salvando...' : 'Salvar Ficha'}
+          {submitting ? "Salvando..." : "Salvar Ficha"}
         </button>
-        
-        <button 
+
+        <button
           onClick={handleSolicitarAjuda}
           disabled={requestingHelp}
           className="px-6 py-3.5 md:py-4 bg-slate-50 text-slate-400 hover:bg-slate-100 rounded-xl md:rounded-2xl font-black uppercase text-[9px] md:text-[10px] tracking-widest transition-all flex items-center justify-center gap-2"
         >
-          {requestingHelp ? <RefreshCw className="animate-spin" size={14} /> : <HelpCircle size={14} />}
+          {requestingHelp ? (
+            <RefreshCw className="animate-spin" size={14} />
+          ) : (
+            <HelpCircle size={14} />
+          )}
           Ajuda
         </button>
       </div>
