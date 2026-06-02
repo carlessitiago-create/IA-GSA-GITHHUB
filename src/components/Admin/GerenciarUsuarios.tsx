@@ -1,12 +1,32 @@
 import React, { useState, useEffect } from "react";
 import { db, firebaseConfig, cleanData } from "../../firebase"; // Importe sua config
 import { initializeApp } from "firebase/app";
-import { getAuth, createUserWithEmailAndPassword, signOut } from "firebase/auth";
-import { doc, setDoc, collection, query, where, getDocs } from "firebase/firestore";
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  signOut,
+} from "firebase/auth";
+import {
+  doc,
+  setDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+} from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { functions } from "../../firebase";
 import Swal from "sweetalert2";
-import { UserPlus, Mail, Lock, Shield, Users, ArrowRight, Loader2, Edit3 } from "lucide-react";
+import {
+  UserPlus,
+  Mail,
+  Lock,
+  Shield,
+  Users,
+  ArrowRight,
+  Loader2,
+  Edit3,
+} from "lucide-react";
 import { motion } from "framer-motion";
 import { UserProfile, useAuth } from "../AuthContext";
 
@@ -15,9 +35,10 @@ interface GerenciarUsuariosProps {
   onSuccess?: () => void;
 }
 
-import { IncluirVendaDireta } from './IncluirVendaDireta';
-
-const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuccess }) => {
+const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({
+  userToEdit,
+  onSuccess,
+}) => {
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [cpf, setCpf] = useState("");
@@ -29,23 +50,32 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
   const [status, setStatus] = useState("APROVADO");
   const [managerId, setManagerId] = useState("");
   const [percentualEmpresa, setPercentualEmpresa] = useState<number>(0);
-  const [permissoesVenda, setPermissoesVenda] = useState<'VAREJO' | 'ATACADO' | 'AMBOS'>('VAREJO');
-  const [modeloComissao, setModeloComissao] = useState<'PADRAO' | 'TAXA_SERVICO' | 'COMISSAO_ESPECIAL'>('PADRAO');
+  const [permissoesVenda, setPermissoesVenda] = useState<
+    "VAREJO" | "ATACADO" | "AMBOS"
+  >("VAREJO");
+  const [modeloComissao, setModeloComissao] = useState<
+    "PADRAO" | "TAXA_SERVICO" | "COMISSAO_ESPECIAL"
+  >("PADRAO");
   const [taxaServicoFixa, setTaxaServicoFixa] = useState(0);
-  const [comissaoEspecialPercentual, setComissaoEspecialPercentual] = useState(0);
-  const [listaGestores, setListaGestores] = useState<{id: string, nome: string}[]>([]);
+  const [comissaoEspecialPercentual, setComissaoEspecialPercentual] =
+    useState(0);
+  const [listaGestores, setListaGestores] = useState<
+    { id: string; nome: string }[]
+  >([]);
   const [loading, setLoading] = useState(false);
   const { forgotPassword, profile: currentAdminProfile } = useAuth();
-
 
   useEffect(() => {
     const fetchManagers = async () => {
       try {
-        const q = query(collection(db, "usuarios"), where("nivel", "==", "GESTOR"));
+        const q = query(
+          collection(db, "usuarios"),
+          where("nivel", "==", "GESTOR"),
+        );
         const snapshot = await getDocs(q);
-        const gestores = snapshot.docs.map(doc => ({
+        const gestores = snapshot.docs.map((doc) => ({
           id: doc.id,
-          nome: doc.data().nome_completo || doc.data().email
+          nome: doc.data().nome_completo || doc.data().email,
         }));
         setListaGestores(gestores);
       } catch (error) {
@@ -68,7 +98,9 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
       setPermissoesVenda(userToEdit.permissoes_venda || "VAREJO");
       setModeloComissao(userToEdit.modelo_comissao || "PADRAO");
       setTaxaServicoFixa(userToEdit.taxa_servico_fixa || 0);
-      setComissaoEspecialPercentual(userToEdit.comissao_especial_percentual || 0);
+      setComissaoEspecialPercentual(
+        userToEdit.comissao_especial_percentual || 0,
+      );
     } else {
       setNome("");
       setEmail("");
@@ -81,10 +113,10 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
       setTaxaServicoFixa(0);
       setComissaoEspecialPercentual(0);
       // Nível padrão baseado em quem está criando
-      if (currentAdminProfile?.nivel === 'GESTOR') {
+      if (currentAdminProfile?.nivel === "GESTOR") {
         setRole("VENDEDOR");
         setManagerId(currentAdminProfile.uid);
-      } else if (currentAdminProfile?.nivel === 'VENDEDOR') {
+      } else if (currentAdminProfile?.nivel === "VENDEDOR") {
         setRole("CLIENTE");
         setManagerId(currentAdminProfile.uid);
       } else {
@@ -99,27 +131,31 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
     if (!userToEdit) return;
 
     const result = await Swal.fire({
-      title: 'Tem certeza?',
+      title: "Tem certeza?",
       text: `Você está prestes a excluir o perfil de ${userToEdit.nome_completo}. Esta ação não pode ser desfeita no Firestore.`,
-      icon: 'warning',
+      icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6',
-      confirmButtonText: 'Sim, excluir!',
-      cancelButtonText: 'Cancelar'
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Sim, excluir!",
+      cancelButtonText: "Cancelar",
     });
 
     if (result.isConfirmed) {
       setLoading(true);
       try {
-        const { deleteDoc, doc } = await import('firebase/firestore');
+        const { deleteDoc, doc } = await import("firebase/firestore");
         await deleteDoc(doc(db, "usuarios", userToEdit.uid));
-        
-        Swal.fire('Excluído!', 'O perfil do usuário foi removido do sistema.', 'success');
+
+        Swal.fire(
+          "Excluído!",
+          "O perfil do usuário foi removido do sistema.",
+          "success",
+        );
         if (onSuccess) onSuccess();
       } catch (error) {
         console.error("Erro ao excluir usuário:", error);
-        Swal.fire('Erro', 'Não foi possível excluir o usuário.', 'error');
+        Swal.fire("Erro", "Não foi possível excluir o usuário.", "error");
       } finally {
         setLoading(false);
       }
@@ -132,52 +168,57 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
 
     try {
       if (cpf) {
-        const { getDocs, query, collection, where } = await import('firebase/firestore');
+        const { getDocs, query, collection, where } =
+          await import("firebase/firestore");
         const cpfLimpo = cpf.replace(/\D/g, "");
         const cpfsToSearch = [cpf, cpfLimpo];
-        
+
         let cpfExiste = false;
         let existUser = null;
 
         for (const c of cpfsToSearch) {
-           const qCpf = query(collection(db, "usuarios"), where("cpf", "==", c));
-           const snapCpf = await getDocs(qCpf);
-           if (!snapCpf.empty) {
-             const doc = snapCpf.docs[0];
-             if (!userToEdit || doc.id !== userToEdit.uid) {
-               cpfExiste = true;
-               existUser = doc.data();
-               break;
-             }
-           }
+          const qCpf = query(collection(db, "usuarios"), where("cpf", "==", c));
+          const snapCpf = await getDocs(qCpf);
+          if (!snapCpf.empty) {
+            const doc = snapCpf.docs[0];
+            if (!userToEdit || doc.id !== userToEdit.uid) {
+              cpfExiste = true;
+              existUser = doc.data();
+              break;
+            }
+          }
         }
 
         if (cpfExiste && existUser) {
-           setLoading(false);
-           Swal.fire({
-              icon: 'error',
-              title: 'CPF Duplicado',
-              text: `Este CPF já está cadastrado no sistema (Usuário: ${existUser.nome_completo || existUser.email}). Cadastro bloqueado.`,
-              confirmButtonColor: '#0a0a2e'
-           });
-           
-           if (!userToEdit) {
-             const { addDoc, serverTimestamp } = await import('firebase/firestore');
-             await addDoc(collection(db, 'notifications'), cleanData({
-               usuario_id: 'ADM_MASTER',
-               targetRole: 'ADM_MASTER',
-               title: '⚠️ Tentativa de Cadastro Duplicado',
-               message: `Tentativa de cadastrar o CPF ${cpf} que já pertence a ${existUser.nome_completo || existUser.email}.`,
-               tipo: 'warning',
-               lida: false,
-               read: false,
-               timestamp: serverTimestamp(),
-               createdAt: serverTimestamp(),
-               origem: 'sistema'
-             }));
-           }
-           
-           return;
+          setLoading(false);
+          Swal.fire({
+            icon: "error",
+            title: "CPF Duplicado",
+            text: `Este CPF já está cadastrado no sistema (Usuário: ${existUser.nome_completo || existUser.email}). Cadastro bloqueado.`,
+            confirmButtonColor: "#0a0a2e",
+          });
+
+          if (!userToEdit) {
+            const { addDoc, serverTimestamp } =
+              await import("firebase/firestore");
+            await addDoc(
+              collection(db, "notifications"),
+              cleanData({
+                usuario_id: "ADM_MASTER",
+                targetRole: "ADM_MASTER",
+                title: "⚠️ Tentativa de Cadastro Duplicado",
+                message: `Tentativa de cadastrar o CPF ${cpf} que já pertence a ${existUser.nome_completo || existUser.email}.`,
+                tipo: "warning",
+                lida: false,
+                read: false,
+                timestamp: serverTimestamp(),
+                createdAt: serverTimestamp(),
+                origem: "sistema",
+              }),
+            );
+          }
+
+          return;
         }
       }
 
@@ -192,9 +233,10 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
           data_nascimento: dataNascimento,
           percentual_empresa: Number(percentualEmpresa),
           permissoes_venda: permissoesVenda,
-          modelo_comissao: role === 'GESTOR' ? modeloComissao : 'PADRAO',
-          taxa_servico_fixa: role === 'GESTOR' ? Number(taxaServicoFixa) : 0,
-          comissao_especial_percentual: role === 'GESTOR' ? Number(comissaoEspecialPercentual) : 0
+          modelo_comissao: role === "GESTOR" ? modeloComissao : "PADRAO",
+          taxa_servico_fixa: role === "GESTOR" ? Number(taxaServicoFixa) : 0,
+          comissao_especial_percentual:
+            role === "GESTOR" ? Number(comissaoEspecialPercentual) : 0,
         };
 
         // Preservar ou atualizar id_superior logicamente
@@ -203,14 +245,20 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
         } else if (role === "CLIENTE") {
           // Se for cliente, mantemos o id_superior atual se não for ADM editando
           // Ou se o ADM selecionou um vendedor/gestor (embora a UI atual não mostre managerId para clientes)
-          if (currentAdminProfile?.nivel === 'VENDEDOR' || currentAdminProfile?.nivel === 'GESTOR') {
-            userData.id_superior = userToEdit.id_superior || currentAdminProfile.uid;
+          if (
+            currentAdminProfile?.nivel === "VENDEDOR" ||
+            currentAdminProfile?.nivel === "GESTOR"
+          ) {
+            userData.id_superior =
+              userToEdit.id_superior || currentAdminProfile.uid;
           } else {
             userData.id_superior = userToEdit.id_superior || null;
           }
         }
 
-        await setDoc(doc(db, "usuarios", userToEdit.uid), userData, { merge: true });
+        await setDoc(doc(db, "usuarios", userToEdit.uid), userData, {
+          merge: true,
+        });
 
         // Se o usuário editado for o próprio administrador logado, atualizamos o perfil local
         if (userToEdit.uid === currentAdminProfile?.uid) {
@@ -222,24 +270,32 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
           title: "Usuário Atualizado!",
           text: `${nome} foi atualizado com sucesso.`,
           confirmButtonColor: "#0a0a2e",
-          background: '#fff',
-          color: '#0a0a2e',
+          background: "#fff",
+          color: "#0a0a2e",
           customClass: {
-            popup: 'rounded-2xl border border-slate-100 shadow-2xl'
-          }
+            popup: "rounded-2xl border border-slate-100 shadow-2xl",
+          },
         });
         if (onSuccess) onSuccess();
       } else {
         // Criar novo usuário
         // TRUQUE: Criar um app secundário para não deslogar o ADM Master atual
-        const secondaryApp = initializeApp(firebaseConfig, "Secondary" + Date.now());
+        const secondaryApp = initializeApp(
+          firebaseConfig,
+          "Secondary" + Date.now(),
+        );
         const secondaryAuth = getAuth(secondaryApp);
         // Fix: Set persistence to memory so it doesn't overwrite the main user's session in IndexedDB
-        const { setPersistence, inMemoryPersistence } = await import('firebase/auth');
+        const { setPersistence, inMemoryPersistence } =
+          await import("firebase/auth");
         await setPersistence(secondaryAuth, inMemoryPersistence);
 
         // 1. Cria o usuário no Firebase Auth
-        const userCredential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+        const userCredential = await createUserWithEmailAndPassword(
+          secondaryAuth,
+          email,
+          password,
+        );
         const newUser = userCredential.user;
 
         // 2. Salva o perfil e o nível de acesso (Role) no Firestore
@@ -254,9 +310,10 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
           status_conta: "APROVADO",
           percentual_empresa: Number(percentualEmpresa),
           permissoes_venda: permissoesVenda,
-          modelo_comissao: role === 'GESTOR' ? modeloComissao : 'PADRAO',
-          taxa_servico_fixa: role === 'GESTOR' ? Number(taxaServicoFixa) : 0,
-          comissao_especial_percentual: role === 'GESTOR' ? Number(comissaoEspecialPercentual) : 0
+          modelo_comissao: role === "GESTOR" ? modeloComissao : "PADRAO",
+          taxa_servico_fixa: role === "GESTOR" ? Number(taxaServicoFixa) : 0,
+          comissao_especial_percentual:
+            role === "GESTOR" ? Number(comissaoEspecialPercentual) : 0,
         };
 
         // Se for vendedor, vincula ao gestor
@@ -267,45 +324,56 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
         await setDoc(doc(db, "usuarios", newUser.uid), userData);
 
         // MIGRAÇÃO DE PROCESSOS E VENDAS (Silent Cloud Sync)
-        if (role === 'CLIENTE' && cpf) {
-           try {
-              const { vincularHistoricoPublico } = await import('../../services/userService');
-              await vincularHistoricoPublico(newUser.uid, cpf);
-           } catch (migrationErr) {
-              console.error("Erro ao migrar histórico de processos (Dinâmica Inteligente):", migrationErr);
-           }
+        if (role === "CLIENTE" && cpf) {
+          try {
+            const { vincularHistoricoPublico } =
+              await import("../../services/userService");
+            await vincularHistoricoPublico(newUser.uid, cpf);
+          } catch (migrationErr) {
+            console.error(
+              "Erro ao migrar histórico de processos (Dinâmica Inteligente):",
+              migrationErr,
+            );
+          }
         }
 
         // Notifica o ADM Master e a Hierarquia
         try {
-          const { addDoc, collection, serverTimestamp } = await import('firebase/firestore');
-          
-          // Notifica ADM Master (outros ADMs se houver)
-          await addDoc(collection(db, 'notifications'), cleanData({
-            usuario_id: 'ADM_MASTER',
-            targetRole: 'ADM_MASTER',
-            title: '👤 Novo Cadastro Hierárquico (Painel ADM)',
-            message: `${userData.nome_completo} foi cadastrado por um administrador.`,
-            tipo: 'info',
-            lida: false,
-            read: false,
-            timestamp: serverTimestamp(),
-            createdAt: serverTimestamp(),
-            origem: 'hierarquia'
-          }));
+          const { addDoc, collection, serverTimestamp } =
+            await import("firebase/firestore");
 
-          // Notifica o Gestor se for um vendedor
-          if (role === "VENDEDOR" && managerId) {
-            await addDoc(collection(db, 'notifications'), cleanData({
-              usuario_id: managerId,
-              title: '👥 Novo Vendedor na sua Equipe',
-              message: `Um novo vendedor (${userData.nome_completo}) foi atribuído a você.`,
-              tipo: 'info',
+          // Notifica ADM Master (outros ADMs se houver)
+          await addDoc(
+            collection(db, "notifications"),
+            cleanData({
+              usuario_id: "ADM_MASTER",
+              targetRole: "ADM_MASTER",
+              title: "👤 Novo Cadastro Hierárquico (Painel ADM)",
+              message: `${userData.nome_completo} foi cadastrado por um administrador.`,
+              tipo: "info",
               lida: false,
               read: false,
               timestamp: serverTimestamp(),
-              createdAt: serverTimestamp()
-            }));
+              createdAt: serverTimestamp(),
+              origem: "hierarquia",
+            }),
+          );
+
+          // Notifica o Gestor se for um vendedor
+          if (role === "VENDEDOR" && managerId) {
+            await addDoc(
+              collection(db, "notifications"),
+              cleanData({
+                usuario_id: managerId,
+                title: "👥 Novo Vendedor na sua Equipe",
+                message: `Um novo vendedor (${userData.nome_completo}) foi atribuído a você.`,
+                tipo: "info",
+                lida: false,
+                read: false,
+                timestamp: serverTimestamp(),
+                createdAt: serverTimestamp(),
+              }),
+            );
           }
         } catch (e) {
           console.error("Erro ao enviar notificações de cadastro:", e);
@@ -319,23 +387,26 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
           title: "Usuário Criado!",
           text: `${nome} agora é um ${role.replace("_", " ")} no sistema.`,
           confirmButtonColor: "#0a0a2e",
-          background: '#fff',
-          color: '#0a0a2e',
+          background: "#fff",
+          color: "#0a0a2e",
           customClass: {
-            popup: 'rounded-2xl border border-slate-100 shadow-2xl'
-          }
+            popup: "rounded-2xl border border-slate-100 shadow-2xl",
+          },
         });
 
         // Limpar campos
-        setNome(""); setEmail(""); setPassword("");
+        setNome("");
+        setEmail("");
+        setPassword("");
         if (onSuccess) onSuccess();
       }
     } catch (error: any) {
       console.error(error);
       let errorMessage = error.message;
-      
+
       if (error.code === "auth/email-already-in-use") {
-        errorMessage = "Este e-mail já está sendo utilizado por outro usuário no sistema.";
+        errorMessage =
+          "Este e-mail já está sendo utilizado por outro usuário no sistema.";
       } else if (error.code === "auth/weak-password") {
         errorMessage = "A senha é muito fraca. Use pelo menos 6 caracteres.";
       } else if (error.code === "auth/invalid-email") {
@@ -347,11 +418,11 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
         title: "Erro ao cadastrar",
         text: errorMessage,
         confirmButtonColor: "#0a0a2e",
-        background: '#fff',
-        color: '#0a0a2e',
+        background: "#fff",
+        color: "#0a0a2e",
         customClass: {
-          popup: 'rounded-2xl border border-slate-100 shadow-2xl'
-        }
+          popup: "rounded-2xl border border-slate-100 shadow-2xl",
+        },
       });
     } finally {
       setLoading(false);
@@ -360,7 +431,7 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
 
   const handleResetPassword = async () => {
     if (!userToEdit?.email) return;
-    
+
     try {
       setLoading(true);
       await forgotPassword(userToEdit.email);
@@ -369,11 +440,11 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
         title: "E-mail Enviado!",
         text: `Um link de redefinição de senha foi enviado para ${userToEdit.email}.`,
         confirmButtonColor: "#0a0a2e",
-        background: '#fff',
-        color: '#0a0a2e',
+        background: "#fff",
+        color: "#0a0a2e",
         customClass: {
-          popup: 'rounded-2xl border border-slate-100 shadow-2xl'
-        }
+          popup: "rounded-2xl border border-slate-100 shadow-2xl",
+        },
       });
     } catch (error: any) {
       console.error(error);
@@ -382,11 +453,11 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
         title: "Erro ao enviar",
         text: "Não foi possível enviar o e-mail de redefinição. Verifique a conexão ou se o e-mail é válido.",
         confirmButtonColor: "#0a0a2e",
-        background: '#fff',
-        color: '#0a0a2e',
+        background: "#fff",
+        color: "#0a0a2e",
         customClass: {
-          popup: 'rounded-2xl border border-slate-100 shadow-2xl'
-        }
+          popup: "rounded-2xl border border-slate-100 shadow-2xl",
+        },
       });
     } finally {
       setLoading(false);
@@ -406,9 +477,9 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
 
     try {
       setLoading(true);
-      const { functions } = await import('../../firebase');
-      const atualizarSenha = httpsCallable(functions, 'atualizarSenhaUsuario');
-      
+      const { functions } = await import("../../firebase");
+      const atualizarSenha = httpsCallable(functions, "atualizarSenhaUsuario");
+
       await atualizarSenha({ uid: userToEdit.uid, novaSenha: tempPassword });
 
       Swal.fire({
@@ -416,11 +487,11 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
         title: "Senha Atualizada!",
         text: `A senha de ${userToEdit.nome_completo} foi alterada para: ${tempPassword}`,
         confirmButtonColor: "#0a0a2e",
-        background: '#fff',
-        color: '#0a0a2e',
+        background: "#fff",
+        color: "#0a0a2e",
         customClass: {
-          popup: 'rounded-2xl border border-slate-100 shadow-2xl'
-        }
+          popup: "rounded-2xl border border-slate-100 shadow-2xl",
+        },
       });
       setTempPassword("");
     } catch (error: any) {
@@ -430,11 +501,11 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
         title: "Erro ao atualizar",
         text: "Não foi possível atualizar a senha. Verifique se você tem permissões de administrador.",
         confirmButtonColor: "#0a0a2e",
-        background: '#fff',
-        color: '#0a0a2e',
+        background: "#fff",
+        color: "#0a0a2e",
         customClass: {
-          popup: 'rounded-2xl border border-slate-100 shadow-2xl'
-        }
+          popup: "rounded-2xl border border-slate-100 shadow-2xl",
+        },
       });
     } finally {
       setLoading(false);
@@ -446,19 +517,25 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-6 mb-6 sm:mb-10 text-center sm:text-left">
         <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
           <div className="size-12 sm:size-16 bg-[#0a0a2e] rounded-2xl sm:rounded-[1.5rem] flex items-center justify-center text-white shadow-2xl shadow-blue-900/20 shrink-0">
-            {userToEdit ? <Edit3 size={24} className="sm:size-8" /> : <UserPlus size={24} className="sm:size-8" />}
+            {userToEdit ? (
+              <Edit3 size={24} className="sm:size-8" />
+            ) : (
+              <UserPlus size={24} className="sm:size-8" />
+            )}
           </div>
           <div>
             <h2 className="text-xl sm:text-3xl font-black text-[#0a0a2e] uppercase italic tracking-tighter leading-none">
-              {userToEdit ? 'Editar Especialista' : 'Expandir Equipe'}
+              {userToEdit ? "Editar Especialista" : "Expandir Equipe"}
             </h2>
             <p className="text-[8px] sm:text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-1 sm:mt-2">
-              {userToEdit ? `Configurações de ${userToEdit.nome_completo}` : 'Cadastro de Especialistas GSA IA v4.0'}
+              {userToEdit
+                ? `Configurações de ${userToEdit.nome_completo}`
+                : "Cadastro de Especialistas GSA IA v4.0"}
             </p>
           </div>
         </div>
 
-        {userToEdit && currentAdminProfile?.nivel === 'ADM_MASTER' && (
+        {userToEdit && currentAdminProfile?.nivel === "ADM_MASTER" && (
           <button
             type="button"
             onClick={handleDeleteUser}
@@ -469,17 +546,20 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
         )}
       </div>
 
-      <form onSubmit={handleSaveUser} className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8">
+      <form
+        onSubmit={handleSaveUser}
+        className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8"
+      >
         <div className="space-y-1.5 sm:space-y-2">
           <label className="text-[8px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 sm:ml-4 flex items-center gap-2">
             <Users size={10} className="sm:size-3" />
             Nome Completo
           </label>
-          <input 
-            required 
-            value={nome} 
+          <input
+            required
+            value={nome}
             onChange={(e) => setNome(e.target.value)}
-            className="w-full bg-slate-50 border border-slate-100 rounded-xl sm:rounded-[1.5rem] p-3.5 sm:p-5 text-xs sm:text-sm font-medium focus:ring-4 focus:ring-blue-500/10 outline-none transition-all placeholder:text-slate-300" 
+            className="w-full bg-slate-50 border border-slate-100 rounded-xl sm:rounded-[1.5rem] p-3.5 sm:p-5 text-xs sm:text-sm font-medium focus:ring-4 focus:ring-blue-500/10 outline-none transition-all placeholder:text-slate-300"
             placeholder="Ex: Marcos Analista"
           />
         </div>
@@ -489,13 +569,13 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
             <Mail size={10} className="sm:size-3" />
             E-mail de Acesso
           </label>
-          <input 
-            required 
-            type="email" 
+          <input
+            required
+            type="email"
             disabled={!!userToEdit}
-            value={email} 
+            value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full bg-slate-50 border border-slate-100 rounded-xl sm:rounded-[1.5rem] p-3.5 sm:p-5 text-xs sm:text-sm font-medium focus:ring-4 focus:ring-blue-500/10 outline-none transition-all placeholder:text-slate-300 disabled:opacity-50" 
+            className="w-full bg-slate-50 border border-slate-100 rounded-xl sm:rounded-[1.5rem] p-3.5 sm:p-5 text-xs sm:text-sm font-medium focus:ring-4 focus:ring-blue-500/10 outline-none transition-all placeholder:text-slate-300 disabled:opacity-50"
             placeholder="email@gsa.com"
           />
         </div>
@@ -505,11 +585,11 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
             <Shield size={10} className="sm:size-3" />
             CPF
           </label>
-          <input 
-            type="text" 
-            value={cpf} 
+          <input
+            type="text"
+            value={cpf}
             onChange={(e) => setCpf(e.target.value)}
-            className="w-full bg-slate-50 border border-slate-100 rounded-xl sm:rounded-[1.5rem] p-3.5 sm:p-5 text-xs sm:text-sm font-medium focus:ring-4 focus:ring-blue-500/10 outline-none transition-all placeholder:text-slate-300" 
+            className="w-full bg-slate-50 border border-slate-100 rounded-xl sm:rounded-[1.5rem] p-3.5 sm:p-5 text-xs sm:text-sm font-medium focus:ring-4 focus:ring-blue-500/10 outline-none transition-all placeholder:text-slate-300"
             placeholder="000.000.000-00"
           />
         </div>
@@ -519,11 +599,11 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
             <Users size={10} className="sm:size-3" />
             Telefone
           </label>
-          <input 
-            type="text" 
-            value={telefone} 
+          <input
+            type="text"
+            value={telefone}
             onChange={(e) => setTelefone(e.target.value)}
-            className="w-full bg-slate-50 border border-slate-100 rounded-xl sm:rounded-[1.5rem] p-3.5 sm:p-5 text-xs sm:text-sm font-medium focus:ring-4 focus:ring-blue-500/10 outline-none transition-all placeholder:text-slate-300" 
+            className="w-full bg-slate-50 border border-slate-100 rounded-xl sm:rounded-[1.5rem] p-3.5 sm:p-5 text-xs sm:text-sm font-medium focus:ring-4 focus:ring-blue-500/10 outline-none transition-all placeholder:text-slate-300"
             placeholder="(00) 00000-0000"
           />
         </div>
@@ -533,11 +613,11 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
             <Users size={10} className="sm:size-3" />
             Data de Nascimento
           </label>
-          <input 
-            type="date" 
-            value={dataNascimento} 
+          <input
+            type="date"
+            value={dataNascimento}
             onChange={(e) => setDataNascimento(e.target.value)}
-            className="w-full bg-slate-50 border border-slate-100 rounded-xl sm:rounded-[1.5rem] p-3.5 sm:p-5 text-xs sm:text-sm font-medium focus:ring-4 focus:ring-blue-500/10 outline-none transition-all placeholder:text-slate-300" 
+            className="w-full bg-slate-50 border border-slate-100 rounded-xl sm:rounded-[1.5rem] p-3.5 sm:p-5 text-xs sm:text-sm font-medium focus:ring-4 focus:ring-blue-500/10 outline-none transition-all placeholder:text-slate-300"
           />
         </div>
 
@@ -547,12 +627,12 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
               <Lock size={10} className="sm:size-3" />
               Senha Temporária
             </label>
-            <input 
-              required 
-              type="password" 
-              value={password} 
+            <input
+              required
+              type="password"
+              value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-100 rounded-xl sm:rounded-[1.5rem] p-3.5 sm:p-5 text-xs sm:text-sm font-medium focus:ring-4 focus:ring-blue-500/10 outline-none transition-all placeholder:text-slate-300" 
+              className="w-full bg-slate-50 border border-slate-100 rounded-xl sm:rounded-[1.5rem] p-3.5 sm:p-5 text-xs sm:text-sm font-medium focus:ring-4 focus:ring-blue-500/10 outline-none transition-all placeholder:text-slate-300"
               placeholder="••••••••"
             />
           </div>
@@ -564,14 +644,16 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
             Nível de Acesso (Role)
           </label>
           <div className="relative">
-            <select 
-              value={role} 
+            <select
+              value={role}
               onChange={(e) => setRole(e.target.value)}
               className="w-full bg-slate-50 border border-slate-100 rounded-xl sm:rounded-[1.5rem] p-3.5 sm:p-5 text-xs sm:text-sm font-black text-blue-600 outline-none appearance-none focus:ring-4 focus:ring-blue-500/10 transition-all"
             >
-              {currentAdminProfile?.nivel === 'ADM_MASTER' && (
+              {currentAdminProfile?.nivel === "ADM_MASTER" && (
                 <>
-                  <option value="ADM_MASTER">ADM MASTER (CONTROLE TOTAL)</option>
+                  <option value="ADM_MASTER">
+                    ADM MASTER (CONTROLE TOTAL)
+                  </option>
                   <option value="ADM_GERENTE">ADM GERENTE</option>
                   <option value="ADM_ANALISTA">ADM ANALISTA</option>
                   <option value="GESTOR">GESTOR DE EQUIPE</option>
@@ -579,7 +661,7 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
                   <option value="CLIENTE">CLIENTE</option>
                 </>
               )}
-              {currentAdminProfile?.nivel === 'ADM_GERENTE' && (
+              {currentAdminProfile?.nivel === "ADM_GERENTE" && (
                 <>
                   <option value="ADM_GERENTE">ADM GERENTE</option>
                   <option value="ADM_ANALISTA">ADM ANALISTA</option>
@@ -588,13 +670,13 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
                   <option value="CLIENTE">CLIENTE</option>
                 </>
               )}
-              {currentAdminProfile?.nivel === 'GESTOR' && (
+              {currentAdminProfile?.nivel === "GESTOR" && (
                 <>
                   <option value="VENDEDOR">VENDEDOR</option>
                   <option value="CLIENTE">CLIENTE</option>
                 </>
               )}
-              {currentAdminProfile?.nivel === 'VENDEDOR' && (
+              {currentAdminProfile?.nivel === "VENDEDOR" && (
                 <option value="CLIENTE">CLIENTE</option>
               )}
             </select>
@@ -610,11 +692,11 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
             Status da Conta
           </label>
           <div className="relative">
-            <select 
-              value={status} 
+            <select
+              value={status}
               onChange={(e) => setStatus(e.target.value)}
               className={`w-full bg-slate-50 border border-slate-100 rounded-xl sm:rounded-[1.5rem] p-3.5 sm:p-5 text-xs sm:text-sm font-black outline-none appearance-none focus:ring-4 focus:ring-blue-500/10 transition-all ${
-                status === 'APROVADO' ? 'text-emerald-600' : 'text-amber-600'
+                status === "APROVADO" ? "text-emerald-600" : "text-amber-600"
               }`}
             >
               <option value="APROVADO">APROVADO</option>
@@ -628,157 +710,165 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
         </div>
 
         {/* Percentual Empresa (Comissão GSA) */}
-        {['ADM_MASTER', 'ADM_GERENTE', 'GESTOR'].includes(currentAdminProfile?.nivel || '') && 
-         ['GESTOR', 'VENDEDOR', 'ADM_GERENTE', 'ADM_ANALISTA'].includes(role) && (
-          <div className="space-y-1.5 sm:space-y-2">
-            <label className="text-[8px] sm:text-[10px] font-black text-blue-600 uppercase tracking-widest ml-2 sm:ml-4 flex items-center gap-2">
-              <Shield size={10} className="sm:size-3" />
-              Percentual p/ Empresa (%)
-            </label>
-            <div className="relative">
-              <input 
-                type="number" 
-                step="0.1"
-                min="0"
-                max="100"
-                value={percentualEmpresa} 
-                onChange={(e) => setPercentualEmpresa(Number(e.target.value))}
-                className="w-full bg-blue-50 border border-blue-100 rounded-xl sm:rounded-[1.5rem] p-3.5 sm:p-5 text-xs sm:text-sm font-black text-blue-600 outline-none focus:ring-4 focus:ring-blue-500/10 transition-all" 
-                placeholder="Ex: 10"
-              />
-              <div className="absolute right-4 sm:right-6 top-1/2 -translate-y-1/2 pointer-events-none text-blue-400 font-black text-xs">
-                %
+        {["ADM_MASTER", "ADM_GERENTE", "GESTOR"].includes(
+          currentAdminProfile?.nivel || "",
+        ) &&
+          ["GESTOR", "VENDEDOR", "ADM_GERENTE", "ADM_ANALISTA"].includes(
+            role,
+          ) && (
+            <div className="space-y-1.5 sm:space-y-2">
+              <label className="text-[8px] sm:text-[10px] font-black text-blue-600 uppercase tracking-widest ml-2 sm:ml-4 flex items-center gap-2">
+                <Shield size={10} className="sm:size-3" />
+                Percentual p/ Empresa (%)
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  max="100"
+                  value={percentualEmpresa}
+                  onChange={(e) => setPercentualEmpresa(Number(e.target.value))}
+                  className="w-full bg-blue-50 border border-blue-100 rounded-xl sm:rounded-[1.5rem] p-3.5 sm:p-5 text-xs sm:text-sm font-black text-blue-600 outline-none focus:ring-4 focus:ring-blue-500/10 transition-all"
+                  placeholder="Ex: 10"
+                />
+                <div className="absolute right-4 sm:right-6 top-1/2 -translate-y-1/2 pointer-events-none text-blue-400 font-black text-xs">
+                  %
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {['ADM_MASTER', 'ADM_GERENTE', 'GESTOR'].includes(currentAdminProfile?.nivel || '') && 
-         ['GESTOR', 'VENDEDOR'].includes(role) && (
-          <div className="space-y-1.5 sm:space-y-2">
-            <label className="text-[8px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 sm:ml-4 flex items-center gap-2">
-              <Shield size={10} className="sm:size-3" />
-              Permissões de Venda
-            </label>
-            <div className="relative">
-              <select 
-                value={permissoesVenda} 
-                onChange={(e) => setPermissoesVenda(e.target.value as any)}
-                className="w-full bg-slate-50 border border-slate-100 rounded-xl sm:rounded-[1.5rem] p-3.5 sm:p-5 text-xs sm:text-sm font-black text-blue-600 outline-none appearance-none focus:ring-4 focus:ring-blue-500/10 transition-all"
-              >
-                <option value="VAREJO">VAREJO (INDIVIDUAL)</option>
-                <option value="ATACADO">ATACADO (EM MASSA)</option>
-                <option value="AMBOS">AMBOS (MASSA E INDIVIDUAL)</option>
-              </select>
-              <div className="absolute right-4 sm:right-6 top-1/2 -translate-y-1/2 pointer-events-none text-blue-600">
-                <ArrowRight size={14} className="rotate-90 sm:size-[18px]" />
+        {["ADM_MASTER", "ADM_GERENTE", "GESTOR"].includes(
+          currentAdminProfile?.nivel || "",
+        ) &&
+          ["GESTOR", "VENDEDOR"].includes(role) && (
+            <div className="space-y-1.5 sm:space-y-2">
+              <label className="text-[8px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 sm:ml-4 flex items-center gap-2">
+                <Shield size={10} className="sm:size-3" />
+                Permissões de Venda
+              </label>
+              <div className="relative">
+                <select
+                  value={permissoesVenda}
+                  onChange={(e) => setPermissoesVenda(e.target.value as any)}
+                  className="w-full bg-slate-50 border border-slate-100 rounded-xl sm:rounded-[1.5rem] p-3.5 sm:p-5 text-xs sm:text-sm font-black text-blue-600 outline-none appearance-none focus:ring-4 focus:ring-blue-500/10 transition-all"
+                >
+                  <option value="VAREJO">VAREJO (INDIVIDUAL)</option>
+                  <option value="ATACADO">ATACADO (EM MASSA)</option>
+                  <option value="AMBOS">AMBOS (MASSA E INDIVIDUAL)</option>
+                </select>
+                <div className="absolute right-4 sm:right-6 top-1/2 -translate-y-1/2 pointer-events-none text-blue-600">
+                  <ArrowRight size={14} className="rotate-90 sm:size-[18px]" />
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
         {/* Remuneração do Gestor */}
-        {role === 'GESTOR' && ['ADM_MASTER', 'ADM_GERENTE'].includes(currentAdminProfile?.nivel || '') && (
-          <div className="md:col-span-2 space-y-4 p-4 border border-indigo-100 bg-indigo-50/30 rounded-[1.5rem]">
-            <h3 className="text-[10px] font-black uppercase tracking-widest text-indigo-700 ml-2">Modelo de Remuneração do Gestor</h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div className="space-y-1.5 sm:space-y-2">
-                <label className="text-[8px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 flex items-center gap-2">
-                  <Shield size={10} />
-                  Tipo de Comissão
-                </label>
-                <div className="relative">
-                  <select 
-                    value={modeloComissao} 
-                    onChange={(e) => setModeloComissao(e.target.value as any)}
-                    className="w-full bg-white border border-indigo-100 rounded-xl p-3.5 text-xs font-black outline-none appearance-none focus:ring-4 focus:ring-indigo-500/10 transition-all text-indigo-900"
-                  >
-                    <option value="PADRAO">Padrão (Split Global)</option>
-                    <option value="TAXA_SERVICO">Apenas Taxa Fixa</option>
-                    <option value="COMISSAO_ESPECIAL">Taxa Fixa + % Sobre Lucro</option>
-                  </select>
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-indigo-400">
-                    <ArrowRight size={14} className="rotate-90" />
-                  </div>
-                </div>
-              </div>
+        {role === "GESTOR" &&
+          ["ADM_MASTER", "ADM_GERENTE"].includes(
+            currentAdminProfile?.nivel || "",
+          ) && (
+            <div className="md:col-span-2 space-y-4 p-4 border border-indigo-100 bg-indigo-50/30 rounded-[1.5rem]">
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-indigo-700 ml-2">
+                Modelo de Remuneração do Gestor
+              </h3>
 
-              {(modeloComissao === 'TAXA_SERVICO' || modeloComissao === 'COMISSAO_ESPECIAL') && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="space-y-1.5 sm:space-y-2">
                   <label className="text-[8px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 flex items-center gap-2">
-                    Custo Fixo p/ Empresa (R$)
-                  </label>
-                  <input 
-                    type="number" 
-                    step="0.01"
-                    min="0"
-                    value={taxaServicoFixa} 
-                    onChange={(e) => setTaxaServicoFixa(Number(e.target.value))}
-                    className="w-full bg-white border border-indigo-100 rounded-xl p-3.5 text-xs font-black text-indigo-900 outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all" 
-                    placeholder="R$ 0,00"
-                  />
-                </div>
-              )}
-
-              {modeloComissao === 'COMISSAO_ESPECIAL' && (
-                <div className="space-y-1.5 sm:space-y-2">
-                  <label className="text-[8px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 flex items-center gap-2">
-                    Comissão sobre o Lucro (%)
+                    <Shield size={10} />
+                    Tipo de Comissão
                   </label>
                   <div className="relative">
-                    <input 
-                      type="number" 
-                      step="0.1"
-                      min="0"
-                      max="100"
-                      value={comissaoEspecialPercentual} 
-                      onChange={(e) => setComissaoEspecialPercentual(Number(e.target.value))}
-                      className="w-full bg-white border border-indigo-100 rounded-xl p-3.5 text-xs font-black text-indigo-900 outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all" 
-                      placeholder="0.0%"
-                    />
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-indigo-400 font-black text-xs">
-                      %
+                    <select
+                      value={modeloComissao}
+                      onChange={(e) => setModeloComissao(e.target.value as any)}
+                      className="w-full bg-white border border-indigo-100 rounded-xl p-3.5 text-xs font-black outline-none appearance-none focus:ring-4 focus:ring-indigo-500/10 transition-all text-indigo-900"
+                    >
+                      <option value="PADRAO">Padrão (Split Global)</option>
+                      <option value="TAXA_SERVICO">Tabela de Custas</option>
+                      <option value="COMISSAO_ESPECIAL">
+                        Tabela de Custas + % Sobre Lucro
+                      </option>
+                    </select>
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-indigo-400">
+                      <ArrowRight size={14} className="rotate-90" />
                     </div>
                   </div>
                 </div>
-              )}
-            </div>
-            <p className="text-[9px] text-slate-500 font-medium px-2 leading-relaxed">
-              {modeloComissao === 'PADRAO' && "O rateio da venda seguirá a parametrização global configurada no Menu Principal > Split de Comissões."}
-              {modeloComissao === 'TAXA_SERVICO' && "O Gestor será cobrado um valor fixo por serviço pela plataforma e todo excedente da venda será dele."}
-              {modeloComissao === 'COMISSAO_ESPECIAL' && "O Gestor será cobrado o Custo Fixo inicial, e sobre o Lucro Restante (Venda - Custo Fixo) ele receberá uma porcentagem."}
-            </p>
-          </div>
-        )}
 
-        {role === "VENDEDOR" && !['GESTOR', 'VENDEDOR'].includes(currentAdminProfile?.nivel || '') && (
-          <motion.div 
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            className="space-y-1.5 sm:space-y-2 md:col-span-2"
-          >
-            <label className="text-[8px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 sm:ml-4 flex items-center gap-2">
-              <Users size={10} className="sm:size-3" />
-              Atribuir a um Gestor de Equipe
-            </label>
-            <div className="relative">
-              <select 
-                value={managerId} 
-                onChange={(e) => setManagerId(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-100 rounded-xl sm:rounded-[1.5rem] p-3.5 sm:p-5 text-xs sm:text-sm font-black text-indigo-600 outline-none appearance-none focus:ring-4 focus:ring-blue-500/10 transition-all"
-              >
-                <option value="">Selecionar Gestor...</option>
-                {listaGestores.map(gestor => (
-                  <option key={gestor.id} value={gestor.id}>{gestor.nome}</option>
-                ))}
-              </select>
-              <div className="absolute right-4 sm:right-6 top-1/2 -translate-y-1/2 pointer-events-none text-indigo-600">
-                <ArrowRight size={14} className="rotate-90 sm:size-[18px]" />
+                {/* Custo Fixo input was removed since we are getting the cost directly from the 'Tabela de Custas' */}
+
+                {modeloComissao === "COMISSAO_ESPECIAL" && (
+                  <div className="space-y-1.5 sm:space-y-2">
+                    <label className="text-[8px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 flex items-center gap-2">
+                      Comissão sobre o Lucro (%)
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        max="100"
+                        value={comissaoEspecialPercentual}
+                        onChange={(e) =>
+                          setComissaoEspecialPercentual(Number(e.target.value))
+                        }
+                        className="w-full bg-white border border-indigo-100 rounded-xl p-3.5 text-xs font-black text-indigo-900 outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all"
+                        placeholder="0.0%"
+                      />
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-indigo-400 font-black text-xs">
+                        %
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
+              <p className="text-[9px] text-slate-500 font-medium px-2 leading-relaxed">
+                {modeloComissao === "PADRAO" &&
+                  "O rateio da venda seguirá a parametrização global configurada no Menu Principal > Split de Comissões."}
+                {modeloComissao === "TAXA_SERVICO" &&
+                  "O Gestor será cobrado o valor da Tabela de Custas por serviço/produto e todo excedente da venda será dele."}
+                {modeloComissao === "COMISSAO_ESPECIAL" &&
+                  "O Gestor será cobrado o valor da Tabela de Custas, e sobre o Lucro Restante (Venda - Custo da Tabela) ele receberá a porcentagem estipulada acima."}
+              </p>
             </div>
-          </motion.div>
-        )}
+          )}
+
+        {role === "VENDEDOR" &&
+          !["GESTOR", "VENDEDOR"].includes(
+            currentAdminProfile?.nivel || "",
+          ) && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              className="space-y-1.5 sm:space-y-2 md:col-span-2"
+            >
+              <label className="text-[8px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 sm:ml-4 flex items-center gap-2">
+                <Users size={10} className="sm:size-3" />
+                Atribuir a um Gestor de Equipe
+              </label>
+              <div className="relative">
+                <select
+                  value={managerId}
+                  onChange={(e) => setManagerId(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-100 rounded-xl sm:rounded-[1.5rem] p-3.5 sm:p-5 text-xs sm:text-sm font-black text-indigo-600 outline-none appearance-none focus:ring-4 focus:ring-blue-500/10 transition-all"
+                >
+                  <option value="">Selecionar Gestor...</option>
+                  {listaGestores.map((gestor) => (
+                    <option key={gestor.id} value={gestor.id}>
+                      {gestor.nome}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute right-4 sm:right-6 top-1/2 -translate-y-1/2 pointer-events-none text-indigo-600">
+                  <ArrowRight size={14} className="rotate-90 sm:size-[18px]" />
+                </div>
+              </div>
+            </motion.div>
+          )}
 
         {userToEdit && (
           <div className="md:col-span-2 p-4 sm:p-8 bg-blue-50/50 rounded-[1.5rem] sm:rounded-2xl border border-blue-100/50 space-y-6 sm:space-y-8">
@@ -787,8 +877,12 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
                 <Shield className="size-5 sm:size-7" />
               </div>
               <div>
-                <h4 className="text-sm sm:text-xl font-black text-blue-900 uppercase italic tracking-tight">Segurança da Conta</h4>
-                <p className="text-[9px] sm:text-xs text-blue-600/70 font-bold uppercase tracking-widest">Controle de acesso e credenciais</p>
+                <h4 className="text-sm sm:text-xl font-black text-blue-900 uppercase italic tracking-tight">
+                  Segurança da Conta
+                </h4>
+                <p className="text-[9px] sm:text-xs text-blue-600/70 font-bold uppercase tracking-widest">
+                  Controle de acesso e credenciais
+                </p>
               </div>
             </div>
 
@@ -796,7 +890,9 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
               {/* Reset via Email */}
               <div className="bg-white/60 p-5 sm:p-6 rounded-2xl sm:rounded-3xl border border-blue-100 flex flex-col justify-between gap-4">
                 <div>
-                  <h5 className="text-[10px] sm:text-xs font-black text-blue-900 uppercase tracking-widest mb-1">Redefinição via E-mail</h5>
+                  <h5 className="text-[10px] sm:text-xs font-black text-blue-900 uppercase tracking-widest mb-1">
+                    Redefinição via E-mail
+                  </h5>
                   <p className="text-[9px] sm:text-[10px] text-blue-600/60 font-medium leading-relaxed">
                     Envia um link seguro para o e-mail do usuário.
                   </p>
@@ -815,7 +911,9 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
               {/* Senha Provisória */}
               <div className="bg-white/60 p-5 sm:p-6 rounded-2xl sm:rounded-3xl border border-blue-100 flex flex-col gap-4">
                 <div>
-                  <h5 className="text-[10px] sm:text-xs font-black text-blue-900 uppercase tracking-widest mb-1">Senha Provisória</h5>
+                  <h5 className="text-[10px] sm:text-xs font-black text-blue-900 uppercase tracking-widest mb-1">
+                    Senha Provisória
+                  </h5>
                   <p className="text-[9px] sm:text-[10px] text-blue-600/60 font-medium leading-relaxed">
                     Define uma senha manualmente agora.
                   </p>
@@ -825,7 +923,7 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                       <Lock className="h-3.5 w-3.5 text-blue-400" />
                     </div>
-                    <input 
+                    <input
                       type="text"
                       value={tempPassword}
                       onChange={(e) => setTempPassword(e.target.value)}
@@ -847,7 +945,7 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
           </div>
         )}
 
-        <button 
+        <button
           disabled={loading}
           className="md:col-span-2 bg-[#0a0a2e] text-white py-4 sm:py-6 rounded-xl sm:rounded-[1.8rem] font-black uppercase text-[9px] sm:text-xs tracking-[0.2em] sm:tracking-[0.3em] shadow-2xl shadow-blue-900/30 hover:scale-[1.01] active:scale-95 transition-all flex justify-center items-center gap-3 sm:gap-4 disabled:opacity-50 disabled:scale-100"
         >
@@ -858,17 +956,12 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({ userToEdit, onSuc
             </>
           ) : (
             <>
-              {userToEdit ? 'SALVAR ALTERAÇÕES' : 'CRIAR CONTA DE ACESSO'}
+              {userToEdit ? "SALVAR ALTERAÇÕES" : "CRIAR CONTA DE ACESSO"}
               <ArrowRight size={16} className="sm:size-5" />
             </>
           )}
         </button>
       </form>
-      <div className="mt-8 pt-8 border-t">
-        {(currentAdminProfile?.nivel === 'ADM_MASTER' || currentAdminProfile?.nivel === 'ADM_GERENTE' || currentAdminProfile?.nivel === 'ADM_ANALISTA') && (
-            <IncluirVendaDireta />
-        )}
-      </div>
     </div>
   );
 };
