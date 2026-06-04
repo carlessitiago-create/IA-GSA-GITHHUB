@@ -48,7 +48,7 @@ const SaaSLandingPage: React.FC = () => {
   const [selectedPlan, setSelectedPlan] = useState({ nome: '', preco: 0 });
   const [loading, setLoading] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
-  const [pixData, setPixData] = useState<{ id: string; protocolo: string; qrcode?: string; copiaECola?: string } | null>(null);
+  const [pixData, setPixData] = useState<{ id: string; protocolo: string; qrcode?: string; copiaECola?: string; invoiceUrl?: string; gateway?: string } | null>(null);
   const [manualRedirectLink, setManualRedirectLink] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState(900); // 15 minutos em segundos
   const [copied, setCopied] = useState(false);
@@ -434,14 +434,15 @@ const SaaSLandingPage: React.FC = () => {
           });
         }
         
-        console.log("Pagamento gerado:", mpResult);
+        console.log("Pagamento gerado completo:", JSON.stringify(mpResult, null, 2));
 
         // Armazena info da venda para o próximo passo
         const info = { 
           id: result.saleId, 
           protocolo: result.protocolo || result.saleId.substring(0, 8).toUpperCase(),
-          qrcode: mpResult.qr_code_base64,
-          copiaECola: mpResult.copy_paste,
+          qrcode: mpResult.qr_code_base64 || mpResult.qr_code || '',
+          copiaECola: mpResult.copy_paste || mpResult.payload || '',
+          invoiceUrl: mpResult.invoice_url || mpResult.invoiceUrl || '',
           gateway: config?.gateway_ativo || 'MERCADO_PAGO'
         };
         
@@ -645,41 +646,59 @@ const SaaSLandingPage: React.FC = () => {
             </div>
           </div>
 
-          {/* QR Code Real */}
-          <div className="bg-white p-4 rounded-2xl inline-block mb-6 shadow-inner">
-            {pixData?.qrcode ? (
-              <img 
-                src={pixData.qrcode.startsWith('data:image') ? pixData.qrcode : `data:image/png;base64,${pixData.qrcode}`}
-                alt="QR Code PIX" 
-                className="w-44 h-44"
-              />
-            ) : (
-              <img 
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(pixData?.copiaECola || '')}`} 
-                alt="QR Code PIX" 
-                className="w-44 h-44"
-                referrerPolicy="no-referrer"
-              />
-            )}
-          </div>
-
-          {/* Opção Copia e Cola */}
-          <div className="text-left mb-8">
-            <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">Código PIX (Copia e Cola)</label>
-            <div className="flex gap-2 mt-1">
-              <input 
-                readOnly
-                value={pixData?.copiaECola || 'Gerando código...'}
-                className="flex-1 bg-slate-900 border border-white/5 rounded-lg px-3 py-2 text-xs text-slate-400 font-mono truncate outline-none"
-              />
-              <button 
-                onClick={handleCopyPix}
-                className={`px-4 rounded-lg font-bold text-xs transition-all ${copied ? 'bg-green-500 text-slate-900' : 'bg-slate-700 text-white hover:bg-slate-600'}`}
-              >
-                {copied ? 'COPIADO!' : 'COPIAR'}
-              </button>
+          {/* QR Code Real ou Link de Fatura */}
+          {(!pixData?.qrcode && !pixData?.copiaECola && pixData?.invoiceUrl) ? (
+            <div className="bg-white p-6 rounded-2xl inline-block mb-6 shadow-inner w-full">
+               <div className="text-slate-800 text-sm font-bold mb-4">
+                 Opção de pagamento gerada.
+               </div>
+               <a 
+                 href={pixData.invoiceUrl} 
+                 target="_blank" 
+                 rel="noopener noreferrer"
+                 className="inline-block px-8 py-3 bg-blue-600 text-white font-black rounded-lg hover:bg-blue-700 transition"
+               >
+                 ACESSAR FATURA DE PAGAMENTO
+               </a>
             </div>
-          </div>
+          ) : (
+            <>
+              <div className="bg-white p-4 rounded-2xl inline-block mb-6 shadow-inner">
+                {pixData?.qrcode ? (
+                  <img 
+                    src={pixData.qrcode.startsWith('data:image') ? pixData.qrcode : `data:image/png;base64,${pixData.qrcode}`}
+                    alt="QR Code PIX" 
+                    className="w-44 h-44"
+                  />
+                ) : (
+                  <img 
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(pixData?.copiaECola || '')}`} 
+                    alt="QR Code PIX" 
+                    className="w-44 h-44"
+                    referrerPolicy="no-referrer"
+                  />
+                )}
+              </div>
+
+              {/* Opção Copia e Cola */}
+              <div className="text-left mb-8">
+                <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">Código PIX (Copia e Cola)</label>
+                <div className="flex gap-2 mt-1">
+                  <input 
+                    readOnly
+                    value={pixData?.copiaECola || 'Gerando código...'}
+                    className="flex-1 bg-slate-900 border border-white/5 rounded-lg px-3 py-2 text-xs text-slate-400 font-mono truncate outline-none"
+                  />
+                  <button 
+                    onClick={handleCopyPix}
+                    className={`px-4 rounded-lg font-bold text-xs transition-all ${copied ? 'bg-green-500 text-slate-900' : 'bg-slate-700 text-white hover:bg-slate-600'}`}
+                  >
+                    {copied ? 'COPIADO!' : 'COPIAR'}
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
 
           {/* Alerta de Automação */}
           <div className="bg-green-500/5 border border-green-500/20 p-4 rounded-xl mb-8">

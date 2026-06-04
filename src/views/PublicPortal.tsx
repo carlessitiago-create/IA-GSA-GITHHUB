@@ -847,19 +847,20 @@ export const PublicPortal = ({ previewConfig }: { previewConfig?: PublicPortalCo
                   </form>
                 </div>
               </div>
+
+              {/* Clube de Prêmios Banner (Final da página RESULT) */}
+              <div className="mt-12 bg-transparent pointer-events-none">
+                <div className="max-w-4xl mx-auto pointer-events-auto">
+                  <ClubePromoBanner 
+                    isPublic 
+                    onAction={() => window.location.href = searchParams.has('ref') ? `/?ref=${searchParams.get('ref')}` : '/'} 
+                  />
+                </div>
+              </div>
+
             </motion.div>
           )}
         </AnimatePresence>
-
-        {/* Clube de Prêmios Banner (Sticky no Rodapé) */}
-        <div className="fixed bottom-0 left-0 right-0 z-50 p-4 md:p-6 pointer-events-none">
-          <div className="max-w-4xl mx-auto pointer-events-auto">
-            <ClubePromoBanner 
-              isPublic 
-              onAction={() => window.location.href = searchParams.has('ref') ? `/?ref=${searchParams.get('ref')}` : '/'} 
-            />
-          </div>
-        </div>
         
       </div>
     </div>

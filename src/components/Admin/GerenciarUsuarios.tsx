@@ -233,10 +233,10 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({
           data_nascimento: dataNascimento,
           percentual_empresa: Number(percentualEmpresa),
           permissoes_venda: permissoesVenda,
-          modelo_comissao: role === "GESTOR" ? modeloComissao : "PADRAO",
-          taxa_servico_fixa: role === "GESTOR" ? Number(taxaServicoFixa) : 0,
+          modelo_comissao: ["GESTOR", "VENDEDOR"].includes(role) ? modeloComissao : "PADRAO",
+          taxa_servico_fixa: ["GESTOR", "VENDEDOR"].includes(role) ? Number(taxaServicoFixa) : 0,
           comissao_especial_percentual:
-            role === "GESTOR" ? Number(comissaoEspecialPercentual) : 0,
+            ["GESTOR", "VENDEDOR"].includes(role) ? Number(comissaoEspecialPercentual) : 0,
         };
 
         // Preservar ou atualizar id_superior logicamente
@@ -310,10 +310,10 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({
           status_conta: "APROVADO",
           percentual_empresa: Number(percentualEmpresa),
           permissoes_venda: permissoesVenda,
-          modelo_comissao: role === "GESTOR" ? modeloComissao : "PADRAO",
-          taxa_servico_fixa: role === "GESTOR" ? Number(taxaServicoFixa) : 0,
+          modelo_comissao: ["GESTOR", "VENDEDOR"].includes(role) ? modeloComissao : "PADRAO",
+          taxa_servico_fixa: ["GESTOR", "VENDEDOR"].includes(role) ? Number(taxaServicoFixa) : 0,
           comissao_especial_percentual:
-            role === "GESTOR" ? Number(comissaoEspecialPercentual) : 0,
+            ["GESTOR", "VENDEDOR"].includes(role) ? Number(comissaoEspecialPercentual) : 0,
         };
 
         // Se for vendedor, vincula ao gestor
@@ -765,14 +765,14 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({
             </div>
           )}
 
-        {/* Remuneração do Gestor */}
-        {role === "GESTOR" &&
+        {/* Remuneração do Especialista */}
+        {["GESTOR", "VENDEDOR"].includes(role) &&
           ["ADM_MASTER", "ADM_GERENTE"].includes(
             currentAdminProfile?.nivel || "",
           ) && (
             <div className="md:col-span-2 space-y-4 p-4 border border-indigo-100 bg-indigo-50/30 rounded-[1.5rem]">
               <h3 className="text-[10px] font-black uppercase tracking-widest text-indigo-700 ml-2">
-                Modelo de Remuneração do Gestor
+                Modelo de Remuneração do Especialista
               </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -830,9 +830,9 @@ const GerenciarUsuarios: React.FC<GerenciarUsuariosProps> = ({
                 {modeloComissao === "PADRAO" &&
                   "O rateio da venda seguirá a parametrização global configurada no Menu Principal > Split de Comissões."}
                 {modeloComissao === "TAXA_SERVICO" &&
-                  "O Gestor será cobrado o valor da Tabela de Custas por serviço/produto e todo excedente da venda será dele."}
+                  "O Especialista será cobrado o valor da Tabela de Custas por serviço/produto e todo excedente da venda será dele."}
                 {modeloComissao === "COMISSAO_ESPECIAL" &&
-                  "O Gestor será cobrado o valor da Tabela de Custas, e sobre o Lucro Restante (Venda - Custo da Tabela) ele receberá a porcentagem estipulada acima."}
+                  "O Especialista será cobrado o valor da Tabela de Custas, e sobre o Lucro Restante (Venda - Custo da Tabela) ele receberá a porcentagem estipulada acima."}
               </p>
             </div>
           )}

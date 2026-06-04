@@ -58,9 +58,6 @@ export function Sidebar({ currentProfile, logout, onClose }: any) {
             {(role.startsWith('ADM') || currentProfile?.permissoes_venda === 'VAREJO' || currentProfile?.permissoes_venda === 'AMBOS' || !currentProfile?.permissoes_venda) && (
               <MenuItem to="vendas-internas" icon={PlusCircle} label="Nova Venda" />
             )}
-            {role.startsWith('ADM') && (
-              <MenuItem to="nova-venda-admin" icon={UserPlus} label="Venda Administrativa" color="text-indigo-400" />
-            )}
             {/* Atacado - Em Massa */}
             {(role.startsWith('ADM') || currentProfile?.permissoes_venda === 'ATACADO' || currentProfile?.permissoes_venda === 'AMBOS') && (
               <MenuItem to="venda-massa" icon={Package} label="Venda em Massa" color="text-indigo-400" />
