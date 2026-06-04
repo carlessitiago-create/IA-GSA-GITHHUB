@@ -129,22 +129,21 @@ export const CheckoutCreditoView: React.FC = () => {
     }
 
     try {
-      const response = await fetch('/api/asaas/create-pix', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          customerName: rs,
-          customerCpfCnpj: cnpj,
-          value,
-          description: type === 'taxa_onboarding' ? 'Taxa de Diagnóstico GSA' : 'Honorários de Consultoria GSA',
-          externalReference: leadId
-        })
+      const { gerarPagamentoAsaasFront } = await import('../services/vendaService');
+      const data = await gerarPagamentoAsaasFront({
+        nome: rs,
+        cpf: cnpj,
+        email: leadData.email || 'financeiro@empresa.com',
+        valor: value,
+        descricao: type === 'taxa_onboarding' ? 'Taxa de Diagnóstico GSA' : 'Honorários de Consultoria GSA',
+        vendaId: leadId
       });
       
-      const data = await response.json();
-      if (!data.success) throw new Error(data.error || 'Falha ao gerar PIX');
-      
-      setPaymentData(data);
+      setPaymentData({
+        qr_code: data.copy_paste,
+        qr_code_base64: data.qr_code_base64,
+        payment_id: data.payment_id
+      });
       setPaymentStatus('PENDING');
 
       // Escuta as alterações no Firebase em tempo real

@@ -64,50 +64,9 @@ const SaaSLandingPage: React.FC = () => {
 
   // Inicializa o Pixel do Facebook
   useEffect(() => {
-    // Função auxiliar para disparar o PageView com segurança
-    const dispararPageView = () => {
-      if (typeof (window as any).fbq === 'function') {
-        (window as any).fbq('track', 'PageView');
-      }
-    };
+    const pixelId = config?.facebook_pixel_id || (config?.meta_pixel_code ? config?.meta_pixel_code.match(/fbq\('init',\s*['"]?(\d+)['"]?\)/)?.[1] : null);
 
-    // 1. Tenta carregar o código base completo (Script da Meta)
-    if (config?.meta_pixel_code) {
-      if (!document.head.innerHTML.includes('fbevents.js')) {
-        const template = document.createElement('template');
-        template.innerHTML = config.meta_pixel_code.trim();
-        
-        Array.from(template.content.childNodes).forEach((node) => {
-          if (node.nodeType === 1 && node.nodeName === 'SCRIPT') {
-            const scriptElement = document.createElement('script');
-            const originalScript = node as HTMLScriptElement;
-            
-            if (originalScript.src) {
-               scriptElement.src = originalScript.src;
-            }
-            scriptElement.textContent = originalScript.textContent;
-            
-            Array.from(originalScript.attributes).forEach(attr => {
-               scriptElement.setAttribute(attr.name, attr.value);
-            });
-            
-            document.head.appendChild(scriptElement);
-          } else if (node.nodeType === 1 && node.nodeName === 'NOSCRIPT') {
-             if (!document.head.innerHTML.includes('noscript')) {
-               document.head.appendChild(node.cloneNode(true));
-             }
-          }
-        });
-      } else {
-        // Se já foi carregado via meta code, disparamos o page view na montagem desta página
-        dispararPageView();
-      }
-    } 
-    // 2. Se não tem código base, tenta carregar só pelo ID
-    else if (config?.facebook_pixel_id) {
-      const pixelId = config.facebook_pixel_id;
-      
-      // Verifica se o pixel já foi inicializado
+    if (pixelId) {
       if (!(window as any).fbq) {
         ;(function(f: any,b: any,e: any,v: any,n?: any,t?: any,s?: any) {
           if(f.fbq) return;
@@ -123,14 +82,19 @@ const SaaSLandingPage: React.FC = () => {
           t.async = !0;
           t.src = v;
           s = b.getElementsByTagName(e)[0];
-          s.parentNode.insertBefore(t,s);
+          if (s && s.parentNode) {
+            s.parentNode.insertBefore(t,s);
+          } else {
+            document.head.appendChild(t);
+          }
         })(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
         
         (window as any).fbq('init', pixelId);
       }
       
-      // Sempre dispara PageView
-      dispararPageView();
+      if (typeof (window as any).fbq === 'function') {
+        (window as any).fbq('track', 'PageView');
+      }
     }
   }, [config?.facebook_pixel_id, config?.meta_pixel_code, location.pathname]);
 
@@ -472,7 +436,7 @@ const SaaSLandingPage: React.FC = () => {
                  eventSourceUrl: window.location.href,
                  userData: {
                    em: leadData.email,
-                   ph: leadData.telefone || leadData.whatsapp,
+                   ph: leadData.telefone,
                    fn: leadData.nome.split(' ')[0],
                    st: "sp", 
                    country: "br"

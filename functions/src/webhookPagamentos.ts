@@ -158,13 +158,26 @@ export const webhookPagamentos = onRequest(
                   const jsonResp = await response.json();
                   if (!response.ok) {
                     console.error("Meta CAPI Error in webhook:", JSON.stringify(jsonResp));
+                    await db.collection("logs_erro").add({
+                      origem: "Webhook - Meta CAPI HTTP",
+                      erro: JSON.stringify(jsonResp),
+                      payload: JSON.stringify(payload),
+                      timestamp: FieldValue.serverTimestamp(),
+                      emailLead: leadData.email || "",
+                    });
                   } else {
                     console.log("Meta CAPI Purchase Sent Successfully in webhook");
                   }
                 }
               }
-            } catch (capiError) {
+            } catch (capiError: any) {
               console.error("Erro disparando Meta CAPI no Webhook:", capiError);
+              await db.collection("logs_erro").add({
+                origem: "Webhook - Meta CAPI Exception",
+                erro: capiError.message || String(capiError),
+                timestamp: FieldValue.serverTimestamp(),
+                emailLead: leadData.email || "",
+              });
             }
 
             // 4. Buscar configs e notificar

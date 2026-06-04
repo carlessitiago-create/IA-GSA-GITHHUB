@@ -189,48 +189,18 @@ export async function gerarPagamentoPixGateway(data: {
 }
 
 export async function gerarPagamentoAsaasFront(data: any) {
-  const response = await fetch("/api/asaas/create-pix", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      customerName: data.nome,
-      customerEmail: data.email,
-      customerCpfCnpj: data.cpf,
-      value: data.valor,
-      description: data.descricao,
-      externalReference: data.vendaId,
-    }),
-  });
-
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    const detailMsg = err.details ? " - Detalhes: " + JSON.stringify(err.details) : "";
-    throw new Error(err.error + detailMsg || "Failed to create Asaas payment");
+  try {
+    const gerarPagamentoAsaas = httpsCallable(functions, "gerarPagamentoAsaas");
+    const result = await gerarPagamentoAsaas(data);
+    return result.data as {
+      payment_id: string;
+      copy_paste: string;
+      qr_code_base64: string;
+      status: string;
+      invoice_url: string;
+      gateway: string;
+    };
+  } catch (error) {
+    return handleFirebaseError(error, "AsaasGateway");
   }
-
-  const result = await response.json();
-
-  // Atualiza o Firestore no frontend, já que bypassamos a Cloud Function
-  if (data.vendaId) {
-    try {
-      const { db } = await import("../firebase");
-      const { doc, updateDoc, serverTimestamp } =
-        await import("firebase/firestore");
-      await updateDoc(doc(db, "sales", data.vendaId), {
-        asaas_payment_id: result.payment_id,
-        gateway: "ASAAS",
-        status_pagamento: "Pendente",
-        updated_at: serverTimestamp(),
-      });
-    } catch (e) {
-      console.error("Falha ao atualizar venda no Firestore", e);
-    }
-  }
-
-  return {
-    qr_code_base64: result.qr_code_base64,
-    copy_paste: result.qr_code,
-    payment_id: result.payment_id,
-    invoice_url: result.invoice_url,
-  };
 }

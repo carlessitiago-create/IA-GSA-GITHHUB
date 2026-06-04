@@ -199,27 +199,23 @@ export const CreditoDashboardView: React.FC = () => {
 
     try {
        Swal.fire({ title: 'Gerando cobrança Asaas...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-       const response = await fetch('/api/asaas/create-pix', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-             customerName: lead.dadosEmpresa.razaoSocial || lead.dadosEmpresa.cnpj,
-             customerCpfCnpj: lead.dadosEmpresa.cnpj,
-             value: fee,
-             description: 'Honorários de Análise de Crédito GSA (' + lead.tipoCredito + ')',
-             externalReference: leadId
-          })
-       });
        
-       const resJson = await response.json();
-       if (!resJson.success) throw new Error(resJson.error || 'Falha ao processar pagamento.');
+       const { gerarPagamentoAsaasFront } = await import('../services/vendaService');
+       const resJson = await gerarPagamentoAsaasFront({
+         nome: lead.dadosEmpresa.razaoSocial || lead.dadosEmpresa.cnpj,
+         cpf: lead.dadosEmpresa.cnpj,
+         email: 'financeiro@empresa.com',
+         valor: fee,
+         descricao: 'Honorários de Análise de Crédito GSA (' + lead.tipoCredito + ')',
+         vendaId: leadId
+       });
 
        await updateDoc(doc(db, 'leads_credito', leadId), {
          'financeiro.taxaFixaEstipuladaAdmin': fee,
          'dadosPagamentoAsaas': {
              idCobrancaAsaas: resJson.payment_id,
              pixQrCodeBase64: resJson.qr_code_base64,
-             pixCopiaCola: resJson.qr_code,
+             pixCopiaCola: resJson.copy_paste,
              statusPagamento: 'PENDING'
          },
          'status': 'aguardando_pagamento_taxa'
