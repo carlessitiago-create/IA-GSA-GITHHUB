@@ -1,4 +1,4 @@
-import { initializeApp } from 'firebase/app';
+import { initializeApp, getApp, getApps } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore, doc, getDocFromServer, initializeFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
@@ -9,7 +9,7 @@ import firebaseConfigImport from '../firebase-applet-config.json';
 export const firebaseConfig = firebaseConfigImport;
 
 // Initialize Firebase SDK
-export const app = initializeApp(firebaseConfig);
+export const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 console.log("Firebase initialized with dbId:", firebaseConfig.firestoreDatabaseId);
 export const db = initializeFirestore(app, {
   experimentalForceLongPolling: true,
