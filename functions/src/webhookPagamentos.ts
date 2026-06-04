@@ -116,7 +116,7 @@ export const webhookPagamentos = onRequest(
               if (saasDoc.exists) {
                 const saasConfig = saasDoc.data();
                 const token = saasConfig?.meta_conversions_token;
-                const pixelId = saasConfig?.facebook_pixel_id || (saasConfig?.meta_pixel_code ? saasConfig.meta_pixel_code.match(/fbq\('init',\s*'(\d+)'\)/)?.[1] : null);
+                const pixelId = saasConfig?.facebook_pixel_id || (saasConfig?.meta_pixel_code ? saasConfig.meta_pixel_code.match(/fbq\('init',\s*['"]?(\d+)['"]?\)/)?.[1] : null);
                 
                 if (token && pixelId) {
                   const url = `https://graph.facebook.com/v19.0/${pixelId}/events`;

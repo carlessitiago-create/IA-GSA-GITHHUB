@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import { useSmartNavigate } from '../utils/navigation';
 import { doc, onSnapshot } from 'firebase/firestore';
 import confetti from 'canvas-confetti';
@@ -56,15 +56,19 @@ const SaaSLandingPage: React.FC = () => {
   const [config, setConfig] = useState<SaasConfig | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const location = useLocation();
+
   // Carrega as configurações do SaaS
   useEffect(() => {
-    console.log("SaaSLandingPage: Component Mounted - Path:", window.location.pathname);
+    console.log("SaaSLandingPage: Component Mounted - Path:", location.pathname);
     getSaasConfig().then(setConfig).catch(err => console.error("Erro ao carregar config SaaS:", err));
   }, []);
 
   // Inicializa o Pixel do Facebook
   useEffect(() => {
     const pixelId = config?.facebook_pixel_id || (config?.meta_pixel_code ? config?.meta_pixel_code.match(/fbq\('init',\s*['"]?(\d+)['"]?\)/)?.[1] : null);
+
+    console.log("Checando Meta Pixel ID:", pixelId);
 
     if (pixelId) {
       if (!(window as any).fbq) {
@@ -85,16 +89,13 @@ const SaaSLandingPage: React.FC = () => {
           if (s && s.parentNode) {
             s.parentNode.insertBefore(t,s);
           } else {
-            document.head.appendChild(t);
+            b.head.appendChild(t);
           }
         })(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
-        
-        (window as any).fbq('init', pixelId);
       }
       
-      if (typeof (window as any).fbq === 'function') {
-        (window as any).fbq('track', 'PageView');
-      }
+      (window as any).fbq('init', pixelId);
+      (window as any).fbq('track', 'PageView');
     }
   }, [config?.facebook_pixel_id, config?.meta_pixel_code, location.pathname]);
 
@@ -424,7 +425,7 @@ const SaaSLandingPage: React.FC = () => {
           }
 
           // Dispara evento InitiateCheckout Backend (Conversions API)
-          const pixelId = config?.facebook_pixel_id || (config?.meta_pixel_code ? config?.meta_pixel_code.match(/fbq\('init',\s*'(\d+)'\)/)?.[1] : null);
+          const pixelId = config?.facebook_pixel_id || (config?.meta_pixel_code ? config?.meta_pixel_code.match(/fbq\('init',\s*['"]?(\d+)['"]?\)/)?.[1] : null);
           if (config?.meta_conversions_token && pixelId) {
             fetch('/api/meta-conversions', {
               method: 'POST',
