@@ -42,6 +42,7 @@ export interface SaasConfig {
   asaas_key?: string;
   facebook_pixel_id?: string;
   meta_pixel_code?: string;
+  meta_conversions_token?: string;
   tiktok_pixel_code?: string;
   instrucoes_checkout: string;
   vsl_youtube_id?: string;

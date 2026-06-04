@@ -279,8 +279,22 @@ export const AdminSaasSettings: React.FC = () => {
                 placeholder="123456789012345"
                 className="w-full bg-slate-50 border-none rounded-2xl p-4 text-sm font-bold text-[#0a0a2e] focus:ring-2 focus:ring-blue-600 outline-none"
               />
-              <p className="text-[10px] text-slate-400 font-bold leading-relaxed uppercase mt-2">
+              <p className="text-[10px] text-slate-400 font-bold leading-relaxed uppercase mt-2 mb-4">
                 O Pixel será ativado automaticamente na Landing Page. Tente usar o campo de código base acima primeiro, ou apenas informe o ID aqui.
+              </p>
+            </div>
+
+            <div className="pt-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Meta Conversions API Token</label>
+              <input 
+                type="text"
+                value={config?.meta_conversions_token || ''}
+                onChange={(e) => setConfig(prev => prev ? { ...prev, meta_conversions_token: e.target.value } : null)}
+                placeholder="EAA..."
+                className="w-full bg-slate-50 border-none rounded-2xl p-4 text-sm font-bold text-[#0a0a2e] focus:ring-2 focus:ring-blue-600 outline-none"
+              />
+              <p className="text-[10px] text-slate-400 font-bold leading-relaxed uppercase mt-2 mb-4">
+                Token de acesso da API de Conversões do Meta. Necessário para disparar os eventos de Purchase e Conversões offline (server-side).
               </p>
             </div>
           </div>

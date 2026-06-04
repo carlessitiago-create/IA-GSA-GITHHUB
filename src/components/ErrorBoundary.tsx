@@ -1,5 +1,7 @@
 import * as React from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { db } from '../firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 interface Props {
   children: React.ReactNode;
@@ -9,6 +11,24 @@ interface State {
   hasError: boolean;
   error: Error | null;
 }
+
+// Helper function to log errors
+const logReactError = async (error: Error, errorInfo: React.ErrorInfo) => {
+  try {
+    console.error("Centralized React Render Error:", error, errorInfo);
+    await addDoc(collection(db, "logs_erro"), {
+      type: 'react_render_error',
+      message: error.message,
+      stack: error.stack || null,
+      componentStack: errorInfo.componentStack,
+      timestamp: serverTimestamp(),
+      url: window.location.href,
+      userAgent: navigator.userAgent
+    });
+  } catch (err) {
+    console.error("Falha ao salvar log de erro no Firestore:", err);
+  }
+};
 
 class ErrorBoundary extends React.Component<Props, State> {
   constructor(props: Props) {
@@ -25,6 +45,7 @@ class ErrorBoundary extends React.Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('Uncaught error:', error, errorInfo);
+    logReactError(error, errorInfo);
   }
 
   public render() {

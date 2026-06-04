@@ -11,9 +11,20 @@ export const firebaseConfig = firebaseConfigImport;
 // Initialize Firebase SDK
 export const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 console.log("Firebase initialized with dbId:", firebaseConfig.firestoreDatabaseId);
-export const db = initializeFirestore(app, {
-  experimentalForceLongPolling: true,
-}, firebaseConfig.firestoreDatabaseId === '(default)' ? undefined : firebaseConfig.firestoreDatabaseId);
+
+let firestoreInstance;
+try {
+  firestoreInstance = initializeFirestore(app, {
+    experimentalForceLongPolling: true,
+  }, firebaseConfig.firestoreDatabaseId === '(default)' ? undefined : firebaseConfig.firestoreDatabaseId);
+} catch (e: any) {
+  if (e.message && e.message.includes('Firestore has already been started')) {
+    firestoreInstance = getFirestore(app);
+  } else {
+    firestoreInstance = getFirestore(app);
+  }
+}
+export const db = firestoreInstance;
 console.log("Firestore db instance configured:", db);
 export const auth = getAuth(app);
 export const storage = getStorage(app);

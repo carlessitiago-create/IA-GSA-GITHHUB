@@ -9,6 +9,14 @@ export default defineConfig(({ mode }) => {
   
   return {
     plugins: [react(), tailwindcss()],
+    build: {
+      rollupOptions: {
+        onwarn(warning, warn) {
+          if (warning.message.includes('is dynamically imported by')) return;
+          warn(warning);
+        }
+      }
+    },
     define: {
     },
     resolve: {

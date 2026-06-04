@@ -6,6 +6,23 @@ import { DashboardLayout } from "./components/DashboardLayout";
 import { DashboardFinanceiro } from "./pages/DashboardFinanceiro";
 import { SplitCommissionSettingsView } from "./views/SplitCommissionSettingsView";
 import { MAIN_DOMAINS } from "./utils/navigation";
+import { db } from "./firebase";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+
+// Helper function to log errors
+const logErrorToFirestore = async (errorInfo: any) => {
+  try {
+    console.error("Centralized System Error:", errorInfo);
+    await addDoc(collection(db, "logs_erro"), {
+      ...errorInfo,
+      timestamp: serverTimestamp(),
+      url: window.location.href,
+      userAgent: navigator.userAgent
+    });
+  } catch (err) {
+    console.error("Falha ao salvar log de erro no Firestore:", err);
+  }
+};
 
 // Lazy Loading Views
 const LoginView = lazy(() => import("./components/LoginView").then(m => ({ default: m.default })));
@@ -50,6 +67,7 @@ const VendaEmMassaView = lazy(() => import("./views/VendaEmMassaView").then(m =>
 const GestaoLotesView = lazy(() => import("./views/GestaoLotesView").then(m => ({ default: m.GestaoLotesView })));
 const GerenciadorNotificacoesView = lazy(() => import("./views/GerenciadorNotificacoesView").then(m => ({ default: m.GerenciadorNotificacoes })));
 const NovaVendaAdminView = lazy(() => import("./views/NovaVendaAdminView").then(m => ({ default: m.NovaVendaAdminView })));
+const LeadsView = lazy(() => import("./components/GSA/LeadsView").then(m => ({ default: m.LeadsView })));
 const CheckoutCreditoView = lazy(() => import("./views/CheckoutCreditoView").then(m => ({ default: m.CheckoutCreditoView })));
 const QuizCreditoPublicoView = lazy(() => import("./views/QuizCreditoPublicoView").then(m => ({ default: m.QuizCreditoPublicoView })));
 
@@ -94,6 +112,36 @@ const App: React.FC = () => {
   const location = useLocation();
   const hostname = window.location.hostname.toLowerCase();
   const path = location.pathname.toLowerCase();
+
+  // Global Error Tracking
+  useEffect(() => {
+    const handleError = (event: ErrorEvent) => {
+      logErrorToFirestore({
+        type: 'window_error',
+        message: event.message,
+        filename: event.filename,
+        lineno: event.lineno,
+        colno: event.colno,
+        stack: event.error?.stack || null
+      });
+    };
+
+    const handleRejection = (event: PromiseRejectionEvent) => {
+      logErrorToFirestore({
+        type: 'unhandled_rejection',
+        reason: event.reason?.message || String(event.reason),
+        stack: event.reason?.stack || null
+      });
+    };
+
+    window.addEventListener("error", handleError);
+    window.addEventListener("unhandledrejection", handleRejection);
+
+    return () => {
+      window.removeEventListener("error", handleError);
+      window.removeEventListener("unhandledrejection", handleRejection);
+    };
+  }, []);
 
   // FORCED LOGGING - Will definitely appear in console
   console.log("CRITICAL: GSA App Hostname detected:", hostname, "Path:", path);
@@ -199,6 +247,8 @@ const App: React.FC = () => {
             <Route path="/gestao-lotes" element={<GestaoLotesView />} />
             <Route path="/nova-venda-admin" element={<NovaVendaAdminView />} />
             <Route path="/leads" element={<LeadsCentralView />} />
+            <Route path="/gerenciamento-leads" element={<LeadsView />} />
+            <Route path="/diagnostico-leads" element={<LeadsView />} />
             <Route path="/operacional" element={<OperationalView />} />
             <Route path="/pendencias" element={<PendencyList />} />
             <Route path="/auditoria" element={<AuditoriaProcesso />} />

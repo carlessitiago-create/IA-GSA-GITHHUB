@@ -63,6 +63,7 @@ export function Sidebar({ currentProfile, logout, onClose }: any) {
               <MenuItem to="venda-massa" icon={Package} label="Venda em Massa" color="text-indigo-400" />
             )}
             <MenuItem to="leads" icon={TrendingUp} label="Leads e Indicações" />
+            <MenuItem to="diagnostico-leads" icon={Activity} label="Leads Diagnóstico" />
             <MenuItem to="gestao-credito" icon={Banknote} label="Crédito Corporativo" color="text-green-400" />
             <MenuItem to="vitrine" icon={ShoppingBag} label="Vitrine GSA" />
             {role !== 'ADM_ANALISTA' && <MenuItem to="clube" icon={Gift} label={role.startsWith('ADM') ? "Clube de Pontos" : "Clube de Vantagens"} />}

@@ -1101,7 +1101,8 @@ export const gerarPagamentoAsaas = onCall(
       return {
         payment_id: paymentId,
         copy_paste: qrRes.data.payload || qrRes.data.qrCode || "",
-        qr_code_base64: qrRes.data.encodedImage || qrRes.data.qrCodeBase64 || "",
+        qr_code_base64:
+          qrRes.data.encodedImage || qrRes.data.qrCodeBase64 || "",
         status: paymentRes.data.status,
         invoice_url: paymentRes.data.invoiceUrl || "",
         gateway: "ASAAS",
@@ -1387,6 +1388,8 @@ export const onProcessoAtualizado = functions.firestore
         });
     }
   });
+
+export { webhookPagamentos } from "./src/webhookPagamentos";
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
