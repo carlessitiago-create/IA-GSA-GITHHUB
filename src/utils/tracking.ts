@@ -79,23 +79,21 @@ export const trackPurchase = async (plano: string, preco: number) => {
       const pixelId = saasConfig.facebook_pixel_id || 
                      (saasConfig.meta_pixel_code ? saasConfig.meta_pixel_code.match(/fbq\(['"]init['"],\s*['"]?(\d+)['"]?\)/)?.[1] : null);
       if (pixelId) {
-        const { functions } = await import('../firebase');
-        const { httpsCallable } = await import('firebase/functions');
-        const metaConversionsFn = httpsCallable(functions, 'metaConversions');
-        await metaConversionsFn({
-          pixelId,
-          token: saasConfig.meta_conversions_token,
-          eventName: 'Purchase',
-          eventTime: Math.floor(Date.now() / 1000),
-          userData: {
-            // Se tivermos os dados do lead, podemos colocar.
-            // Para anonimizar ou lidar com falta, vamos enviar vazio.
-          },
-          customData: {
-            currency: 'BRL',
-            value: preco
-          }
-        });
+        await fetch("/api/meta-conversions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            pixelId,
+            token: saasConfig.meta_conversions_token,
+            eventName: 'Purchase',
+            eventTime: Math.floor(Date.now() / 1000),
+            userData: {},
+            customData: {
+              currency: 'BRL',
+              value: preco
+            }
+          })
+        }).catch(err => console.error("Erro na Conversions API via server", err));
       }
     }
   } catch (e) {

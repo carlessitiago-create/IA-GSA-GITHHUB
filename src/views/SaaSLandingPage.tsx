@@ -376,6 +376,27 @@ const SaaSLandingPage: React.FC = () => {
           throw new Error("A venda foi processada, mas o servidor não retornou um ID de venda válido.");
         }
 
+        // 1. Cria Registro do Lead como PENDENTE no Firestore
+        let leadRef: any = null;
+        try {
+            const { db } = await import('../firebase');
+            const { collection, addDoc } = await import('firebase/firestore');
+            leadRef = await addDoc(collection(db, 'leads_diagnostico'), {
+                ...leadData,
+                gateway_usado: config?.gateway_ativo?.toLowerCase() || 'mercadopago',
+                status_pagamento: 'pendente',
+                clienteId: novoCliente.id,
+                vendaId: result.saleId,
+                pacote_escolhido: selectedPlan.nome,
+                valor_venda: selectedPlan.preco,
+                criadoEm: new Date().toISOString(),
+                identificador_pagamento: '' // A ser preenchido após gateway
+            });
+            console.log("Lead criado como PENDENTE. ID:", leadRef.id);
+        } catch (e) {
+            console.warn("Falha ao salvar no leads_diagnostico antecipadamente:", e);
+        }
+
         // 3. Gera o pagamento no Gateway (Asaas / Mercado Pago)
         let mpResult: any;
         if (config?.gateway_ativo === 'ASAAS') {
@@ -383,7 +404,7 @@ const SaaSLandingPage: React.FC = () => {
           const { gerarPagamentoAsaasFront } = await import('../services/vendaService');
           mpResult = await gerarPagamentoAsaasFront({
             valor: selectedPlan.preco,
-            descricao: `Plano ${selectedPlan.nome}`,
+            descricao: `GSA Diagnóstico - ${selectedPlan.nome}`,
             email: leadData.email,
             nome: leadData.nome,
             cpf: leadData.documento,
@@ -396,7 +417,7 @@ const SaaSLandingPage: React.FC = () => {
           const { gerarPagamentoPixGateway } = await import('../services/vendaService');
           mpResult = await gerarPagamentoPixGateway({
             valor: selectedPlan.preco,
-            descricao: `Plano ${selectedPlan.nome}`,
+            descricao: `GSA Diagnóstico - ${selectedPlan.nome}`,
             email: leadData.email,
             nome: leadData.nome,
             cpf: leadData.documento,
@@ -407,6 +428,19 @@ const SaaSLandingPage: React.FC = () => {
         }
         
         console.log("Pagamento gerado completo:", JSON.stringify(mpResult, null, 2));
+
+        // 4. Atualiza o identificador de pagamento no Lead
+        if (leadRef) {
+          try {
+             const { updateDoc } = await import('firebase/firestore');
+             const finalPaymentId = mpResult.payment_id || mpResult.id || '';
+             if (finalPaymentId) {
+               await updateDoc(leadRef, { identificador_pagamento: finalPaymentId });
+             }
+          } catch(e) {
+            console.warn("Erro ao atualizar identificador_pagamento do lead", e);
+          }
+        }
 
         // Armazena info da venda para o próximo passo
         const info = { 

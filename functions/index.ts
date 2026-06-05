@@ -1361,20 +1361,20 @@ export const analyzeSmartFicha = onCall(async (request) => {
 
   try {
     console.log("Analyzing with prompt length:", prompt.length);
-    const res = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+    const res = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
       contents: [{ role: "user", parts: [{ text: prompt }] }],
       generationConfig: {
         responseMimeType: "application/json",
         responseSchema: {
           type: "OBJECT",
           properties: {
-            score_urgencia: { type: "NUMBER" },
-            nivel_urgencia: { type: "STRING" },
-            acao_recomendada: { type: "STRING" },
-            sales_pitch: { type: "STRING" },
-            gatilho_mental: { type: "STRING" },
-            key_insights: { type: "ARRAY", items: { type: "STRING" } }
-          }
+            urgencyScore: { type: "NUMBER", description: "0 a 100" },
+            urgencyLevel: { type: "STRING", description: "BAIXA, MEDIA, ALTA, CRITICA" },
+            recommendedAction: { type: "STRING" },
+            salesPitch: { type: "STRING" },
+            keyInsights: { type: "ARRAY", items: { type: "STRING" } }
+          },
+          required: ["urgencyScore", "urgencyLevel", "recommendedAction", "salesPitch", "keyInsights"]
         }
       }
     });
@@ -1407,7 +1407,7 @@ export const analyzeDocument = onCall(async (request) => {
   `;
 
   try {
-    const res = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+    const res = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
       contents: [{
         parts: [
           { text: prompt },

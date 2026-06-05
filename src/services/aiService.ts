@@ -23,14 +23,20 @@ export interface DocumentAnalysisResult {
 
 export const analyzeDocument = async (file: File): Promise<DocumentAnalysisResult> => {
   try {
-    const { functions } = await import('../firebase');
-    const { httpsCallable } = await import('firebase/functions');
     const base64Data = await fileToBase64(file);
     const mimeType = file.type;
 
-    const analyzeFn = httpsCallable(functions, 'analyzeDocument');
-    const res = await analyzeFn({ base64Data: base64Data.split(',')[1], mimeType });
-    return res.data as DocumentAnalysisResult;
+    const res = await fetch("/api/ai/analyzeDocument", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ base64Data: base64Data.split(',')[1], mimeType })
+    });
+    
+    if (!res.ok) {
+        throw new Error(await res.text());
+    }
+    
+    return (await res.json()) as DocumentAnalysisResult;
   } catch (error: any) {
     console.error("Erro na análise do documento:", error);
     throw new Error("Falha ao analisar o documento. Por favor, tente novamente.");
@@ -56,12 +62,17 @@ export interface TriageResult {
 
 export const analyzeSmartFicha = async (leadData: any): Promise<TriageResult> => {
   try {
-    const { functions } = await import('../firebase');
-    const { httpsCallable } = await import('firebase/functions');
-    const analyzeFn = httpsCallable(functions, 'analyzeSmartFicha');
-    const res = await analyzeFn({ leadData });
+    const res = await fetch("/api/ai/analyzeSmartFicha", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ leadData }),
+    });
 
-    return res.data as TriageResult;
+    if (!res.ok) {
+        throw new Error(await res.text());
+    }
+
+    return (await res.json()) as TriageResult;
   } catch (error: any) {
     console.error("Erro na triagem da Ficha com IA:", error);
     // Retorna fallback gracioso para não quebrar a UI
