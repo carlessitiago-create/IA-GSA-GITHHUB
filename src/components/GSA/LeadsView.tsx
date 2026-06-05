@@ -108,27 +108,6 @@ export const LeadsView: React.FC = () => {
       if (saasConfig?.meta_conversions_token) {
         const pixelId = saasConfig.facebook_pixel_id || (saasConfig.meta_pixel_code ? saasConfig.meta_pixel_code.match(/fbq\(['"]init['"],\s*['"]?(\d+)['"]?\)/)?.[1] : null);
         if (pixelId) {
-          fetch('/api/meta-conversions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-               pixelId: pixelId,
-               token: saasConfig.meta_conversions_token,
-               eventName: "Purchase",
-               eventSourceUrl: window.location.href,
-               userData: {
-                 em: lead.email,
-                 ph: lead.whatsapp,
-                 fn: lead.nome?.split(' ')[0],
-                 country: "br"
-               },
-               customData: {
-                 value: lead.valor_venda,
-                 currency: "BRL",
-                 content_name: lead.pacote_escolhido
-               }
-            })
-          }).catch(e => console.error("Erro background CAPI:", e));
         }
       }
 

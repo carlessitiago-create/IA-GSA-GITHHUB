@@ -171,32 +171,16 @@ export async function gerarPagamentoPixGateway(data: {
   try {
     const { auth } = await import("../firebase");
     await auth.authStateReady();
-    const token = await auth.currentUser?.getIdToken(true);
 
-    const res = await fetch('/api/consultations/create-pix', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        transactionAmount: data.valor,
-        description: data.descricao,
-        clientEmail: data.email,
-        requestId: data.vendaId
-      })
-    });
-
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => ({}));
-      throw new Error(errorData.error || `HTTP ${res.status}`);
-    }
-
-    const result = await res.json();
-    return {
-      id: result.payment_id,
-      status: "pending",
-      qr_code: result.qr_code,
-      qr_code_base64: result.qr_code_base64,
-      copy_paste: result.qr_code,
-      gateway: "MERCADO_PAGO"
+    const gerarPagamento = httpsCallable(functions, "gerarPagamentoPixGateway");
+    const result = await gerarPagamento(data);
+    return result.data as {
+      id: string;
+      status: string;
+      qr_code: string;
+      qr_code_base64: string;
+      copy_paste: string;
+      gateway: string;
     };
   } catch (error) {
     return handleFirebaseError(error, "PixGateway");
@@ -205,32 +189,15 @@ export async function gerarPagamentoPixGateway(data: {
 
 export async function gerarPagamentoAsaasFront(data: any) {
   try {
-    const res = await fetch('/api/asaas/create-pix', {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        customerName: data.nome,
-        customerEmail: data.email,
-        customerCpfCnpj: data.cpf,
-        value: data.valor,
-        description: data.descricao,
-        externalReference: data.vendaId,
-      })
-    });
-    
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => ({}));
-      throw new Error(errorData.error || `HTTP ${res.status}`);
-    }
-
-    const json = await res.json();
-    return {
-      payment_id: json.payment_id,
-      copy_paste: json.qr_code,
-      qr_code_base64: json.qr_code_base64,
-      status: "pending",
-      invoice_url: json.invoice_url,
-      gateway: "ASAAS",
+    const gerarPagamentoAsaas = httpsCallable(functions, "gerarPagamentoAsaas");
+    const result = await gerarPagamentoAsaas(data);
+    return result.data as {
+      payment_id: string;
+      copy_paste: string;
+      qr_code_base64: string;
+      status: string;
+      invoice_url: string;
+      gateway: string;
     };
   } catch (error) {
     return handleFirebaseError(error, "AsaasGateway");

@@ -433,30 +433,6 @@ const SaaSLandingPage: React.FC = () => {
 
           // Dispara evento InitiateCheckout Backend (Conversions API)
           const pixelId = config?.facebook_pixel_id || (config?.meta_pixel_code ? config?.meta_pixel_code.match(/fbq\(['"]init['"],\s*['"]?(\d+)['"]?\)/)?.[1] : null);
-          if (config?.meta_conversions_token && pixelId) {
-            fetch('/api/meta-conversions', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                 pixelId: pixelId,
-                 token: config.meta_conversions_token,
-                 eventName: "InitiateCheckout",
-                 eventSourceUrl: window.location.href,
-                 userData: {
-                   em: leadData.email,
-                   ph: leadData.telefone,
-                   fn: leadData.nome.split(' ')[0],
-                   st: "sp", 
-                   country: "br"
-                 },
-                 customData: {
-                   value: selectedPlan.preco,
-                   currency: "BRL",
-                   content_name: selectedPlan.nome
-                 }
-              })
-            }).catch(e => console.error("Erro background CAPI:", e));
-          }
         } catch (e) {
           console.warn("Falha silenciosa ao disparar eventos de track:", e);
         }
