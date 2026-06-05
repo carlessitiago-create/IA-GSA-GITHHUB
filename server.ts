@@ -651,6 +651,126 @@ async function startServer() {
   });
   // --- END META CONVERSIONS API ---
 
+  // --- BEGIN AI PROXY API ---
+  app.post("/api/ai/analyzeSmartFicha", async (req, res) => {
+    try {
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({ error: "Configuração de IA Pendente: A Chave de API (GEMINI_API_KEY) não foi encontrada no servidor." });
+      }
+
+      const leadData = req.body.leadData;
+      const prompt = `
+        Você é um especialista em análise de crédito e Vendas B2B/B2C (CRO).
+        Analise os dados deste cliente/lead que preencheu uma ficha de triagem:
+        ${JSON.stringify(leadData, null, 2)}
+        
+        Gere um score de urgência de 0 a 100 baseado na probabilidade dele precisar do serviço urgente (Dívidas no BACEN, restrições, etc).
+        Retorne o nível urgência (BAIXA, MEDIA, ALTA, CRITICA).
+        Forneça uma ação recomendada para o consultor.
+        Crie um "Sales Pitch" (Argumento de Venda) curto e um poderoso gatilho mental para ser usado imediatamente por telefone/wpp.
+        E forneça até 3 key insights principais sobre o perfil desse cara.
+      `;
+
+      const { GoogleGenAI, Type } = await import("@google/genai");
+      const ai = new GoogleGenAI({ apiKey });
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash-lite",
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            // @ts-ignore
+            type: Type.OBJECT,
+            properties: {
+              urgencyScore: { type: Type.NUMBER, description: "0 a 100" },
+              urgencyLevel: { type: Type.STRING, enum: ['BAIXA', 'MEDIA', 'ALTA', 'CRITICA'] },
+              recommendedAction: { type: Type.STRING },
+              salesPitch: { type: Type.STRING },
+              keyInsights: { type: Type.ARRAY, items: { type: Type.STRING } }
+            },
+            required: ['urgencyScore', 'urgencyLevel', 'recommendedAction', 'salesPitch', 'keyInsights']
+          }
+        }
+      });
+
+      const resultText = response.text || "{}";
+      res.json(JSON.parse(resultText));
+    } catch (e: any) {
+      console.error("AI Proxy Error:", e);
+      res.status(500).json({ error: e.message || "Falha na triagem de fiche com IA" });
+    }
+  });
+
+  app.post("/api/ai/analyzeDocument", async (req, res) => {
+    try {
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({ error: "Configuração de IA Pendente." });
+      }
+
+      const { base64Data, mimeType } = req.body;
+      const prompt = `
+        Analise a imagem deste documento brasileiro e extraia as informações principais.
+        Determine se o documento parece autêntico (não é uma montagem óbvia ou foto de tela).
+        Retorne os dados no formato JSON especificado.
+        Documentos suportados: RG, CNH, CPF, CNPJ, Contrato Social.
+        Se for outro tipo, identifique como OUTRO.
+      `;
+
+      const { GoogleGenAI, Type } = await import("@google/genai");
+      const ai = new GoogleGenAI({ apiKey });
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview", // Updated to recommended
+        contents: [
+          {
+            parts: [
+              { text: prompt },
+              { inlineData: { mimeType, data: base64Data } },
+            ],
+          },
+        ],
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            // @ts-ignore
+            type: Type.OBJECT,
+            properties: {
+              documentType: { type: Type.STRING, enum: ['RG', 'CNH', 'CPF', 'CNPJ', 'CONTRATO_SOCIAL', 'OUTRO'] },
+              authenticityScore: { type: Type.NUMBER, description: "Score de 0 a 100" },
+              extractedData: {
+                type: Type.OBJECT,
+                properties: {
+                  nome: { type: Type.STRING },
+                  numero_documento: { type: Type.STRING },
+                  data_nascimento: { type: Type.STRING },
+                  data_validade: { type: Type.STRING },
+                  cpf: { type: Type.STRING },
+                  cnpj: { type: Type.STRING },
+                  razao_social: { type: Type.STRING },
+                  nome_mae: { type: Type.STRING },
+                  nome_pai: { type: Type.STRING },
+                  orgao_emissor: { type: Type.STRING },
+                  data_emissao: { type: Type.STRING },
+                },
+              },
+              validationNotes: { type: Type.ARRAY, items: { type: Type.STRING } },
+              isAuthentic: { type: Type.BOOLEAN },
+            },
+            required: ['documentType', 'authenticityScore', 'extractedData', 'validationNotes', 'isAuthentic'],
+          },
+        },
+      });
+
+      const resultText = response.text || "{}";
+      res.json(JSON.parse(resultText));
+    } catch (e: any) {
+      console.error("AI Document Proxy Error:", e);
+      res.status(500).json({ error: e.message || "Failed to analyze document" });
+    }
+  });
+  // --- END AI PROXY API ---
+
   // Vite middleware for development (after API routes)
   if (process.env.NODE_ENV !== "production") {
     const { createServer: createViteServer } = await import("vite");
