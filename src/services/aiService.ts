@@ -1,6 +1,8 @@
 
 
 
+const BACKEND_URL = "https://gsa-diagn-stico-recupera-o-de-cr-dito-165811949193.us-west1.run.app";
+
 export interface DocumentAnalysisResult {
   documentType: 'RG' | 'CNH' | 'CPF' | 'CNPJ' | 'CONTRATO_SOCIAL' | 'OUTRO';
   authenticityScore: number;
@@ -26,7 +28,7 @@ export const analyzeDocument = async (file: File): Promise<DocumentAnalysisResul
     const base64Data = await fileToBase64(file);
     const mimeType = file.type;
 
-    const res = await fetch("/api/ai/analyzeDocument", {
+    const res = await fetch(`${BACKEND_URL}/api/ai/analyzeDocument`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ base64Data: base64Data.split(',')[1], mimeType })
@@ -62,7 +64,7 @@ export interface TriageResult {
 
 export const analyzeSmartFicha = async (leadData: any): Promise<TriageResult> => {
   try {
-    const res = await fetch("/api/ai/analyzeSmartFicha", {
+    const res = await fetch(`${BACKEND_URL}/api/ai/analyzeSmartFicha`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ leadData }),

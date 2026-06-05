@@ -2,6 +2,8 @@ import { httpsCallable } from "firebase/functions";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db, cleanData, functions } from "../firebase";
 
+const BACKEND_URL = "https://gsa-diagn-stico-recupera-o-de-cr-dito-165811949193.us-west1.run.app";
+
 /**
  * Utilitário para extrair a mensagem de erro real de um HttpsError do Firebase.
  * Evita o mascaramento do erro "internal" pelo Firebase.
@@ -169,7 +171,7 @@ export async function gerarPagamentoPixGateway(data: {
   origem?: string;
 }) {
   try {
-    const res = await fetch("/api/consultations/create-pix", {
+    const res = await fetch(`${BACKEND_URL}/api/consultations/create-pix`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -202,7 +204,7 @@ export async function gerarPagamentoPixGateway(data: {
 
 export async function gerarPagamentoAsaasFront(data: any) {
   try {
-    const res = await fetch("/api/asaas/create-pix", {
+    const res = await fetch(`${BACKEND_URL}/api/asaas/create-pix`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
