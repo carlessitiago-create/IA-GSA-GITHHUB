@@ -106,7 +106,7 @@ export const LeadsView: React.FC = () => {
       await updateDoc(doc(db, 'leads', lead.id), { status_pagamento: 'pago' });
       
       if (saasConfig?.meta_conversions_token) {
-        const pixelId = saasConfig.facebook_pixel_id || (saasConfig.meta_pixel_code ? saasConfig.meta_pixel_code.match(/fbq\('init',\s*'(\d+)'\)/)?.[1] : null);
+        const pixelId = saasConfig.facebook_pixel_id || (saasConfig.meta_pixel_code ? saasConfig.meta_pixel_code.match(/fbq\(['"]init['"],\s*['"]?(\d+)['"]?\)/)?.[1] : null);
         if (pixelId) {
           fetch('/api/meta-conversions', {
             method: 'POST',
