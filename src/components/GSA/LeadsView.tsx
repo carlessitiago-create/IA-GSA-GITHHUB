@@ -119,11 +119,11 @@ export const LeadsView: React.FC = () => {
               eventTime: Math.floor(Date.now() / 1000),
               userData: {
                 em: [lead.email],
-                ph: [lead.telefone]
+                ph: [lead.whatsapp]
               },
               customData: {
                 currency: 'BRL',
-                value: lead.plano_selecionado?.preco || 0
+                value: lead.valor_venda || 0
               }
             });
           } catch(e) {

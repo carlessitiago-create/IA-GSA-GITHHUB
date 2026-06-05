@@ -10,11 +10,12 @@ import { db } from "./firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 // Helper function to log errors
-const logErrorToFirestore = async (errorInfo: any) => {
+const logErrorToFirestore = async (errorInfo: any, additionalContext: { uid?: string, route?: string } = {}) => {
   try {
     console.error("Centralized System Error:", errorInfo);
     await addDoc(collection(db, "logs_erro"), {
       ...errorInfo,
+      ...additionalContext,
       timestamp: serverTimestamp(),
       url: window.location.href,
       userAgent: navigator.userAgent
@@ -110,6 +111,7 @@ const AppRoot: React.FC = () => {
 
 const App: React.FC = () => {
   const location = useLocation();
+  const { user } = useAuth();
   const hostname = window.location.hostname.toLowerCase();
   const path = location.pathname.toLowerCase();
 
@@ -123,7 +125,7 @@ const App: React.FC = () => {
         lineno: event.lineno,
         colno: event.colno,
         stack: event.error?.stack || null
-      });
+      }, { uid: user?.uid, route: location.pathname });
     };
 
     const handleRejection = (event: PromiseRejectionEvent) => {
@@ -131,7 +133,7 @@ const App: React.FC = () => {
         type: 'unhandled_rejection',
         reason: event.reason?.message || String(event.reason),
         stack: event.reason?.stack || null
-      });
+      }, { uid: user?.uid, route: location.pathname });
     };
 
     window.addEventListener("error", handleError);
@@ -141,7 +143,7 @@ const App: React.FC = () => {
       window.removeEventListener("error", handleError);
       window.removeEventListener("unhandledrejection", handleRejection);
     };
-  }, []);
+  }, [user, location]);
 
   // FORCED LOGGING - Will definitely appear in console
   console.log("CRITICAL: GSA App Hostname detected:", hostname, "Path:", path);
