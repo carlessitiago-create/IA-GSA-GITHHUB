@@ -26,6 +26,12 @@ export interface PublicPortalConfig {
   logo_url?: string;
   status_labels?: { [key: string]: string }; // De: "EM_ANALISE" Para: "Estamos analisando seus documentos"
   premios?: { nome: string; img: string }[];
+  servicos?: {
+    nome_servico: string;
+    icone: string;
+    subtitulo?: string;
+    topicos?: string[];
+  }[];
 }
 
 export interface SaasConfig {

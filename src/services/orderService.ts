@@ -109,6 +109,7 @@ export interface OrderProcess {
   lote_id?: string;
   orgaos_status?: Record<string, string>;
   servico_tags?: string[];
+  visibilidade_uids?: string[];
 }
 
 export interface StatusHistory {

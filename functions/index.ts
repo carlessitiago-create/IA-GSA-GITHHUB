@@ -1123,6 +1123,7 @@ export const gerarPagamentoAsaas = onCall(
 export const webhookAsaas = onRequest(
   { invoker: "public" },
   async (req: any, res: any) => {
+    if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
     const eventId = req.body?.payment?.id;
     try {
       if (!eventId) return res.status(400).send("Missing eventId");
@@ -1187,6 +1188,7 @@ export const webhookAsaas = onRequest(
 export const webhookMercadoPago = onRequest(
   { invoker: "public" },
   async (req: any, res: any) => {
+    if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
     const paymentId = req.body?.data?.id || req.body?.id || req.query?.id;
     try {
       if (!paymentId) return res.status(400).send("Missing paymentId");
@@ -1338,7 +1340,119 @@ export const registrarVendaAdministrativa = onCall(async (request) => {
 
 export * from "./notifications";
 
-export const onProcessoAtualizado = functions.firestore
+export const analyzeSmartFicha = onCall(async (request) => {
+  const { leadData } = request.data;
+  if (!leadData) throw new HttpsError("invalid-argument", "Missing leadData");
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new HttpsError("failed-precondition", "GEMINI_API_KEY ausente no servidor.");
+
+  const prompt = `
+    Você é um especialista em análise de crédito e Vendas B2B/B2C (CRO).
+    Analise os dados deste cliente/lead que preencheu uma ficha de triagem:
+    ${JSON.stringify(leadData, null, 2)}
+    
+    Gere um score de urgência de 0 a 100 baseado na probabilidade dele precisar do serviço urgente (Dívidas no BACEN, restrições, etc).
+    Retorne o nível urgência (BAIXA, MEDIA, ALTA, CRITICA).
+    Forneça uma ação recomendada para o consultor.
+    Crie um "Sales Pitch" (Argumento de Venda) curto e um poderoso gatilho mental para ser usado imediatamente por telefone/wpp.
+    E forneça até 3 key insights principais sobre o perfil desse cara.
+  `;
+
+  try {
+    console.log("Analyzing with prompt length:", prompt.length);
+    const res = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: "OBJECT",
+          properties: {
+            score_urgencia: { type: "NUMBER" },
+            nivel_urgencia: { type: "STRING" },
+            acao_recomendada: { type: "STRING" },
+            sales_pitch: { type: "STRING" },
+            gatilho_mental: { type: "STRING" },
+            key_insights: { type: "ARRAY", items: { type: "STRING" } }
+          }
+        }
+      }
+    });
+
+    const text = res.data?.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+    return JSON.parse(text);
+  } catch (err: any) {
+    if (err.response) {
+      console.error("Gemini API Error Response Data:", JSON.stringify(err.response.data));
+    } else {
+      console.error("Gemini API Error:", err.message);
+    }
+    throw new HttpsError("internal", "Falha ao analisar com IA: " + (err.response?.data?.error?.message || err.message || "Unknown error"));
+  }
+});
+
+export const analyzeDocument = onCall(async (request) => {
+  const { base64Data, mimeType } = request.data;
+  if (!base64Data || !mimeType) throw new HttpsError("invalid-argument", "Missing image parts.");
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new HttpsError("failed-precondition", "GEMINI_API_KEY ausente no servidor.");
+
+  const prompt = `
+    Analise a imagem deste documento brasileiro e extraia as informações principais.
+    Determine se o documento parece autêntico (não é uma montagem óbvia ou foto de tela).
+    Retorne os dados no formato JSON especificado.
+    Documentos suportados: RG, CNH, CPF, CNPJ, Contrato Social.
+    Se for outro tipo, identifique como OUTRO.
+  `;
+
+  try {
+    const res = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+      contents: [{
+        parts: [
+          { text: prompt },
+          { inlineData: { mimeType, data: base64Data } }
+        ]
+      }],
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: "OBJECT",
+          properties: {
+            documentType: { type: "STRING", enum: ['RG', 'CNH', 'CPF', 'CNPJ', 'CONTRATO_SOCIAL', 'OUTRO'] },
+            authenticityScore: { type: "NUMBER" },
+            extractedData: {
+              type: "OBJECT",
+              properties: {
+                nome: { type: "STRING" },
+                numero_documento: { type: "STRING" },
+                data_nascimento: { type: "STRING" },
+                data_validade: { type: "STRING" },
+                cpf: { type: "STRING" },
+                cnpj: { type: "STRING" },
+                razao_social: { type: "STRING" },
+                nome_mae: { type: "STRING" },
+                nome_pai: { type: "STRING" },
+                orgao_emissor: { type: "STRING" },
+                data_emissao: { type: "STRING" },
+              }
+            },
+            validationNotes: { type: "ARRAY", items: { type: "STRING" } },
+            isAuthentic: { type: "BOOLEAN" },
+          },
+          required: ['documentType', 'authenticityScore', 'extractedData', 'validationNotes', 'isAuthentic']
+        }
+      }
+    });
+
+    const text = res.data?.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+    return JSON.parse(text);
+  } catch (err: any) {
+    console.error("Gemini API Error:", err.response?.data || err.message);
+    throw new HttpsError("internal", "Falha ao analisar documento com IA.");
+  }
+});
+
   .document("order_processes/{processoId}")
   .onUpdate(async (change, context) => {
     const dadosAntes = change.before.data();
@@ -1396,17 +1510,42 @@ const transporter = nodemailer.createTransport({
   auth: { user: "teu-email@gmail.com", pass: "tua-senha-de-app" },
 });
 
-export const processadorNotificacoesGSA = functions.firestore
-  .document("system_notifications/{id}")
-  .onCreate(async (snap) => {
-    const data = snap.data();
-    if (data.tipo === "SUPORTE") {
-      return transporter.sendMail({
-        from: "Monitoramento GSA <teu-email@gmail.com>",
-        to: "suporte@camaragsa.com.br",
-        subject: `⚠️ URGENTE: Suporte - ${data.protocolo}`,
-        html: `<p>Suporte: ${data.cliente}</p>`,
-      });
-    }
-    return null;
-  });
+export const metaConversions = onCall(async (request) => {
+  const { pixelId, token, eventName, eventTime, userData, customData } = request.data;
+  if (!pixelId || !token || !eventName) {
+    throw new HttpsError("invalid-argument", "Missing required parameters for Meta Conversions API");
+  }
+
+  const crypto = await import("crypto");
+  const url = `https://graph.facebook.com/v19.0/${pixelId}/events`;
+
+  // Helper to hash user data
+  const hashData = (data: string[]) => data.map(item =>
+    crypto.createHash("sha256").update(item.trim().toLowerCase()).digest("hex")
+  );
+
+  const hashedUserData = {
+    ...userData,
+    em: userData.em ? hashData(userData.em) : [],
+    ph: userData.ph ? hashData(userData.ph) : []
+  };
+
+  const payload = {
+    data: [{
+      event_name: eventName,
+      event_time: eventTime,
+      action_source: "website",
+      user_data: hashedUserData,
+      custom_data: customData,
+    }],
+    access_token: token
+  };
+
+  try {
+    const res = await axios.post(url, payload);
+    return res.data;
+  } catch (error: any) {
+    console.error("Meta CAPI Error:", error.response?.data || error.message);
+    throw new HttpsError("internal", "Failed to send Meta Conversion", error.response?.data);
+  }
+});

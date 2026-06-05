@@ -43,7 +43,7 @@ export const trackLeadCapture = () => {
 };
 
 // Dispara quando o pagamento é processado (ou gerado o PIX)
-export const trackPurchase = (plano: string, preco: number) => {
+export const trackPurchase = async (plano: string, preco: number) => {
   if (window.fbq) {
     window.fbq('track', 'Purchase', {
       content_name: plano,
@@ -69,5 +69,36 @@ export const trackPurchase = (plano: string, preco: number) => {
       value: preco,
       currency: 'BRL'
     });
+  }
+
+  // Despacha Conversions API
+  try {
+    const { getSaasConfig } = await import('../services/configService');
+    const saasConfig = await getSaasConfig();
+    if (saasConfig?.meta_conversions_token) {
+      const pixelId = saasConfig.facebook_pixel_id || 
+                     (saasConfig.meta_pixel_code ? saasConfig.meta_pixel_code.match(/fbq\(['"]init['"],\s*['"]?(\d+)['"]?\)/)?.[1] : null);
+      if (pixelId) {
+        const { functions } = await import('../firebase');
+        const { httpsCallable } = await import('firebase/functions');
+        const metaConversionsFn = httpsCallable(functions, 'metaConversions');
+        await metaConversionsFn({
+          pixelId,
+          token: saasConfig.meta_conversions_token,
+          eventName: 'Purchase',
+          eventTime: Math.floor(Date.now() / 1000),
+          userData: {
+            // Se tivermos os dados do lead, podemos colocar.
+            // Para anonimizar ou lidar com falta, vamos enviar vazio.
+          },
+          customData: {
+            currency: 'BRL',
+            value: preco
+          }
+        });
+      }
+    }
+  } catch (e) {
+    console.error("Erro Meta CAPI (trackPurchase):", e);
   }
 };

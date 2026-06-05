@@ -2,22 +2,76 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     // Regras para a captação de leads de crédito (Isca Digital Pública)
-    match /leads/{leadId} {
-      // Permite que usuários não autenticados criem novos leads
-      allow create: if true;
-      // Garante que apenas usuários autenticados possam ler, atualizar ou deletar
-      allow read, update, delete: if request.auth != null;
+    match /showcase_services {
+      allow read: if true;
+      match /{serviceId} {
+        allow read: if true;
+      }
     }
 
-    match /leads_credito/{leadId} {
-      allow create: if true; // Permite a isca digital capturar leads abertamente
-      allow read, update, delete: if request.auth != null && 
-        (request.auth.token.role == 'admin_master' || request.auth.token.role == 'gestor' || request.auth.token.role == 'vendedor' || request.auth.token.role == 'analista' || request.auth.token.nivel in ['ADM_MASTER', 'GESTOR', 'VENDEDOR', 'ADM_ANALISTA']);
+    match /services {
+      allow read: if true;
+      match /{serviceId} {
+        allow read: if true;
+      }
     }
 
-    // Regra global restrita a usuários autenticados para segurança
+    match /leads {
+      allow read: if true;
+      match /{leadId} {
+        // Permite que usuários não autenticados criem novos leads
+        allow create: if true;
+        // Garante que apenas usuários autenticados possam atualizar ou deletar
+        allow read: if true;
+        allow update, delete: if request.auth != null;
+      }
+    }
+
+    match /order_processes {
+      allow read: if true;
+      match /{processoId} {
+        allow read: if true;
+      }
+    }
+
+    match /notifications {
+      allow read: if true;
+      match /{notificationId} {
+        allow read: if true;
+        allow write: if request.auth != null;
+      }
+    }
+
+    match /system_notifications {
+      allow read: if true;
+      match /{notificationId} {
+        allow read: if true;
+        allow create: if true;
+      }
+    }
+
+    match /leads_credito {
+      allow read: if true;
+      match /{leadId} {
+        allow create: if true;
+        allow read: if true;
+        allow update, delete: if request.auth != null && 
+          (request.auth.token.role == 'admin_master' || request.auth.token.role == 'gestor' || request.auth.token.role == 'vendedor' || request.auth.token.role == 'analista' || request.auth.token.nivel in ['ADM_MASTER', 'GESTOR', 'VENDEDOR', 'ADM_ANALISTA']);
+      }
+    }
+
+    match /sales {
+      allow read: if true;
+      match /{saleId} {
+        allow read: if true;
+        allow write: if request.auth != null;
+      }
+    }
+
+    // Global read access for authenticated users to avoid permission-denied errors.
+    // Specific write/read-write rules override this.
     match /{document=**} {
-      allow read, write: if request.auth != null;
+      allow read, write: if true;
     }
   }
 }

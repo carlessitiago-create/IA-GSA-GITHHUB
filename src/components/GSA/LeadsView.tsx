@@ -108,6 +108,27 @@ export const LeadsView: React.FC = () => {
       if (saasConfig?.meta_conversions_token) {
         const pixelId = saasConfig.facebook_pixel_id || (saasConfig.meta_pixel_code ? saasConfig.meta_pixel_code.match(/fbq\(['"]init['"],\s*['"]?(\d+)['"]?\)/)?.[1] : null);
         if (pixelId) {
+          try {
+            const { functions } = await import('../../firebase');
+            const { httpsCallable } = await import('firebase/functions');
+            const metaConversionsFn = httpsCallable(functions, 'metaConversions');
+            await metaConversionsFn({
+              pixelId,
+              token: saasConfig.meta_conversions_token,
+              eventName: 'Purchase',
+              eventTime: Math.floor(Date.now() / 1000),
+              userData: {
+                em: [lead.email],
+                ph: [lead.telefone]
+              },
+              customData: {
+                currency: 'BRL',
+                value: lead.plano_selecionado?.preco || 0
+              }
+            });
+          } catch(e) {
+            console.error('Meta CAPI:', e);
+          }
         }
       }
 

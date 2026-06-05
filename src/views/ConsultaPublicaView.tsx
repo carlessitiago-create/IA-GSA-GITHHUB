@@ -63,7 +63,7 @@ export function ConsultaPublicaView() {
 
   // Efeito para escutar mudanças no processo em tempo real
   useEffect(() => {
-    if (results.length === 0) return;
+    if (results.length === 0 || !profile) return;
 
     const unsubs = results.map((proc) => {
       if (!proc.id) return () => {};

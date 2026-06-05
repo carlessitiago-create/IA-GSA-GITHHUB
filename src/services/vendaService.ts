@@ -169,37 +169,69 @@ export async function gerarPagamentoPixGateway(data: {
   origem?: string;
 }) {
   try {
-    const { auth } = await import("../firebase");
-    await auth.authStateReady();
-
-    const gerarPagamento = httpsCallable(functions, "gerarPagamentoPixGateway");
-    const result = await gerarPagamento(data);
-    return result.data as {
-      id: string;
-      status: string;
-      qr_code: string;
-      qr_code_base64: string;
-      copy_paste: string;
-      gateway: string;
+    const res = await fetch("/api/consultations/create-pix", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        transactionAmount: data.valor,
+        description: data.descricao,
+        clientEmail: data.email,
+        requestId: data.vendaId,
+      }),
+    });
+    
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Falha na API de pagamento (Mercado Pago)");
+    }
+    
+    const result = await res.json();
+    return {
+      id: result.payment_id,
+      status: "pending",
+      qr_code: result.qr_code,
+      qr_code_base64: result.qr_code_base64,
+      copy_paste: result.qr_code,
+      gateway: "MERCADO_PAGO",
     };
-  } catch (error) {
-    return handleFirebaseError(error, "PixGateway");
+  } catch (error: any) {
+    console.error("Erro MP Frontend:", error);
+    throw new Error(error.message || "Erro no pagamento MP");
   }
 }
 
 export async function gerarPagamentoAsaasFront(data: any) {
   try {
-    const gerarPagamentoAsaas = httpsCallable(functions, "gerarPagamentoAsaas");
-    const result = await gerarPagamentoAsaas(data);
-    return result.data as {
-      payment_id: string;
-      copy_paste: string;
-      qr_code_base64: string;
-      status: string;
-      invoice_url: string;
-      gateway: string;
+    const res = await fetch("/api/asaas/create-pix", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        customerName: data.nome,
+        customerEmail: data.email,
+        customerCpfCnpj: data.cpf,
+        value: data.valor,
+        description: data.descricao,
+        externalReference: data.vendaId,
+      }),
+    });
+    
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Falha na API de pagamento (Asaas)");
+    }
+    
+    const result = await res.json();
+    return {
+      payment_id: result.payment_id,
+      copy_paste: result.qr_code,
+      qr_code: result.qr_code,
+      qr_code_base64: result.qr_code_base64,
+      status: "pending",
+      invoice_url: result.invoice_url,
+      gateway: "ASAAS",
     };
-  } catch (error) {
-    return handleFirebaseError(error, "AsaasGateway");
+  } catch (error: any) {
+    console.error("Erro Asaas Frontend:", error);
+    throw new Error(error.message || "Erro no pagamento Asaas");
   }
 }

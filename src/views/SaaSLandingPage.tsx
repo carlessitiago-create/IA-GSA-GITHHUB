@@ -659,13 +659,17 @@ const SaaSLandingPage: React.FC = () => {
                     alt="QR Code PIX" 
                     className="w-44 h-44"
                   />
-                ) : (
+                ) : pixData?.copiaECola ? (
                   <img 
                     src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(pixData?.copiaECola || '')}`} 
                     alt="QR Code PIX" 
                     className="w-44 h-44"
                     referrerPolicy="no-referrer"
                   />
+                ) : (
+                  <div className="w-44 h-44 flex items-center justify-center bg-slate-100/10 rounded-lg border-2 border-dashed border-slate-700/50">
+                    <span className="text-slate-500 text-xs font-bold uppercase tracking-wider">Aguardando PIX...</span>
+                  </div>
                 )}
               </div>
 
