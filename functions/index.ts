@@ -1359,10 +1359,7 @@ export const analyzeSmartFicha = onCall(async (request) => {
     E forneça até 3 key insights principais sobre o perfil desse cara.
   `;
 
-  try {
-    console.log("Analyzing with prompt length:", prompt.length);
-    const res = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
+    const res = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
       generationConfig: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -1407,7 +1404,7 @@ export const analyzeDocument = onCall(async (request) => {
   `;
 
   try {
-    const res = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+    const res = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
       contents: [{
         parts: [
           { text: prompt },
