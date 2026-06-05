@@ -62,6 +62,17 @@ const SaaSLandingPage: React.FC = () => {
   useEffect(() => {
     console.log("SaaSLandingPage: Component Mounted - Path:", location.pathname);
     getSaasConfig().then(setConfig).catch(err => console.error("Erro ao carregar config SaaS:", err));
+    
+    // Contagem de cliques (Visitas na página)
+    import('../firebase').then(({ db }) => {
+      import('firebase/firestore').then(({ collection, addDoc, serverTimestamp }) => {
+        addDoc(collection(db, 'saas_clicks'), {
+          timestamp: serverTimestamp(),
+          ref: searchParams.get('ref') || 'direto',
+          userAgent: navigator.userAgent
+        }).catch(() => {});
+      });
+    });
   }, []);
 
   // Inicializa o Pixel do Facebook
@@ -381,8 +392,10 @@ const SaaSLandingPage: React.FC = () => {
         try {
             const { db } = await import('../firebase');
             const { collection, addDoc } = await import('firebase/firestore');
-            leadRef = await addDoc(collection(db, 'leads_diagnostico'), {
+            leadRef = await addDoc(collection(db, 'leads'), {
                 ...leadData,
+                whatsapp: leadData.telefone,
+                data_solicitacao: new Date().toISOString(),
                 gateway_usado: config?.gateway_ativo?.toLowerCase() || 'mercadopago',
                 status_pagamento: 'pendente',
                 clienteId: novoCliente.id,
@@ -394,7 +407,7 @@ const SaaSLandingPage: React.FC = () => {
             });
             console.log("Lead criado como PENDENTE. ID:", leadRef.id);
         } catch (e) {
-            console.warn("Falha ao salvar no leads_diagnostico antecipadamente:", e);
+            console.warn("Falha ao salvar no leads antecipadamente:", e);
         }
 
         // 3. Gera o pagamento no Gateway (Asaas / Mercado Pago)

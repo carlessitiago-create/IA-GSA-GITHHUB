@@ -17,10 +17,11 @@ export const LeadsView: React.FC = () => {
   const [selectedLead, setSelectedLead] = useState<ILead | null>(null);
 
   const [saasConfig, setSaasConfig] = useState<any>(null);
+  const [totalCliques, setTotalCliques] = useState(0);
 
-  // Fetch leads
+  // Fetch leads and clicks
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, 'leads'), (snapshot) => {
+    const unsubLeads = onSnapshot(collection(db, 'leads'), (snapshot) => {
 
       const data = snapshot.docs.map(doc => ({
         id: doc.id,
@@ -34,7 +35,16 @@ export const LeadsView: React.FC = () => {
       setLeads(data);
       setLoading(false);
     });
-    return () => unsub();
+    
+    // Fetch clicks
+    const unsubClicks = onSnapshot(collection(db, 'saas_clicks'), (snapshot) => {
+      setTotalCliques(snapshot.size);
+    });
+    
+    return () => {
+      unsubLeads();
+      unsubClicks();
+    };
   }, []);
 
   // Fetch config and saas config
@@ -227,7 +237,7 @@ export const LeadsView: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-6 flex flex-col justify-between shadow-sm">
           <div className="flex items-center gap-3 text-slate-500">
             <div className="p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-xl">
@@ -236,6 +246,16 @@ export const LeadsView: React.FC = () => {
             <span className="text-[10px] font-black uppercase tracking-widest">Total de Leads</span>
           </div>
           <p className="text-3xl font-black text-slate-800 dark:text-white mt-4">{totalLeads}</p>
+        </div>
+
+        <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-6 flex flex-col justify-between shadow-sm">
+          <div className="flex items-center gap-3 text-slate-500">
+            <div className="p-2 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-xl">
+              <Plus size={20} />
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-widest">Total de Visitas</span>
+          </div>
+          <p className="text-3xl font-black text-slate-800 dark:text-white mt-4">{totalCliques}</p>
         </div>
         
         <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-6 flex flex-col justify-between shadow-sm">
