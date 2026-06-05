@@ -21,7 +21,7 @@ export const LeadsView: React.FC = () => {
 
   // Fetch leads and clicks
   useEffect(() => {
-    const unsubLeads = onSnapshot(collection(db, 'leads'), (snapshot) => {
+    const unsubLeads = onSnapshot(collection(db, 'leads_diagnostico'), (snapshot) => {
 
       const data = snapshot.docs.map(doc => ({
         id: doc.id,
@@ -113,7 +113,7 @@ export const LeadsView: React.FC = () => {
   const handleMarkAsPaid = async (lead: ILead) => {
     if (!lead.id) return;
     try {
-      await updateDoc(doc(db, 'leads', lead.id), { status_pagamento: 'pago' });
+      await updateDoc(doc(db, 'leads_diagnostico', lead.id), { status_pagamento: 'pago' });
       
       if (saasConfig?.meta_conversions_token) {
         const pixelId = saasConfig.facebook_pixel_id || (saasConfig.meta_pixel_code ? saasConfig.meta_pixel_code.match(/fbq\(['"]init['"],\s*['"]?(\d+)['"]?\)/)?.[1] : null);
@@ -164,7 +164,7 @@ export const LeadsView: React.FC = () => {
 
     if (result.isConfirmed) {
       try {
-        await deleteDoc(doc(db, 'leads', lead.id));
+        await deleteDoc(doc(db, 'leads_diagnostico', lead.id));
         Swal.fire('Sucesso', 'Lead excluído.', 'success');
         setSelectedLead(null);
       } catch (e) {
