@@ -5,10 +5,11 @@ interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: (data: { nome: string; documento: string; telefone: string; data_nascimento: string; email: string }) => void;
+  registrarLead?: (data: any) => void;
   plano: string;
 }
 
-export const LeadCaptureModal: React.FC<ModalProps> = ({ isOpen, onClose, onConfirm, plano }) => {
+export const LeadCaptureModal: React.FC<ModalProps> = ({ isOpen, onClose, onConfirm, registrarLead, plano }) => {
   const [formData, setFormData] = useState({ nome: '', documento: '', telefone: '', data_nascimento: '', email: '' });
   const [error, setError] = useState('');
 
@@ -31,6 +32,9 @@ export const LeadCaptureModal: React.FC<ModalProps> = ({ isOpen, onClose, onConf
     if (!formData.email || !formData.email.includes('@')) {
       setError('E-mail inválido.');
       return;
+    }
+    if (registrarLead) {
+      registrarLead(formData);
     }
     onConfirm(formData);
   };

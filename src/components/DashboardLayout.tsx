@@ -372,7 +372,7 @@ export const DashboardLayout: React.FC = () => {
     setIsNotificationOpen,
     notifications, 
     markAsRead,
-    setView: (v: string) => navigate(`/${v}`),
+    setView: (v: string) => navigate(`/${v}`)
   };
 
   return (

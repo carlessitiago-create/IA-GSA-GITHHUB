@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { formatDate } from '../../lib/dateUtils';
 import { 
   Menu, 
@@ -54,7 +54,7 @@ export const Header: React.FC<HeaderProps> = ({
           <Menu size={24} />
         </button>
         
-        <h2 className="text-lg md:text-xl font-bold text-slate-800 hidden sm:block tracking-tight">
+        <h2 className="text-lg md:text-xl font-bold text-slate-800 hidden sm:block tracking-tight ml-4">
           {selectedClientName ? selectedClientName :
            view === 'equipe' ? (currentProfile?.nivel === 'VENDEDOR' ? 'Meu Perfil' : currentProfile?.nivel === 'GESTOR' ? 'Minha Equipe' : 'Gestão de Equipe') : 
            view === 'clientes' ? 'Gestão de Clientes' : 

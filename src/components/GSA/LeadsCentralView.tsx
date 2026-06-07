@@ -16,8 +16,10 @@ import {
   ShoppingBag,
   Target,
   Trash2,
-  Send
+  Send,
+  Download
 } from 'lucide-react';
+
 import { 
   listarLeadsVitrine, 
   atualizarStatusLeadVitrine, 
@@ -328,6 +330,27 @@ export const LeadsCentralView: React.FC = () => {
     return matchesSearch && matchesStatus;
   });
 
+  const exportToCSV = () => {
+    const headers = ["Nome", "Serviço/Status", "Telefone", "Data", "Especialista"];
+    const csvRows = filteredItems.map((item: any) => {
+      const name = item.cliente_nome || item.nome_indicado || '';
+      const service = activeTab === 'leads' ? (item.servico_nome || '') : 'Indicação';
+      const telefone = item.cliente_telefone || item.telefone_indicado || '';
+      const date = item.timestamp?.toDate ? format(item.timestamp.toDate(), "dd/MM/yyyy") : '';
+      const specialist = item.vendedor_nome || '';
+      return [name, service, telefone, date, specialist].map(val => `"${val.replace(/"/g, '""')}"`).join(',');
+    });
+
+    const csvString = [headers.join(','), ...csvRows].join('\n');
+    const blob = new Blob([csvString], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `leads_${activeTab}_${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   if (loading) {
     return (
       <div className="p-8 flex items-center justify-center min-h-[400px]">
@@ -408,6 +431,13 @@ export const LeadsCentralView: React.FC = () => {
               </>
             )}
           </select>
+          <button
+            onClick={exportToCSV}
+            className="p-2 bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-200 transition-colors"
+            title="Exportar CSV"
+          >
+            <Download size={18} />
+          </button>
         </div>
       </div>
 

@@ -58,6 +58,44 @@ export interface ClientData {
   tipo_sinistro?: string;
 }
 
+export async function sendThankYouEmail(email: string, nome: string) {
+  try {
+    await fetch('/api/send-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        to: email,
+        subject: 'Bem-vindo ao nosso sistema',
+        html: `
+          <div style="font-family: sans-serif; padding: 20px; color: #333;">
+            <h2>Olá, ${nome}</h2>
+            <p>Obrigado por se cadastrar em nosso sistema. Estamos felizes em ajudar a sua empresa a crescer e buscar os melhores recursos.</p>
+            <p>Em breve entraremos em contato.</p>
+            <p style="font-size: 12px; color: #999;">Esta é uma mensagem automática. Por favor, não responda.</p>
+          </div>
+        `
+      })
+    });
+  } catch (err) {
+    console.error('Falha ao enviar e-mail de agradecimento:', err);
+  }
+}
+
+export async function salvarLeadSimples(data: { nome: string, email: string, telefone: string }) {
+  try {
+    await addDoc(collection(db, 'clients'), cleanData({
+      ...data,
+      especialista_id: 'SaaS_GSA_IA',
+      origem: 'Landing Page SaaS',
+      data_entrada: serverTimestamp(),
+      documento: 'N/A', // dummy
+    }));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.CREATE, 'clients');
+    throw error;
+  }
+}
+
 export async function verificarPropriedadeLead(documento: string, telefone: string, userId: string) {
   if (!documento || !telefone) throw new Error('Documento e telefone são obrigatórios para verificar propriedade.');
   const path = 'clients';
@@ -171,12 +209,27 @@ export async function cadastrarCliente(data: Omit<ClientData, 'data_entrada' | '
            titulo: '🚨 Lead Órfão Capturado (SaaS)' + (aiScoreMsg ? ` 🔥` : ''),
            mensagem: `O lead ${data.nome} se cadastrou através de uma Landing Page sem Vendedor. Atribua um especialista imediatamente!${aiScoreMsg}`,
            tipo: 'NEW_LEAD',
+           visibilidade_uids: visibilidade_uids,
            lida: false,
            timestamp: serverTimestamp()
         });
       } catch (err) {
         console.error("Failed to notify admins of orphan lead", err);
       }
+    } else {
+        // Notification for all new leads
+        try {
+            await addDoc(collection(db, 'notifications'), {
+               titulo: '🚀 Novo Lead Registrado',
+               mensagem: `Novo lead cadastrado: ${data.nome} (${data.cnpj || data.documento || 'Sem doc'}).`,
+               tipo: 'NEW_LEAD',
+               visibilidade_uids: visibilidade_uids,
+               lida: false,
+               timestamp: serverTimestamp()
+            });
+        } catch (err) {
+            console.error("Failed to notify admins of new lead", err);
+        }
     }
 
     return { id: docRef.id, id_superior, visibilidade_uids, data_nascimento: data.data_nascimento || '' };

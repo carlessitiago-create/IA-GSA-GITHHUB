@@ -229,6 +229,33 @@ const SaaSLandingPage: React.FC = () => {
     trackInitiateCheckout(nome, preco); // 🟢 Pixel: Iniciou checkout
   };
 
+  const registrarLead = async (leadData: any) => {
+    try {
+      const { db } = await import('../firebase');
+      const { collection, addDoc, doc, runTransaction, serverTimestamp } = await import('firebase/firestore');
+      
+      // 1. Save lead
+      await addDoc(collection(db, 'leads'), {
+        ...leadData,
+        data_solicitacao: serverTimestamp(),
+      });
+      
+      // 2. Increment click counter
+      const statRef = doc(db, 'estatisticas_leads', 'contador');
+      await runTransaction(db, async (transaction) => {
+        const statsDoc = await transaction.get(statRef);
+        if (!statsDoc.exists()) {
+          transaction.set(statRef, { totalCliques: 1 });
+        } else {
+          transaction.update(statRef, { totalCliques: (statsDoc.data().totalCliques || 0) + 1 });
+        }
+      });
+      
+    } catch (e) {
+      console.error("Erro ao registrar lead:", e);
+    }
+  };
+
   const handleJaPaguei = () => {
     Swal.fire({
       title: 'Pagamento em Processamento',
@@ -1240,6 +1267,7 @@ const SaaSLandingPage: React.FC = () => {
         plano={selectedPlan.nome}
         onClose={() => setIsModalOpen(false)}
         onConfirm={handleFinalizePurchase}
+        registrarLead={registrarLead}
       />
 
       {/* Alerta de Erro */}

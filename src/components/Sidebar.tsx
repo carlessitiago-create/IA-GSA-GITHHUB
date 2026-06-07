@@ -55,6 +55,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ view, setView, currentProfile,
     
     { id: 'vendas-internas', label: 'VENDAS (PDV)', icon: <ShoppingCart className="size-5" />, group: 'COMERCIAL', color: 'text-emerald-500', roles: ['ADM_MASTER', 'ADM_GERENTE', 'GESTOR', 'VENDEDOR'] },
     { id: 'venda-massa', label: 'VENDA EM MASSA', icon: <Package className="size-5" />, group: 'COMERCIAL', color: 'text-blue-500', roles: ['ADM_MASTER', 'ADM_GERENTE', 'GESTOR', 'VENDEDOR', 'ADM_ANALISTA'] },
+    { id: 'leads-cnpj', label: 'LEADS CNPJ', icon: <Users className="size-5" />, group: 'COMERCIAL', roles: ['ADM_MASTER', 'ADM_GERENTE', 'GESTOR', 'VENDEDOR'] },
     { id: 'leads', label: 'LEADS E INDICAÇÕES', icon: <MousePointerClick className="size-5" />, group: 'COMERCIAL', roles: ['ADM_MASTER', 'ADM_GERENTE', 'GESTOR', 'VENDEDOR'] },
     { id: 'diagnostico-leads', label: 'LEADS DIAGNÓSTICO', icon: <Activity className="size-5" />, group: 'COMERCIAL', roles: ['ADM_MASTER', 'ADM_GERENTE', 'GESTOR', 'VENDEDOR'] },
     { id: 'clube', label: 'CLUBE DE PONTOS', icon: <Gift className="size-5" />, group: 'COMERCIAL', roles: ['ADM_MASTER', 'ADM_GERENTE', 'GESTOR', 'VENDEDOR'] },

@@ -1120,69 +1120,11 @@ export const gerarPagamentoAsaas = onCall(
   }),
 );
 
+import { handleAsaasWebhook } from "./asaasWebhook";
+
 export const webhookAsaas = onRequest(
   { invoker: "public" },
-  async (req: any, res: any) => {
-    if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
-    const eventId = req.body?.payment?.id;
-    try {
-      if (!eventId) return res.status(400).send("Missing eventId");
-      const eventRef = db.collection("webhook_events").doc(`asaas_${eventId}`);
-      if ((await eventRef.get()).exists) return res.status(200).send("OK");
-
-      const { event, payment } = req.body;
-      if (!["PAYMENT_RECEIVED", "PAYMENT_CONFIRMED"].includes(event))
-        return res.status(200).send("Ignorado");
-
-      const vendaId = payment.externalReference;
-      const saleRef = db.collection("sales").doc(vendaId);
-      const saleSnap = await saleRef.get();
-      if (!saleSnap.exists) return res.status(404).send("Sale not found");
-
-      const batch = db.batch();
-      batch.update(
-        saleRef,
-        cleanDataForFirestore({
-          status_pagamento: "Pago",
-          pago_em: FieldValue.serverTimestamp(),
-          asaas_status: payment.status,
-          asaas_payment_id: payment.id,
-          gateway: "ASAAS",
-        }),
-      );
-
-      const processes = await db
-        .collection("order_processes")
-        .where("venda_id", "==", vendaId)
-        .get();
-      processes.forEach((doc: any) => {
-        batch.update(
-          doc.ref,
-          cleanDataForFirestore({
-            status_atual: "Em Análise",
-            status_financeiro: "PAGO",
-            data_inicial: FieldValue.serverTimestamp(),
-          }),
-        );
-      });
-
-      await processarBonusDeVendaNoBackend(vendaId, batch);
-      batch.set(
-        eventRef,
-        cleanDataForFirestore({
-          gateway: "ASAAS",
-          eventId,
-          vendaId,
-          processedAt: FieldValue.serverTimestamp(),
-        }),
-      );
-      await batch.commit();
-
-      res.status(200).send("OK");
-    } catch (error) {
-      res.status(500).send("Error");
-    }
-  },
+  handleAsaasWebhook
 );
 
 export const webhookMercadoPago = onRequest(

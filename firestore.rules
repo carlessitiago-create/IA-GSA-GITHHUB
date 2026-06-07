@@ -68,6 +68,41 @@ service cloud.firestore {
       }
     }
 
+    match /logs_erro {
+      allow read, write: if true;
+      match /{logId} {
+        allow read, write: if true;
+      }
+    }
+
+    match /leads_diagnostico {
+      allow read, write: if true;
+      match /{leadId} {
+        allow read, write: if true;
+      }
+    }
+
+    match /saas_clicks {
+      allow read, write: if true;
+      match /{clickId} {
+        allow read, write: if true;
+      }
+    }
+
+    match /estatisticas_leads {
+      allow read, write: if true;
+      match /{statId} {
+        allow read, write: if true;
+      }
+    }
+
+    match /configs {
+      allow read, write: if true;
+      match /{configId} {
+        allow read, write: if true;
+      }
+    }
+
     // Global read access for authenticated users to avoid permission-denied errors.
     // Specific write/read-write rules override this.
     match /{document=**} {

@@ -13,13 +13,21 @@ import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 const logErrorToFirestore = async (errorInfo: any, additionalContext: { uid?: string, route?: string } = {}) => {
   try {
     console.error("Centralized System Error:", errorInfo);
-    await addDoc(collection(db, "logs_erro"), {
+    const payload: any = {
       ...errorInfo,
       ...additionalContext,
       timestamp: serverTimestamp(),
       url: window.location.href,
       userAgent: navigator.userAgent
-    });
+    };
+
+    // Sanitize payload to replace potential undefined values with null
+    const sanitizedPayload: any = {};
+    for (const key of Object.keys(payload)) {
+      sanitizedPayload[key] = payload[key] === undefined ? null : payload[key];
+    }
+
+    await addDoc(collection(db, "logs_erro"), sanitizedPayload);
   } catch (err) {
     console.error("Falha ao salvar log de erro no Firestore:", err);
   }
@@ -40,6 +48,7 @@ const GestaoClientesView = lazy(() => import("./views/GestaoClientesView").then(
 const IntelligenceDashboardView = lazy(() => import("./views/IntelligenceDashboardView").then(m => ({ default: m.IntelligenceDashboardView })));
 const VendasPDVView = lazy(() => import("./views/VendasPDVView").then(m => ({ default: m.VendasPDVView })));
 const LeadsCentralView = lazy(() => import("./components/GSA/LeadsCentralView").then(m => ({ default: m.LeadsCentralView })));
+const LeadsCNPJView = lazy(() => import("./components/GSA/LeadsCNPJView").then(m => ({ default: m.LeadsCNPJView })));
 const OperationalView = lazy(() => import("./components/GSA/OperationalView").then(m => ({ default: m.OperationalView })));
 const PendencyList = lazy(() => import("./components/GSA/PendencyList").then(m => ({ default: m.PendencyList })));
 const AuditoriaProcesso = lazy(() => import("./components/GSA/AuditoriaProcesso").then(m => ({ default: m.AuditoriaProcesso })));
@@ -71,6 +80,7 @@ const NovaVendaAdminView = lazy(() => import("./views/NovaVendaAdminView").then(
 const LeadsView = lazy(() => import("./components/GSA/LeadsView").then(m => ({ default: m.LeadsView })));
 const CheckoutCreditoView = lazy(() => import("./views/CheckoutCreditoView").then(m => ({ default: m.CheckoutCreditoView })));
 const QuizCreditoPublicoView = lazy(() => import("./views/QuizCreditoPublicoView").then(m => ({ default: m.QuizCreditoPublicoView })));
+const AcessoTotalCreditoView = lazy(() => import("./views/AcessoTotalCreditoView"));
 
 import { PendingApproval, AccountRefused, AccountSuspended, CompleteProfile } from "./components/Auth";
 
@@ -249,8 +259,10 @@ const App: React.FC = () => {
             <Route path="/gestao-lotes" element={<GestaoLotesView />} />
             <Route path="/nova-venda-admin" element={<NovaVendaAdminView />} />
             <Route path="/leads" element={<LeadsCentralView />} />
+            <Route path="/leads-cnpj" element={<LeadsCNPJView />} />
             <Route path="/gerenciamento-leads" element={<LeadsView />} />
             <Route path="/diagnostico-leads" element={<LeadsView />} />
+            <Route path="/acesso-credito" element={<AcessoTotalCreditoView />} />
             <Route path="/operacional" element={<OperationalView />} />
             <Route path="/pendencias" element={<PendencyList />} />
             <Route path="/auditoria" element={<AuditoriaProcesso />} />

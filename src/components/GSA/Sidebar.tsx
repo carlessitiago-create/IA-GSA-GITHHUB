@@ -4,7 +4,7 @@ import {
   Shield, Users, PlusCircle, LayoutDashboard, History, Settings, 
   Package, DollarSign, TrendingUp, Bell, ClipboardList, Gift, 
   ShoppingBag, LogOut, ChevronRight, Activity, AlertTriangle, X,
-  Factory, Trophy, Search, User, Mail, UserPlus, Layers, CreditCard, Banknote, SplitSquareVertical
+  Factory, Trophy, Search, User, Mail, UserPlus, Layers, CreditCard, Banknote, SplitSquareVertical, Building2
 } from 'lucide-react';
 
 
@@ -64,6 +64,8 @@ export function Sidebar({ currentProfile, logout, onClose }: any) {
             )}
             <MenuItem to="leads" icon={TrendingUp} label="Leads e Indicações" />
             <MenuItem to="diagnostico-leads" icon={Activity} label="Leads Diagnóstico" />
+            {(role === 'ADM_MASTER' || role === 'ADM_GERENTE') && <MenuItem to="leads-cnpj" icon={Users} label="Leads CNPJ" />}
+            <MenuItem to="acesso-credito" icon={Building2} label="Captação de Crédito" />
             <MenuItem to="gestao-credito" icon={Banknote} label="Crédito Corporativo" color="text-green-400" />
             <MenuItem to="vitrine" icon={ShoppingBag} label="Vitrine GSA" />
             {role !== 'ADM_ANALISTA' && <MenuItem to="clube" icon={Gift} label={role.startsWith('ADM') ? "Clube de Pontos" : "Clube de Vantagens"} />}

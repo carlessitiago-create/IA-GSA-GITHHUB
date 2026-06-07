@@ -16,15 +16,23 @@ interface State {
 const logReactError = async (error: Error, errorInfo: React.ErrorInfo) => {
   try {
     console.error("Centralized React Render Error:", error, errorInfo);
-    await addDoc(collection(db, "logs_erro"), {
+    const payload: any = {
       type: 'react_render_error',
       message: error.message,
       stack: error.stack || null,
-      componentStack: errorInfo.componentStack,
+      componentStack: errorInfo.componentStack || null,
       timestamp: serverTimestamp(),
       url: window.location.href,
       userAgent: navigator.userAgent
-    });
+    };
+
+    // Sanitize payload to replace potential undefined values with null
+    const sanitizedPayload: any = {};
+    for (const key of Object.keys(payload)) {
+      sanitizedPayload[key] = payload[key] === undefined ? null : payload[key];
+    }
+
+    await addDoc(collection(db, "logs_erro"), sanitizedPayload);
   } catch (err) {
     console.error("Falha ao salvar log de erro no Firestore:", err);
   }
