@@ -27,56 +27,74 @@ export const GlobalErrorProvider: React.FC<{ children: React.ReactNode }> = ({ c
       try {
         const originalFetch = window.fetch;
         if (originalFetch) {
-          // Usar defineProperty para lidar de forma mais robusta e segura com o window object
-          Object.defineProperty(window, 'fetch', {
-            value: async function(...args: any[]) {
-              const url = typeof args[0] === 'string' ? args[0] : (args[0] as Request).url || '';
-              const options = args[1];
-              const method = options?.method || (typeof args[0] === 'object' && 'method' in args[0] ? (args[0] as any).method : 'GET');
-              
-              // Evita loops gerados por requisições do próprio Firestore / Firebase Auth
-              const isFirestoreOrAuth = url.includes('firestore') || 
-                                        url.includes('googleapis') || 
-                                        url.includes('securetoken') ||
-                                        url.includes('firebase');
-                                        
-              if (isFirestoreOrAuth) {
-                return originalFetch.apply(this, args as any);
+          // Usar try-catch e checagem de descritor para evitar erros em navegadores restritivos
+          let isConfigurable = true;
+          try {
+            const desc = Object.getOwnPropertyDescriptor(window, 'fetch') || 
+                         Object.getOwnPropertyDescriptor(Object.getPrototypeOf(window), 'fetch');
+            if (desc) {
+              // Se tiver getter e sem setter, ou se for explicitamente não configurável, não tentamos redefinir
+              if ((desc.get && !desc.set) || desc.configurable === false || desc.writable === false) {
+                isConfigurable = false;
               }
-              
-              try {
-                const response = await originalFetch.apply(this, args as any);
-                if (!response.ok) {
+            }
+          } catch (e) {
+            console.warn("[GlobalErrorProvider] Não foi possível verificar descritor do fetch:", e);
+          }
+
+          if (!isConfigurable) {
+            console.warn("[GlobalErrorProvider] window.fetch não é configurável ou possui apenas getter. Pulando interceptação para evitar crashes.");
+          } else {
+            Object.defineProperty(window, 'fetch', {
+              value: async function(...args: any[]) {
+                const url = typeof args[0] === 'string' ? args[0] : (args[0] as Request).url || '';
+                const options = args[1];
+                const method = options?.method || (typeof args[0] === 'object' && 'method' in args[0] ? (args[0] as any).method : 'GET');
+                
+                // Evita loops gerados por requisições do próprio Firestore / Firebase Auth
+                const isFirestoreOrAuth = url.includes('firestore') || 
+                                          url.includes('googleapis') || 
+                                          url.includes('securetoken') ||
+                                          url.includes('firebase');
+                                          
+                if (isFirestoreOrAuth) {
+                  return originalFetch.apply(this, args as any);
+                }
+                
+                try {
+                  const response = await originalFetch.apply(this, args as any);
+                  if (!response.ok) {
+                    logErrorToFirestore({
+                      type: 'api_http_error',
+                      message: `Falha na requisição API (${response.status}): ${response.statusText}`,
+                      url: url,
+                      method: method,
+                      status: response.status
+                    }, { 
+                      uid: (window as any).__gsa_current_user_id__ || undefined, 
+                      route: (window as any).__gsa_current_route__ || undefined 
+                    });
+                  }
+                  return response;
+                } catch (error: any) {
                   logErrorToFirestore({
-                    type: 'api_http_error',
-                    message: `Falha na requisição API (${response.status}): ${response.statusText}`,
+                    type: 'api_network_error',
+                    message: `Erro de rede API: ${error?.message || String(error)}`,
                     url: url,
                     method: method,
-                    status: response.status
+                    stack: error?.stack || null
                   }, { 
                     uid: (window as any).__gsa_current_user_id__ || undefined, 
                     route: (window as any).__gsa_current_route__ || undefined 
                   });
+                  throw error;
                 }
-                return response;
-              } catch (error: any) {
-                logErrorToFirestore({
-                  type: 'api_network_error',
-                  message: `Erro de rede API: ${error?.message || String(error)}`,
-                  url: url,
-                  method: method,
-                  stack: error?.stack || null
-                }, { 
-                  uid: (window as any).__gsa_current_user_id__ || undefined, 
-                  route: (window as any).__gsa_current_route__ || undefined 
-                });
-                throw error;
-              }
-            },
-            writable: true,
-            configurable: true,
-            enumerable: true
-          });
+              },
+              writable: true,
+              configurable: true,
+              enumerable: true
+            });
+          }
         }
       } catch (e) {
         console.warn("[GlobalErrorProvider] Não foi possível interceptar o fetch global devido a restrições do navegador:", e);

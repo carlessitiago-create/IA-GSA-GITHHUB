@@ -7,7 +7,7 @@ import Swal from 'sweetalert2';
 import { ConsultaPublicaView } from '../views/ConsultaPublicaView';
 
 export const LoginView: React.FC = () => {
-  const { login, loginWithEmail, simulateUser } = useAuth();
+  const { login, loginWithEmail, simulateUser, user, profile, loading } = useAuth();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
@@ -15,6 +15,15 @@ export const LoginView: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPublicSearch, setShowPublicSearch] = useState(false);
   const [isSandbox, setIsSandbox] = useState(false);
+
+  // Redireciona automaticamente se o usuário já estiver logado e com perfil carregado
+  useEffect(() => {
+    if (user && profile && !loading) {
+      const isAdm = ["ADM_MASTER", "ADM_GERENTE", "ADM_ANALISTA", "GESTOR", "VENDEDOR"].includes(profile?.nivel || "");
+      console.log("[LoginView] Usuário autenticado detectado. Redirecionando para:", isAdm ? "/financeiro" : "/clube_pontos");
+      navigate(isAdm ? "/financeiro" : "/clube_pontos", { replace: true });
+    }
+  }, [user, profile, loading, navigate]);
 
   // Detecta se a aplicação está rodando dentro do ecossistema de Sandbox do Google AI Studio / Cloud Run Preview
   useEffect(() => {
@@ -39,7 +48,6 @@ export const LoginView: React.FC = () => {
         text: 'E-mail ou senha inválidos. Por favor, tente novamente.',
         confirmButtonColor: '#0a0a2e'
       });
-    } finally {
       setIsLoading(false);
     }
   };
@@ -49,11 +57,12 @@ export const LoginView: React.FC = () => {
     e.stopPropagation();
 
     if (isLoading) return;
-    setIsLoading(false); // Mantém destravado para evitar congelamentos
+    setIsLoading(true);
 
     try {
       await login();
     } catch (err: any) {
+      setIsLoading(false);
       if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request' || err.code === 'auth/popup-blocked') {
         console.warn("Google Auth cancelled or closed by user:", err.code);
         return;
