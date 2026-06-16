@@ -69,41 +69,83 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Função de simulação (Bypass do Sandbox)
   const simulateUser = (mockProfile: UserProfile) => {
-    console.log("[AuthContext] Aplicando perfil simulado para o Sandbox.");
-    setUser({ uid: mockProfile.uid, email: mockProfile.email } as any);
-    setProfile(mockProfile);
-    setRealProfile(mockProfile);
-    setIsSimulating(true);
-    localStorage.setItem('gsa_sandbox_bypass_active', JSON.stringify(mockProfile));
-    setLoading(false); // Destrava a UI imediatamente
+    console.log("[AuthContext - simulateUser] Iniciando simulação de usuário no sandbox para:", mockProfile.email);
+    console.log("[AuthContext - simulateUser] Detalhes do Perfil Simulado:", {
+      uid: mockProfile.uid,
+      nome_completo: mockProfile.nome_completo,
+      nivel: mockProfile.nivel,
+      status_conta: mockProfile.status_conta
+    });
+    
+    try {
+      setUser({ uid: mockProfile.uid, email: mockProfile.email } as any);
+      setProfile(mockProfile);
+      setRealProfile(mockProfile);
+      setIsSimulating(true);
+      localStorage.setItem('gsa_sandbox_bypass_active', JSON.stringify(mockProfile));
+      setLoading(false); // Destrava a UI imediatamente
+      console.log("[AuthContext - simulateUser] Simulação de usuário aplicada com sucesso e localStorage atualizado.");
+    } catch (err) {
+      console.error("[AuthContext - simulateUser] Erro ao aplicar simulação de usuário:", err);
+    }
   };
 
   const stopSimulation = () => {
+    console.log("[AuthContext - stopSimulation] Removendo sessão simulada de bypass.");
     localStorage.removeItem('gsa_sandbox_bypass_active');
     setProfile(realProfile);
     setIsSimulating(false);
+    console.log("[AuthContext - stopSimulation] Simulação desativada. Perfil real restaurado:", realProfile);
   };
 
   const loginWithEmail = async (email: string, pass: string) => {
-    const credential = await signInWithEmailAndPassword(auth, email, pass);
-    setUser(credential.user);
+    console.log("[AuthContext - loginWithEmail] Promessa iniciada. Tentando autenticar com e-mail:", email);
+    try {
+      const credential = await signInWithEmailAndPassword(auth, email, pass);
+      console.log("[AuthContext - loginWithEmail] signInWithEmailAndPassword resolvida com sucesso!");
+      console.log("[AuthContext - loginWithEmail] Usuário retornado:", {
+        uid: credential.user.uid,
+        email: credential.user.email,
+        emailVerified: credential.user.emailVerified
+      });
+      setUser(credential.user);
+    } catch (error: any) {
+      console.error("[AuthContext - loginWithEmail] Erro na promessa signInWithEmailAndPassword:", error);
+      throw error;
+    }
   };
 
   const login = async () => {
+    console.log("[AuthContext - login] Promessa de login (Google Auth Popup) iniciada.");
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
+    console.log("[AuthContext - login] Configurações do GoogleAuthProvider definidas:", provider);
+    
     try {
+      console.log("[AuthContext - login] Disparando signInWithPopup...");
       const credential = await signInWithPopup(auth, provider);
+      console.log("[AuthContext - login] signInWithPopup resolvida com sucesso!");
+      console.log("[AuthContext - login] Credenciais retornadas:", {
+        uid: credential.user.uid,
+        email: credential.user.email,
+        displayName: credential.user.displayName
+      });
       setUser(credential.user);
     } catch (error: any) {
+      console.error("[AuthContext - login] Erro retornado de signInWithPopup:", {
+        code: error.code,
+        message: error.message,
+        customData: error.customData,
+        credential: error.credential
+      });
       if (
         error.code === "auth/popup-blocked" || 
         error.code === "auth/cancelled-popup-request" || 
         error.code === "auth/popup-closed-by-user"
       ) {
-        console.warn("AuthContext: Google Login was cancelled or blocked:", error.code);
+        console.warn("[AuthContext - login] O Login com Google foi cancelado/bloqueado por popup no navegador:", error.code);
       } else {
-        console.error("AuthContext: Google Login Error:", error);
+        console.error("[AuthContext - login] Erro inesperado no login do Google:", error);
       }
       throw error;
     }
@@ -281,26 +323,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Se não houver cache de perfil pré-existente, inicia o loading de segurança
       if (!cachedData) {
+        console.log("[AuthContext - onAuthStateChanged] Nenhum perfil em cache localizado. Ativando loading de segurança.");
         setLoading(true);
       }
 
       try {
-        console.log("[AuthContext] Iniciando sincronização remota do perfil.");
+        const startTime = Date.now();
+        console.log("[AuthContext - onAuthStateChanged] Iniciando sincronização remota do perfil no Firestore para UID:", currentUser.uid);
         const docRef = doc(db, 'usuarios', currentUser.uid);
         
         const fetchPromise = getDoc(docRef);
         const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Firestore Sync timeout')), 6000)
+          setTimeout(() => reject(new Error('Firestore Sync timeout (6s limit reached)')), 6000)
         );
 
+        console.log("[AuthContext - onAuthStateChanged] Executando corrida contra timeout de 6 segundos...");
         const docSnap = (await Promise.race([fetchPromise, timeoutPromise])) as any;
+        const duration = Date.now() - startTime;
+        console.log(`[AuthContext - onAuthStateChanged] Resposta Firestore obtida em ${duration}ms!`);
 
         if (docSnap && docSnap.exists()) {
           const remoteData = { uid: docSnap.id, ...docSnap.data() } as UserProfile;
+          console.log("[AuthContext - onAuthStateChanged] Perfil remoto encontrado no documento:", remoteData);
           setProfile(remoteData);
           setRealProfile(remoteData);
           localStorage.setItem(`profile_${currentUser.uid}`, JSON.stringify(remoteData));
+          console.log("[AuthContext - onAuthStateChanged] Perfil remoto persistido localmente e estado redefinido.");
         } else {
+          console.warn("[AuthContext - onAuthStateChanged] Usuário autenticado, mas documento de perfil não existe no Firestore!");
           // Se o usuário autenticado não possui registro no Firestore, cria um provisório CLIENTE
           const tempProfile: UserProfile = {
             uid: currentUser.uid,
@@ -315,9 +365,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setProfile(tempProfile);
           setRealProfile(tempProfile);
           localStorage.setItem(`profile_${currentUser.uid}`, JSON.stringify(tempProfile));
+          console.log("[AuthContext - onAuthStateChanged] Perfil provisório cadastrado em cache:", tempProfile);
         }
       } catch (err: any) {
-        console.warn("[AuthContext] Usando fallback em background devido a timeout/falha do Firestore:", err.message);
+        console.error("[AuthContext - onAuthStateChanged] Falha ou timeout na sincronização remota do perfil:", err);
+        console.warn("[AuthContext - onAuthStateChanged] Ativando estratégia de fallback para não travar o cliente.");
         
         // Se após a falha de sincronização de rede o usuário ainda não tiver nenhum perfil carregado pelo cache
         if (!cachedData) {
@@ -331,10 +383,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             data_nascimento: '',
             tem_empresa: false
           } as UserProfile;
+          console.log("[AuthContext - onAuthStateChanged] Construído perfil de fallback emergencial:", fallbackProfile);
           setProfile(fallbackProfile);
           setRealProfile(fallbackProfile);
+        } else {
+          console.log("[AuthContext - onAuthStateChanged] Preservando perfil de cache síncrono existente:", cachedData);
         }
       } finally {
+        console.log("[AuthContext - onAuthStateChanged] Finalizando ciclo. Definindo loading = false.");
         setLoading(false); // Encerra sempre o loading independente do sucesso ou timeout
       }
     });

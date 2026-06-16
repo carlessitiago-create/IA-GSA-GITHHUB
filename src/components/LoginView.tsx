@@ -18,36 +18,76 @@ export const LoginView: React.FC = () => {
 
   // Redireciona automaticamente se o usuário já estiver logado e com perfil carregado
   useEffect(() => {
+    console.log("[LoginView - Redirect Hook] Verificando estado atual de autenticação:", {
+      hasUser: !!user,
+      uid: user?.uid,
+      hasProfile: !!profile,
+      nivel: profile?.nivel,
+      loading
+    });
     if (user && profile && !loading) {
       const isAdm = ["ADM_MASTER", "ADM_GERENTE", "ADM_ANALISTA", "GESTOR", "VENDEDOR"].includes(profile?.nivel || "");
-      console.log("[LoginView] Usuário autenticado detectado. Redirecionando para:", isAdm ? "/financeiro" : "/clube_pontos");
-      navigate(isAdm ? "/financeiro" : "/clube_pontos", { replace: true });
+      const targetRoute = isAdm ? "/financeiro" : "/clube_pontos";
+      console.log(`[LoginView - Redirect Hook] Redirecionando Usuário Ativo (${user.email || user.uid}) -> ${targetRoute}`);
+      navigate(targetRoute, { replace: true });
     }
   }, [user, profile, loading, navigate]);
 
   // Detecta se a aplicação está rodando dentro do ecossistema de Sandbox do Google AI Studio / Cloud Run Preview
   useEffect(() => {
     const hostname = window.location.hostname.toLowerCase();
-    if (hostname.includes('run.app') || hostname.includes('localhost') || hostname.includes('aistudio')) {
-      setIsSandbox(true);
-    }
+    const isSB = hostname.includes('run.app') || hostname.includes('localhost') || hostname.includes('aistudio');
+    console.log("[LoginView - Sandbox Hook] Hostname atual:", hostname, "Ambiente Sandbox?", isSB);
+    setIsSandbox(isSB);
   }, []);
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) return;
+    console.log("========================================= [GSA LOGIN FORM SUBMIT] =========================================");
+    console.log("[LoginView - handleEmailLogin] Form onSubmit event captured!");
+    console.log("[LoginView - handleEmailLogin] Current input credentials:", {
+      email: email,
+      passwordLength: password ? password.length : 0,
+    });
 
+    if (!email || !password) {
+      console.warn("[LoginView - handleEmailLogin] ERROR: Missing email or password. Aborting submission.");
+      return;
+    }
+
+    console.log("[LoginView - handleEmailLogin] Local validations passed. Setting state isLoading to true...");
     setIsLoading(true);
+    
     try {
+      console.log("[LoginView - handleEmailLogin] Attempting AuthContext call: loginWithEmail(email, password)...");
+      const startTime = Date.now();
+      
       await loginWithEmail(email, password);
+      
+      const duration = Date.now() - startTime;
+      console.log(`[LoginView - handleEmailLogin] SUCCESS! loginWithEmail promise resolved after ${duration}ms.`);
+      console.log("[LoginView - handleEmailLogin] User should be logged in. Auth state changes will be handled by AuthContext onAuthStateChanged.");
+      
+      // We set isLoading to false just in case redirect doesn\'t happen instantly or they stay on the page
+      setIsLoading(false);
     } catch (err: any) {
-      console.error("Erro no login convencional:", err);
+      console.error("========================================= [GSA LOGIN ERROR] =========================================");
+      console.error("[LoginView - handleEmailLogin] FAILED! An error was caught during loginWithEmail:", {
+        code: err?.code || "NO_CODE",
+        message: err?.message || String(err),
+        stack: err?.stack || "NO_STACK",
+        fullErrorObject: err
+      });
+      console.error("=========================================================================================================");
+      
       Swal.fire({
         icon: 'error',
         title: 'Erro de Acesso',
         text: 'E-mail ou senha inválidos. Por favor, tente novamente.',
         confirmButtonColor: '#0a0a2e'
       });
+      
+      console.log("[LoginView - handleEmailLogin] Disabling isLoading state back to false to unblock UI...");
       setIsLoading(false);
     }
   };
@@ -56,18 +96,44 @@ export const LoginView: React.FC = () => {
     e.preventDefault();
     e.stopPropagation();
 
-    if (isLoading) return;
+    console.log("========================================= [GSA GOOGLE AUTH CLICK] =========================================");
+    console.log("[LoginView - handleGoogleAuthClick] Click event captured on Google Sign-In button!");
+    console.log("[LoginView - handleGoogleAuthClick] Current isLoading state value:", isLoading);
+
+    if (isLoading) {
+      console.warn("[LoginView - handleGoogleAuthClick] Warning: Auth process already active. Ignoring duplicate click.");
+      return;
+    }
+    
+    console.log("[LoginView - handleGoogleAuthClick] Setting isLoading state to true...");
     setIsLoading(true);
 
     try {
+      console.log("[LoginView - handleGoogleAuthClick] Calling AuthContext: login() with GoogleAuthProvider...");
+      const startTime = Date.now();
+      
       await login();
-    } catch (err: any) {
+      
+      const duration = Date.now() - startTime;
+      console.log(`[LoginView - handleGoogleAuthClick] SUCCESS! login() promise resolved after ${duration}ms.`);
       setIsLoading(false);
+    } catch (err: any) {
+      console.error("========================================= [GSA GOOGLE AUTH ERROR] =========================================");
+      console.error("[LoginView - handleGoogleAuthClick] FAILED! Error caught during Google popup authentications:", {
+        code: err?.code || "NO_CODE",
+        message: err?.message || String(err),
+        stack: err?.stack || "NO_STACK",
+        fullErrorObject: err
+      });
+      console.error("============================================================================================================");
+      
+      setIsLoading(false);
+      
       if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request' || err.code === 'auth/popup-blocked') {
-        console.warn("Google Auth cancelled or closed by user:", err.code);
+        console.warn("[LoginView - handleGoogleAuthClick] Expected cancel/popup issue (User closed or browser blocked popup):", err.code);
         return;
       }
-      console.error("Google Auth Bloqueado por URI Mismatch:", err);
+      
       Swal.fire({
         icon: 'warning',
         title: 'Restrição de Domínio (OAuth 400)',
@@ -80,6 +146,7 @@ export const LoginView: React.FC = () => {
   // Força a entrada ignorando chamadas externas de API
   const handleBypassSandbox = (e: React.MouseEvent) => {
     e.preventDefault();
+    console.log("[LoginView - BypassClick] Evento de clique no botão 'Bypassar Sandbox' disparado.");
     
     const mockAdminProfile: any = {
       uid: "AIrg3siNJWhXJtGVJjhbk7nGIwB2",
@@ -93,8 +160,9 @@ export const LoginView: React.FC = () => {
       tem_empresa: true
     };
 
-    console.log("[LoginView] Executando simulação forçada de perfil ADM_MASTER.");
+    console.log("[LoginView - BypassClick] Executando simulação forçada de perfil ADM_MASTER...");
     simulateUser(mockAdminProfile);
+    console.log("[LoginView - BypassClick] Redirecionando simulador de sandbox para o painel /financeiro...");
     
     Swal.fire({
       toast: true,
