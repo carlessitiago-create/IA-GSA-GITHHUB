@@ -1,7 +1,7 @@
 // src/components/GSA/ProcessModelsManager.tsx
 
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   Settings2, 
   Plus, 

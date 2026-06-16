@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { Shield, Clock, XCircle, Lock, Search, X } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { doc, updateDoc } from 'firebase/firestore';
@@ -17,6 +17,7 @@ export function Login() {
   const [cpf, setCpf] = useState('');
   const [dataNascimento, setDataNascimento] = useState('');
   const [telefone, setTelefone] = useState('');
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showPublicSearch, setShowPublicSearch] = useState(false);
 
@@ -56,6 +57,16 @@ export function Login() {
       if (isRegistering) {
         if (!cpf || !dataNascimento || !telefone) {
           Swal.fire({ icon: 'error', title: 'Campos obrigatórios', text: 'CPF, Data de Nascimento e Contato são obrigatórios.', confirmButtonColor: '#0a0a2e' });
+          setIsLoading(false);
+          return;
+        }
+        if (!termsAccepted) {
+          Swal.fire({
+            icon: 'warning',
+            title: 'Consentimento LGPD Requerido',
+            text: 'Para prosseguir, você deve aceitar os Termos de Uso e Política de Privacidade de Tratamento de Dados.',
+            confirmButtonColor: '#0a0a2e'
+          });
           setIsLoading(false);
           return;
         }
@@ -187,6 +198,19 @@ export function Login() {
               <div>
                 <label className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase mb-1">WhatsApp</label>
                 <input type="tel" value={telefone} onChange={(e) => setTelefone(e.target.value)} required className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm text-slate-900 focus:ring-2 focus:ring-[#0a0a2e]/20 shadow-sm" />
+              </div>
+              <div className="flex items-start gap-2 pt-2 pb-1 text-left">
+                <input 
+                  type="checkbox" 
+                  id="lgpd-consent-checkbox" 
+                  checked={termsAccepted} 
+                  onChange={(e) => setTermsAccepted(e.target.checked)} 
+                  className="mt-1 accent-[#0a0a2e] cursor-pointer" 
+                  required 
+                />
+                <label htmlFor="lgpd-consent-checkbox" className="text-xs text-slate-500 select-none cursor-pointer leading-tight">
+                  Autorizo o processamento dos meus dados para faturamento, consultas relativas a crédito, e aceito os <span className="font-bold text-[#0a0a2e] underline">Termos de Uso</span> e a <span className="font-bold text-[#0a0a2e] underline">Política de Privacidade</span> (LGPD).
+                </label>
               </div>
             </>
           )}
@@ -329,20 +353,58 @@ export function CompleteProfile({ profile: initialProfile }: { profile: any }) {
     }
 
     setIsLoading(true);
-    try {
-      const { setDoc } = await import('firebase/firestore');
-      await setDoc(doc(db, 'usuarios', uid), {
+    
+    // Se o navegador estiver offline, salve localmente de imediato sem esperar o timeout do Firestore
+    if (!navigator.onLine) {
+      localStorage.setItem('pending_profile_update', JSON.stringify({
+        uid,
         cpf: cleanCpf,
         data_nascimento: dataNascimento,
         telefone: cleanTelefone,
-        status_conta: 'PENDENTE'
-      }, { merge: true });
+        status_conta: 'PENDENTE',
+        nivel: 'CLIENTE'
+      }));
+      
+      Swal.fire({ 
+        icon: 'warning', 
+        title: 'Conexão Instável', 
+        text: 'Não foi possível salvar online, mas salvamos seus dados localmente. Eles serão sincronizados automaticamente quando você se reconectar.',
+        confirmButtonColor: '#0a0a2e'
+      }).then(() => {
+        window.location.reload();
+      });
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const { setDoc } = await import('firebase/firestore');
+      
+      // Timeout de segurança: 45 segundos para a gravação principal
+      const saveTimeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Firestore save timeout')), 45000)
+      );
+
+      await Promise.race([
+        setDoc(doc(db, 'usuarios', uid), {
+          cpf: cleanCpf,
+          data_nascimento: dataNascimento,
+          telefone: cleanTelefone,
+          status_conta: 'PENDENTE',
+          nivel: 'CLIENTE' // IMPORTANTE: Inclui 'nivel' para garantir conformidade com as regras de criação/atualização do Firestore
+        }, { merge: true }),
+        saveTimeoutPromise
+      ]);
       
       try {
         const { vincularHistoricoPublico } = await import('../services/userService');
-        await vincularHistoricoPublico(uid, cleanCpf);
+        // Timeout separado e menor para vinculação de histórico para não prender o usuário
+        const linkTimeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Link history timeout')), 25000)
+        );
+        await Promise.race([vincularHistoricoPublico(uid, cleanCpf), linkTimeoutPromise]);
       } catch (e) {
-        console.warn('Erro ao vincular histórico:', e);
+        console.warn('Erro ou timeout ao vincular histórico (não-bloqueante):', e);
       }
       
       Swal.fire({
@@ -355,7 +417,29 @@ export function CompleteProfile({ profile: initialProfile }: { profile: any }) {
       });
     } catch (error: any) {
       console.error("Erro ao completar perfil:", error);
-      Swal.fire({ icon: 'error', title: 'Erro', text: error.message || 'Erro desconhecido ao salvar dados.' });
+      
+      const isOfflineError = error.message.includes('timeout') || error.message.includes('offline');
+      
+      if (isOfflineError) {
+        Swal.fire({ 
+          icon: 'warning', 
+          title: 'Conexão Instável', 
+          text: 'Não foi possível salvar online, mas salvamos seus dados localmente. Eles serão sincronizados automaticamente quando você se reconectar.',
+          confirmButtonColor: '#0a0a2e'
+        }).then(() => {
+          localStorage.setItem('pending_profile_update', JSON.stringify({
+            uid,
+            cpf: cleanCpf,
+            data_nascimento: dataNascimento,
+            telefone: cleanTelefone,
+            status_conta: 'PENDENTE',
+            nivel: 'CLIENTE'
+          }));
+          window.location.reload();
+        });
+      } else {
+        Swal.fire({ icon: 'error', title: 'Erro', text: error.message || 'Erro desconhecido ao salvar dados. Verifique sua conexão e tente novamente.' });
+      }
     } finally {
       setIsLoading(false);
     }

@@ -17,7 +17,7 @@ import {
   Crosshair,
   Radar
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { 
   BarChart, 
   Bar, 

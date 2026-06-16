@@ -144,27 +144,32 @@ export async function cadastrarCliente(data: Omit<ClientData, 'data_entrada' | '
     const visibilidade_uids = [data.especialista_id];
     let id_superior = null;
 
-    // Fetch specialist's hierarchy - Skip if not authenticated to avoid permission errors
+    // Fetch specialist's hierarchy - Skip if not authenticated or offline to avoid permission/network errors
     if (auth.currentUser) {
       let currentSuperiorId = data.especialista_id;
       let depth = 0;
       while (currentSuperiorId && depth < 5) { // Limit depth to prevent infinite loops
-        const userSnap = await getDoc(doc(db, 'usuarios', currentSuperiorId));
-        if (userSnap.exists()) {
-          const userData = userSnap.data();
-          if (depth === 0) {
-            id_superior = userData.id_superior || null;
-          }
-          
-          if (userData.id_superior && !visibilidade_uids.includes(userData.id_superior)) {
-            visibilidade_uids.push(userData.id_superior);
-            currentSuperiorId = userData.id_superior;
-            depth++;
+        try {
+          const userSnap = await getDoc(doc(db, 'usuarios', currentSuperiorId));
+          if (userSnap.exists()) {
+            const userData = userSnap.data();
+            if (depth === 0) {
+              id_superior = userData.id_superior || null;
+            }
+            
+            if (userData.id_superior && !visibilidade_uids.includes(userData.id_superior)) {
+              visibilidade_uids.push(userData.id_superior);
+              currentSuperiorId = userData.id_superior;
+              depth++;
+            } else {
+              break;
+            }
           } else {
             break;
           }
-        } else {
-          break;
+        } catch (getDocErr) {
+          console.warn("[leadService] Erro ao buscar hierarquia de superior enquanto offline:", getDocErr);
+          break; // Prossegue mesmo sem a árvore hierárquica se estiver em modo offline
         }
       }
     }

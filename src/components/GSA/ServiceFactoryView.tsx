@@ -28,7 +28,7 @@ import {
 import { db } from '../../firebase';
 import { collection, onSnapshot, query, orderBy, deleteDoc, doc } from 'firebase/firestore';
 import Swal from 'sweetalert2';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { useRequirements } from '../../hooks/useRequirements';
 import { saveRequirementsConfig } from '../../services/requirementsService';
 

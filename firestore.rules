@@ -1,112 +1,233 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Regras para a captação de leads de crédito (Isca Digital Pública)
-    match /showcase_services {
-      allow read: if true;
-      match /{serviceId} {
-        allow read: if true;
-      }
-    }
-
-    match /services {
-      allow read: if true;
-      match /{serviceId} {
-        allow read: if true;
-      }
-    }
-
-    match /leads {
-      allow read: if true;
-      match /{leadId} {
-        // Permite que usuários não autenticados criem novos leads
-        allow create: if true;
-        // Garante que apenas usuários autenticados possam atualizar ou deletar
-        allow read: if true;
-        allow update, delete: if request.auth != null;
-      }
-    }
-
-    match /order_processes {
-      allow read: if true;
-      match /{processoId} {
-        allow read: if true;
-      }
-    }
-
-    match /notifications {
-      allow read: if true;
-      match /{notificationId} {
-        allow read: if true;
-        allow write: if request.auth != null;
-      }
-    }
-
-    match /system_notifications {
-      allow read: if true;
-      match /{notificationId} {
-        allow read: if true;
-        allow create: if true;
-      }
-    }
-
-    match /leads_credito {
-      allow read: if true;
-      match /{leadId} {
-        allow create: if true;
-        allow read: if true;
-        allow update, delete: if request.auth != null && 
-          (request.auth.token.role == 'admin_master' || request.auth.token.role == 'gestor' || request.auth.token.role == 'vendedor' || request.auth.token.role == 'analista' || request.auth.token.nivel in ['ADM_MASTER', 'GESTOR', 'VENDEDOR', 'ADM_ANALISTA']);
-      }
-    }
-
-    match /sales {
-      allow read: if true;
-      match /{saleId} {
-        allow read: if true;
-        allow write: if request.auth != null;
-      }
-    }
-
-    match /logs_erro {
-      allow read, write: if true;
-      match /{logId} {
-        allow read, write: if true;
-      }
-    }
-
-    match /leads_diagnostico {
-      allow read, write: if true;
-      match /{leadId} {
-        allow read, write: if true;
-      }
-    }
-
-    match /saas_clicks {
-      allow read, write: if true;
-      match /{clickId} {
-        allow read, write: if true;
-      }
-    }
-
-    match /estatisticas_leads {
-      allow read, write: if true;
-      match /{statId} {
-        allow read, write: if true;
-      }
-    }
-
-    match /configs {
-      allow read, write: if true;
-      match /{configId} {
-        allow read, write: if true;
-      }
-    }
-
-    // Global read access for authenticated users to avoid permission-denied errors.
-    // Specific write/read-write rules override this.
+    
+    // 1. Global Safety Net (Default-Deny Catch-All)
     match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- SECURITY RESOLUTION PRIMITIVES ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data;
+    }
+
+    function getUserNivel() {
+      return isSignedIn() ? getUserData().nivel : '';
+    }
+
+    function isMasterAdmin() {
+      return isSignedIn() && (getUserNivel() == 'ADM_MASTER' || getUserNivel() == 'ADM_MESTRE');
+    }
+
+    function isStaff() {
+      return isSignedIn() && (getUserNivel() in ['ADM_MASTER', 'ADM_MESTRE', 'ADM_GERENTE', 'GESTOR', 'VENDEDOR', 'ADM_ANALISTA']);
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // --- USER PROFILE & CONFIG ---
+    match /usuarios/{userId} {
+      allow read: if isSignedIn() && (request.auth.uid == userId || isStaff());
+      allow create: if isSignedIn() && request.auth.uid == userId && request.resource.data.nivel == 'CLIENTE';
+      allow update: if isSignedIn() && (
+        (request.auth.uid == userId && request.resource.data.nivel == resource.data.nivel) || 
+        isMasterAdmin()
+      );
+      allow delete: if isMasterAdmin();
+    }
+
+    // --- CLIENTS & LEADS COLLECTIONS ---
+    match /clients/{clientId} {
+      allow create: if true;
+      allow read, update: if isSignedIn() && (isStaff() || resource.data.especialista_id == request.auth.uid || request.auth.uid in resource.data.visibilidade_uids);
+      allow delete: if isMasterAdmin();
+    }
+
+    match /leads/{leadId} {
+      allow create: if true;
+      allow read, update, delete: if isStaff();
+    }
+
+    match /leads_credito/{leadId} {
+      allow create: if true;
+      allow read, update, delete: if isStaff();
+    }
+
+    match /leads_diagnostico/{leadId} {
+      allow create: if true;
+      allow read, update, delete: if isStaff();
+    }
+
+    match /showcase_leads/{leadId} {
+      allow create: if true;
+      allow read, update, delete: if isStaff();
+    }
+
+    match /blacklist/{blackId} {
+      allow read, write: if isStaff();
+    }
+
+    // --- CORE CRM/SaaS TRANSACTIONS ---
+    match /order_processes/{processoId} {
+      allow read: if isSignedIn() && (resource.data.cliente_id == request.auth.uid || isStaff());
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && (
+        (resource.data.cliente_id == request.auth.uid && request.resource.data.cliente_id == resource.data.cliente_id) || 
+        isStaff()
+      );
+      allow delete: if isMasterAdmin();
+    }
+
+    match /sales/{saleId} {
+      allow read: if isSignedIn() && (resource.data.cliente_id == request.auth.uid || isStaff());
+      allow create: if isSignedIn();
+      allow update: if isStaff();
+      allow delete: if isMasterAdmin();
+    }
+
+    match /proposals/{proposalId} {
+      allow read: if true;
+      allow create: if true;
+      allow update: if isStaff();
+      allow delete: if isMasterAdmin();
+    }
+
+    match /pendencies/{pendenciaId} {
+      allow read: if isSignedIn() && (resource.data.cliente_id == request.auth.uid || isStaff());
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && (resource.data.cliente_id == request.auth.uid || isStaff());
+      allow delete: if isMasterAdmin();
+    }
+
+    // --- FINANCIALS & WALLETS ---
+    match /wallets/{walletId} {
+      allow read: if isSignedIn() && (resource.data.cliente_id == request.auth.uid || isStaff());
+      allow create, update: if isStaff();
+      allow delete: if isMasterAdmin();
+    }
+
+    match /financial_transactions/{transId} {
+      allow read: if isSignedIn() && (resource.data.cliente_id == request.auth.uid || isStaff());
+      allow create, update: if isStaff();
+      allow delete: if isMasterAdmin();
+    }
+
+    match /bulk_sales_batches/{batchId} {
+      allow read, write: if isStaff();
+    }
+
+    match /status_history/{historyId} {
+      allow read: if isSignedIn() && (resource.data.cliente_id == request.auth.uid || isStaff());
+      allow create, update: if isStaff();
+      allow delete: if isMasterAdmin();
+    }
+
+    match /lotes_limpa_nome/{loteId} {
+      allow read, write: if isStaff();
+    }
+
+    // --- REFERRALS & MARKETING ---
+    match /referrals/{referralId} {
+      allow create: if true;
+      allow read: if isSignedIn() && (resource.data.cliente_origem_id == request.auth.uid || isStaff());
+      allow update: if isStaff();
+      allow delete: if isMasterAdmin();
+    }
+
+    match /newsletter_subscribers/{subId} {
+      allow create: if true;
+      allow read, update, delete: if isStaff();
+    }
+
+    match /conflict_logs/{logId} {
+      allow create: if isSignedIn();
+      allow read, update, delete: if isStaff();
+    }
+
+    match /points_history/{pointId} {
+      allow read: if isSignedIn() && (resource.data.usuario_id == request.auth.uid || isStaff());
+      allow create: if isSignedIn();
+      allow update: if isStaff();
+      allow delete: if isMasterAdmin();
+    }
+
+    match /documento_locks/{docId} {
       allow read, write: if true;
+    }
+
+    // --- SERVICES CATALOG ---
+    match /showcase_services/{serviceId} {
+      allow read: if true;
+      allow write: if isMasterAdmin();
+    }
+
+    match /services/{serviceId} {
+      allow read: if true;
+      allow write: if isMasterAdmin();
+    }
+
+    match /models/{modelId} {
+      allow read: if true;
+      allow write: if isStaff();
+    }
+
+    // --- TICKETS MATCHERS ---
+    match /tickets/{ticketId} {
+      allow read: if isSignedIn() && (resource.data.cliente_id == request.auth.uid || isStaff());
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && (resource.data.cliente_id == request.auth.uid || isStaff());
+      allow delete: if isMasterAdmin();
+      
+      match /messages/{msgId} {
+        allow read, create: if isSignedIn();
+        allow update, delete: if isStaff();
+      }
+    }
+
+    // --- NOTIFICATIONS & ENGINES ---
+    match /notifications/{notificationId} {
+      allow read: if isSignedIn() && (resource.data.usuario_id == request.auth.uid || isStaff());
+      allow write: if isSignedIn() && (request.resource.data.usuario_id == request.auth.uid || isStaff());
+    }
+
+    match /system_notifications/{notificationId} {
+      allow read: if isSignedIn() && (resource.data.usuario_id == request.auth.uid || isStaff());
+      allow create: if true;
+      allow update, delete: if isStaff();
+    }
+
+    match /estatisticas_leads/{estId} {
+      allow read: if isStaff();
+      allow write: if isMasterAdmin();
+    }
+
+    // --- CONFIGS ---
+    match /configs/{configId} {
+      allow read: if true;
+      allow write: if isMasterAdmin();
+    }
+
+    match /platform_config/{configId} {
+      allow read: if true;
+      allow write: if isMasterAdmin() || isStaff();
+    }
+
+    // --- TELEMETRY & COOKIES ---
+    match /logs_erro/{logId} {
+      allow create: if true;
+      allow read, update, delete: if isMasterAdmin();
+    }
+
+    match /saas_clicks/{clickId} {
+      allow create: if isSignedIn() || true;
+      allow read, update, delete: if isMasterAdmin();
     }
   }
 }

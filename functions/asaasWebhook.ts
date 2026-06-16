@@ -3,9 +3,39 @@ import { FieldValue } from 'firebase-admin/firestore';
 
 const db = admin.firestore();
 
+async function getSaasAdminConfig() {
+    try {
+        const saasRef = db.collection("platform_config").doc("saas_settings");
+        const saasSnap = await saasRef.get();
+        return saasSnap.data() || {};
+    } catch (e) {
+        console.error("Erro ao obter saas_settings:", e);
+        return {};
+    }
+}
+
 export const handleAsaasWebhook = async (req: any, res: any) => {
     if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
     
+    // --- WEBHOOK SECURITY CHECK ---
+    try {
+        const config = await getSaasAdminConfig();
+        const configuredSecret = config.asaas_webhook_secret || process.env.ASAAS_WEBHOOK_SECRET;
+        
+        if (configuredSecret) {
+            const receivedToken = req.headers['asaas-access-token'];
+            if (!receivedToken || receivedToken !== configuredSecret) {
+                console.error("[ASAAS_WEBHOOK] [SECURITY] Token de acesso do Webhook inválido ou ausente.");
+                return res.status(401).send("Unauthorized Webhook Token");
+            }
+        } else {
+            console.warn("[ASAAS_WEBHOOK] [SECURITY WATCH] Webhook secreto (asaas_webhook_secret) não configurado. Adicione-o para evitar spoofing.");
+        }
+    } catch (secError) {
+        console.error("[ASAAS_WEBHOOK] Erro ao validar regras de segurança do webhook:", secError);
+        return res.status(500).send("Security validation failed");
+    }
+
     const { event, payment } = req.body;
     console.log(`[ASAAS_WEBHOOK] Event received: ${event}`);
 

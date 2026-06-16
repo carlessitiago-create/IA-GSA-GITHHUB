@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Landmark, Building2, Receipt, Home, Link as LinkIcon, Check, ExternalLink } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../AuthContext';
 import { useNavigate } from 'react-router-dom';
 

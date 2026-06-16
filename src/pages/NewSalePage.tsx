@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   Users, Package, CreditCard, ChevronRight, ChevronLeft, 
   HelpCircle, CheckCircle, AlertTriangle, Clock, Upload, Copy, Check,

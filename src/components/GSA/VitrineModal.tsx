@@ -1,6 +1,6 @@
 import React from 'react';
 import { X } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import Swal from 'sweetalert2';
 
 interface VitrineModalProps {
@@ -15,9 +15,31 @@ export const VitrineModal: React.FC<VitrineModalProps> = ({ isOpen, onClose, onC
   if (!isOpen || !service) return null;
 
   const getYTId = (url: string) => {
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-    const match = url.match(regExp);
-    return (match && match[2].length === 11) ? match[2] : null;
+    if (!url) return null;
+    const trimmed = url.trim();
+    
+    let tempUrl = trimmed;
+    const srcMatch = trimmed.match(/src=["'](https?:\/\/[^"']+)["']/);
+    if (srcMatch) {
+      tempUrl = srcMatch[1];
+    }
+    
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|shorts\/|live\/)([^#\&\?]*).*/;
+    const match = tempUrl.match(regExp);
+    if (match && match[2] && match[2].length === 11) {
+      return match[2];
+    }
+    
+    if (tempUrl.length === 11) {
+      return tempUrl;
+    }
+    
+    const fallback = tempUrl.match(/[a-zA-Z0-9_-]{11}/);
+    if (fallback) {
+      return fallback[0];
+    }
+    
+    return tempUrl;
   };
 
   const videoId = service.video_url ? getYTId(service.video_url) : null;

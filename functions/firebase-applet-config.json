@@ -1,9 +1,9 @@
 {
-  "projectId": "gsa-camara-pro",
-  "appId": "1:107357724964:web:e0fecd8bba9cf853f593b1",
-  "apiKey": "AIzaSyCDQmXXCTDioxYhO72QE11QHa4yZCGEKdg",
-  "authDomain": "gsa-camara-pro.firebaseapp.com",
+  "projectId": "ais-us-east1-5b22e4a04c234f7eb",
+  "appId": "1:165811949193:web:a2afb98d348903993cc058",
+  "apiKey": "AIzaSyAKd0hFENZwnJOIxUauQXy_VxdHvY03u7s",
+  "authDomain": "ais-us-east1-5b22e4a04c234f7eb.firebaseapp.com",
   "firestoreDatabaseId": "(default)",
-  "storageBucket": "gsa-camara-pro.firebasestorage.app",
-  "messagingSenderId": "107357724964"
+  "storageBucket": "ais-us-east1-5b22e4a04c234f7eb.firebasestorage.app",
+  "messagingSenderId": "165811949193"
 }

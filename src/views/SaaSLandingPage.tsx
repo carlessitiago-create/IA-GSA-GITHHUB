@@ -34,7 +34,7 @@ import {
   Search,
   User
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 
 const SaaSLandingPage: React.FC = () => {
   const hostname = window.location.hostname.toLowerCase();
@@ -880,8 +880,32 @@ const SaaSLandingPage: React.FC = () => {
               <iframe
                 src={`https://www.youtube.com/embed/${(() => {
                   const id = config.vsl_youtube_id;
-                  const match = id.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
-                  return match ? match[1] : id;
+                  if (!id) return '';
+                  const trimmed = id.trim();
+                  
+                  // Extract URL from iframe if they pasted full embed tag
+                  let url = trimmed;
+                  const srcMatch = trimmed.match(/src=["'](https?:\/\/[^"']+)["']/);
+                  if (srcMatch) {
+                    url = srcMatch[1];
+                  }
+                  
+                  const regExp = /^.*(?:youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|shorts\/|live\/)([^#\&\?]*).*/;
+                  const match = url.match(regExp);
+                  if (match && match[1] && match[1].length === 11) {
+                    return match[1];
+                  }
+                  
+                  if (url.length === 11) {
+                    return url;
+                  }
+                  
+                  const fallback = url.match(/[a-zA-Z0-9_-]{11}/);
+                  if (fallback) {
+                    return fallback[0];
+                  }
+                  
+                  return url;
                 })()}?autoplay=0&rel=0`}
                 title="VSL GSA Diagnóstico"
                 className="w-full h-full"

@@ -25,7 +25,8 @@ import {
   Gift,
   Trophy,
   EyeOff,
-  Mail
+  Mail,
+  TrendingUp
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -52,6 +53,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ view, setView, currentProfile,
 
   const admItems: MenuItem[] = [
     { id: 'financeiro', label: 'DASHBOARD', icon: <BarChart3 className="size-5" />, group: 'FINANCEIRO', roles: ['ADM_MASTER', 'ADM_GERENTE', 'GESTOR', 'VENDEDOR'] },
+    { id: 'funil-vendas', label: 'FUNIL DE VENDAS', icon: <TrendingUp className="size-5" />, group: 'FINANCEIRO', roles: ['ADM_MASTER', 'ADM_GERENTE', 'GESTOR', 'VENDEDOR'] },
     
     { id: 'vendas-internas', label: 'VENDAS (PDV)', icon: <ShoppingCart className="size-5" />, group: 'COMERCIAL', color: 'text-emerald-500', roles: ['ADM_MASTER', 'ADM_GERENTE', 'GESTOR', 'VENDEDOR'] },
     { id: 'venda-massa', label: 'VENDA EM MASSA', icon: <Package className="size-5" />, group: 'COMERCIAL', color: 'text-blue-500', roles: ['ADM_MASTER', 'ADM_GERENTE', 'GESTOR', 'VENDEDOR', 'ADM_ANALISTA'] },

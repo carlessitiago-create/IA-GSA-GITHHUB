@@ -23,7 +23,7 @@ import {
   Flame,
   ArrowUpRight
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { aceitarPropostaLeadVitrine, atualizarStatusLeadVitrine, LeadStatus } from '../services/marketingService';
 import { getOrCreateWallet, Wallet } from '../services/financialService';
 import { useAuth } from '../components/AuthContext';

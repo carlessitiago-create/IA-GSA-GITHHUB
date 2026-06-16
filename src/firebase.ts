@@ -1,6 +1,12 @@
 import { initializeApp, getApp, getApps } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore, doc, getDocFromServer, initializeFirestore } from 'firebase/firestore';
+import { 
+  getFirestore, 
+  initializeFirestore, 
+  memoryLocalCache,
+  persistentLocalCache, 
+  persistentMultipleTabManager 
+} from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { getFunctions } from 'firebase/functions';
 
@@ -12,18 +18,51 @@ export const firebaseConfig = firebaseConfigImport;
 export const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 console.log("Firebase initialized with dbId:", firebaseConfig.firestoreDatabaseId);
 
+export let isPersistenceEnabled = false;
+export let persistenceInitializationError: string | null = null;
+
 let firestoreInstance;
 try {
-  firestoreInstance = initializeFirestore(app, {
-    experimentalForceLongPolling: true,
-  }, firebaseConfig.firestoreDatabaseId === '(default)' ? undefined : firebaseConfig.firestoreDatabaseId);
-} catch (e: any) {
-  if (e.message && e.message.includes('Firestore has already been started')) {
-    firestoreInstance = getFirestore(app);
+  // Detect iframe context (safe check for SSR or other environments)
+  const isIframe = typeof window !== 'undefined' && window.self !== window.top;
+  
+  if (isIframe) {
+    console.log("[Firebase] Running inside iframe - utilizing memoryLocalCache and long-polling to bypass sandbox lock issues");
+    firestoreInstance = initializeFirestore(
+      app, 
+      {
+        localCache: memoryLocalCache(),
+        experimentalForceLongPolling: true 
+      },
+      firebaseConfig.firestoreDatabaseId === '(default)' ? undefined : firebaseConfig.firestoreDatabaseId
+    );
+    isPersistenceEnabled = false;
   } else {
-    firestoreInstance = getFirestore(app);
+    firestoreInstance = initializeFirestore(
+      app, 
+      {
+        localCache: persistentLocalCache({
+          tabManager: persistentMultipleTabManager()
+        }),
+        experimentalForceLongPolling: true 
+      },
+      firebaseConfig.firestoreDatabaseId === '(default)' ? undefined : firebaseConfig.firestoreDatabaseId
+    );
+    isPersistenceEnabled = true;
+  }
+} catch (e: any) {
+  persistenceInitializationError = e instanceof Error ? e.message : String(e);
+  // CORREÇÃO: Caso o Firestore já tenha sido inicializado (HMR), recupera a instância atrelada ao banco correto
+  firestoreInstance = getFirestore(app, firebaseConfig.firestoreDatabaseId === '(default)' ? undefined : firebaseConfig.firestoreDatabaseId);
+  
+  // Se o erro foi que o Firestore já foi inicializado (comum no HMR), podemos assumir que a persistência está ativa
+  if (e?.code === 'failed-precondition' || e?.message?.includes('already exist') || e?.message?.includes('already been initialized')) {
+    isPersistenceEnabled = true;
+  } else {
+    isPersistenceEnabled = false;
   }
 }
+
 export const db = firestoreInstance;
 console.log("Firestore db instance configured:", db);
 export const auth = getAuth(app);

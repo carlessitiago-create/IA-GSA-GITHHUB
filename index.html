@@ -4,18 +4,19 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>GSA Diagnóstico</title>
+    
+    <!-- PWA Primary Manifest & Meta -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#0a0a2e" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="GSA Diag" />
+    <link rel="apple-touch-icon" href="/icon.svg" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+
     <script>
-      // AGGRESSIVE CLEANUP: Stop all interceptors before anything else loads
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(function(registrations) {
-          for(var registration of registrations) {
-            registration.unregister();
-            console.log('SW Unregistered');
-          }
-        });
-      }
-      // Force clear local storage and caches if we suspect a major routing loop
-      // Or simply clear them once to be sure
+      // Force clear local storage and caches if we suspect a major routing loop (pre-existing mitigation)
       if (!localStorage.getItem('gsa_cache_cleared_v2')) {
           localStorage.clear();
           sessionStorage.clear();
@@ -26,6 +27,41 @@
           }
           localStorage.setItem('gsa_cache_cleared_v2', 'true');
           console.log('Caches cleared');
+      }
+
+      // Unregister service worker and clear cache in development to avoid caching dynamic Vite chunks and causing iframe crashes
+      const isDev = window.location.hostname === 'localhost' || 
+                    window.location.hostname.includes('127.0.0.1') || 
+                    window.location.hostname.includes('ais-dev');
+
+      if (isDev) {
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then((registrations) => {
+            for (let registration of registrations) {
+              registration.unregister().then((success) => {
+                if (success) console.log('[PWA] Dev Mode: Service Worker unregistered successfully to allow raw Vite hot-reloading.');
+              });
+            }
+          });
+        }
+        if ('caches' in window) {
+          caches.keys().then((keys) => {
+            keys.forEach((key) => caches.delete(key));
+          });
+        }
+      } else {
+        // Register the service worker to enable offline support and caching in production
+        if ('serviceWorker' in navigator) {
+          window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/service-worker.js')
+              .then((registration) => {
+                console.log('[PWA] Service Worker registrado com sucesso: ', registration.scope);
+              })
+              .catch((error) => {
+                console.error('[PWA] Erro ao registrar o Service Worker: ', error);
+              });
+          });
+        }
       }
     </script>
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />

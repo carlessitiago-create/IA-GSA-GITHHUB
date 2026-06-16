@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { CheckCircle, Copy, Loader2, ShieldCheck, CreditCard } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import Swal from 'sweetalert2';
 
 export const CheckoutCreditoView: React.FC = () => {
@@ -39,61 +39,20 @@ export const CheckoutCreditoView: React.FC = () => {
       return;
     }
 
-    const value = type === 'taxa_onboarding' ? 97.00 : Number(valueParam);
-
-    const generatePix = async () => {
-      try {
-        const response = await fetch('/api/asaas/create-pix', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            customerName: 'Cliente Novo', // We should ideally pass real details here if possible, but Asaas requires it.
-            customerCpfCnpj: '00000000000', // We might not have CPF/CNPJ yet if it's the beginning, but wait, quiz asks for CNPJ! Let's just pass some dummy if missing or fetch lead.
-            value,
-            description: type === 'taxa_onboarding' ? 'Taxa de Diagnóstico GSA' : 'Honorários de Consultoria GSA',
-            externalReference: leadId
-          })
-        });
-        
-        const data = await response.json();
-        if (!data.success) throw new Error(data.error || 'Falha ao gerar PIX');
-        
-        setPaymentData(data);
-        setPaymentStatus('PENDING');
-
-        // Escuta as alterações no Firebase em tempo real
-        const unsubscribe = onSnapshot(doc(db, 'leads_credito', leadId), (docSnap) => {
-          if (docSnap.exists()) {
-             const lead = docSnap.data();
-             if (lead.dadosPagamentoAsaas?.statusPagamento === 'RECEIVED') {
-                setPaymentStatus('RECEIVED');
-                Swal.fire({
-                  title: 'Pagamento Confirmado!',
-                  text: 'Recebemos seu PIX com sucesso.',
-                  icon: 'success'
-                });
-             }
-          }
-        });
-
-        return () => unsubscribe();
-      } catch (err: any) {
-        console.error(err);
-        setError(err.message || 'Ocorreu um erro ao gerar o pagamento.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    // Need to fetch lead first to get CNPJ
+    // Subscribe to lead data in real-time to track status & metadata
     const fetchLeadRef = doc(db, 'leads_credito', leadId);
-    onSnapshot(fetchLeadRef, (docSnap) => {
+    const unsubscribe = onSnapshot(fetchLeadRef, (docSnap) => {
       if (docSnap.exists()) {
-        setLeadDataState(docSnap.data());
+        const lead = docSnap.data();
+        setLeadDataState(lead);
+        if (lead.dadosPagamentoAsaas?.statusPagamento === 'RECEIVED') {
+          setPaymentStatus('RECEIVED');
+        }
       }
     });
 
-  }, [leadId, type, valueParam]);
+    return () => unsubscribe();
+  }, [leadId]);
 
   // Actual generation effect
   useEffect(() => {

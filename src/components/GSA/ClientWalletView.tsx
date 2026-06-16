@@ -22,7 +22,7 @@ import {
   Copy,
   Zap
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import Swal from 'sweetalert2';
 import { gerarPagamentoPixGateway, processarVenda } from '../../services/vendaService';
 

@@ -40,7 +40,7 @@ import {
 import { listarEspecialistas, UserProfile, createSecondaryUser } from '../../services/userService';
 import { adicionarABlacklist, verificarBlacklist } from '../../services/blacklistService';
 import { useAuth } from '../AuthContext';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import Swal from 'sweetalert2';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -52,7 +52,16 @@ export const LeadsCentralView: React.FC = () => {
   const [referrals, setReferrals] = useState<Referral[]>([]);
   const [especialistas, setEspecialistas] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState(() => {
+    return new URLSearchParams(window.location.search).get('search') || '';
+  });
+
+  useEffect(() => {
+    const qSearch = new URLSearchParams(window.location.search).get('search') || '';
+    if (qSearch !== searchTerm) {
+      setSearchTerm(qSearch);
+    }
+  }, [window.location.search]);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [showAssignModal, setShowAssignModal] = useState(false);

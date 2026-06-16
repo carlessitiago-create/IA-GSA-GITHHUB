@@ -5,7 +5,7 @@ import { getSaasConfig, SaasConfig, updateSaasConfig } from '../../services/conf
 import { wipeSystemData } from '../../services/wipeSystem';
 import { getDiagnosticoOrigin } from '../../lib/urlUtils';
 import { Settings, Link, Info, Save, CheckCircle, DollarSign } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import Swal from 'sweetalert2';
 
 export const AdminSaasSettings: React.FC = () => {
@@ -228,7 +228,51 @@ export const AdminSaasSettings: React.FC = () => {
             </div>
 
             <div className="pt-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Asaas API Key (Opcional)</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">SMTP Host</label>
+              <input 
+                type="text"
+                value={config?.smtp_host || ''}
+                onChange={(e) => setConfig(prev => prev ? { ...prev, smtp_host: e.target.value } : null)}
+                placeholder="smtp.hostinger.com"
+                className="w-full bg-slate-50 border-none rounded-2xl p-4 text-sm font-bold text-[#0a0a2e] focus:ring-2 focus:ring-blue-600 outline-none"
+              />
+            </div>
+            
+            <div className="pt-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">SMTP Port</label>
+              <input 
+                type="number"
+                value={config?.smtp_port || ''}
+                onChange={(e) => setConfig(prev => prev ? { ...prev, smtp_port: e.target.value } : null)}
+                placeholder="587"
+                className="w-full bg-slate-50 border-none rounded-2xl p-4 text-sm font-bold text-[#0a0a2e] focus:ring-2 focus:ring-blue-600 outline-none"
+              />
+            </div>
+            
+            <div className="pt-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">SMTP User</label>
+              <input 
+                type="text"
+                value={config?.smtp_user || ''}
+                onChange={(e) => setConfig(prev => prev ? { ...prev, smtp_user: e.target.value } : null)}
+                placeholder="email@seu-dominio.com"
+                className="w-full bg-slate-50 border-none rounded-2xl p-4 text-sm font-bold text-[#0a0a2e] focus:ring-2 focus:ring-blue-600 outline-none"
+              />
+            </div>
+
+            <div className="pt-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">SMTP Pass</label>
+              <input 
+                type="password"
+                value={config?.smtp_pass || ''}
+                onChange={(e) => setConfig(prev => prev ? { ...prev, smtp_pass: e.target.value } : null)}
+                placeholder="********"
+                className="w-full bg-slate-50 border-none rounded-2xl p-4 text-sm font-bold text-[#0a0a2e] focus:ring-2 focus:ring-blue-600 outline-none"
+              />
+            </div>
+
+            <div className="pt-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Asaas API Key</label>
               <input 
                 type="password"
                 value={config?.asaas_key || ''}
@@ -236,6 +280,16 @@ export const AdminSaasSettings: React.FC = () => {
                 placeholder="$a..."
                 className="w-full bg-slate-50 border-none rounded-2xl p-4 text-sm font-bold text-[#0a0a2e] focus:ring-2 focus:ring-blue-600 outline-none"
               />
+            </div>
+            
+            <div className="pt-2 flex items-center gap-2">
+              <input 
+                type="checkbox"
+                checked={!!config?.is_sandbox}
+                onChange={(e) => setConfig(prev => prev ? { ...prev, is_sandbox: e.target.checked } : null)}
+                className="size-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Usar Modo Sandbox (Teste)</label>
             </div>
 
             <div className="pt-2">

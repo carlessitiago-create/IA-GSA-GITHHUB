@@ -33,7 +33,7 @@ import {
 } from "../../services/orderService";
 import { auth, db } from "../../firebase";
 import { doc, updateDoc } from "firebase/firestore";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from 'motion/react';
 import { gerarDocumentoProcesso } from "../../services/pdfGeneratorService";
 import { getClienteData } from "../../services/leadService";
 import { obterModeloProcesso } from "../../services/modelService";
@@ -51,7 +51,16 @@ export const OperationalView: React.FC = () => {
   const [processos, setProcessos] = useState<OrderProcess[]>([]);
   const [loading, setLoading] = useState(true);
   const [generatingPdf, setGeneratingPdf] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState(() => {
+    return new URLSearchParams(window.location.search).get('search') || "";
+  });
+
+  useEffect(() => {
+    const qSearch = new URLSearchParams(window.location.search).get('search') || "";
+    if (qSearch !== searchTerm) {
+      setSearchTerm(qSearch);
+    }
+  }, [window.location.search]);
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [selectedProcess, setSelectedProcess] = useState<OrderProcess | null>(

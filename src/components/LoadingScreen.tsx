@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { Shield } from 'lucide-react';
 
 export const LoadingScreen: React.FC<{ message?: string }> = ({ message = "Validando Acesso GSA..." }) => {

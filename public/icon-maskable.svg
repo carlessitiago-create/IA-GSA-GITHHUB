@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Dark Background Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a0a2e" />
+      <stop offset="50%" stop-color="#05051a" />
+      <stop offset="100%" stop-color="#000005" />
+    </linearGradient>
+
+    <!-- Glowing Green Gradient -->
+    <linearGradient id="glowGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00FF66" />
+      <stop offset="100%" stop-color="#00B344" />
+    </linearGradient>
+
+    <!-- Subtle Cyan Highlight -->
+    <linearGradient id="cyanGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00F0FF" />
+      <stop offset="100%" stop-color="#00FF66" />
+    </linearGradient>
+
+    <!-- Glow Filter for Neon Effect -->
+    <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="15" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background Base (For maskable icon, background must cover the entire area) -->
+  <rect width="512" height="512" fill="url(#bgGrad)" />
+
+  <!-- Scaling container to ensure 20% safe zone padding around the graphic (scale=0.75, centered) -->
+  <g transform="translate(64, 64) scale(0.75)">
+    <!-- Outer Tech Ring -->
+    <circle cx="256" cy="256" r="210" fill="none" stroke="#1e293b" stroke-width="4" stroke-dasharray="15 10" opacity="0.6" />
+    
+    <!-- Glowing Hexagonal Shield Boundary -->
+    <path d="M 256 90 L 400 170 L 400 330 L 256 422 L 112 330 L 112 170 Z" 
+          fill="none" 
+          stroke="url(#cyanGrad)" 
+          stroke-width="8" 
+          stroke-linejoin="round"
+          opacity="0.25" 
+          filter="url(#neonGlow)" />
+
+    <path d="M 256 100 L 385 175 L 385 320 L 256 405 L 127 320 L 127 175 Z" 
+          fill="none" 
+          stroke="url(#glowGrad)" 
+          stroke-width="4" 
+          stroke-linejoin="round"
+          filter="url(#neonGlow)" />
+
+    <!-- Central "GSA Diagnosis" Logo Emblem (Shield + Glowing Spark) -->
+    <g filter="url(#neonGlow)">
+      <!-- Shield interior grid/lines -->
+      <path d="M 256 130 L 256 370" stroke="#00FF66" stroke-width="2" opacity="0.3" stroke-dasharray="8 6" />
+      <path d="M 160 256 L 352 256" stroke="#00FF66" stroke-width="2" opacity="0.3" stroke-dasharray="8 6" />
+      
+      <!-- Shield Core -->
+      <path d="M 256 160 L 330 200 L 330 280 L 256 330 L 182 280 L 182 200 Z" 
+            fill="#070a1e" 
+            stroke="url(#cyanGrad)" 
+            stroke-width="3" 
+            stroke-linejoin="round" />
+
+      <!-- Radiant Tech Spark / Star in the center -->
+      <path d="M 256 195 Q 256 245 206 245 Q 256 245 256 295 Q 256 245 306 245 Q 256 245 256 195 Z" 
+            fill="url(#glowGrad)" />
+      
+      <!-- Little center sparkling point -->
+      <circle cx="256" cy="245" r="4" fill="#ffffff" />
+    </g>
+
+    <!-- Glowing futuristic dot markers -->
+    <circle cx="256" cy="70" r="6" fill="#00FF66" filter="url(#neonGlow)" />
+    <circle cx="70" cy="256" r="6" fill="#00F0FF" filter="url(#neonGlow)" />
+    <circle cx="442" cy="256" r="6" fill="#00F0FF" filter="url(#neonGlow)" />
+    <circle cx="256" cy="442" r="6" fill="#00FF66" filter="url(#neonGlow)" />
+  </g>
+</svg>

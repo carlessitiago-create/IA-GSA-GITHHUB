@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useSmartNavigate } from '../utils/navigation';
 import { formatDate } from '../lib/dateUtils';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { Search, Gift, CheckCircle2, AlertCircle, ArrowRight, Shield, ShieldCheck, Play, User, Clock, Wallet, Bell, AlertTriangle, Trophy, Star, AlertOctagon, ShieldAlert, Zap, MessageCircle, FileText, Share2, ChevronRight, Info, Calendar, UserPlus } from 'lucide-react';
 import { ClubePromoBanner } from '../components/GSA/ClubePromoBanner';
 import { consultaPublicaProcesso, registrarIndicacaoPublica, listarMinhasIndicacoesPublicas, listarPendenciasPublicas, listarNotificacoesPublicas, registrarNovidadePublica } from '../services/publicService';

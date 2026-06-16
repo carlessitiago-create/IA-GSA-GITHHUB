@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { X, Clock, User, CheckCircle2, MessageSquare, ArrowRight, DollarSign, Link as LinkIcon, FileText } from 'lucide-react';
 import { ShowcaseLead, LeadStatus, atualizarStatusLeadVitrine, reatribuirEspecialistaLeadVitrine } from '../../services/marketingService';
 import { UserProfile } from '../../services/userService';

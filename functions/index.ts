@@ -258,7 +258,7 @@ function safeExecute(
 
       console.error(`[${moduleName}] ERRO CRITICO capturado:`, error);
 
-      const safeCode: functions.https.FunctionsErrorCode = "aborted";
+      const safeCode: functions.https.FunctionsErrorCode = error instanceof HttpsError ? (error.code as functions.https.FunctionsErrorCode) : "internal";
       let safeMessage = error?.message || "Erro inesperado no servidor GSA";
 
       console.error(
@@ -274,7 +274,7 @@ async function getMPClient() {
   const token =
     config.mercado_pago_access_token ||
     process.env.MP_ACCESS_TOKEN ||
-    "APP_USR-4343959448906136-101900-bd86782be2ecf529a1c0e25c935bf4f1-124360597";
+    process.env.MERCADO_PAGO_TOKEN;
 
   const client = new MercadoPagoConfig({ accessToken: token });
   return {
@@ -283,7 +283,7 @@ async function getMPClient() {
     projectId:
       config.projectId ||
       process.env.GCLOUD_PROJECT ||
-      "gen-lang-client-0086269527",
+      "ais-us-east1-5b22e4a04c234f7eb",
   };
 }
 
@@ -432,19 +432,18 @@ export const processVenda = onCall(
         "A lista de itens não pode estar vazia",
       );
 
-    // Busca a carteira FORA da transação (queries não funcionam com `transaction.get`)
-    let walletId: string | null = null;
-    if (metodoPagamento === "CARTEIRA") {
-      const walletQuery = await db
-        .collection("wallets")
-        .where("cliente_id", "==", clienteId)
-        .limit(1)
-        .get();
-      if (!walletQuery.empty) walletId = walletQuery.docs[0].id;
-    }
-
     // Transação ÚNICA (Removido o erro de transação aninhada)
     return await db.runTransaction(async (transaction: any) => {
+      let walletId: string | null = null;
+      if (metodoPagamento === "CARTEIRA") {
+        const walletQuery = db
+          .collection("wallets")
+          .where("cliente_id", "==", clienteId)
+          .limit(1);
+        const walletSnap = await transaction.get(walletQuery);
+        if (!walletSnap.empty) walletId = walletSnap.docs[0].id;
+      }
+
       logInfo("INICIO_TRANSACAO", { clienteId, metodoPagamento });
       let vendedorId = request.auth?.uid || "SYSTEM_SAAS";
       let vendedorNome = "GSA-IA SaaS";
@@ -496,6 +495,18 @@ export const processVenda = onCall(
 
         const precoBase = Number(item.precoBase) || 0;
         const precoVenda = Number(item.precoVenda) || 0;
+
+        // --- VALIDAÇÃO DE PREÇO MÍNIMO (BACKEND) ---
+        const userLevel = userSnap?.data()?.role || "CLIENTE";
+        let precoMin = Number(servicoData?.preco_base_vendedor) || 0;
+        if (["ADM_MASTER", "ADM_MESTRE", "GESTOR", "ADM_GERENTE"].includes(userLevel))
+          precoMin = Number(servicoData?.preco_base_gestor) || precoMin;
+        
+        if (precoVenda < precoMin - 0.01) {
+            throw new HttpsError("permission-denied", `Valor de venda abaixo do mínimo permitido para este serviço (Mín: R$ ${precoMin.toFixed(2)}).`);
+        }
+        // --- FIM DA VALIDAÇÃO ---
+
         valorTotal += precoVenda;
         margemTotal += precoVenda - precoBase;
 

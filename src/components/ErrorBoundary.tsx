@@ -1,7 +1,6 @@
 import * as React from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
-import { db } from '../firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { logErrorToFirestore } from '../utils/errorLogger';
 
 interface Props {
   children: React.ReactNode;
@@ -14,28 +13,12 @@ interface State {
 
 // Helper function to log errors
 const logReactError = async (error: Error, errorInfo: React.ErrorInfo) => {
-  try {
-    console.error("Centralized React Render Error:", error, errorInfo);
-    const payload: any = {
-      type: 'react_render_error',
-      message: error.message,
-      stack: error.stack || null,
-      componentStack: errorInfo.componentStack || null,
-      timestamp: serverTimestamp(),
-      url: window.location.href,
-      userAgent: navigator.userAgent
-    };
-
-    // Sanitize payload to replace potential undefined values with null
-    const sanitizedPayload: any = {};
-    for (const key of Object.keys(payload)) {
-      sanitizedPayload[key] = payload[key] === undefined ? null : payload[key];
-    }
-
-    await addDoc(collection(db, "logs_erro"), sanitizedPayload);
-  } catch (err) {
-    console.error("Falha ao salvar log de erro no Firestore:", err);
-  }
+  await logErrorToFirestore({
+    type: 'react_render_error',
+    message: error.message,
+    stack: error.stack || null,
+    componentStack: errorInfo.componentStack || null
+  });
 };
 
 class ErrorBoundary extends React.Component<Props, State> {
@@ -54,6 +37,22 @@ class ErrorBoundary extends React.Component<Props, State> {
   public componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('Uncaught error:', error, errorInfo);
     logReactError(error, errorInfo);
+
+    // Auto-reload on dynamic import / chunk load errors
+    const errorMsg = error?.message || '';
+    if (
+      errorMsg.includes('Failed to fetch dynamically imported module') ||
+      errorMsg.includes('ChunkLoadError') ||
+      errorMsg.includes('error loading dynamically imported')
+    ) {
+      const lastReload = sessionStorage.getItem('gsa_last_chunk_reload');
+      const now = Date.now();
+      if (!lastReload || now - parseInt(lastReload) > 10000) {
+        sessionStorage.setItem('gsa_last_chunk_reload', String(now));
+        console.warn('Auto-reloading on dynamic import failure caught by ErrorBoundary...');
+        window.location.reload();
+      }
+    }
   }
 
   public render() {

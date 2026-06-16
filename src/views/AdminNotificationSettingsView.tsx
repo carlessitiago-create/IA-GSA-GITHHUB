@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { doc, getDoc, setDoc, collection, onSnapshot, query, orderBy, limit } from 'firebase/firestore';
 import { Mail, ToggleLeft, ToggleRight, Send, History, Plus, Trash2, Users } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 
 export default function AdminNotificationSettingsView() {
   const [settings, setSettings] = useState({

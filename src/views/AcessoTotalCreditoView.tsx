@@ -488,6 +488,30 @@ export default function AcessoTotalCreditoView() {
               className="w-full bg-blue-600 p-3 rounded-lg text-sm font-bold text-white">
               {copied ? 'Copiado!' : 'Copiar Código PIX'}
             </button>
+            <button 
+              onClick={async () => {
+                setLoading(true);
+                try {
+                  const res = await fetch(`https://gsa-diagn-stico-recupera-o-de-cr-dito-165811949193.us-west1.run.app/api/asaas/check-payment/${pixData.id}`);
+                  const data = await res.json();
+                  if (data.status === 'PAID') {
+                    setPaymentStatus('PAID');
+                    Swal.fire('Sucesso!', 'Pagamento confirmado!', 'success');
+                    setShowPayment(false);
+                  } else {
+                    Swal.fire('Ops', 'Pagamento ainda não identificado. Tente novamente em instantes.', 'info');
+                  }
+                } catch (e) {
+                  Swal.fire('Erro', 'Falha ao consultar pagamento.', 'error');
+                } finally {
+                  setLoading(false);
+                }
+              }}
+              className="w-full bg-emerald-600 p-3 rounded-lg text-sm font-bold text-white disabled:opacity-50"
+              disabled={loading}
+            >
+              {loading ? 'Consultando...' : 'Já fiz o pagamento'}
+            </button>
 
             <div className="text-[10px] text-slate-500 space-y-1">
                 <p>✅ Compra 100% segura e protegida.</p>

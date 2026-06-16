@@ -7,7 +7,7 @@ import { PendingIssue, OrderProcess } from '../../services/orderService';
 import Swal from 'sweetalert2';
 import { FileUploader } from './FileUploader';
 import { SmartFicha } from './SmartFicha';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 
 export const PendencyList: React.FC = () => {
   const { profile } = useAuth();

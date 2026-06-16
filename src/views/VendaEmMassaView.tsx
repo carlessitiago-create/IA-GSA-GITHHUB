@@ -3,7 +3,7 @@ import {
   Upload, FileText, Trash2, Plus, CheckCircle2, CreditCard, Loader2, AlertCircle,
   Package, TrendingUp, Search, Clock, Download
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../components/AuthContext';
 import { db } from '../firebase';
 import { collection, query, where, getDocs, onSnapshot, orderBy, limit } from 'firebase/firestore';

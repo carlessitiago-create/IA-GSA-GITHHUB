@@ -52,6 +52,11 @@ export interface SaasConfig {
   tiktok_pixel_code?: string;
   instrucoes_checkout: string;
   vsl_youtube_id?: string;
+  smtp_host?: string;
+  smtp_port?: string;
+  smtp_user?: string;
+  smtp_pass?: string;
+  is_sandbox?: boolean;
 }
 
 const CONFIG_COLLECTION = 'platform_config';
@@ -63,32 +68,36 @@ const SAAS_CONFIG_ID = 'saas_settings';
  * Obtém as configurações do portal público
  */
 export const getPublicPortalConfig = async (): Promise<PublicPortalConfig> => {
+  const cacheKey = `portal_config_data`;
+  
+  const defaultConfig: PublicPortalConfig = {
+    titulo_portal: 'Consulta de Processos GSA',
+    mensagem_boas_vindas: "Bem-vindo ao portal de acompanhamento GSA",
+    cor_primaria: "#0a0a2e",
+    link_video_explicativo: '',
+    whatsapp_suporte_geral: '5511999999999',
+    bonus_indicacao: 50.00,
+    contato_suporte: ""
+  };
+
   try {
     const docRef = doc(db, CONFIG_COLLECTION, PUBLIC_PORTAL_CONFIG_ID);
     const snap = await getDoc(docRef);
-    if (snap.exists()) return snap.data() as PublicPortalConfig;
     
-    // Default caso não exista
-    const defaultConfig: PublicPortalConfig = {
-      titulo_portal: 'Consulta de Processos GSA',
-      mensagem_boas_vindas: "Bem-vindo ao portal de acompanhamento GSA",
-      cor_primaria: "#0a0a2e",
-      link_video_explicativo: '',
-      whatsapp_suporte_geral: '5511999999999',
-      bonus_indicacao: 50.00,
-      contato_suporte: ""
-    };
-
-    try {
-      await setDoc(docRef, defaultConfig);
-    } catch (e) {
-      console.warn('Could not create default public portal config');
+    if (snap.exists()) {
+      const data = snap.data() as PublicPortalConfig;
+      localStorage.setItem(cacheKey, JSON.stringify(data));
+      return data;
     }
-
+    
     return defaultConfig;
-  } catch (error) {
-    handleFirestoreError(error, OperationType.GET, CONFIG_COLLECTION);
-    throw error;
+  } catch (error: any) {
+    const cached = localStorage.getItem(cacheKey);
+    console.warn("AuthContext: Firestore error or offline for PublicPortalConfig, fallback to cache or default.", error);
+    if (cached) {
+      return JSON.parse(cached);
+    }
+    return defaultConfig;
   }
 };
 
@@ -109,44 +118,32 @@ export async function updatePublicPortalConfig(data: Partial<PublicPortalConfig>
  * Obtém as configurações da plataforma
  */
 export async function getPlatformConfig(): Promise<PlatformConfig> {
+  const cacheKey = `platform_config_data`;
+  
+  const defaultConfig: PlatformConfig = {
+    referral_bonus: 50,
+    allow_vendedor_set_whatsapp: false
+  };
+
   try {
     const docRef = doc(db, CONFIG_COLLECTION, DEFAULT_CONFIG_ID);
     const docSnap = await getDoc(docRef);
     
     if (docSnap.exists()) {
-      return docSnap.data() as PlatformConfig;
+      const config = docSnap.data() as PlatformConfig;
+      localStorage.setItem(cacheKey, JSON.stringify(config));
+      return config;
     }
     
     // Configuração padrão se não existir
-    const defaultConfig: PlatformConfig = {
-      referral_bonus: 50,
-      allow_vendedor_set_whatsapp: false
-    };
-    
-    try {
-      await setDoc(docRef, defaultConfig);
-    } catch (e) {
-      // Ignore setDoc error (e.g. permission denied for non-admins)
-      console.warn('Could not create default platform config, using defaults in memory.');
-    }
-    
     return defaultConfig;
-  } catch (error) {
-    handleFirestoreError(error, OperationType.GET, CONFIG_COLLECTION);
-    throw error;
-  }
-}
-
-/**
- * Atualiza as configurações da plataforma
- */
-export async function updatePlatformConfig(data: Partial<PlatformConfig>) {
-  try {
-    const docRef = doc(db, CONFIG_COLLECTION, DEFAULT_CONFIG_ID);
-    await setDoc(docRef, data, { merge: true });
-  } catch (error) {
-    handleFirestoreError(error, OperationType.UPDATE, CONFIG_COLLECTION);
-    throw error;
+  } catch (error: any) {
+    const cached = localStorage.getItem(cacheKey);
+    console.warn("AuthContext: Firestore error or offline, fallback to cache or default.", error);
+    if (cached) {
+      return JSON.parse(cached);
+    }
+    return defaultConfig;
   }
 }
 
@@ -154,25 +151,32 @@ export async function updatePlatformConfig(data: Partial<PlatformConfig>) {
  * Obtém as configurações do SaaS
  */
 export async function getSaasConfig(): Promise<SaasConfig> {
+  const cacheKey = `saas_config`;
+  
+  const defaultConfig: SaasConfig = {
+    modo_pagamento: 'MANUAL',
+    links_manuais: {
+      dividas: 'https://link-dividas.com',
+      bacen: 'https://link-bacen.com',
+      rating: 'https://link-rating.com',
+      master: 'https://link-master.com'
+    },
+    instrucoes_checkout: 'Após o pagamento, seu diagnóstico será liberado em até 24h.',
+    vsl_youtube_id: '',
+    smtp_host: '',
+    smtp_port: '587',
+    smtp_user: '',
+    smtp_pass: '',
+    is_sandbox: true
+  };
+
   try {
     const docRef = doc(db, CONFIG_COLLECTION, SAAS_CONFIG_ID);
     const docSnap = await getDoc(docRef);
     
-    const defaultConfig: SaasConfig = {
-      modo_pagamento: 'MANUAL',
-      links_manuais: {
-        dividas: 'https://link-dividas.com',
-        bacen: 'https://link-bacen.com',
-        rating: 'https://link-rating.com',
-        master: 'https://link-master.com'
-      },
-      instrucoes_checkout: 'Após o pagamento, seu diagnóstico será liberado em até 24h.',
-      vsl_youtube_id: ''
-    };
-
     if (docSnap.exists()) {
       const data = docSnap.data();
-      return {
+      const config = {
         ...defaultConfig,
         ...data,
         links_manuais: {
@@ -180,18 +184,19 @@ export async function getSaasConfig(): Promise<SaasConfig> {
           ...(data.links_manuais || {})
         }
       } as SaasConfig;
-    }
-    
-    try {
-      await setDoc(docRef, defaultConfig);
-    } catch (e) {
-      console.warn('Could not create default saas config');
+      
+      localStorage.setItem(cacheKey, JSON.stringify(config));
+      return config;
     }
     
     return defaultConfig;
-  } catch (error) {
-    handleFirestoreError(error, OperationType.GET, CONFIG_COLLECTION);
-    throw error;
+  } catch (error: any) {
+    const cached = localStorage.getItem(cacheKey);
+    console.warn("AuthContext: Firestore error or offline, fallback to cache or default.", error);
+    if (cached) {
+      return JSON.parse(cached);
+    }
+    return defaultConfig;
   }
 }
 

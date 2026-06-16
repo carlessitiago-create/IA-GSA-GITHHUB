@@ -28,7 +28,7 @@ import { ServiceData } from '../../services/serviceFactory';
 import { ShowcaseService } from '../../services/marketingService';
 import { getPublicOrigin } from '../../lib/urlUtils';
 import Swal from 'sweetalert2';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { ProposalsTable } from './ProposalsTable';
 
 interface ProposalGeneratorProps {

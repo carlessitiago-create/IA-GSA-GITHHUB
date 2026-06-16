@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth, UserProfile } from '../components/AuthContext';
 import { db } from '../firebase';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, collection, addDoc } from 'firebase/firestore';
 import Swal from 'sweetalert2';
-import { motion } from 'framer-motion';
-import { User, CreditCard, Mail, Calendar, Phone, Building2, Save } from 'lucide-react';
+import { motion } from 'motion/react';
+import { User, CreditCard, Mail, Calendar, Phone, Building2, Save, Download, ShieldAlert, Trash2 } from 'lucide-react';
 import { formatDocument, formatPhone } from '../utils/validators';
 
 export const ProfileView: React.FC = () => {
@@ -76,6 +76,104 @@ export const ProfileView: React.FC = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleExportData = () => {
+    try {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(formData, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `meus_dados_lgpd_${formData.cpf || 'usuario'}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      Swal.fire({
+        icon: 'success',
+        title: 'Portabilidade LGPD',
+        text: 'Seus dados pessoais foram reunidos e exportados com sucesso em formato JSON.',
+        confirmButtonColor: '#0a0a2e'
+      });
+    } catch (e: any) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Erro na exportação',
+        text: e.message,
+        confirmButtonColor: '#0a0a2e'
+      });
+    }
+  };
+
+  const handleErasureRequest = async () => {
+    const { value: confirmText } = await Swal.fire({
+      title: 'Direito ao Esquecimento (LGPD)',
+      html: `<div class="text-left text-xs text-slate-500 space-y-3 leading-relaxed">
+        <p>Pelo <strong>Artigo 18, Inciso IV</strong> da Lei Geral de Proteção de Dados (LGPD), você tem o direito de solicitar a eliminação dos dados pessoais tratados com o seu consentimento anterior.</p>
+        <p class="font-semibold text-red-600">⚠️ Esta ação é irreversível e irá purgar ou anonimizar permanentemente suas informações no sistema.</p>
+        <p>Para prosseguir, digite exatamente <strong>EXCLUIR COMPROMISSO</strong> abaixo:</p>
+      </div>`,
+      input: 'text',
+      inputPlaceholder: 'EXCLUIR COMPROMISSO',
+      showCancelButton: true,
+      confirmButtonText: 'Confirmar e Apagar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#64748b',
+    });
+
+    if (confirmText === 'EXCLUIR COMPROMISSO') {
+      setLoading(true);
+      try {
+        if (!profile?.uid) throw new Error("Usuário não logado ou indisponível.");
+        
+        await addDoc(collection(db, "solicitacoes_lgpd"), {
+          usuario_id: profile.uid,
+          tipo_requisicao: "eliminacao_dados",
+          data_requisicao: new Date().toISOString(),
+          status: "concluido",
+          origem: "self_service_perfil",
+          log: `Direito ao esquecimento acionado pelo titular.`
+        });
+
+        const userRef = doc(db, 'usuarios', profile.uid);
+        await updateDoc(userRef, {
+          nome_completo: "TITULAR ANÔNIMO (RESTRITO LGPD)",
+          cpf: "000.000.000-00",
+          email: `anonimizado_lgpd_${profile.uid}@esquecimento.org`,
+          data_nascimento: "1970-01-01",
+          telefone: "",
+          whatsapp: "",
+          nome_empresa: "",
+          cnpj: "",
+          ativo: false,
+          status_conta: "BLOQUEADO"
+        });
+
+        await Swal.fire({
+          icon: 'success',
+          title: 'Dados Pessoais Purmados',
+          text: 'Seus dados pessoais identificáveis foram removidos com sucesso. A plataforma será recarregada.',
+          confirmButtonColor: '#0a0a2e'
+        });
+
+        window.location.reload();
+      } catch (err: any) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Erro ao processar',
+          text: err.message,
+          confirmButtonColor: '#0a0a2e'
+        });
+      } finally {
+        setLoading(false);
+      }
+    } else if (confirmText !== undefined) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Verificação incorreta',
+        text: 'Não foi possível apagar. O texto digitado difere da confirmação exigida.',
+        confirmButtonColor: '#0a0a2e'
+      });
     }
   };
 
@@ -204,6 +302,63 @@ export const ProfileView: React.FC = () => {
             )}
           </button>
         </form>
+      </div>
+
+      {/* LGPD & DATA PRIVACY ADVANCED MANAGEMENT PANEL */}
+      <div className="bg-white dark:bg-slate-800 p-8 md:p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 space-y-6">
+        <div className="flex items-center gap-4">
+          <div className="size-12 bg-emerald-500/10 text-emerald-600 rounded-2xl flex items-center justify-center">
+            <ShieldAlert className="size-6" />
+          </div>
+          <div>
+            <h3 className="text-lg font-black text-slate-800 dark:text-white uppercase italic tracking-tight">Centro de Privacidade e LGPD</h3>
+            <p className="text-slate-400 text-xs font-bold uppercase tracking-widest text-left">Controle total sobre seus dados pessoais (Lei nº 13.709)</p>
+          </div>
+        </div>
+
+        <p className="text-xs text-slate-500 leading-relaxed dark:text-slate-400 text-left">
+          Nós respeitamos a sua soberania de dados. Como titular, a Lei Geral de Proteção de Dados (LGPD) lhe assegura direitos de informação, portabilidade e remoção sobre as informações armazenadas em nosso ecossistema.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+          {/* Export card */}
+          <div className="p-5 border border-slate-100 dark:border-slate-700 rounded-2xl flex flex-col justify-between bg-slate-50/50 dark:bg-slate-900/10 space-y-4 text-left">
+            <div className="space-y-1">
+              <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-widest flex items-center gap-2">
+                <Download className="size-4 text-indigo-600" /> Direito de Portabilidade
+              </h4>
+              <p className="text-[11px] text-slate-400 leading-normal">
+                Faça o download instantâneo de todas as suas informações cadastrais estruturadas em arquivo de formato aberto (JSON).
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleExportData}
+              className="w-full md:w-auto self-start text-xs font-black text-slate-700 hover:text-indigo-600 border border-slate-200 dark:border-slate-600 bg-white hover:bg-slate-50 transition-colors py-3 px-4 rounded-xl flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <Download className="size-3.5" /> Exportar meus Dados
+            </button>
+          </div>
+
+          {/* Erasure card */}
+          <div className="p-5 border border-slate-100 dark:border-slate-700 rounded-2xl flex flex-col justify-between bg-slate-50/50 dark:bg-slate-900/10 space-y-4 text-left">
+            <div className="space-y-1">
+              <h4 className="text-xs font-bold text-red-600 uppercase tracking-widest flex items-center gap-2">
+                <Trash2 className="size-4" /> Direito ao Esquecimento
+              </h4>
+              <p className="text-[11px] text-slate-400 leading-normal">
+                Solicite a exclusão definitiva ou anonimização imediata dos seus dados em nossa base ativa, revogando o seu termo de consentimento.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleErasureRequest}
+              className="w-full md:w-auto self-start text-xs font-black text-red-600 hover:text-white border border-red-200 hover:border-red-600 bg-white hover:bg-red-600 transition-all py-3 px-4 rounded-xl flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <Trash2 className="size-3.5" /> Excluir Conta (LGPD)
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

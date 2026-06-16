@@ -16,8 +16,8 @@
       {
         "source": "/api/**",
         "run": {
-          "serviceId": "INSERT_YOUR_CLOUD_RUN_SERVICE_ID",
-          "region": "us-central1"
+          "serviceId": "gsa-diagn-stico-recupera-o-de-cr-dito",
+          "region": "us-west1"
         }
       },
       {

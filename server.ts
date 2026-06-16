@@ -1,13 +1,64 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 import path from "path";
 import fs from "fs";
 import nodemailer from "nodemailer";
+import { MercadoPagoConfig, Payment } from "mercadopago";
+import admin from "firebase-admin";
+import { initializeFirebase } from "./src/utils/firebaseServer";
+import { metaConversionsHandler } from "./src/controllers/metaController";
+import fetch from "node-fetch";
+import axios from "axios";
+import crypto from "crypto";
+import { GoogleGenAI, Type } from "@google/genai";
+import { createServer as createViteServer } from "vite";
+
+const genAI_apiKey = process.env.GEMINI_API_KEY;
+const genAI = genAI_apiKey ? new GoogleGenAI({ apiKey: genAI_apiKey }) : null;
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  
+  // Confia na primeira camada de proxy reverso (essencial para Cloud Run/Express/Nginx)
+  app.set("trust proxy", 1);
+
+  const PORT = Number(process.env.PORT) || 3000;
+
+  app.use(helmet({
+    contentSecurityPolicy: false,
+    frameguard: false,
+  }));
+
+  const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5000, // relaxed limit for sandbox/dev proxy and media/asset loading
+    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+    validate: false, // Desativa validações redundantes de proxy do rate-limit
+  });
+  app.use("/api", limiter);
+
+  // Initialize Firebase Admin once
+  const { admin, db } = initializeFirebase();
+
+  const authenticate = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    const token = authHeader.split('Bearer ')[1];
+    try {
+      const decodedToken = await admin.auth().verifyIdToken(token);
+      (req as any).user = decodedToken;
+      next();
+    } catch (error) {
+      console.error('Error verifying auth token:', error);
+      res.status(403).json({ error: 'Forbidden' });
+    }
+  };
 
   // Load config consistently from workspace root
   const configPath = path.join(process.cwd(), "firebase-applet-config.json");
@@ -20,42 +71,85 @@ async function startServer() {
     }
   }
 
-  app.use(cors({ origin: true }));
+  let cachedPlatformSettings: any = null;
+  let lastPlatformSettingsCache = 0;
+  const SETTINGS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+  async function getPlatformSettings(): Promise<any> {
+    if (cachedPlatformSettings && (Date.now() - lastPlatformSettingsCache < SETTINGS_CACHE_TTL)) {
+      return cachedPlatformSettings;
+    }
+    const db = admin.firestore();
+    const configDoc = await db.collection("platform_config").doc("saas_settings").get();
+    if (configDoc.exists) {
+      cachedPlatformSettings = configDoc.data();
+      lastPlatformSettingsCache = Date.now();
+    }
+    return cachedPlatformSettings;
+  }
+
+  app.use(cors({
+    origin: (origin, callback) => {
+      // Allow all origins for the development and preview iFrames
+      callback(null, true);
+    },
+    credentials: true
+  }));
   app.use(express.json());
 
   app.post("/api/send-email", async (req, res) => {
     // ... existing email code ...
     const { to, subject, text, html } = req.body;
-    const host = process.env.SMTP_HOST;
-    const port = parseInt(process.env.SMTP_PORT || "587");
-    const user = process.env.SMTP_USER;
-    const pass = process.env.SMTP_PASS;
-    const from = process.env.FROM_EMAIL;
-    if (!host || !port || !user || !pass || !from) {
+    
+    let smtpSettings = {
+      host: process.env.SMTP_HOST,
+      port: parseInt(process.env.SMTP_PORT || "587"),
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+      from: process.env.FROM_EMAIL
+    };
+
+    try {
+      const db = admin.firestore();
+      const configDoc = await db.collection("platform_config").doc("saas_settings").get();
+      if (configDoc.exists) {
+        const data = configDoc.data();
+        if (data.smtp_host) smtpSettings.host = data.smtp_host;
+        if (data.smtp_port) smtpSettings.port = parseInt(data.smtp_port);
+        if (data.smtp_user) smtpSettings.user = data.smtp_user;
+        if (data.smtp_pass) smtpSettings.pass = data.smtp_pass;
+      }
+    } catch (e) {
+      console.error("[SMTP] Error fetching custom SMTP settings", e);
+    }
+
+    if (!smtpSettings.host || !smtpSettings.port || !smtpSettings.user || !smtpSettings.pass || !smtpSettings.from) {
       return res.status(500).json({ error: "SMTP configuration missing" });
     }
+    
     const transporter = nodemailer.createTransport({
-      host,
-      port,
-      secure: port === 465, // true for 465, false for other ports
-      auth: { user, pass },
+      host: smtpSettings.host,
+      port: smtpSettings.port,
+      secure: smtpSettings.port === 465, // true for 465, false for other ports
+      auth: { user: smtpSettings.user, pass: smtpSettings.pass },
     });
     try {
-      await transporter.sendMail({ from, to, subject, text, html });
+      await transporter.sendMail({ from: smtpSettings.from, to, subject, text, html });
       res.json({ success: true });
     } catch (e: any) {
-      console.error("Email error:", e);
-      let errorMsg = e.message || "Failed to send email";
+      const errorMsg = e.message || "Failed to send email";
+      console.warn("[SMTP Warn] Email sending failed:", errorMsg);
+      let userFriendlyMsg = errorMsg;
       if (errorMsg.includes("535-5.7.8")) {
-        errorMsg =
-          "Erro de Autenticação de E-mail (535-5.7.8): As credenciais (usuário/senha) foram recusadas. Se você estiver usando o Gmail, por favor, gere uma 'Senha de App' (App Password) nas configurações de segurança da sua conta Google e atualize a variável SMTP_PASS nas configurações do projeto.";
+        console.warn("[SMTP Warn] SendMail rejected creds. Suppressing error to avoid loop.");
+        return res.status(200).json({ success: false, suppressed: true, reason: "Bad SMTP credentials" });
       }
-      res.status(500).json({ error: errorMsg });
+      res.status(500).json({ error: userFriendlyMsg });
     }
   });
 
   // --- BEGIN MERCADO PAGO API ---
-  app.post("/api/consultations/create-pix", async (req, res) => {
+  app.post("/api/v1/consultations/create-pix", authenticate, async (req, res, next) => {
     try {
       const { transactionAmount, description, clientEmail, requestId } =
         req.body;
@@ -74,7 +168,6 @@ async function startServer() {
         });
       }
 
-      const { MercadoPagoConfig, Payment } = await import("mercadopago");
       const mpClient = new MercadoPagoConfig({ accessToken: mpAccessToken });
 
       // 1. Criar a intenção de pagamento no Mercado Pago
@@ -102,10 +195,7 @@ async function startServer() {
             ?.qr_code_base64,
       });
     } catch (error: any) {
-      console.error("Erro ao gerar PIX:", error);
-      res
-        .status(500)
-        .json({ error: error.message || "Falha ao processar o pagamento." });
+      next(error);
     }
   });
 
@@ -117,7 +207,7 @@ async function startServer() {
   // --- END DIRECT ADMIN API ---
 
   // --- BEGIN ASAAS API ---
-  app.post("/api/asaas/create-pix", async (req, res) => {
+  app.post("/api/v1/asaas/create-pix", authenticate, async (req, res, next) => {
     try {
       const {
         customerName,
@@ -126,48 +216,44 @@ async function startServer() {
         value,
         description,
         externalReference,
-        asaasKeyFromClient,
       } = req.body;
 
-      let asaasKey = process.env.ASAAS_API_KEY || asaasKeyFromClient;
-      let isSandbox = true;
+      let asaasKey = process.env.ASAAS_API_KEY;
+      let isSandbox = false;
+      let source = 'env';
 
-      // Fallback para buscar do Firestore
-      if (!asaasKey) {
-        try {
-          const admin = await import("firebase-admin");
-          if (!admin.apps.length) {
-            const serviceAccountPath = path.join(
-              process.cwd(),
-              "firebase-service-account.json",
-            );
-            if (fs.existsSync(serviceAccountPath)) {
-              const sa = JSON.parse(
-                fs.readFileSync(serviceAccountPath, "utf8"),
-              );
-              admin.initializeApp({ credential: admin.credential.cert(sa) });
-            } else {
-              admin.initializeApp();
-            }
-          }
-          const db = admin.firestore();
-          const configDoc = await db
-            .collection("platform_settings")
-            .doc("saas")
-            .get();
-          if (configDoc.exists) {
-            asaasKey = configDoc.data()?.asaas_key;
-            isSandbox = configDoc.data()?.is_sandbox ?? true;
-          }
-        } catch (e) {
-          console.log("Não foi possível buscar a chave ASAAS do Firestore", e);
+      // Tenta buscar do Firestore para permitir overrides
+      try {
+        const settings = await getPlatformSettings();
+        if (settings && settings.asaas_key) {
+          console.log("[ASAAS Debug] Settings loaded from Firestore:", JSON.stringify(settings));
+          asaasKey = settings.asaas_key;
+          // Se houver variável de ambiente, prioriza. Caso contrário, Firestore, depois padrão false.
+          isSandbox = process.env.ASAAS_IS_SANDBOX !== undefined
+            ? process.env.ASAAS_IS_SANDBOX === 'true'
+            : (settings.is_sandbox ?? false);
+          source = 'firestore';
         }
+      } catch (e) {
+        console.log("Não foi possível buscar as configurações ASAAS do Firestore", e);
       }
 
+      let baseUrl = isSandbox
+        ? "https://sandbox.asaas.com/api/v3"
+        : "https://api.asaas.com/v3";
+        
+      console.log(`[ASAAS Debug] Iniciando fluxo Asaas. Origem: ${source}, Modo: ${isSandbox ? 'Sandbox' : 'Produção'}`);
+      console.log(`[ASAAS Debug] Base URL: ${baseUrl}`);
+      if (asaasKey) {
+        console.log(`[ASAAS Debug] Chave iniciando em: ${asaasKey.substring(0, 6)}..., tamanho: ${asaasKey.length}`);
+      } else {
+        console.log(`[ASAAS Debug] Chave não encontrada!`);
+      }
+      
       if (!asaasKey) {
         return res
           .status(500)
-          .json({ error: "ASAAS_API_KEY não configurada." });
+          .json({ error: "ASAAS_API_KEY não configurada no ambiente nem no banco de dados." });
       }
 
       if (!value || !customerCpfCnpj || !customerName) {
@@ -175,11 +261,6 @@ async function startServer() {
           .status(400)
           .json({ error: "Parâmetros obrigatórios faltando para Asaas" });
       }
-
-      const fetch = (await import("node-fetch")).default;
-      let baseUrl = isSandbox
-        ? "https://sandbox.asaas.com/api/v3"
-        : "https://api.asaas.com/v3"; // Corrigido para api.asaas.com no ambiente de producao
 
       const safeCpfCnpj = customerCpfCnpj
         ? String(customerCpfCnpj).replace(/\D/g, "")
@@ -189,11 +270,26 @@ async function startServer() {
       let getCustomerUrl = safeCpfCnpj
         ? `${baseUrl}/customers?cpfCnpj=${safeCpfCnpj}`
         : `${baseUrl}/customers?email=${customerEmail}`;
-
+        
+      console.log(`[ASAAS Debug] Buscando cliente em: ${getCustomerUrl}`);
       let customerRes = await fetch(getCustomerUrl, {
         headers: { access_token: asaasKey },
       });
-      let customerJson = (await customerRes.json()) as any;
+      
+      const customerText = await customerRes.text();
+      let customerJson: any;
+      
+      if (customerRes.status === 401) {
+        console.error(`[ASAAS Error] 401 Unauthorized. Chave: ${asaasKey?.substring(0,6)}..., Sandbox: ${isSandbox}`);
+        return res.status(401).json({ error: "Autenticação Asaas falhou: Unauthorized. Verifique se a API Key (Sandbox/Produção) corresponde ao Modo de Operação." });
+      }
+
+      try {
+        customerJson = JSON.parse(customerText);
+      } catch (e) {
+        console.error("[ASAAS Error] Body não é JSON na busca:", customerText);
+        throw new Error("Resposta da API Asaas não é JSON válido.");
+      }
 
       // Auto-fallback para o ambiente correto caso de invalid_environment
       if (
@@ -214,7 +310,8 @@ async function startServer() {
         customerRes = await fetch(getCustomerUrl, {
           headers: { access_token: asaasKey },
         });
-        customerJson = (await customerRes.json()) as any;
+        const customerText2 = await customerRes.text();
+        customerJson = JSON.parse(customerText2);
       }
 
       let customerId = "";
@@ -233,7 +330,15 @@ async function startServer() {
             ...(safeCpfCnpj && { cpfCnpj: safeCpfCnpj }),
           }),
         });
-        const newCustomerJson = (await createCustomerRes.json()) as any;
+        const newCustomerText = await createCustomerRes.text();
+        let newCustomerJson: any;
+        try {
+          newCustomerJson = JSON.parse(newCustomerText);
+        } catch (e) {
+          console.error("Erro Asaas (Body não é JSON na criação):", newCustomerText);
+          throw new Error("Resposta da API Asaas não é JSON válido.");
+        }
+        
         if (newCustomerJson.errors) {
           console.error("Erro Asaas (Criar Cliente):", newCustomerJson.errors);
         }
@@ -242,8 +347,7 @@ async function startServer() {
 
       if (!customerId) {
         return res.status(500).json({
-          error: "Falha ao obter ou criar customer no Asaas",
-          details: customerJson,
+          error: "Falha ao processar solicitação no Asaas",
         });
       }
 
@@ -266,11 +370,18 @@ async function startServer() {
         }),
       });
 
-      const paymentJson = (await createPaymentRes.json()) as any;
+      const paymentText = await createPaymentRes.text();
+      let paymentJson: any;
+      try {
+        paymentJson = JSON.parse(paymentText);
+      } catch (e) {
+        console.error("Erro Asaas (Body não é JSON no pagamento):", paymentText);
+        throw new Error("Resposta da API Asaas não é JSON válido.");
+      }
+
       if (!paymentJson.id) {
         return res.status(500).json({
-          error: "Falha ao criar pagamento no Asaas",
-          details: paymentJson,
+          error: "Falha ao processar pagamento no Asaas",
         });
       }
 
@@ -281,7 +392,14 @@ async function startServer() {
           headers: { access_token: asaasKey },
         },
       );
-      const pixQrJson = (await pixQrRes.json()) as any;
+      const pixQrText = await pixQrRes.text();
+      let pixQrJson: any;
+      try {
+        pixQrJson = JSON.parse(pixQrText);
+      } catch (e) {
+        console.error("Erro Asaas (Body não é JSON no QR):", pixQrText);
+        throw new Error("Resposta da API Asaas não é JSON válido.");
+      }
 
       res.json({
         success: true,
@@ -291,15 +409,22 @@ async function startServer() {
         qr_code_base64: pixQrJson.encodedImage,
       });
     } catch (error: any) {
-      console.error("Erro na API Asaas:", error);
-      res.status(500).json({
-        error: error.message || "Falha ao processar pagamento via Asaas.",
-      });
+      next(error);
     }
   });
 
-  app.post("/api/asaas/webhook", async (req, res) => {
+  app.post("/api/v1/asaas/webhook", async (req, res, next) => {
     try {
+      const signature = req.headers['asaas-access-token'];
+      const token = process.env.ASAAS_WEBHOOK_TOKEN;
+
+      if (token) {
+        if (!signature || signature !== token) {
+          console.error("Invalid Asaas webhook token");
+          return res.status(401).json({ error: "Unauthorized" });
+        }
+      }
+
       const event = req.body;
       console.log("Asaas Webhook received:", event.event);
 
@@ -313,22 +438,6 @@ async function startServer() {
 
         if (externalReference) {
           // We expect externalReference to be the Firebase Lead ID
-          const admin = await import("firebase-admin");
-          if (!admin.apps.length) {
-            const serviceAccountPath = path.join(
-              process.cwd(),
-              "firebase-service-account.json",
-            );
-            if (fs.existsSync(serviceAccountPath)) {
-              const sa = JSON.parse(
-                fs.readFileSync(serviceAccountPath, "utf8"),
-              );
-              admin.initializeApp({ credential: admin.credential.cert(sa) });
-            } else {
-              admin.initializeApp();
-            }
-          }
-
           const db = admin.firestore();
           const leadRef = db.collection("leads_credito").doc(externalReference);
           const leadDoc = await leadRef.get();
@@ -352,7 +461,7 @@ async function startServer() {
                 const transporter = nodemailer.createTransport({
                   host: process.env.SMTP_HOST,
                   port: Number(process.env.SMTP_PORT) || 587,
-                  secure: false, // true for 465, false for other ports
+                  secure: Number(process.env.SMTP_PORT) === 465,
                   auth: {
                     user: process.env.SMTP_USER,
                     pass: process.env.SMTP_PASS,
@@ -372,8 +481,8 @@ async function startServer() {
                   "Email de confirmação enviado para",
                   lead.dadosEmpresa.email,
                 );
-              } catch (emailErr) {
-                console.error("Erro ao enviar email:", emailErr);
+              } catch (emailErr: any) {
+                console.warn("[SMTP Warn] Erro ao enviar email de confirmação:", emailErr?.message || emailErr);
               }
             }
 
@@ -384,7 +493,6 @@ async function startServer() {
                 const whatsToken = process.env.WHATSAPP_API_TOKEN;
                 if (whatsUrl && whatsToken) {
                   const fetchUrl = `${whatsUrl}/message/sendText`;
-                  const fetch = (await import("node-fetch")).default;
                   const res = await fetch(fetchUrl, {
                     method: "POST",
                     headers: {
@@ -421,14 +529,17 @@ async function startServer() {
       }
       res.json({ received: true });
     } catch (e) {
-      console.error("Erro webhook asaas", e);
-      res.status(500).json({ error: "Internal Server Error" });
+      next(e);
     }
   });
   // --- END ASAAS API ---
 
   // --- BEGIN EXTERNAL CONSULTATION API ---
-  app.post("/api/consultations/execute", async (req, res) => {
+  const ALLOWED_PROVIDERS = {
+    "8c7af1aeca17302b9430d5970ba2c854525e98400b8c95fc": "EHM"
+  };
+
+  app.post("/api/v1/consultations/execute", authenticate, async (req, res, next) => {
     try {
       const { provider, searchParam } = req.body;
 
@@ -436,42 +547,39 @@ async function startServer() {
         `Executing consultation. Provider: ${provider}, Param: ${searchParam}`,
       );
 
+      // Validate Provider
+      if (!ALLOWED_PROVIDERS[provider as keyof typeof ALLOWED_PROVIDERS]) {
+        throw new Error("Provedor de consulta inválido ou não autorizado.");
+      }
+
+      // Validate searchParam (CPF/CNPJ)
       const docOnly = searchParam?.replace(/\D/g, "") || "";
-      // Aceita o ID do CPF ou tenta inferir se possui 11 (CPF) ou 14 (CNPJ) dígitos quando o provedor não estiver estritamente mapeado.
-      // Permite usar a EHM como padrão para CPF/CNPJ se o usuário criar consultas com IDs diferentes.
-      if (
-        provider === "8c7af1aeca17302b9430d5970ba2c854525e98400b8c95fc" ||
-        docOnly.length === 11 ||
-        docOnly.length === 14
-      ) {
-        const userToken = process.env.EHM_USER_TOKEN;
-        const apiToken = process.env.EHM_TOKEN;
+      if (!/^\d{11}$|^\d{14}$/.test(docOnly)) {
+        throw new Error("CPF ou CNPJ inválido.");
+      }
 
-        if (!userToken || !apiToken) {
-          throw new Error(
-            "As chaves de API da EHM Consultas não estão configuradas.",
-          );
-        }
+      const userToken = process.env.EHM_USER_TOKEN;
+      const apiToken = process.env.EHM_TOKEN;
 
-        if (!docOnly) {
-          throw new Error("CPF ou CNPJ é obrigatório para essa consulta.");
-        }
+      if (!userToken || !apiToken) {
+        throw new Error(
+          "As chaves de API da EHM Consultas não estão configuradas.",
+        );
+      }
 
-        const isCnpj = docOnly.length === 14;
-        const url = isCnpj
-          ? `https://api.ehmconsultas.com/dividas/completa_premium/pj/${docOnly}?user_token=${userToken}&token=${apiToken}`
-          : `https://api.ehmconsultas.com/dividas/completa_premium/pf/${docOnly}?user_token=${userToken}&token=${apiToken}`;
+      const isCnpj = docOnly.length === 14;
+      const url = isCnpj
+        ? `https://api.ehmconsultas.com/dividas/completa_premium/pj/${docOnly}?user_token=${userToken}&token=${apiToken}`
+        : `https://api.ehmconsultas.com/dividas/completa_premium/pf/${docOnly}?user_token=${userToken}&token=${apiToken}`;
 
-        try {
-          const axiosInfo = await import("axios");
-          const axios = axiosInfo.default;
-          console.log(
-            `Chamando EHM Consultas para ${isCnpj ? "CNPJ" : "CPF"}: ${docOnly}...`,
-          );
-          const resp = await axios.get(url, {
-            headers: { Accept: "application/json" },
-          });
-          const apiData = resp.data?.data;
+      try {
+        console.log(
+          `Chamando EHM Consultas para ${isCnpj ? "CNPJ" : "CPF"}: ${docOnly}...`,
+        );
+        const resp = await axios.get(url, {
+          headers: { Accept: "application/json" },
+        });
+        const apiData = resp.data?.data;
 
           if (!apiData)
             throw new Error("Dados não retornados pela API da EHM.");
@@ -563,100 +671,25 @@ async function startServer() {
             .status(500)
             .json({ error: "Falha ao comunicar com API da EHM Consultas." });
         }
-      }
 
       // Se o provedor não estiver mapeado em produção
       throw new Error(
         `Provedor ou integração não mapeada para o sistema de produção.`,
       );
     } catch (e: any) {
-      console.error("Erro na integração:", e);
-      res
-        .status(500)
-        .json({ error: e.message || "Falha ao executar consulta." });
+      next(e);
     }
   });
 
   // --- BEGIN META CONVERSIONS API ---
-  app.post("/api/meta-conversions", async (req, res) => {
-    try {
-      const {
-        pixelId,
-        token,
-        eventName,
-        eventTime,
-        userData,
-        customData,
-        eventSourceUrl,
-        actionSource
-      } = req.body;
-
-      if (!pixelId || !token || !eventName) {
-        return res.status(400).json({ error: "Missing required parameters for Meta Conversions API" });
-      }
-
-      const fetch = (await import("node-fetch")).default;
-      const crypto = await import("crypto");
-      const url = `https://graph.facebook.com/v19.0/${pixelId}/events`;
-
-      const hashData = (val: string) => {
-        if (!val) return "";
-        return crypto.createHash("sha256").update(val.trim().toLowerCase()).digest("hex");
-      };
-
-      const hashedUserData: any = { ...userData };
-      if (hashedUserData.em && !/^[a-f0-9]{64}$/.test(hashedUserData.em)) {
-        hashedUserData.em = hashData(hashedUserData.em);
-      }
-      if (hashedUserData.ph && !/^[a-f0-9]{64}$/.test(hashedUserData.ph)) {
-        hashedUserData.ph = hashData(hashedUserData.ph.replace(/\D/g, ""));
-      }
-
-      const payload = {
-        data: [
-          {
-            event_name: eventName,
-            event_time: eventTime || Math.floor(Date.now() / 1000),
-            action_source: actionSource || "website",
-            event_source_url: eventSourceUrl,
-            user_data: hashedUserData,
-            custom_data: {
-              ...customData
-            }
-          }
-        ]
-      };
-
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
-
-      const responseJson = await response.json();
-      
-      if (!response.ok) {
-        console.error("Meta Conversions API Error:", JSON.stringify(responseJson));
-        return res.status(response.status).json(responseJson);
-      }
-
-      res.json({ success: true, meta_response: responseJson });
-    } catch (error: any) {
-      console.error("Meta CAPI exception:", error);
-      res.status(500).json({ error: error.message || "Failed to send Meta Conversion event" });
-    }
-  });
+  app.post("/api/v1/meta-conversions", metaConversionsHandler);
   // --- END META CONVERSIONS API ---
 
   // --- BEGIN AI PROXY API ---
-  app.post("/api/ai/analyzeSmartFicha", async (req, res) => {
+  app.post("/api/v1/ai/analyzeSmartFicha", authenticate, async (req, res, next) => {
     try {
-      const apiKey = process.env.GEMINI_API_KEY;
-      if (!apiKey) {
-        return res.status(500).json({ error: "Configuração de IA Pendente: A Chave de API (GEMINI_API_KEY) não foi encontrada no servidor." });
+      if (!genAI) {
+        return res.status(500).json({ error: "Configuração de IA Pendente." });
       }
 
       const leadData = req.body.leadData;
@@ -672,9 +705,7 @@ async function startServer() {
         E forneça até 3 key insights principais sobre o perfil desse cara.
       `;
 
-      const { GoogleGenAI, Type } = await import("@google/genai");
-      const ai = new GoogleGenAI({ apiKey });
-      const response = await ai.models.generateContent({
+      const response = await genAI.models.generateContent({
         model: "gemini-1.5-flash",
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         config: {
@@ -697,15 +728,13 @@ async function startServer() {
       const resultText = response.text || "{}";
       res.json(JSON.parse(resultText));
     } catch (e: any) {
-      console.error("AI Proxy Error:", e);
-      res.status(500).json({ error: e.message || "Falha na triagem de fiche com IA" });
+      next(e);
     }
   });
 
-  app.post("/api/ai/analyzeDocument", async (req, res) => {
+  app.post("/api/v1/ai/analyzeDocument", authenticate, async (req, res, next) => {
     try {
-      const apiKey = process.env.GEMINI_API_KEY;
-      if (!apiKey) {
+      if (!genAI) {
         return res.status(500).json({ error: "Configuração de IA Pendente." });
       }
 
@@ -718,9 +747,7 @@ async function startServer() {
         Se for outro tipo, identifique como OUTRO.
       `;
 
-      const { GoogleGenAI, Type } = await import("@google/genai");
-      const ai = new GoogleGenAI({ apiKey });
-      const response = await ai.models.generateContent({
+      const response = await genAI.models.generateContent({
         model: "gemini-1.5-flash",
         contents: [
           {
@@ -765,15 +792,23 @@ async function startServer() {
       const resultText = response.text || "{}";
       res.json(JSON.parse(resultText));
     } catch (e: any) {
-      console.error("AI Document Proxy Error:", e);
-      res.status(500).json({ error: e.message || "Failed to analyze document" });
+      next(e);
     }
   });
   // --- END AI PROXY API ---
 
-  // Vite middleware for development (after API routes)
+  // Centralized Error Handler
+  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error(JSON.stringify({
+      message: err.message,
+      stack: err.stack,
+      path: req.path,
+      method: req.method
+    }));
+    res.status(500).json({ error: "Internal Server Error" });
+  });
+
   if (process.env.NODE_ENV !== "production") {
-    const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
@@ -783,8 +818,7 @@ async function startServer() {
     const __dirname = path.resolve();
     const distPath = path.join(__dirname, "dist");
     app.use(express.static(distPath));
-
-    // Catch-all para SPA: serve index.html para qualquer rota que não seja arquivo estático
+    
     app.use((req, res, next) => {
       if (req.method === "GET" && !req.path.startsWith("/api")) {
         res.sendFile(path.join(distPath, "index.html"));
@@ -798,5 +832,4 @@ async function startServer() {
     console.log(`Server running on http://localhost:${PORT}`);
   });
 }
-
 startServer();

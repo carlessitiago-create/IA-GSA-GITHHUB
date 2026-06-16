@@ -1,0 +1,43 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User account document associated with login uid.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Unique user credentials ID" },
+        "nome": { "type": "string", "description": "Full legal name of user" },
+        "email": { "type": "string", "format": "email", "description": "Primary email address" },
+        "nivel": { "type": "string", "enum": ["ADM_MASTER", "ADM_MESTRE", "ADM_GERENTE", "GESTOR", "VENDEDOR", "CLIENTE"], "description": "Authorization level" },
+        "cpf": { "type": "string", "description": "Individual CPF tax document number" },
+        "data_cadastro": { "type": "string", "format": "date-time", "description": "Timestamp when successfully registered" },
+        "ativo": { "type": "boolean", "description": "Security operational toggle" }
+      },
+      "required": ["uid", "nome", "email", "nivel"]
+    },
+    "Lead": {
+      "title": "CRM Lead",
+      "description": "Client opportunity records created globally or via SaaS landing forms.",
+      "type": "object",
+      "properties": {
+        "nome": { "type": "string", "description": "Lead context full name" },
+        "cpf_cnpj": { "type": "string", "description": "Direct tax document" },
+        "email": { "type": "string", "format": "email", "description": "Lead context communication channel" },
+        "telefone": { "type": "string", "description": "Mobile contact number" },
+         "responsavel_id": { "type": "string", "description": "UID of assigned agent" },
+        "data_cadastro": { "type": "string", "format": "date-time" }
+      },
+      "required": ["nome", "telefone"]
+    }
+  },
+  "firestore": {
+    "/usuarios/{userId}": {
+      "schema": "User",
+      "description": "Internal and external systems user profiles indexed securely."
+    },
+    "/leads/{leadId}": {
+      "schema": "Lead",
+      "description": "Leads records captured through customer interaction points."
+    }
+  }
+}

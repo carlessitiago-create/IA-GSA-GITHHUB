@@ -1,13 +1,63 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, X, Check, Trash2, Clock } from 'lucide-react';
+import { Bell, X, Check, Trash2, Clock, Smartphone, Sparkles, ShieldAlert } from 'lucide-react';
 import { listenToNotifications, markAsRead, AppNotification, playNotificationSound } from '../services/notificationService';
 import { useAuth } from './AuthContext';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 
 export const NotificationBell: React.FC<{ currentProfile: any }> = ({ currentProfile }) => {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [prevCount, setPrevCount] = useState(0);
+  const [pushPermission, setPushPermission] = useState<'default' | 'granted' | 'denied'>('default');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      setPushPermission(Notification.permission);
+    }
+  }, []);
+
+  const handleRequestPushPermission = async () => {
+    if (typeof window === 'undefined' || !('Notification' in window)) {
+      return;
+    }
+    const res = await Notification.requestPermission();
+    setPushPermission(res);
+    if (res === 'granted') {
+      if ('serviceWorker' in navigator) {
+        try {
+          const reg = await navigator.serviceWorker.ready;
+          reg.showNotification('GSA Diagnóstico', {
+            body: 'Notificações Push ativadas com sucesso para processos financeiros!',
+            icon: '/icon.svg',
+            badge: '/icon.svg',
+            vibrate: [100, 50, 100],
+          } as any);
+        } catch (e) {
+          console.warn('SW notification error:', e);
+        }
+      }
+    }
+  };
+
+  const handleSimulateFinancePush = async () => {
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
+      return;
+    }
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      reg.showNotification('GSA Inteligência: Crédito Atualizado', {
+        body: 'Seu processo #9823 GSA Diagnóstico foi classificado como APROVADO. Desbloqueio de limite liberado!',
+        icon: '/icon.svg',
+        badge: '/icon.svg',
+        vibrate: [200, 100, 200],
+        data: {
+          url: '/'
+        }
+      } as any);
+    } catch (e) {
+      console.warn('SW simulation error:', e);
+    }
+  };
 
   useEffect(() => {
     if (currentProfile?.uid) {
@@ -86,6 +136,57 @@ export const NotificationBell: React.FC<{ currentProfile: any }> = ({ currentPro
                 <button onClick={() => setIsOpen(false)} className="p-1 hover:bg-white/10 rounded-lg text-slate-400">
                   <X className="size-4" />
                 </button>
+              </div>
+
+              {/* Painel PWA de Notificações Push */}
+              <div className="p-4 bg-gradient-to-r from-blue-950/40 via-[#0d1540] to-blue-950/40 border-b border-white/5 flex flex-col gap-3">
+                <div className="flex gap-2.5">
+                  <div className="size-10 rounded-2xl bg-white/5 flex items-center justify-center shrink-0 border border-white/10 text-[#00FF66]">
+                    <Smartphone className="size-5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-slate-100 flex items-center gap-1.5 leading-tight">
+                      Alertas no Dispositivo
+                      <Sparkles className="size-3.5 text-amber-400 fill-amber-400" />
+                    </p>
+                    <p className="text-[10px] text-slate-400 leading-normal mt-0.5">
+                      Receba atualizações de processos financeiros mesmo offline.
+                    </p>
+                  </div>
+                </div>
+
+                {pushPermission === 'default' && (
+                  <button 
+                    onClick={handleRequestPushPermission}
+                    className="w-full py-2 px-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-semibold text-xs rounded-xl shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20 hover:scale-[1.01] transition-all hover:brightness-110 active:scale-[0.99] flex items-center justify-center gap-1.5"
+                  >
+                    Ativar Alertas Push
+                  </button>
+                )}
+
+                {pushPermission === 'granted' && (
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 py-1.5 px-3 bg-[#022c22]/50 border border-[#0d9488]/30 rounded-xl flex items-center gap-2">
+                      <span className="size-2 bg-[#00FF66] rounded-full animate-ping" />
+                      <span className="text-[10px] text-teal-300 font-semibold tracking-wide uppercase">Configuração Ativa</span>
+                    </div>
+                    <button 
+                      onClick={handleSimulateFinancePush}
+                      className="py-1.5 px-3 bg-white/5 border border-white/10 hover:bg-white/10 text-slate-300 hover:text-white font-semibold text-[10px] rounded-xl transition-all"
+                    >
+                      Testar Envio
+                    </button>
+                  </div>
+                )}
+
+                {pushPermission === 'denied' && (
+                  <div className="py-1.5 px-3 bg-red-950/30 border border-red-500/20 rounded-xl flex items-center gap-2">
+                    <ShieldAlert className="size-3.5 text-red-400 shrink-0" />
+                    <span className="text-[10px] text-red-300 leading-normal">
+                      Notificações bloqueadas no navegador. Ative as permissões nas configurações do site para receber alertas.
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div className="max-h-[450px] overflow-y-auto no-scrollbar">

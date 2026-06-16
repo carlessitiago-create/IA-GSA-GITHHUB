@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Sidebar } from './GSA/Sidebar';
 import { Header } from './GSA/Header';
+import { OfflineBanner } from './OfflineBanner';
 import { useAuth } from './AuthContext';
 import { LoadingScreen } from './LoadingScreen';
 import { collection, query, where, onSnapshot, orderBy, getDocs, updateDoc, doc, or } from 'firebase/firestore';
@@ -372,7 +373,10 @@ export const DashboardLayout: React.FC = () => {
     setIsNotificationOpen,
     notifications, 
     markAsRead,
-    setView: (v: string) => navigate(`/${v}`)
+    setView: (v: string) => navigate(`/${v}`),
+    allUsers,
+    processes,
+    showcaseLeads
   };
 
   return (
@@ -409,6 +413,7 @@ export const DashboardLayout: React.FC = () => {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden w-full bg-slate-50 min-w-0">
         <Header {...headerProps} onMenuToggle={toggleSidebar} />
+        <OfflineBanner />
         <main className="flex-1 overflow-x-hidden overflow-y-auto px-4 py-6 sm:px-6 sm:py-8 md:px-8 md:py-10">
           <div className="max-w-[1700px] mx-auto w-full">
             <Outlet context={contextProps} />

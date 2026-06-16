@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { SplitSquareVertical, Save, Info, CheckCircle, Percent } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { doc, getDoc, setDoc } from 'firebase/firestore';

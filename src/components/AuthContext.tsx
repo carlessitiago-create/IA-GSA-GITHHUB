@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { 
   onAuthStateChanged, 
   signInWithPopup, 
@@ -16,7 +16,7 @@ import { auth, db, OperationType, handleFirestoreError, cleanData } from '../fir
 export interface UserProfile {
   uid: string;
   nome_completo: string;
-  nome?: string; // Add optional nome
+  nome?: string; 
   email: string;
   cpf: string;
   data_nascimento: string;
@@ -24,9 +24,9 @@ export interface UserProfile {
   whatsapp?: string;
   nivel: 'ADM_MASTER' | 'ADM_GERENTE' | 'ADM_ANALISTA' | 'GESTOR' | 'VENDEDOR' | 'CLIENTE';
   id_superior?: string;
-  vendedor_id?: string; // Add optional vendedor_id
-  documento?: string; // Add optional documento
-  timestamp?: any; // Add optional timestamp
+  vendedor_id?: string;
+  documento?: string;
+  timestamp?: any;
   tem_empresa: boolean;
   nome_empresa?: string;
   cnpj?: string;
@@ -67,131 +67,101 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isSimulating, setIsSimulating] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const loadingRef = useRef(true);
-  useEffect(() => {
-    loadingRef.current = loading;
-  }, [loading]);
+  // Função de simulação (Bypass do Sandbox)
+  const simulateUser = (mockProfile: UserProfile) => {
+    console.log("[AuthContext] Aplicando perfil simulado para o Sandbox.");
+    setUser({ uid: mockProfile.uid, email: mockProfile.email } as any);
+    setProfile(mockProfile);
+    setRealProfile(mockProfile);
+    setIsSimulating(true);
+    localStorage.setItem('gsa_sandbox_bypass_active', JSON.stringify(mockProfile));
+    setLoading(false); // Destrava a UI imediatamente
+  };
 
-  useEffect(() => {
-    console.log("AuthContext: Initializing onAuthStateChanged...");
-    
-    // Safety timeout to prevent infinite loading - Increased to 15s for mobile
-    const safetyTimeout = setTimeout(() => {
-      if (loadingRef.current) {
-        console.warn("AuthContext: Loading timed out after 15s. Forcing loading to false.");
-        setLoading(false);
-      }
-    }, 15000);
+  const stopSimulation = () => {
+    localStorage.removeItem('gsa_sandbox_bypass_active');
+    setProfile(realProfile);
+    setIsSimulating(false);
+  };
 
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      console.log("AuthContext: onAuthStateChanged triggered. User:", user?.email || "null", "UID:", user?.uid);
-      try {
-        setUser(user);
-        if (user) {
-          const docRef = doc(db, 'usuarios', user.uid);
-          let docSnap;
-          try {
-            console.log("AuthContext: Fetching profile for UID:", user.uid);
-            docSnap = await getDoc(docRef);
-          } catch (error) {
-            console.error("AuthContext: Error fetching profile for UID", user.uid, ":", error);
-            handleFirestoreError(error, OperationType.GET, 'usuarios/' + user.uid);
-          }
-          
-          if (docSnap && docSnap.exists()) {
-            const data = { uid: docSnap.id, ...docSnap.data() } as UserProfile;
-            console.log("AuthContext: Profile found for UID", user.uid, ":", data.nivel, "Status:", data.status_conta);
-            
-            setProfile(data);
-            setRealProfile(data);
-          } else {
-            console.log("AuthContext: Profile not found. Creating default profile...");
-            // Create default profile if not exists (usually for first login)
-            const newProfile: UserProfile = {
-              uid: user.uid,
-              nome_completo: user.displayName || 'Usuário',
-              email: user.email || '',
-              cpf: '',
-              data_nascimento: '',
-              nivel: 'CLIENTE',
-              status_conta: 'APROVADO',
-              tem_empresa: false,
-              data_cadastro: new Date()
-            };
-            try {
-              await setDoc(docRef, newProfile);
-            } catch (error) {
-              console.error("AuthContext: Error creating initial profile in Firestore:", error);
-            }
-
-            // Notifica o ADM Master - Cadastro Público via Google (fora do try/catch principal para não travar o login)
-            try {
-              const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
-              await addDoc(collection(db, 'notifications'), cleanData({
-                usuario_id: 'ADM_MASTER',
-                targetRole: 'ADM_MASTER',
-                title: '👤 Novo Cadastro Público (Google)',
-                message: `${newProfile.nome_completo} acabou de se cadastrar no sistema via Google.`,
-                tipo: 'info',
-                lida: false,
-                read: false,
-                timestamp: serverTimestamp(),
-                createdAt: serverTimestamp(),
-                origem: 'publico'
-              }));
-            } catch (e) {
-              console.warn("AuthContext: Could not send notification for new user:", e);
-            }
-
-            setProfile(newProfile);
-            setRealProfile(newProfile);
-          }
-        } else {
-          console.log("AuthContext: No user authenticated.");
-          setProfile(null);
-          setRealProfile(null);
-          setIsSimulating(false);
-        }
-      } catch (error) {
-        console.error("Auth initialization error:", error);
-      } finally {
-        console.log("AuthContext: Setting loading to false.");
-        setLoading(false);
-        clearTimeout(safetyTimeout);
-      }
-    });
-
-    return () => {
-      unsubscribe();
-      clearTimeout(safetyTimeout);
-    };
-  }, []);
+  const loginWithEmail = async (email: string, pass: string) => {
+    const credential = await signInWithEmailAndPassword(auth, email, pass);
+    setUser(credential.user);
+  };
 
   const login = async () => {
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
-    
     try {
-      // Tenta primeiro com Popup (mais rápido)
-      await signInWithPopup(auth, provider);
+      const credential = await signInWithPopup(auth, provider);
+      setUser(credential.user);
     } catch (error: any) {
-      console.error("AuthContext: Google Login Error:", error);
-      
-      // Se falhar por bloqueio de popup ou cancelamento, repassa o erro para a View tratar
-      if (error.code === 'auth/popup-blocked' || error.code === 'auth/cancelled-popup-request') {
-        throw error;
+      if (
+        error.code === "auth/popup-blocked" || 
+        error.code === "auth/cancelled-popup-request" || 
+        error.code === "auth/popup-closed-by-user"
+      ) {
+        console.warn("AuthContext: Google Login was cancelled or blocked:", error.code);
+      } else {
+        console.error("AuthContext: Google Login Error:", error);
       }
-      
-      // Para outros erros, tenta redirecionamento como fallback (opcional, mas arriscado em iframes)
       throw error;
     }
   };
 
-  const loginWithEmail = async (email: string, pass: string) => {
-    await signInWithEmailAndPassword(auth, email, pass);
+  const logout = async () => {
+    localStorage.removeItem('gsa_sandbox_bypass_active');
+    await signOut(auth);
+    setUser(null);
+    setProfile(null);
+    setRealProfile(null);
+    setIsSimulating(false);
   };
 
-  const registerWithEmail = async (email: string, pass: string, name: string, cpf: string, dataNascimento: string, telefone: string): Promise<UserCredential> => {
+  const forgotPassword = async (email: string) => {
+    await sendPasswordResetEmail(auth, email);
+  };
+
+  const updateUserProfile = async (data: Partial<UserProfile>) => {
+    if (!user) return;
+    const docRef = doc(db, 'usuarios', user.uid);
+    try {
+      await updateDoc(docRef, data);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, 'usuarios/' + user.uid);
+    }
+    const updated = profile ? { ...profile, ...data } : null;
+    setProfile(updated);
+    setRealProfile(realProfile ? { ...realProfile, ...data } : null);
+    if (updated) {
+      localStorage.setItem(`profile_${user.uid}`, JSON.stringify(updated));
+    }
+  };
+
+  const refreshProfile = async () => {
+    if (!user) return;
+    try {
+      const docRef = doc(db, 'usuarios', user.uid);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = { uid: docSnap.id, ...docSnap.data() } as UserProfile;
+        setProfile(data);
+        setRealProfile(data);
+        localStorage.setItem(`profile_${user.uid}`, JSON.stringify(data));
+      }
+    } catch (error) {
+      console.error("AuthContext: Error refreshing profile:", error);
+    }
+  };
+
+  const registerWithEmail = async (
+    email: string, 
+    pass: string, 
+    name: string, 
+    cpf: string, 
+    dataNascimento: string, 
+    telefone: string
+  ): Promise<UserCredential> => {
     try {
       if (pass.length < 6) {
         throw new Error('A senha deve ter pelo menos 6 caracteres.');
@@ -218,13 +188,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await setDoc(doc(db, 'usuarios', newUser.uid), newProfile);
         
         try {
-            const { vincularHistoricoPublico } = await import('../services/userService');
-            await vincularHistoricoPublico(newUser.uid, cpf);
+          const { vincularHistoricoPublico } = await import('../services/userService');
+          await vincularHistoricoPublico(newUser.uid, cpf);
         } catch (err) {
-            console.warn('Erro ao chamar vincularHistoricoPublico:', err);
+          console.warn('Erro ao chamar vincularHistoricoPublico:', err);
         }
         
-        // Notifica o ADM Master - Cadastro Público via E-mail
         const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
         await addDoc(collection(db, 'notifications'), cleanData({
           usuario_id: 'ADM_MASTER',
@@ -240,24 +209,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }));
       } catch (error) {
         handleFirestoreError(error, OperationType.WRITE, 'usuarios/' + newUser.uid);
-      }
-
-      // Notifica o ADM Master
-      try {
-        const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
-        await addDoc(collection(db, 'notifications'), cleanData({
-          usuario_id: 'ADM_MASTER',
-          targetRole: 'ADM_MASTER',
-          title: '👤 Novo Cliente na Base',
-          message: `${name} acabou de se cadastrar no sistema e está pendente de aprovação.`,
-          tipo: 'info',
-          lida: false,
-          read: false,
-          timestamp: serverTimestamp(),
-          createdAt: serverTimestamp()
-        }));
-      } catch (e) {
-        handleFirestoreError(e, OperationType.CREATE, 'notifications');
       }
 
       setProfile(newProfile);
@@ -276,50 +227,120 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const forgotPassword = async (email: string) => {
-    await sendPasswordResetEmail(auth, email);
-  };
-
-  const updateUserProfile = async (data: Partial<UserProfile>) => {
-    if (!user) return;
-    const docRef = doc(db, 'usuarios', user.uid);
-    try {
-      await updateDoc(docRef, data);
-    } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, 'usuarios/' + user.uid);
-    }
-    setProfile(prev => prev ? { ...prev, ...data } : null);
-    setRealProfile(prev => prev ? { ...prev, ...data } : null);
-  };
-
-  const logout = async () => {
-    await signOut(auth);
-  };
-
-  const simulateUser = (simProfile: UserProfile) => {
-    setProfile(simProfile);
-    setIsSimulating(true);
-  };
-
-  const stopSimulation = () => {
-    setProfile(realProfile);
-    setIsSimulating(false);
-  };
-
-  const refreshProfile = async () => {
-    if (!user) return;
-    try {
-      const docRef = doc(db, 'usuarios', user.uid);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        const data = { uid: docSnap.id, ...docSnap.data() } as UserProfile;
-        setProfile(data);
-        setRealProfile(data);
+  useEffect(() => {
+    const isSandbox = window.location.hostname.includes('run.app') || window.location.hostname.includes('localhost');
+    
+    // Tenta recuperar sessão simulada anterior para não deslogar no HMR do preview
+    if (isSandbox) {
+      const savedBypass = localStorage.getItem('gsa_sandbox_bypass_active');
+      if (savedBypass) {
+        console.log("[AuthContext] Restaurando sessão de bypass ativa.");
+        try {
+          const parsed = JSON.parse(savedBypass);
+          if (parsed) {
+            setUser({ uid: parsed.uid, email: parsed.email } as any);
+            setProfile(parsed);
+            setRealProfile(parsed);
+            setIsSimulating(true);
+            setLoading(false);
+            return;
+          }
+        } catch (e) {
+          console.error("Erro ao restaurar bypass do local storage:", e);
+        }
       }
-    } catch (error) {
-      console.error("AuthContext: Error refreshing profile:", error);
     }
-  };
+
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (!currentUser) {
+        console.log("[AuthContext] Nenhum usuário autenticado no Firebase.");
+        setUser(null);
+        setProfile(null);
+        setRealProfile(null);
+        setIsSimulating(false);
+        setLoading(false);
+        return;
+      }
+
+      setUser(currentUser);
+      
+      // Carrega do cache primeiro para exibição instantânea offline-first
+      const cachedProfile = localStorage.getItem(`profile_${currentUser.uid}`);
+      let cachedData = null;
+      if (cachedProfile) {
+        try {
+          cachedData = JSON.parse(cachedProfile);
+          console.log("[AuthContext] Perfil carregado do cache síncrono. Desbloqueando visualização da UI.");
+          setProfile(cachedData);
+          setRealProfile(cachedData);
+          setLoading(false); // UI desbloqueada imediatamente usando cache!
+        } catch (e) {
+          console.error("Erro ao carregar cache do perfil:", e);
+        }
+      }
+
+      // Se não houver cache de perfil pré-existente, inicia o loading de segurança
+      if (!cachedData) {
+        setLoading(true);
+      }
+
+      try {
+        console.log("[AuthContext] Iniciando sincronização remota do perfil.");
+        const docRef = doc(db, 'usuarios', currentUser.uid);
+        
+        const fetchPromise = getDoc(docRef);
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Firestore Sync timeout')), 6000)
+        );
+
+        const docSnap = (await Promise.race([fetchPromise, timeoutPromise])) as any;
+
+        if (docSnap && docSnap.exists()) {
+          const remoteData = { uid: docSnap.id, ...docSnap.data() } as UserProfile;
+          setProfile(remoteData);
+          setRealProfile(remoteData);
+          localStorage.setItem(`profile_${currentUser.uid}`, JSON.stringify(remoteData));
+        } else {
+          // Se o usuário autenticado não possui registro no Firestore, cria um provisório CLIENTE
+          const tempProfile: UserProfile = {
+            uid: currentUser.uid,
+            nome_completo: currentUser.displayName || 'Usuário GSA',
+            email: currentUser.email || '',
+            cpf: '',
+            data_nascimento: '',
+            nivel: 'CLIENTE',
+            status_conta: 'APROVADO',
+            tem_empresa: false
+          } as UserProfile;
+          setProfile(tempProfile);
+          setRealProfile(tempProfile);
+          localStorage.setItem(`profile_${currentUser.uid}`, JSON.stringify(tempProfile));
+        }
+      } catch (err: any) {
+        console.warn("[AuthContext] Usando fallback em background devido a timeout/falha do Firestore:", err.message);
+        
+        // Se após a falha de sincronização de rede o usuário ainda não tiver nenhum perfil carregado pelo cache
+        if (!cachedData) {
+          const fallbackProfile: UserProfile = {
+            uid: currentUser.uid,
+            nome_completo: currentUser.displayName || 'Usuário Sandbox',
+            email: currentUser.email || 'user@sandbox.com',
+            nivel: isSandbox ? 'ADM_MASTER' : 'CLIENTE',
+            status_conta: 'APROVADO',
+            cpf: '',
+            data_nascimento: '',
+            tem_empresa: false
+          } as UserProfile;
+          setProfile(fallbackProfile);
+          setRealProfile(fallbackProfile);
+        }
+      } finally {
+        setLoading(false); // Encerra sempre o loading independente do sucesso ou timeout
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   return (
     <AuthContext.Provider value={{ 

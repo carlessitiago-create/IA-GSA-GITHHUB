@@ -1,117 +1,112 @@
-import React, { lazy, Suspense, useEffect } from "react";
+import React, { lazy, Suspense } from "react";
 import { Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "./components/AuthContext";
 import { LoadingScreen } from "./components/LoadingScreen";
-import { DashboardLayout } from "./components/DashboardLayout";
+import { DashboardLayout } from "./components/DashboardLayout"; 
 import { DashboardFinanceiro } from "./pages/DashboardFinanceiro";
 import { SplitCommissionSettingsView } from "./views/SplitCommissionSettingsView";
-import { MAIN_DOMAINS } from "./utils/navigation";
-import { db } from "./firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { GlobalErrorProvider } from "./components/GlobalErrorProvider";
 
-// Helper function to log errors
-const logErrorToFirestore = async (errorInfo: any, additionalContext: { uid?: string, route?: string } = {}) => {
-  try {
-    console.error("Centralized System Error:", errorInfo);
-    const payload: any = {
-      ...errorInfo,
-      ...additionalContext,
-      timestamp: serverTimestamp(),
-      url: window.location.href,
-      userAgent: navigator.userAgent
-    };
-
-    // Sanitize payload to replace potential undefined values with null
-    const sanitizedPayload: any = {};
-    for (const key of Object.keys(payload)) {
-      sanitizedPayload[key] = payload[key] === undefined ? null : payload[key];
-    }
-
-    await addDoc(collection(db, "logs_erro"), sanitizedPayload);
-  } catch (err) {
-    console.error("Falha ao salvar log de erro no Firestore:", err);
-  }
+// Lazy Loading Helper with Retry
+const lazyRetry = (importFn: () => Promise<any>, retries: number = 3, interval: number = 1000): React.LazyExoticComponent<any> => {
+  return lazy(() => 
+    importFn().catch(error => {
+      if (retries > 0) {
+        console.warn(`Retrying lazy load, retries left: ${retries}`);
+        return new Promise((resolve) => setTimeout(resolve, interval)).then(() => lazyRetry(importFn, retries - 1, interval * 2));
+      }
+      throw error;
+    })
+  );
 };
 
-// Lazy Loading Views
-const LoginView = lazy(() => import("./components/LoginView").then(m => ({ default: m.default })));
-const PortalCliente = lazy(() => import("./components/PortalCliente").then(m => ({ default: m.PortalCliente })));
-const PublicPortal = lazy(() => import("./views/PublicPortal").then(m => ({ default: m.PublicPortal })));
-const VitrinePublicaView = lazy(() => import("./views/VitrinePublicaView").then(m => ({ default: m.VitrinePublicaView })));
-const ProposalLandingPage = lazy(() => import("./views/ProposalLandingPage").then(m => ({ default: m.ProposalLandingPage })));
-const SaaSLandingPage = lazy(() => import("./views/SaaSLandingPage"));
+// CORREÇÃO CRÍTICA DE CAMINHO: LoginView está em src/components/ e não em src/views/
+const LoginView = lazyRetry(() => import("./components/LoginView").then(m => ({ default: m.LoginView })));
+const PortalCliente = lazyRetry(() => import("./components/PortalCliente").then(m => ({ default: m.PortalCliente })));
+const PublicPortal = lazyRetry(() => import("./views/PublicPortal").then(m => ({ default: m.PublicPortal })));
+const VitrinePublicaView = lazyRetry(() => import("./views/VitrinePublicaView").then(m => ({ default: m.VitrinePublicaView })));
+const ProposalLandingPage = lazyRetry(() => import("./views/ProposalLandingPage").then(m => ({ default: m.ProposalLandingPage })));
+const SaaSLandingPage = lazyRetry(() => import("./views/SaaSLandingPage"));
 
 // Admin Views
-const FinanceiroView = lazy(() => import("./views/FinanceiroView").then(m => ({ default: m.FinanceiroView })));
-const GestaoEquipeView = lazy(() => import("./views/GestaoEquipeView").then(m => ({ default: m.GestaoEquipeView })));
-const GestaoClientesView = lazy(() => import("./views/GestaoClientesView").then(m => ({ default: m.GestaoClientesView })));
-const IntelligenceDashboardView = lazy(() => import("./views/IntelligenceDashboardView").then(m => ({ default: m.IntelligenceDashboardView })));
-const VendasPDVView = lazy(() => import("./views/VendasPDVView").then(m => ({ default: m.VendasPDVView })));
-const LeadsCentralView = lazy(() => import("./components/GSA/LeadsCentralView").then(m => ({ default: m.LeadsCentralView })));
-const LeadsCNPJView = lazy(() => import("./components/GSA/LeadsCNPJView").then(m => ({ default: m.LeadsCNPJView })));
-const OperationalView = lazy(() => import("./components/GSA/OperationalView").then(m => ({ default: m.OperationalView })));
-const PendencyList = lazy(() => import("./components/GSA/PendencyList").then(m => ({ default: m.PendencyList })));
-const AuditoriaProcesso = lazy(() => import("./components/GSA/AuditoriaProcesso").then(m => ({ default: m.AuditoriaProcesso })));
-const PortalSettingsView = lazy(() => import("./components/GSA/PortalSettingsView").then(m => ({ default: m.PortalSettingsView })));
-const MyClubView = lazy(() => import("./components/GSA/MyClubView").then(m => ({ default: m.MyClubView })));
-const SupportModule = lazy(() => import("./components/Support/SupportModule"));
-const ServiceFactoryView = lazy(() => import("./components/GSA/ServiceFactoryView").then(m => ({ default: m.ServiceFactoryView })));
-const ProfileView = lazy(() => import("./views/ProfileView").then(m => ({ default: m.ProfileView })));
-const ProcessModelsManager = lazy(() => import("./components/GSA/ProcessModelsManager").then(m => ({ default: m.ProcessModelsManager })));
-const DashboardView = lazy(() => import("./views/DashboardView").then(m => ({ default: m.DashboardView })));
-const ConversionDashboardView = lazy(() => import("./views/ConversionDashboardView").then(m => ({ default: m.ConversionDashboardView })));
-const VitrineView = lazy(() => import("./components/GSA/VitrineView").then(m => ({ default: m.VitrineView })));
-const AdminNotificationSettingsView = lazy(() => import("./views/AdminNotificationSettingsView"));
-const ConsultaPublicaView = lazy(() => import("./views/ConsultaPublicaView").then(m => ({ default: m.ConsultaPublicaView })));
-const ClubePontosView = lazy(() => import("./views/ClubePontosView").then(m => ({ default: m.ClubePontosView })));
-const AdminConsultationManagerView = lazy(() => import("./views/AdminConsultationManagerView").then(m => ({ default: m.AdminConsultationManagerView })));
-const AdminConsultationHistoryView = lazy(() => import("./views/AdminConsultationHistoryView").then(m => ({ default: m.AdminConsultationHistoryView })));
-const ConsultasCpfCnpjView = lazy(() => import("./views/ConsultasCpfCnpjView").then(m => ({ default: m.ConsultasCpfCnpjView })));
-const ClubeMarketingView = lazy(() => import("./views/ClubeMarketingView").then(m => ({ default: m.ClubeMarketingView })));
-const ClientProcessesView = lazy(() => import("./components/GSA/ClientProcessesView").then(m => ({ default: m.ClientProcessesView })));
-const ClientWalletView = lazy(() => import("./components/GSA/ClientWalletView").then(m => ({ default: m.ClientWalletView })));
-const ClientDashboardView = lazy(() => import("./components/GSA/ClientDashboardView").then(m => ({ default: m.ClientDashboardView })));
-const CreditoDashboardView = lazy(() => import("./views/CreditoDashboardView").then(m => ({ default: m.CreditoDashboardView })));
-const TabelaCustasView = lazy(() => import("./views/TabelaCustasView").then(m => ({ default: m.TabelaCustasView })));
-const VendaEmMassaView = lazy(() => import("./views/VendaEmMassaView").then(m => ({ default: m.VendaEmMassaView })));
-const GestaoLotesView = lazy(() => import("./views/GestaoLotesView").then(m => ({ default: m.GestaoLotesView })));
-const GerenciadorNotificacoesView = lazy(() => import("./views/GerenciadorNotificacoesView").then(m => ({ default: m.GerenciadorNotificacoes })));
-const NovaVendaAdminView = lazy(() => import("./views/NovaVendaAdminView").then(m => ({ default: m.NovaVendaAdminView })));
-const LeadsView = lazy(() => import("./components/GSA/LeadsView").then(m => ({ default: m.LeadsView })));
-const CheckoutCreditoView = lazy(() => import("./views/CheckoutCreditoView").then(m => ({ default: m.CheckoutCreditoView })));
-const QuizCreditoPublicoView = lazy(() => import("./views/QuizCreditoPublicoView").then(m => ({ default: m.QuizCreditoPublicoView })));
-const AcessoTotalCreditoView = lazy(() => import("./views/AcessoTotalCreditoView"));
+const FinanceiroView = lazyRetry(() => import("./views/FinanceiroView").then(m => ({ default: m.FinanceiroView })));
+const GestaoEquipeView = lazyRetry(() => import("./views/GestaoEquipeView").then(m => ({ default: m.GestaoEquipeView })));
+const GestaoClientesView = lazyRetry(() => import("./views/GestaoClientesView").then(m => ({ default: m.GestaoClientesView })));
+const IntelligenceDashboardView = lazyRetry(() => import("./views/IntelligenceDashboardView").then(m => ({ default: m.IntelligenceDashboardView })));
+const VendasPDVView = lazyRetry(() => import("./views/VendasPDVView").then(m => ({ default: m.VendasPDVView })));
+const LeadsCentralView = lazyRetry(() => import("./components/GSA/LeadsCentralView").then(m => ({ default: m.LeadsCentralView })));
+const LeadsCNPJView = lazyRetry(() => import("./components/GSA/LeadsCNPJView").then(m => ({ default: m.LeadsCNPJView })));
+const OperationalView = lazyRetry(() => import("./components/GSA/OperationalView").then(m => ({ default: m.OperationalView })));
+const PendencyList = lazyRetry(() => import("./components/GSA/PendencyList").then(m => ({ default: m.PendencyList })));
+const AuditoriaProcesso = lazyRetry(() => import("./components/GSA/AuditoriaProcesso").then(m => ({ default: m.AuditoriaProcesso })));
+const PortalSettingsView = lazyRetry(() => import("./components/GSA/PortalSettingsView").then(m => ({ default: m.PortalSettingsView })));
+const MyClubView = lazyRetry(() => import("./components/GSA/MyClubView").then(m => ({ default: m.MyClubView })));
+const SupportModule = lazyRetry(() => import("./components/Support/SupportModule"));
+const ServiceFactoryView = lazyRetry(() => import("./components/GSA/ServiceFactoryView").then(m => ({ default: m.ServiceFactoryView })));
+const ProfileView = lazyRetry(() => import("./views/ProfileView").then(m => ({ default: m.ProfileView })));
+const ProcessModelsManager = lazyRetry(() => import("./components/GSA/ProcessModelsManager").then(m => ({ default: m.ProcessModelsManager })));
+const DashboardView: React.ComponentType<any> = lazyRetry(() => import("./views/DashboardView").then(m => ({ default: m.DashboardView })));
+const FunnelDashboard = lazyRetry(() => import("./components/GSA/FunnelDashboard").then(m => ({ default: m.FunnelDashboard })));
+const LeadsDiagnosticoView = lazyRetry(() => import("./views/LeadsDiagnosticoView").then(m => ({ default: m.LeadsDiagnosticoView })));
+const ConversionDashboardView = lazyRetry(() => import("./views/ConversionDashboardView").then(m => ({ default: m.ConversionDashboardView })));
+const VitrineView = lazyRetry(() => import("./components/GSA/VitrineView").then(m => ({ default: m.VitrineView })));
+const AdminNotificationSettingsView = lazyRetry(() => import("./views/AdminNotificationSettingsView"));
+const ConsultaPublicaView = lazyRetry(() => import("./views/ConsultaPublicaView").then(m => ({ default: m.ConsultaPublicaView })));
+const ClubePontosView = lazyRetry(() => import("./views/ClubePontosView").then(m => ({ default: m.ClubePontosView })));
+const AdminConsultationManagerView = lazyRetry(() => import("./views/AdminConsultationManagerView").then(m => ({ default: m.AdminConsultationManagerView })));
+const AdminConsultationHistoryView = lazyRetry(() => import("./views/AdminConsultationHistoryView").then(m => ({ default: m.AdminConsultationHistoryView })));
+const ConsultasCpfCnpjView = lazyRetry(() => import("./views/ConsultasCpfCnpjView").then(m => ({ default: m.ConsultasCpfCnpjView })));
+const ClubeMarketingView = lazyRetry(() => import("./views/ClubeMarketingView").then(m => ({ default: m.ClubeMarketingView })));
+const ClientProcessesView = lazyRetry(() => import("./components/GSA/ClientProcessesView").then(m => ({ default: m.ClientProcessesView })));
+const ClientWalletView = lazyRetry(() => import("./components/GSA/ClientWalletView").then(m => ({ default: m.ClientWalletView })));
+const ClientDashboardView = lazyRetry(() => import("./components/GSA/ClientDashboardView").then(m => ({ default: m.ClientDashboardView })));
+const CreditoDashboardView = lazyRetry(() => import("./views/CreditoDashboardView").then(m => ({ default: m.CreditoDashboardView })));
+const TabelaCustasView = lazyRetry(() => import("./views/TabelaCustasView").then(m => ({ default: m.TabelaCustasView })));
+const VendaEmMassaView = lazyRetry(() => import("./views/VendaEmMassaView").then(m => ({ default: m.VendaEmMassaView })));
+const GestaoLotesView = lazyRetry(() => import("./views/GestaoLotesView").then(m => ({ default: m.GestaoLotesView })));
+const GerenciadorNotificacoesView = lazyRetry(() => import("./views/GerenciadorNotificacoesView").then(m => ({ default: m.GerenciadorNotificacoesView })));
+const NovaVendaAdminView = lazyRetry(() => import("./views/NovaVendaAdminView").then(m => ({ default: m.NovaVendaAdminView })));
+const LeadsView = lazyRetry(() => import("./components/GSA/LeadsView").then(m => ({ default: m.LeadsView })));
+const CheckoutCreditoView = lazyRetry(() => import("./views/CheckoutCreditoView").then(m => ({ default: m.CheckoutCreditoView })));
+const QuizCreditoPublicoView = lazyRetry(() => import("./views/QuizCreditoPublicoView").then(m => ({ default: m.QuizCreditoPublicoView })));
+const AcessoTotalCreditoView = lazyRetry(() => import("./views/AcessoTotalCreditoView"));
 
 import { PendingApproval, AccountRefused, AccountSuspended, CompleteProfile } from "./components/Auth";
 
-// 1. Guardião Estrito (SÓ É ACIONADO SE A ROTA FOR PRIVADA)
 const ProtectedRoute: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const { user, profile, loading, logout } = useAuth();
 
   if (loading) return <LoadingScreen />;
   if (!user) return <Navigate to="/login" replace />;
-  if (user && !profile) return <LoadingScreen />;
+  
   if (profile && !profile.cpf) return <CompleteProfile profile={profile} />;
 
   if (profile?.status_conta === 'PENDENTE') return <PendingApproval profile={profile} onLogout={logout} />;
   if (profile?.status_conta === 'RECUSADO') return <AccountRefused onLogout={logout} />;
   if (profile?.status_conta === 'SUSPENSO') return <AccountSuspended status="SUSPENSO" onLogout={logout} />;
 
+  if (!profile) {
+    console.error("User authenticated but profile not found after loading");
+    return <Navigate to="/login" replace />;
+  }
+
   return children ? <>{children}</> : <Outlet />;
 };
 
-// 2. Componente Raiz para redirecionar quem já fez login
 const AppRoot: React.FC = () => {
   const { user, profile, loading } = useAuth();
-  if (loading) return <LoadingScreen />;
   
-  // Se entrou na raiz e tem usuário, manda pro painel correspondente
-  if (user) {
+  if (loading) return <LoadingScreen />;
+
+  if (user && !profile) {
+    return <LoadingScreen />;
+  }
+
+  if (user && profile) {
     const isAdm = ["ADM_MASTER", "ADM_GERENTE", "ADM_ANALISTA", "GESTOR", "VENDEDOR"].includes(profile?.nivel || "");
     return <Navigate to={isAdm ? "/financeiro" : "/clube_pontos"} replace />;
   }
-  
-  // Se não tem login e tentou acessar a raiz do app, exibe a landing page, em vez de forçar o login
+
   return (
     <Suspense fallback={<LoadingScreen />}>
       <SaaSLandingPage />
@@ -121,45 +116,22 @@ const AppRoot: React.FC = () => {
 
 const App: React.FC = () => {
   const location = useLocation();
-  const { user } = useAuth();
-  const hostname = window.location.hostname.toLowerCase();
-  const path = location.pathname.toLowerCase();
+  const path = location.pathname;
 
-  // Global Error Tracking
-  useEffect(() => {
-    const handleError = (event: ErrorEvent) => {
-      logErrorToFirestore({
-        type: 'window_error',
-        message: event.message,
-        filename: event.filename,
-        lineno: event.lineno,
-        colno: event.colno,
-        stack: event.error?.stack || null
-      }, { uid: user?.uid, route: location.pathname });
-    };
+  // Interceptador direto para a view isolada de login com tratamento de caminhos resolvidos
+  if (path === '/login') {
+    return (
+      <GlobalErrorProvider>
+        <Suspense fallback={<LoadingScreen />}>
+          <Routes>
+            <Route path="/login" element={<LoginView />} />
+            <Route path="*" element={<Navigate to="/login" replace />} />
+          </Routes>
+        </Suspense>
+      </GlobalErrorProvider>
+    );
+  }
 
-    const handleRejection = (event: PromiseRejectionEvent) => {
-      logErrorToFirestore({
-        type: 'unhandled_rejection',
-        reason: event.reason?.message || String(event.reason),
-        stack: event.reason?.stack || null
-      }, { uid: user?.uid, route: location.pathname });
-    };
-
-    window.addEventListener("error", handleError);
-    window.addEventListener("unhandledrejection", handleRejection);
-
-    return () => {
-      window.removeEventListener("error", handleError);
-      window.removeEventListener("unhandledrejection", handleRejection);
-    };
-  }, [user, location]);
-
-  // FORCED LOGGING - Will definitely appear in console
-  console.log("CRITICAL: GSA App Hostname detected:", hostname, "Path:", path);
-
-  // SHORT-CIRCUIT DE SEGURANÇA PARA A LANDING PAGE ABRIR SEMPRE INDEPENDENTE DO DOMÍNIO OU LOGIN.
-  // Isso força com que app.72hrs.online/diagnostico sempre seja a landing page.
   if (path === '/diagnostico' || path === '/diagnosticos' || path.startsWith('/diagnostico/')) {
     return (
       <Suspense fallback={<LoadingScreen />}>
@@ -168,139 +140,78 @@ const App: React.FC = () => {
     );
   }
 
-  // 1. Definição de domínio de aplicação (Onde o login e painel residem)
-  const isAppDomain = hostname.startsWith('app.') || hostname.includes('localhost') || hostname.includes('ais-dev') || hostname.includes('ais-pre') || hostname.includes('run.app');
-  const isPublicSubdomain = !isAppDomain;
-
-  // AUTO-REDIRECT removido para permitir que os painéis funcionem mesmo em subdomínios como diagnostico.72hrs.online
-  // caso o cliente não tenha DNS configurado para app.72hrs.online
-  /*
-  useEffect(() => {
-    // Rotas consideradas "seguras" para domínios públicos
-    const isPublicPath = path === '/' || path === '' || path === '/consulta' || path.startsWith('/cp/') || path.startsWith('/diagnostico');
-
-    if (isPublicSubdomain && !isPublicPath) {
-      let targetDomain = MAIN_DOMAINS[0];
-      
-      if (hostname.includes('run.app')) {
-        targetDomain = hostname;
-      } else {
-        if (hostname.includes('app.')) {
-          targetDomain = hostname;
-        } else {
-          const baseDomain = MAIN_DOMAINS.find(d => hostname.endsWith(d.replace('app.', ''))) || '72hrs.online';
-          const cleanBase = baseDomain.replace('app.', '');
-          targetDomain = `app.${cleanBase}`;
-        }
-      }
-
-      const protocol = window.location.protocol;
-      console.log(`[AUTO-REDIRECT] ${hostname}${path} -> ${targetDomain}${path}`);
-      window.location.replace(`${protocol}//${targetDomain}${path}`);
-    }
-  }, [isPublicSubdomain, path, hostname]);
-  */
-
-  // Se estiver em domínio público e acessando a raiz ou consulta
-  if (isPublicSubdomain && (path === '/' || path === '' || path === '/consulta' || path.startsWith('/diagnostico'))) {
-    const isConsulta = hostname.includes('consulta') || path === '/consulta';
-    return (
-      <Suspense fallback={<LoadingScreen />}>
-        {isConsulta ? <PublicPortal /> : <SaaSLandingPage />}
-      </Suspense>
-    );
-  }
-
-  // 2. Domínio PRINCIPAL na raiz (ex: 72hrs.online/): Exibe Landing Page
-  const isMainDomainRoot = (
-    hostname === '72h.online' || 
-    hostname === '72hrs.online' || 
-    hostname === 'www.72h.online' || 
-    hostname === 'www.72hrs.online'
-  ) && (path === '/' || path === '' || path.startsWith('/diagnostico'));
-
-  if (isMainDomainRoot) {
-     return (
-      <Suspense fallback={<LoadingScreen />}>
-        <SaaSLandingPage />
-      </Suspense>
-    );
-  }
-
   return (
-    <Suspense fallback={<LoadingScreen />}>
-      <Routes>
-        <Route path="/" element={<AppRoot />} />
-        
-        {/* O Login só é acionado se digitado explicitamente (/login) ou caso não tenha sessão nas rotas abaixo */}
-        <Route path="/login" element={<LoginView />} />
-        <Route path="/consulta" element={<PublicPortal />} />
-        <Route path="/credito" element={<QuizCreditoPublicoView />} />
-        <Route path="/checkout-credito" element={<CheckoutCreditoView />} />
-        <Route path="/vendas/p/:slug" element={<ProposalLandingPage />} />
-        <Route path="/vendasp/:slug" element={<ProposalLandingPage />} />
-        <Route path="/p/:slug" element={<ProposalLandingPage />} />
-        <Route path="/cp/*" element={<PublicPortal />} />
-        <Route path="/vitrine-publica/*" element={<VitrinePublicaView />} />
-        <Route path="/vendas/*" element={<VitrinePublicaView />} />
-        <Route path="/diagnostico" element={<SaaSLandingPage />} />
-        <Route path="/diagnosticos" element={<SaaSLandingPage />} />
-        <Route path="/diagnostico/*" element={<SaaSLandingPage />} />
+    <GlobalErrorProvider>
+      <Suspense fallback={<LoadingScreen />}>
+        <Routes>
+          <Route path="/" element={<AppRoot />} />
+          <Route path="/login" element={<LoginView />} />
+          <Route path="/consulta" element={<PublicPortal />} />
+          <Route path="/credito" element={<QuizCreditoPublicoView />} />
+          <Route path="/checkout-credito" element={<CheckoutCreditoView />} />
+          <Route path="/vendas/p/:slug" element={<ProposalLandingPage />} />
+          <Route path="/vendasp/:slug" element={<ProposalLandingPage />} />
+          <Route path="/p/:slug" element={<ProposalLandingPage />} />
+          <Route path="/cp/*" element={<PublicPortal />} />
+          <Route path="/vitrine-publica/*" element={<VitrinePublicaView />} />
+          <Route path="/vendas/*" element={<VitrinePublicaView />} />
 
-        {/* == ROTAS PROTEGIDAS (Exigem Autenticação) == */}
-        <Route element={<ProtectedRoute />}>
-          <Route element={<DashboardLayout />}>
-            <Route path="/financeiro" element={<DashboardFinanceiro />} />
-            <Route path="/equipe" element={<GestaoEquipeView />} />
-            <Route path="/clientes" element={<GestaoClientesView />} />
-            <Route path="/inteligencia" element={<IntelligenceDashboardView />} />
-            <Route path="/vendas-internas" element={<VendasPDVView />} />
-            <Route path="/venda-massa" element={<VendaEmMassaView />} />
-            <Route path="/gestao-lotes" element={<GestaoLotesView />} />
-            <Route path="/nova-venda-admin" element={<NovaVendaAdminView />} />
-            <Route path="/leads" element={<LeadsCentralView />} />
-            <Route path="/leads-cnpj" element={<LeadsCNPJView />} />
-            <Route path="/gerenciamento-leads" element={<LeadsView />} />
-            <Route path="/diagnostico-leads" element={<LeadsView />} />
-            <Route path="/acesso-credito" element={<AcessoTotalCreditoView />} />
-            <Route path="/operacional" element={<OperationalView />} />
-            <Route path="/pendencias" element={<PendencyList />} />
-            <Route path="/auditoria" element={<AuditoriaProcesso />} />
-            <Route path="/clube" element={<MyClubView />} />
-            <Route path="/custas" element={<TabelaCustasView />} />
-            <Route path="/consulta-interna" element={<ConsultaPublicaView />} />
-            <Route path="/suporte" element={<SupportModule />} />
-            <Route path="/fabrica" element={<ServiceFactoryView />} />
-            <Route path="/perfil" element={<ProfileView />} />
-            <Route path="/vitrine" element={<VitrineView />} />
-            <Route path="/conversao" element={<ConversionDashboardView />} />
-            <Route path="/dashboard" element={<DashboardView />} />
-            <Route path="/saas-settings" element={<DashboardView view="saas_settings" />} />
-            <Route path="/admin_clube_settings" element={<DashboardView view="admin_clube_settings" />} />
-            <Route path="/config_consulta" element={<PortalSettingsView />} />
-            <Route path="/configuracoes-notificacoes" element={<AdminNotificationSettingsView />} />
-            <Route path="/parametrizacao-split" element={<SplitCommissionSettingsView />} />
-            <Route path="/gerenciador-notificacoes" element={<GerenciadorNotificacoesView />} />
-            <Route path="/admin-consultas" element={<AdminConsultationManagerView />} />
-            <Route path="/historico-consultas" element={<AdminConsultationHistoryView />} />
-            <Route path="/consultas-cpf-cnpj" element={<ConsultasCpfCnpjView />} />
+          {/* == ROTAS PROTEGIDAS == */}
+          <Route element={<ProtectedRoute />}>
+            <Route element={<DashboardLayout />}>
+              <Route path="/financeiro" element={<DashboardFinanceiro />} />
+              <Route path="/equipe" element={<GestaoEquipeView />} />
+              <Route path="/clientes" element={<GestaoClientesView />} />
+              <Route path="/inteligencia" element={<IntelligenceDashboardView />} />
+              <Route path="/vendas-internas" element={<VendasPDVView />} />
+              <Route path="/venda-massa" element={<VendaEmMassaView />} />
+              <Route path="/gestao-lotes" element={<GestaoLotesView />} />
+              <Route path="/nova-venda-admin" element={<NovaVendaAdminView />} />
+              <Route path="/leads" element={<LeadsCentralView />} />
+              <Route path="/leads-cnpj" element={<LeadsCNPJView />} />
+              <Route path="/gerenciamento-leads" element={<LeadsView />} />
+              <Route path="/diagnostico-leads" element={<LeadsView />} />
+              <Route path="/acesso-credito" element={<AcessoTotalCreditoView />} />
+              <Route path="/operacional" element={<OperationalView />} />
+              <Route path="/pendencias" element={<PendencyList />} />
+              <Route path="/auditoria" element={<AuditoriaProcesso />} />
+              <Route path="/clube" element={<MyClubView />} />
+              <Route path="/custas" element={<TabelaCustasView />} />
+              <Route path="/consulta-interna" element={<ConsultaPublicaView />} />
+              <Route path="/suporte" element={<SupportModule />} />
+              <Route path="/fabrica" element={<ServiceFactoryView />} />
+              <Route path="/perfil" element={<ProfileView />} />
+              <Route path="/vitrine" element={<VitrineView />} />
+              <Route path="/conversao" element={<ConversionDashboardView />} />
+              <Route path="/funil-vendas" element={<FunnelDashboard />} />
+              <Route path="/leads-diagnostico" element={<LeadsDiagnosticoView />} />
+              <Route path="/dashboard" element={<DashboardView />} />
+              <Route path="/saas-settings" element={<DashboardView view="saas_settings" />} />
+              <Route path="/admin_clube_settings" element={<DashboardView view="admin_clube_settings" />} />
+              <Route path="/config_consulta" element={<PortalSettingsView />} />
+              <Route path="/configuracoes-notificacoes" element={<AdminNotificationSettingsView />} />
+              <Route path="/parametrizacao-split" element={<SplitCommissionSettingsView />} />
+              <Route path="/gerenciador-notificacoes" element={<GerenciadorNotificacoesView />} />
+              <Route path="/admin-consultas" element={<AdminConsultationManagerView />} />
+              <Route path="/historico-consultas" element={<AdminConsultationHistoryView />} />
+              <Route path="/consultas-cpf-cnpj" element={<ConsultasCpfCnpjView />} />
 
-            {/* Rotas Portal do Cliente */}
-            <Route path="/clube_pontos" element={<ClubePontosView />} />
-            <Route path="/vitrine-cliente" element={<VitrineView />} />
-            <Route path="/clube-cliente" element={<ClubeMarketingView />} />
-            <Route path="/processos-cliente" element={<ClientProcessesView />} />
-            <Route path="/carteira" element={<ClientWalletView />} />
-            <Route path="/gestao-credito" element={<CreditoDashboardView />} />
-            <Route path="/dashboard-cliente" element={<ClientDashboardView />} />
-            <Route path="/perfil-cliente" element={<ProfileView />} />
+              {/* Rotas Portal do Cliente */}
+              <Route path="/clube_pontos" element={<ClubePontosView />} />
+              <Route path="/vitrine-cliente" element={<VitrineView />} />
+              <Route path="/clube-cliente" element={<ClubeMarketingView />} />
+              <Route path="/processos-cliente" element={<ClientProcessesView />} />
+              <Route path="/carteira" element={<ClientWalletView />} />
+              <Route path="/gestao-credito" element={<CreditoDashboardView />} />
+              <Route path="/dashboard-cliente" element={<ClientDashboardView />} />
+              <Route path="/perfil-cliente" element={<ProfileView />} />
+            </Route>
           </Route>
-        </Route>
 
-        {/* Links não encontrados jogam gentilmente para o começo do App */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Suspense>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
+    </GlobalErrorProvider>
   );
 };
 

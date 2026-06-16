@@ -27,7 +27,7 @@ import {
   Loader2,
   Edit3,
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion } from 'motion/react';
 import { UserProfile, useAuth } from "../AuthContext";
 
 interface GerenciarUsuariosProps {

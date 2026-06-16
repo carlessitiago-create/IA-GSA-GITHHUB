@@ -5,14 +5,23 @@ import GerenciarUsuarios from '../components/Admin/GerenciarUsuarios';
 import { User, Shield, Eye, UserPlus, Search, Users, Edit3, MoreVertical, X, Mail } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { useAuth, UserProfile } from '../components/AuthContext';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 
 export function GestaoClientesView() {
   const { profile, simulateUser } = useAuth();
   const navigate = useNavigate();
   const [users, setUsers] = useState<UserProfile[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState(() => {
+    return new URLSearchParams(window.location.search).get('search') || '';
+  });
+
+  useEffect(() => {
+    const qSearch = new URLSearchParams(window.location.search).get('search') || '';
+    if (qSearch !== searchTerm) {
+      setSearchTerm(qSearch);
+    }
+  }, [window.location.search]);
   const [showAddUser, setShowAddUser] = useState(false);
   const [userToEdit, setUserToEdit] = useState<UserProfile | null>(null);
 
