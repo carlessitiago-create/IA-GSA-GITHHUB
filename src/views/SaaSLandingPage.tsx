@@ -266,7 +266,7 @@ const SaaSLandingPage: React.FC = () => {
       confirmButtonColor: '#00C853'
     }).then((result) => {
       if (result.isConfirmed) {
-        window.location.href = '/consulta'; 
+        window.location.href = '/#/consulta'; 
       }
     });
   };

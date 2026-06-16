@@ -124,7 +124,7 @@ const AlertCenter: React.FC<AlertCenterProps> = ({ onResolveClick }) => {
                 if (onResolveClick) {
                     onResolveClick();
                 } else {
-                    window.location.href = '/pendencias';
+                    window.location.href = '/#/pendencias';
                 }
             }}
             className={`w-full md:w-auto text-white px-8 sm:px-6 py-4 sm:py-5 rounded-2xl sm:rounded-[1.8rem] font-black text-[10px] sm:text-xs uppercase tracking-[0.2em] transition-all shadow-2xl relative z-10 shrink-0 ${

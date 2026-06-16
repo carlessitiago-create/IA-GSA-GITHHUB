@@ -42,7 +42,10 @@ export const useSmartNavigate = () => {
       }
 
       const protocol = window.location.protocol;
-      const finalPath = targetPath.startsWith('/') ? targetPath : '/' + targetPath;
+      let finalPath = targetPath.startsWith('/') ? targetPath : '/' + targetPath;
+      if (finalPath !== '/' && finalPath !== '') {
+        finalPath = '/#' + finalPath;
+      }
       const finalUrl = `${protocol}//${targetDomain}${finalPath}`;
       
       console.log(`SmartNavigate: [REDIRECTING] ${hostname} -> ${finalUrl}`);
