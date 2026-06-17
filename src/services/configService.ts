@@ -167,7 +167,7 @@ export async function getSaasConfig(): Promise<SaasConfig> {
     smtp_port: '587',
     smtp_user: '',
     smtp_pass: '',
-    is_sandbox: true
+    is_sandbox: false
   };
 
   try {

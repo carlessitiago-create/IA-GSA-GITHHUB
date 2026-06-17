@@ -7,17 +7,21 @@ import { DashboardFinanceiro } from "./pages/DashboardFinanceiro";
 import { SplitCommissionSettingsView } from "./views/SplitCommissionSettingsView";
 import { GlobalErrorProvider } from "./components/GlobalErrorProvider";
 
+// Robust Promise Retry Helper
+const retryPromise = <T,>(fn: () => Promise<T>, retries = 3, interval = 1000): Promise<T> => {
+  return fn().catch((error) => {
+    if (retries > 0) {
+      console.warn(`Retrying import, retries left: ${retries}`);
+      return new Promise<T>((resolve) => setTimeout(resolve, interval))
+        .then(() => retryPromise(fn, retries - 1, interval * 2));
+    }
+    throw error;
+  });
+};
+
 // Lazy Loading Helper with Retry
 const lazyRetry = (importFn: () => Promise<any>, retries: number = 3, interval: number = 1000): React.LazyExoticComponent<any> => {
-  return lazy(() => 
-    importFn().catch(error => {
-      if (retries > 0) {
-        console.warn(`Retrying lazy load, retries left: ${retries}`);
-        return new Promise((resolve) => setTimeout(resolve, interval)).then(() => lazyRetry(importFn, retries - 1, interval * 2));
-      }
-      throw error;
-    })
-  );
+  return lazy(() => retryPromise(importFn, retries, interval));
 };
 
 // CORREÇÃO CRÍTICA DE CAMINHO: LoginView está em src/components/ e não em src/views/
@@ -73,21 +77,22 @@ const AcessoTotalCreditoView = lazyRetry(() => import("./views/AcessoTotalCredit
 
 import { PendingApproval, AccountRefused, AccountSuspended, CompleteProfile } from "./components/Auth";
 
+const NIVEIS_ADMIN = ["ADM_MASTER", "ADM_MESTRE", "ADM_GERENTE", "ADM_ANALISTA", "GESTOR", "VENDEDOR"];
+
 const ProtectedRoute: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const { user, profile, loading, logout } = useAuth();
 
   if (loading) return <LoadingScreen />;
   if (!user) return <Navigate to="/login" replace />;
-  
-  if (profile && !profile.cpf) return <CompleteProfile profile={profile} />;
 
-  if (profile?.status_conta === 'PENDENTE') return <PendingApproval profile={profile} onLogout={logout} />;
-  if (profile?.status_conta === 'RECUSADO') return <AccountRefused onLogout={logout} />;
-  if (profile?.status_conta === 'SUSPENSO') return <AccountSuspended status="SUSPENSO" onLogout={logout} />;
+  const isAdmin = NIVEIS_ADMIN.includes(profile?.nivel || "");
 
-  if (!profile) {
-    console.error("User authenticated but profile not found after loading");
-    return <Navigate to="/login" replace />;
+  // Admins nunca vão para CompleteProfile ou telas de aprovação/bloqueio — têm acesso direto
+  if (!isAdmin) {
+    if (profile && !profile.cpf) return <CompleteProfile profile={profile} />;
+    if (profile?.status_conta === "PENDENTE") return <PendingApproval profile={profile} onLogout={logout} />;
+    if (profile?.status_conta === "RECUSADO") return <AccountRefused onLogout={logout} />;
+    if (profile?.status_conta === "SUSPENSO") return <AccountSuspended status="SUSPENSO" onLogout={logout} />;
   }
 
   return children ? <>{children}</> : <Outlet />;

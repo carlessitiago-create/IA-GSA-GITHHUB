@@ -129,15 +129,31 @@ export const LoginView: React.FC = () => {
       
       setIsLoading(false);
       
-      if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request' || err.code === 'auth/popup-blocked') {
+      if (err?.code === 'auth/popup-closed-by-user' || err?.code === 'auth/cancelled-popup-request' || err?.code === 'auth/popup-blocked') {
         console.warn("[LoginView - handleGoogleAuthClick] Expected cancel/popup issue (User closed or browser blocked popup):", err.code);
         return;
       }
       
+      let errorTitle = 'Restrição de Domínio (OAuth 400)';
+      let errorText = 'O Google não permite login social se o domínio atual não estiver configurado corretamente no Console do Firebase Auth ou se o login popup estiver bloqueado. Utilize suas credenciais convencionais por e-mail e senha.';
+      
+      const isCustomDomain = !window.location.hostname.includes('run.app') && !window.location.hostname.includes('localhost') && !window.location.hostname.includes('aistudio');
+      
+      if (err?.code === 'auth/unauthorized-domain') {
+        errorTitle = 'Domínio Não Autorizado';
+        errorText = `O domínio "${window.location.hostname}" não está autorizado no console do seu Firebase para autenticação do Google. Adicione este domínio nas configurações de Autenticação do seu Firebase Console para liberar o acesso.`;
+      } else if (err?.code === 'auth/operation-not-allowed') {
+        errorTitle = 'Login com Google Desativado';
+        errorText = 'O método de login do Google não está habilitado no console do Firebase do seu projeto. Ative-o na aba "Sign-in method" em Authentication.';
+      } else if (isCustomDomain) {
+        errorTitle = 'Falha na Conexão do Google';
+        errorText = `Não foi possível prosseguir com o login do Google: ${err?.message || String(err)} (Código: ${err?.code || 'erro_desconhecido'}). Verifique suas credenciais de integração ou utilize login convencional com e-mail/senha.`;
+      }
+      
       Swal.fire({
         icon: 'warning',
-        title: 'Restrição de Domínio (OAuth 400)',
-        text: 'O Google não permite login social em URLs temporárias de Preview. Use o botão "IGNORAR E ENTRAR COMO ADMIN" que habilitamos para você testar o painel.',
+        title: errorTitle,
+        text: errorText,
         confirmButtonColor: '#0a0a2e'
       });
     }
@@ -188,26 +204,6 @@ export const LoginView: React.FC = () => {
         </div>
         <h1 className="text-3xl font-black text-[#0a0a2e] mb-2 tracking-tight">GSA PROCESSOS IA</h1>
         <p className="text-slate-500 mb-8">Núcleo de Governança e Segurança. Acesse para gerenciar sua carteira.</p>
-        
-        {/* == BOTÃO EXCLUSIVO DE PREVIEW/SANDBOX == */}
-        {isSandbox && (
-          <motion.div 
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-6 p-3 bg-amber-50 border border-amber-200 rounded-xl text-left"
-          >
-            <p className="text-xs text-amber-800 font-medium mb-2 flex items-center gap-1">
-              <Terminal size={14} /> Ambiente de Desenvolvimento Detectado
-            </p>
-            <button
-              onClick={handleBypassSandbox}
-              type="button"
-              className="w-full py-2.5 px-4 bg-amber-600 text-white rounded-lg text-xs font-bold hover:bg-amber-700 transition-colors shadow-sm uppercase tracking-wider"
-            >
-              🚀 Ignorar Google Auth e Entrar como Admin
-            </button>
-          </motion.div>
-        )}
 
         <form onSubmit={handleEmailLogin} className="space-y-4 mb-6 text-left">
           <div>
@@ -242,6 +238,28 @@ export const LoginView: React.FC = () => {
             {isLoading ? 'Aguarde...' : 'Entrar'}
           </button>
         </form>
+
+        {isSandbox && (
+          <div className="mb-6 p-4 bg-amber-50 rounded-xl border border-amber-200 text-left space-y-3">
+            <div className="flex gap-2 items-start">
+              <Terminal size={16} className="text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-xs font-bold text-amber-800 uppercase">Modo Sandbox Ativo</p>
+                <p className="text-[11px] text-amber-700 leading-relaxed mt-0.5">
+                  Como você está no ambiente de testes/preview, o login social com o Google pode exibir o erro <code>redirect_uri_mismatch</code> por restrição de Domínio Autorizado do Google Cloud.
+                </p>
+              </div>
+            </div>
+            
+            <button 
+              onClick={handleBypassSandbox} 
+              type="button" 
+              className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-xs uppercase tracking-wider transition-all shadow-md shadow-amber-600/10"
+            >
+              <Terminal size={14} /> Ativar Bypass (Entrar como Admin)
+            </button>
+          </div>
+        )}
 
         <button 
           onClick={handleGoogleAuthClick} 

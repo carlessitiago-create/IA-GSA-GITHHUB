@@ -1,7 +1,10 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import Swal from 'sweetalert2';
 import { 
   onAuthStateChanged, 
   signInWithPopup, 
+  signInWithRedirect,
+  getRedirectResult,
   GoogleAuthProvider, 
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
@@ -121,31 +124,102 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     provider.setCustomParameters({ prompt: 'select_account' });
     console.log("[AuthContext - login] Configurações do GoogleAuthProvider definidas:", provider);
     
+    // Detectar se está rodando dentro de um iframe (ex: Sandbox do Google AI Studio)
+    const isInIframe = (() => {
+      try {
+        return window.self !== window.top;
+      } catch (e) {
+        return true;
+      }
+    })();
+
+    const isDevelopmentPreview = window.location.hostname.includes('run.app') || 
+                                  window.location.hostname.includes('localhost') || 
+                                  window.location.hostname.includes('aistudio') ||
+                                  isInIframe;
+
+    console.log("[AuthContext - login] Estado do Ambiente:", {
+      hostname: window.location.hostname,
+      isInIframe,
+      isDevelopmentPreview
+    });
+
+    // Se estiver em ambiente sandbox/preview, use estritamente Popup para evitar o erro 403 de X-Frame-Options doremitido pelo redirect do Google
+    if (isDevelopmentPreview) {
+      console.log("[AuthContext - login] Executando login Google estrito por Popup para Sandbox/Preview.");
+      try {
+        console.log("[AuthContext - login] Disparando signInWithPopup...");
+        const credential = await signInWithPopup(auth, provider);
+        console.log("[AuthContext - login] signInWithPopup resolvida com sucesso!");
+        console.log("[AuthContext - login] Credenciais retornadas:", {
+          uid: credential.user.uid,
+          email: credential.user.email,
+          displayName: credential.user.displayName
+        });
+        setUser(credential.user);
+        return;
+      } catch (error: any) {
+        console.error("[AuthContext - login] Erro retornado de signInWithPopup no Preview:", error);
+        
+        if (error.code === "auth/popup-blocked" || error.code === "auth/popup-closed-by-user" || error.code === "auth/cancelled-popup-request") {
+          console.warn("[AuthContext - login] O login popup do Google foi cancelado ou bloqueado.");
+          Swal.fire({
+            icon: 'warning',
+            title: 'Popup Bloqueado',
+            html: 'Para fazer login com o Google dentro do Preview, o navegador precisa permitir popups.<br/><br/>Alternativamente, clique em <b>"Preview" (no canto superior direito do painel) para abrir o app em uma Nova Guia</b>, ou utilize e-mail e senha convencionais.',
+            confirmButtonColor: '#0a0a2e'
+          });
+        } else if (error.code === 'auth/unauthorized-domain') {
+          Swal.fire({
+            icon: 'error',
+            title: 'Domínio Não Autorizado',
+            text: `O domínio "${window.location.hostname}" não está autorizado no Firebase Console. Para permitir login do Google neste preview, adicione este domínio à lista de domínios autorizados nas configurações do OAuth do Firebase.`,
+            confirmButtonColor: '#0a0a2e'
+          });
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Falha no Login',
+            text: `Não foi possível autenticar: ${error.message || String(error)} (Código: ${error.code || 'erro_desconhecido'})`,
+            confirmButtonColor: '#0a0a2e'
+          });
+        }
+        throw error;
+      }
+    }
+
+    // Fluxo convencional de produção (fora de iFrame e com domínio customizado definitivo)
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    if (isMobile) {
+      console.log("[AuthContext - login] Usuário Mobile em produção. Iniciando signInWithRedirect.");
+      try {
+        await signInWithRedirect(auth, provider);
+        return;
+      } catch (redirectError: any) {
+        console.error("[AuthContext - login] Falha no redirecionamento Google (Mobile):", redirectError);
+        throw redirectError;
+      }
+    }
+
     try {
-      console.log("[AuthContext - login] Disparando signInWithPopup...");
+      console.log("[AuthContext - login] Disparando popup convencional de produção...");
       const credential = await signInWithPopup(auth, provider);
-      console.log("[AuthContext - login] signInWithPopup resolvida com sucesso!");
-      console.log("[AuthContext - login] Credenciais retornadas:", {
-        uid: credential.user.uid,
-        email: credential.user.email,
-        displayName: credential.user.displayName
-      });
       setUser(credential.user);
     } catch (error: any) {
-      console.error("[AuthContext - login] Erro retornado de signInWithPopup:", {
-        code: error.code,
-        message: error.message,
-        customData: error.customData,
-        credential: error.credential
-      });
-      if (
-        error.code === "auth/popup-blocked" || 
-        error.code === "auth/cancelled-popup-request" || 
-        error.code === "auth/popup-closed-by-user"
-      ) {
-        console.warn("[AuthContext - login] O Login com Google foi cancelado/bloqueado por popup no navegador:", error.code);
-      } else {
-        console.error("[AuthContext - login] Erro inesperado no login do Google:", error);
+      console.error("[AuthContext - login] Erro no popup de produção:", error);
+      const isPopupCancel = error.code === "auth/popup-blocked" || 
+                            error.code === "auth/cancelled-popup-request" || 
+                            error.code === "auth/popup-closed-by-user";
+
+      if (isPopupCancel) {
+        console.warn("[AuthContext - login] Popup bloqueado ou fechado na produção. Iniciando fallback de redirect...");
+        try {
+          await signInWithRedirect(auth, provider);
+          return;
+        } catch (redirectError: any) {
+          console.error("[AuthContext - login] Erro no fallback de redirect de produção:", redirectError);
+          throw redirectError;
+        }
       }
       throw error;
     }
@@ -293,6 +367,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
+    // Processar resultados de signInWithRedirect (necessário após retorno de redirecionamento no celular)
+    getRedirectResult(auth)
+      .then((result) => {
+        if (result) {
+          console.log("[AuthContext - useEffect] Sucesso no retorno do redirect do Google!", result.user.email);
+          setUser(result.user);
+        }
+      })
+      .catch((error: any) => {
+        console.error("[AuthContext - useEffect] Erro capturado no retorno do redirect Google:", error);
+        if (error.code === 'auth/unauthorized-domain') {
+          Swal.fire({
+            icon: 'error',
+            title: 'Domínio Não Autorizado',
+            text: `O domínio "${window.location.hostname}" não está autorizado no seu Firebase Console para autenticação do Google.`,
+            confirmButtonColor: '#0a0a2e'
+          });
+        }
+      });
+
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (!currentUser) {
         console.log("[AuthContext] Nenhum usuário autenticado no Firebase.");
@@ -306,92 +400,136 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       setUser(currentUser);
       
-      // Carrega do cache primeiro para exibição instantânea offline-first
+      // ETAPA 1: Carrega do cache primeiro para exibição instantânea offline-first (Evita travar a UI)
       const cachedProfile = localStorage.getItem(`profile_${currentUser.uid}`);
-      let cachedData = null;
+      let cachedData: UserProfile | null = null;
       if (cachedProfile) {
         try {
           cachedData = JSON.parse(cachedProfile);
-          console.log("[AuthContext] Perfil carregado do cache síncrono. Desbloqueando visualização da UI.");
+          console.log("[AuthContext] Perfil de cache encontrado. Desbloqueando UI imediatamente.");
           setProfile(cachedData);
           setRealProfile(cachedData);
-          setLoading(false); // UI desbloqueada imediatamente usando cache!
+          setLoading(false);
         } catch (e) {
           console.error("Erro ao carregar cache do perfil:", e);
         }
       }
 
-      // Se não houver cache de perfil pré-existente, inicia o loading de segurança
-      if (!cachedData) {
-        console.log("[AuthContext - onAuthStateChanged] Nenhum perfil em cache localizado. Ativando loading de segurança.");
+      // Função interna para buscar perfil de forma remota/cache do Firestore
+      const updateProfileAsync = async () => {
+        try {
+          const docRef = doc(db, 'usuarios', currentUser.uid);
+          let docSnap;
+          
+          try {
+            // Tenta o Firebase remoto primeiro
+            docSnap = await getDoc(docRef);
+          } catch (getDocErr: any) {
+            const isOfflineError = 
+              getDocErr?.message?.toLowerCase().includes('offline') || 
+              getDocErr?.code === 'unavailable' || 
+              getDocErr?.code === 'failed-precondition';
+            
+            if (isOfflineError) {
+              console.log("[AuthContext] Usuário parece estar offline. Buscando perfil do cache do Firestore...");
+              try {
+                const { getDocFromCache } = await import('firebase/firestore');
+                docSnap = await getDocFromCache(docRef);
+              } catch (cacheErr) {
+                console.warn("[AuthContext] Perfil não localizado no cache offline do Firestore:", cacheErr);
+                throw getDocErr;
+              }
+            } else {
+              throw getDocErr;
+            }
+          }
+
+          if (docSnap && docSnap.exists()) {
+            const remoteData = { uid: docSnap.id, ...docSnap.data() } as UserProfile;
+            console.log("[AuthContext] Sincronização em background: perfil obtido do Firestore.", remoteData);
+            setProfile(remoteData);
+            setRealProfile(remoteData);
+            localStorage.setItem(`profile_${currentUser.uid}`, JSON.stringify(remoteData));
+          } else {
+            console.warn("[AuthContext] Usuário autenticado, mas sem documento de perfil no Firestore.");
+            const isUserEmailAdmin = !!(currentUser.email && (
+              currentUser.email === 'carlessitiago@gmail.com' ||
+              currentUser.email === 'nomelimpo.gsa@gmail.com' ||
+              currentUser.email === 'atende.gsa@gmail.com'
+            ));
+            const tempProfile: UserProfile = {
+              uid: currentUser.uid,
+              nome_completo: currentUser.displayName || 'Usuário GSA',
+              email: currentUser.email || '',
+              cpf: '',
+              data_nascimento: '',
+              nivel: isUserEmailAdmin ? 'ADM_MASTER' : 'CLIENTE',
+              status_conta: 'APROVADO',
+              tem_empresa: false
+            } as UserProfile;
+            setProfile(tempProfile);
+            setRealProfile(tempProfile);
+            localStorage.setItem(`profile_${currentUser.uid}`, JSON.stringify(tempProfile));
+          }
+        } catch (err: any) {
+          const isOfflineErr = 
+            err?.message?.toLowerCase().includes('offline') || 
+            err?.code === 'unavailable' || 
+            err?.code === 'failed-precondition';
+
+          if (isOfflineErr) {
+            console.warn("[AuthContext] Falha síncrona/background de conexão com Firestore (Offline):", err.message || err);
+          } else {
+            console.error("[AuthContext] Falha ao sincronizar perfil remoto:", err);
+          }
+          
+          // Se não houver nenhum cache carregado anteriormente, usa o fallback emergencial
+          if (!cachedData) {
+            const isUserEmailAdmin = !!(currentUser.email && (
+              currentUser.email === 'carlessitiago@gmail.com' ||
+              currentUser.email === 'nomelimpo.gsa@gmail.com' ||
+              currentUser.email === 'atende.gsa@gmail.com'
+            ));
+
+            const fallbackProfile: UserProfile = {
+              uid: currentUser.uid,
+              nome_completo: currentUser.displayName || 'Usuário GSA',
+              email: currentUser.email || 'user@sandbox.com',
+              nivel: isUserEmailAdmin ? 'ADM_MASTER' : (isSandbox ? 'ADM_MASTER' : 'CLIENTE'),
+              status_conta: 'APROVADO',
+              cpf: '',
+              data_nascimento: '',
+              tem_empresa: false
+            } as UserProfile;
+            console.log("[AuthContext] Criado perfil de fallback de emergência:", fallbackProfile);
+            setProfile(fallbackProfile);
+            setRealProfile(fallbackProfile);
+          } else {
+            // Se já tem cache, garante que o nível de email admin está atualizado se for o caso
+            const isUserEmailAdmin = !!(currentUser.email && (
+              currentUser.email === 'carlessitiago@gmail.com' ||
+              currentUser.email === 'nomelimpo.gsa@gmail.com' ||
+              currentUser.email === 'atende.gsa@gmail.com'
+            ));
+            if (isUserEmailAdmin && cachedData && cachedData.nivel !== 'ADM_MASTER') {
+              console.log("[AuthContext] Atualizando perfil de cache existente do admin para ADM_MASTER.");
+              const updatedCache = { ...cachedData, nivel: 'ADM_MASTER' as const };
+              setProfile(updatedCache);
+              setRealProfile(updatedCache);
+            }
+          }
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      if (cachedData) {
+        // Se já carregamos do cache, buscamos em background de forma assíncrona, SEM prender a UI em loading=true
+        updateProfileAsync();
+      } else {
+        // Sem cache, precisamos de um loading inicial de segurança enquanto tentamos obter as informações
         setLoading(true);
-      }
-
-      try {
-        const startTime = Date.now();
-        console.log("[AuthContext - onAuthStateChanged] Iniciando sincronização remota do perfil no Firestore para UID:", currentUser.uid);
-        const docRef = doc(db, 'usuarios', currentUser.uid);
-        
-        const fetchPromise = getDoc(docRef);
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Firestore Sync timeout (6s limit reached)')), 6000)
-        );
-
-        console.log("[AuthContext - onAuthStateChanged] Executando corrida contra timeout de 6 segundos...");
-        const docSnap = (await Promise.race([fetchPromise, timeoutPromise])) as any;
-        const duration = Date.now() - startTime;
-        console.log(`[AuthContext - onAuthStateChanged] Resposta Firestore obtida em ${duration}ms!`);
-
-        if (docSnap && docSnap.exists()) {
-          const remoteData = { uid: docSnap.id, ...docSnap.data() } as UserProfile;
-          console.log("[AuthContext - onAuthStateChanged] Perfil remoto encontrado no documento:", remoteData);
-          setProfile(remoteData);
-          setRealProfile(remoteData);
-          localStorage.setItem(`profile_${currentUser.uid}`, JSON.stringify(remoteData));
-          console.log("[AuthContext - onAuthStateChanged] Perfil remoto persistido localmente e estado redefinido.");
-        } else {
-          console.warn("[AuthContext - onAuthStateChanged] Usuário autenticado, mas documento de perfil não existe no Firestore!");
-          // Se o usuário autenticado não possui registro no Firestore, cria um provisório CLIENTE
-          const tempProfile: UserProfile = {
-            uid: currentUser.uid,
-            nome_completo: currentUser.displayName || 'Usuário GSA',
-            email: currentUser.email || '',
-            cpf: '',
-            data_nascimento: '',
-            nivel: 'CLIENTE',
-            status_conta: 'APROVADO',
-            tem_empresa: false
-          } as UserProfile;
-          setProfile(tempProfile);
-          setRealProfile(tempProfile);
-          localStorage.setItem(`profile_${currentUser.uid}`, JSON.stringify(tempProfile));
-          console.log("[AuthContext - onAuthStateChanged] Perfil provisório cadastrado em cache:", tempProfile);
-        }
-      } catch (err: any) {
-        console.error("[AuthContext - onAuthStateChanged] Falha ou timeout na sincronização remota do perfil:", err);
-        console.warn("[AuthContext - onAuthStateChanged] Ativando estratégia de fallback para não travar o cliente.");
-        
-        // Se após a falha de sincronização de rede o usuário ainda não tiver nenhum perfil carregado pelo cache
-        if (!cachedData) {
-          const fallbackProfile: UserProfile = {
-            uid: currentUser.uid,
-            nome_completo: currentUser.displayName || 'Usuário Sandbox',
-            email: currentUser.email || 'user@sandbox.com',
-            nivel: isSandbox ? 'ADM_MASTER' : 'CLIENTE',
-            status_conta: 'APROVADO',
-            cpf: '',
-            data_nascimento: '',
-            tem_empresa: false
-          } as UserProfile;
-          console.log("[AuthContext - onAuthStateChanged] Construído perfil de fallback emergencial:", fallbackProfile);
-          setProfile(fallbackProfile);
-          setRealProfile(fallbackProfile);
-        } else {
-          console.log("[AuthContext - onAuthStateChanged] Preservando perfil de cache síncrono existente:", cachedData);
-        }
-      } finally {
-        console.log("[AuthContext - onAuthStateChanged] Finalizando ciclo. Definindo loading = false.");
-        setLoading(false); // Encerra sempre o loading independente do sucesso ou timeout
+        await updateProfileAsync();
       }
     });
 

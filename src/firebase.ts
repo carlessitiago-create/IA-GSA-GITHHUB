@@ -43,8 +43,7 @@ try {
       {
         localCache: persistentLocalCache({
           tabManager: persistentMultipleTabManager()
-        }),
-        experimentalForceLongPolling: true 
+        })
       },
       firebaseConfig.firestoreDatabaseId === '(default)' ? undefined : firebaseConfig.firestoreDatabaseId
     );
