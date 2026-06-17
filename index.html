@@ -16,17 +16,27 @@
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
 
     <script>
-      // Force clear local storage and caches if we suspect a major routing loop (pre-existing mitigation)
-      if (!localStorage.getItem('gsa_cache_cleared_v2')) {
+      // Force clear local storage and caches to bypass aggressive PWA static caching
+      if (!localStorage.getItem('gsa_cache_cleared_v5')) {
           localStorage.clear();
           sessionStorage.clear();
           if ('caches' in window) {
             caches.keys().then(function(names) {
-              for (var name of names) caches.delete(name);
+              for (var name of names) {
+                caches.delete(name);
+              }
             });
           }
-          localStorage.setItem('gsa_cache_cleared_v2', 'true');
-          console.log('Caches cleared');
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+              for (var registration of registrations) {
+                registration.unregister();
+              }
+            });
+          }
+          localStorage.setItem('gsa_cache_cleared_v5', 'true');
+          console.log('Force cache/PWA wipe executed. Reloading with clean states...');
+          window.location.reload();
       }
 
       // Unregister service worker and clear cache in development to avoid caching dynamic Vite chunks and causing iframe crashes

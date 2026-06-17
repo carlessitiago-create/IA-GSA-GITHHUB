@@ -118,6 +118,17 @@ export const LoginView: React.FC = () => {
       console.log(`[LoginView - handleGoogleAuthClick] SUCCESS! login() promise resolved after ${duration}ms.`);
       setIsLoading(false);
     } catch (err: any) {
+      setIsLoading(false);
+      
+      const isPopupCancel = err?.code === 'auth/popup-closed-by-user' || 
+                            err?.code === 'auth/cancelled-popup-request' || 
+                            err?.code === 'auth/popup-blocked';
+
+      if (isPopupCancel) {
+        console.warn("[LoginView - handleGoogleAuthClick] Expected cancel/popup issue (User closed or browser blocked popup):", err.code);
+        return;
+      }
+
       console.error("========================================= [GSA GOOGLE AUTH ERROR] =========================================");
       console.error("[LoginView - handleGoogleAuthClick] FAILED! Error caught during Google popup authentications:", {
         code: err?.code || "NO_CODE",
@@ -126,13 +137,6 @@ export const LoginView: React.FC = () => {
         fullErrorObject: err
       });
       console.error("============================================================================================================");
-      
-      setIsLoading(false);
-      
-      if (err?.code === 'auth/popup-closed-by-user' || err?.code === 'auth/cancelled-popup-request' || err?.code === 'auth/popup-blocked') {
-        console.warn("[LoginView - handleGoogleAuthClick] Expected cancel/popup issue (User closed or browser blocked popup):", err.code);
-        return;
-      }
       
       let errorTitle = 'Restrição de Domínio (OAuth 400)';
       let errorText = 'O Google não permite login social se o domínio atual não estiver configurado corretamente no Console do Firebase Auth ou se o login popup estiver bloqueado. Utilize suas credenciais convencionais por e-mail e senha.';

@@ -159,30 +159,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(credential.user);
         return;
       } catch (error: any) {
-        console.error("[AuthContext - login] Erro retornado de signInWithPopup no Preview:", error);
-        
-        if (error.code === "auth/popup-blocked" || error.code === "auth/popup-closed-by-user" || error.code === "auth/cancelled-popup-request") {
-          console.warn("[AuthContext - login] O login popup do Google foi cancelado ou bloqueado.");
+        const isPopupCancel = error.code === "auth/popup-blocked" || 
+                              error.code === "auth/popup-closed-by-user" || 
+                              error.code === "auth/cancelled-popup-request";
+
+        if (isPopupCancel) {
+          console.warn("[AuthContext - login] O login popup do Google foi cancelado ou bloqueado pelo usuário:", error.code);
           Swal.fire({
             icon: 'warning',
             title: 'Popup Bloqueado',
             html: 'Para fazer login com o Google dentro do Preview, o navegador precisa permitir popups.<br/><br/>Alternativamente, clique em <b>"Preview" (no canto superior direito do painel) para abrir o app em uma Nova Guia</b>, ou utilize e-mail e senha convencionais.',
             confirmButtonColor: '#0a0a2e'
           });
-        } else if (error.code === 'auth/unauthorized-domain') {
-          Swal.fire({
-            icon: 'error',
-            title: 'Domínio Não Autorizado',
-            text: `O domínio "${window.location.hostname}" não está autorizado no Firebase Console. Para permitir login do Google neste preview, adicione este domínio à lista de domínios autorizados nas configurações do OAuth do Firebase.`,
-            confirmButtonColor: '#0a0a2e'
-          });
         } else {
-          Swal.fire({
-            icon: 'error',
-            title: 'Falha no Login',
-            text: `Não foi possível autenticar: ${error.message || String(error)} (Código: ${error.code || 'erro_desconhecido'})`,
-            confirmButtonColor: '#0a0a2e'
-          });
+          console.error("[AuthContext - login] Erro retornado de signInWithPopup no Preview:", error);
+          if (error.code === 'auth/unauthorized-domain') {
+            Swal.fire({
+              icon: 'error',
+              title: 'Domínio Não Autorizado',
+              text: `O domínio "${window.location.hostname}" não está autorizado no Firebase Console. Para permitir login do Google neste preview, adicione este domínio à lista de domínios autorizados nas configurações do OAuth do Firebase.`,
+              confirmButtonColor: '#0a0a2e'
+            });
+          } else {
+            Swal.fire({
+              icon: 'error',
+              title: 'Falha no Login',
+              text: `Não foi possível autenticar: ${error.message || String(error)} (Código: ${error.code || 'erro_desconhecido'})`,
+              confirmButtonColor: '#0a0a2e'
+            });
+          }
         }
         throw error;
       }
