@@ -427,16 +427,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           let docSnap;
           
           try {
-            // Tenta o Firebase remoto primeiro
-            docSnap = await getDoc(docRef);
+            // Tenta o Firebase remoto primeiro com timeout de 4.5 segundos para evitar travamentos
+            const getDocPromise = getDoc(docRef);
+            const timeoutPromise = new Promise<never>((_, reject) => {
+              setTimeout(() => reject(new Error('Firestore Sync timeout (4.5s limit reached)')), 4500);
+            });
+            docSnap = await Promise.race([getDocPromise, timeoutPromise]);
           } catch (getDocErr: any) {
             const isOfflineError = 
               getDocErr?.message?.toLowerCase().includes('offline') || 
+              getDocErr?.message?.toLowerCase().includes('timeout') || 
               getDocErr?.code === 'unavailable' || 
               getDocErr?.code === 'failed-precondition';
             
             if (isOfflineError) {
-              console.log("[AuthContext] Usuário parece estar offline. Buscando perfil do cache do Firestore...");
+              console.log("[AuthContext] Sincronização offline ou lenta. Buscando perfil do cache do Firestore...");
               try {
                 const { getDocFromCache } = await import('firebase/firestore');
                 docSnap = await getDocFromCache(docRef);
@@ -460,7 +465,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const isUserEmailAdmin = !!(currentUser.email && (
               currentUser.email === 'carlessitiago@gmail.com' ||
               currentUser.email === 'nomelimpo.gsa@gmail.com' ||
-              currentUser.email === 'atende.gsa@gmail.com'
+              currentUser.email === 'atende.gsa@gmail.com' ||
+              currentUser.email === 'admin@admin.com'
             ));
             const tempProfile: UserProfile = {
               uid: currentUser.uid,
@@ -493,7 +499,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const isUserEmailAdmin = !!(currentUser.email && (
               currentUser.email === 'carlessitiago@gmail.com' ||
               currentUser.email === 'nomelimpo.gsa@gmail.com' ||
-              currentUser.email === 'atende.gsa@gmail.com'
+              currentUser.email === 'atende.gsa@gmail.com' ||
+              currentUser.email === 'admin@admin.com'
             ));
 
             const fallbackProfile: UserProfile = {
@@ -514,7 +521,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const isUserEmailAdmin = !!(currentUser.email && (
               currentUser.email === 'carlessitiago@gmail.com' ||
               currentUser.email === 'nomelimpo.gsa@gmail.com' ||
-              currentUser.email === 'atende.gsa@gmail.com'
+              currentUser.email === 'atende.gsa@gmail.com' ||
+              currentUser.email === 'admin@admin.com'
             ));
             if (isUserEmailAdmin && cachedData && cachedData.nivel !== 'ADM_MASTER') {
               console.log("[AuthContext] Atualizando perfil de cache existente do admin para ADM_MASTER.");

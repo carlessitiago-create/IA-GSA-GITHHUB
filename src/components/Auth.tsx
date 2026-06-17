@@ -232,10 +232,8 @@ export function Login() {
           </button>
         </form>
 
-        <button onClick={() => handleGoogleLogin()} type="button" disabled={isLoading} className="w-full flex items-center justify-center gap-3 py-4 px-6 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-50 transition-all mb-6 disabled:opacity-50">
-          <img src="https://www.google.com/favicon.ico" className="w-5 h-5" alt="Google" />
-          ENTRAR COM GOOGLE
-        </button>
+
+        {/* Google Auth button has been removed per administrator request */}
 
         <button type="button" onClick={() => setIsRegistering(!isRegistering)} className="text-sm font-bold text-slate-900 hover:text-slate-800 hover:underline">
           {isRegistering ? 'Já tenho uma conta. Entrar.' : 'Não tem conta? Criar agora.'}

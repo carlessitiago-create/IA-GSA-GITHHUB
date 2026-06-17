@@ -17,7 +17,7 @@
 
     <script>
       // Force clear local storage and caches to bypass aggressive PWA static caching
-      if (!localStorage.getItem('gsa_cache_cleared_v5')) {
+      if (!localStorage.getItem('gsa_cache_cleared_v6')) {
           localStorage.clear();
           sessionStorage.clear();
           if ('caches' in window) {
@@ -34,7 +34,7 @@
               }
             });
           }
-          localStorage.setItem('gsa_cache_cleared_v5', 'true');
+          localStorage.setItem('gsa_cache_cleared_v6', 'true');
           console.log('Force cache/PWA wipe executed. Reloading with clean states...');
           window.location.reload();
       }

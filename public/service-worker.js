@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gsa-diagnostico-cache-v2';
+const CACHE_NAME = 'gsa-diagnostico-cache-v3';
 const STATIC_RESOURCES = [
   '/',
   '/index.html',
