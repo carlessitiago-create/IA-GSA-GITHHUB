@@ -111,6 +111,7 @@ export function Sidebar({ currentProfile, logout, onClose }: any) {
             <p className="px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Engenharia</p>
             {role !== 'ADM_ANALISTA' && <MenuItem to="saas-settings" icon={Settings} label="Configurações SaaS" color="text-blue-500" />}
             {role !== 'ADM_ANALISTA' && <MenuItem to="admin_clube_settings" icon={Gift} label="Configurações do Clube" color="text-purple-500" />}
+            <MenuItem to="admin-diagnostico" icon={Activity} label="Diagnóstico Real-time" color="text-red-400" />
             {role !== 'ADM_ANALISTA' && <MenuItem to="config_consulta" icon={LayoutDashboard} label="Configurações de Consulta" color="text-orange-500" />}
             <MenuItem to="diagnostico" icon={LayoutDashboard} label="Landing Page SaaS" color="text-green-500" />
             {role !== 'ADM_ANALISTA' && <MenuItem to="fabrica" icon={Factory} label="Fábrica de Serviços" />}

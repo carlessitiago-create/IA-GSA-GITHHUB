@@ -52,6 +52,7 @@ const ProcessModelsManager = lazyRetry(() => import("./components/GSA/ProcessMod
 const DashboardView: React.ComponentType<any> = lazyRetry(() => import("./views/DashboardView").then(m => ({ default: m.DashboardView })));
 const FunnelDashboard = lazyRetry(() => import("./components/GSA/FunnelDashboard").then(m => ({ default: m.FunnelDashboard })));
 const LeadsDiagnosticoView = lazyRetry(() => import("./views/LeadsDiagnosticoView").then(m => ({ default: m.LeadsDiagnosticoView })));
+const AdminDiagnostico = lazyRetry(() => import("./views/AdminDiagnosticoView").then(m => ({ default: m.AdminDiagnostico })));
 const ConversionDashboardView = lazyRetry(() => import("./views/ConversionDashboardView").then(m => ({ default: m.ConversionDashboardView })));
 const VitrineView = lazyRetry(() => import("./components/GSA/VitrineView").then(m => ({ default: m.VitrineView })));
 const AdminNotificationSettingsView = lazyRetry(() => import("./views/AdminNotificationSettingsView"));
@@ -190,6 +191,7 @@ const App: React.FC = () => {
               <Route path="/conversao" element={<ConversionDashboardView />} />
               <Route path="/funil-vendas" element={<FunnelDashboard />} />
               <Route path="/leads-diagnostico" element={<LeadsDiagnosticoView />} />
+              <Route path="/admin-diagnostico" element={<AdminDiagnostico />} />
               <Route path="/dashboard" element={<DashboardView />} />
               <Route path="/saas-settings" element={<DashboardView view="saas_settings" />} />
               <Route path="/admin_clube_settings" element={<DashboardView view="admin_clube_settings" />} />
