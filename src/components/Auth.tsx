@@ -365,8 +365,8 @@ export function CompleteProfile({ profile: initialProfile }: { profile: any }) {
       
       Swal.fire({ 
         icon: 'warning', 
-        title: 'Conexão Instável', 
-        text: 'Não foi possível salvar online, mas salvamos seus dados localmente. Eles serão sincronizados automaticamente quando você se reconectar.',
+        title: 'Modo Offline Ativado', 
+        text: 'Detectamos que você está sem internet. Seus dados foram salvos localmente e serão sincronizados assim que você recuperar a conexão.',
         confirmButtonColor: '#0a0a2e'
       }).then(() => {
         window.location.reload();
@@ -378,9 +378,9 @@ export function CompleteProfile({ profile: initialProfile }: { profile: any }) {
     try {
       const { setDoc } = await import('firebase/firestore');
       
-      // Timeout de segurança: 45 segundos para a gravação principal
+      // Timeout de segurança aumentado para 75 segundos considerando latência de previews/sandbox
       const saveTimeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Firestore save timeout')), 45000)
+        setTimeout(() => reject(new Error('Firestore save timeout')), 75000)
       );
 
       await Promise.race([
@@ -389,26 +389,26 @@ export function CompleteProfile({ profile: initialProfile }: { profile: any }) {
           data_nascimento: dataNascimento,
           telefone: cleanTelefone,
           status_conta: 'PENDENTE',
-          nivel: 'CLIENTE' // IMPORTANTE: Inclui 'nivel' para garantir conformidade com as regras de criação/atualização do Firestore
+          nivel: 'CLIENTE'
         }, { merge: true }),
         saveTimeoutPromise
       ]);
       
       try {
         const { vincularHistoricoPublico } = await import('../services/userService');
-        // Timeout separado e menor para vinculação de histórico para não prender o usuário
+        // Timeout de vinculação também isolado para não falhar a operação principal se for lenta
         const linkTimeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Link history timeout')), 25000)
+          setTimeout(() => reject(new Error('Link history timeout')), 30000)
         );
         await Promise.race([vincularHistoricoPublico(uid, cleanCpf), linkTimeoutPromise]);
       } catch (e) {
-        console.warn('Erro ou timeout ao vincular histórico (não-bloqueante):', e);
+        console.warn('Vincular histórico demorou muito ou falhou (não-bloqueante):', e);
       }
       
       Swal.fire({
         icon: 'success',
-        title: 'Perfil Atualizado!',
-        text: 'Seus dados foram salvos e agora estão em análise.',
+        title: 'Perfil Finalizado!',
+        text: 'Seus dados foram salvos com sucesso e enviados para análise documental.',
         confirmButtonColor: '#0a0a2e'
       }).then(() => {
         window.location.reload();
@@ -416,27 +416,33 @@ export function CompleteProfile({ profile: initialProfile }: { profile: any }) {
     } catch (error: any) {
       console.error("Erro ao completar perfil:", error);
       
-      const isOfflineError = error.message.includes('timeout') || error.message.includes('offline');
+      const isTimeout = error.message && error.message.includes('timeout');
+      const isOfflineStatus = !navigator.onLine || (error.code === 'unavailable') || (error.code === 'failed-precondition');
       
-      if (isOfflineError) {
+      if (isTimeout || isOfflineStatus) {
+        localStorage.setItem('pending_profile_update', JSON.stringify({
+          uid,
+          cpf: cleanCpf,
+          data_nascimento: dataNascimento,
+          telefone: cleanTelefone,
+          status_conta: 'PENDENTE',
+          nivel: 'CLIENTE'
+        }));
+
         Swal.fire({ 
-          icon: 'warning', 
-          title: 'Conexão Instável', 
-          text: 'Não foi possível salvar online, mas salvamos seus dados localmente. Eles serão sincronizados automaticamente quando você se reconectar.',
+          icon: 'info', 
+          title: 'Sincronização Agendada', 
+          text: 'O Firestore está demorando para responder. Salvamos seus dados localmente; a sincronização ocorrerá automaticamente em segundo plano.',
           confirmButtonColor: '#0a0a2e'
         }).then(() => {
-          localStorage.setItem('pending_profile_update', JSON.stringify({
-            uid,
-            cpf: cleanCpf,
-            data_nascimento: dataNascimento,
-            telefone: cleanTelefone,
-            status_conta: 'PENDENTE',
-            nivel: 'CLIENTE'
-          }));
           window.location.reload();
         });
       } else {
-        Swal.fire({ icon: 'error', title: 'Erro', text: error.message || 'Erro desconhecido ao salvar dados. Verifique sua conexão e tente novamente.' });
+        Swal.fire({ 
+          icon: 'error', 
+          title: 'Falha ao Salvar', 
+          text: error.message || 'Erro inesperado ao salvar seus dados. Verifique sua conexão.' 
+        });
       }
     } finally {
       setIsLoading(false);

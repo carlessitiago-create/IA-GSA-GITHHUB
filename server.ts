@@ -13,11 +13,11 @@ import { metaConversionsHandler } from "./src/controllers/metaController";
 import fetch from "node-fetch";
 import axios from "axios";
 import crypto from "crypto";
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { createServer as createViteServer } from "vite";
 
 const genAI_apiKey = process.env.GEMINI_API_KEY;
-const genAI = genAI_apiKey ? new GoogleGenAI({ apiKey: genAI_apiKey }) : null;
+const genAI = genAI_apiKey ? new GoogleGenerativeAI(genAI_apiKey) : null;
 
 async function startServer() {
   const app = express();
@@ -705,28 +705,16 @@ async function startServer() {
         E forneça até 3 key insights principais sobre o perfil desse cara.
       `;
 
-      const response = await genAI.models.generateContent({
-        model: "gemini-1.5-flash",
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const result = await model.generateContent({
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        config: {
+        generationConfig: {
           responseMimeType: "application/json",
-          responseSchema: {
-            // @ts-ignore
-            type: Type.OBJECT,
-            properties: {
-              urgencyScore: { type: Type.NUMBER, description: "0 a 100" },
-              urgencyLevel: { type: Type.STRING, enum: ['BAIXA', 'MEDIA', 'ALTA', 'CRITICA'] },
-              recommendedAction: { type: Type.STRING },
-              salesPitch: { type: Type.STRING },
-              keyInsights: { type: Type.ARRAY, items: { type: Type.STRING } }
-            },
-            required: ['urgencyScore', 'urgencyLevel', 'recommendedAction', 'salesPitch', 'keyInsights']
-          }
         }
       });
 
-      const resultText = response.text || "{}";
-      res.json(JSON.parse(resultText));
+      const responseText = result.response.text();
+      res.json(JSON.parse(responseText || "{}"));
     } catch (e: any) {
       next(e);
     }
@@ -747,49 +735,23 @@ async function startServer() {
         Se for outro tipo, identifique como OUTRO.
       `;
 
-      const response = await genAI.models.generateContent({
-        model: "gemini-1.5-flash",
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const response = await model.generateContent({
         contents: [
           {
+            role: 'user',
             parts: [
               { text: prompt },
               { inlineData: { mimeType, data: base64Data } },
             ],
           },
         ],
-        config: {
+        generationConfig: {
           responseMimeType: "application/json",
-          responseSchema: {
-            // @ts-ignore
-            type: Type.OBJECT,
-            properties: {
-              documentType: { type: Type.STRING, enum: ['RG', 'CNH', 'CPF', 'CNPJ', 'CONTRATO_SOCIAL', 'OUTRO'] },
-              authenticityScore: { type: Type.NUMBER, description: "Score de 0 a 100" },
-              extractedData: {
-                type: Type.OBJECT,
-                properties: {
-                  nome: { type: Type.STRING },
-                  numero_documento: { type: Type.STRING },
-                  data_nascimento: { type: Type.STRING },
-                  data_validade: { type: Type.STRING },
-                  cpf: { type: Type.STRING },
-                  cnpj: { type: Type.STRING },
-                  razao_social: { type: Type.STRING },
-                  nome_mae: { type: Type.STRING },
-                  nome_pai: { type: Type.STRING },
-                  orgao_emissor: { type: Type.STRING },
-                  data_emissao: { type: Type.STRING },
-                },
-              },
-              validationNotes: { type: Type.ARRAY, items: { type: Type.STRING } },
-              isAuthentic: { type: Type.BOOLEAN },
-            },
-            required: ['documentType', 'authenticityScore', 'extractedData', 'validationNotes', 'isAuthentic'],
-          },
         },
       });
 
-      const resultText = response.text || "{}";
+      const resultText = response.response.text() || "{}";
       res.json(JSON.parse(resultText));
     } catch (e: any) {
       next(e);

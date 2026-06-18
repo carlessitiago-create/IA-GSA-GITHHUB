@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../components/AuthContext';
 import { db, auth } from '../firebase';
 import { doc, getDoc, collection, query, where, getDocs, limit } from 'firebase/firestore';
-import { Shield, Activity, RefreshCw, Database, User, Search, AlertCircle, CheckCircle } from 'lucide-react';
+import { Shield, Activity, RefreshCw, Database, User, Search, AlertCircle, CheckCircle, Package, Mail } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import Swal from 'sweetalert2';
+import { DataRecoveryTool } from '../components/GSA/DataRecoveryTool';
+import { DiagnosticPanel } from '../components/GSA/DiagnosticPanel';
 
 export const AdminDiagnostico: React.FC = () => {
   const { user, profile, refreshProfile } = useAuth();
@@ -15,6 +17,8 @@ export const AdminDiagnostico: React.FC = () => {
   const addLog = (msg: string, type: 'info' | 'success' | 'error' | 'warn' = 'info') => {
     setLogs(prev => [{ msg, type, time: new Date().toLocaleTimeString() }, ...prev].slice(0, 50));
   };
+
+  const [counts, setCounts] = useState<Record<string, number>>({});
 
   const runCheck = async () => {
     setLoading(true);
@@ -54,18 +58,21 @@ export const AdminDiagnostico: React.FC = () => {
         });
       }
 
-      // 3. Database Integrity Check
-      addLog('Verificando coleções principais...', 'info');
-      const collections = ['order_processes', 'clients', 'sales', 'pendencies'];
+      // 3. Database Integrity & Counts Check
+      addLog('Escaneando base de dados para contagem...', 'info');
+      const collections = ['usuarios', 'order_processes', 'clients', 'sales', 'pendencies', 'referrals'];
+      const newCounts: Record<string, number> = {};
+      
       for (const coll of collections) {
         try {
-          const q = query(collection(db, coll), limit(1));
-          const snap = await getDocs(q);
-          addLog(`Coleção ${coll}: ${snap.empty ? 'Vazia ou Ilegível' : 'Online'}`, snap.empty ? 'warn' : 'success');
+          const snap = await getDocs(collection(db, coll));
+          newCounts[coll] = snap.size;
+          addLog(`Coleção ${coll}: ${snap.size} registros encontrados.`, snap.size > 0 ? 'success' : 'warn');
         } catch (e: any) {
           addLog(`ERRO ao ler ${coll}: ${e.message}`, 'error');
         }
       }
+      setCounts(newCounts);
 
     } catch (error: any) {
       addLog(`Erro Crítico no Diagnóstico: ${error.message}`, 'error');
@@ -207,6 +214,35 @@ export const AdminDiagnostico: React.FC = () => {
     }
   };
 
+  const reLinkEmailData = async () => {
+    if (!profile?.email) return;
+
+    const confirm = await Swal.fire({
+      title: 'Vincular via Email?',
+      text: `Tentaremos encontrar dados associados ao Email ${profile.email} e vinculá-los a este UID.`,
+      icon: 'info',
+      showCancelButton: true,
+      confirmButtonText: 'Iniciar Vinculação (Email)',
+    });
+
+    if (confirm.isConfirmed) {
+      setLoading(true);
+      addLog(`Iniciando vinculação para Email: ${profile.email}...`, 'info');
+      try {
+        const { rescueHistoryByEmail } = await import('../services/userService');
+        const count = await rescueHistoryByEmail(profile.uid, profile.email);
+        addLog(`Vinculação finalizada. ${count} registros encontrados.`, 'success');
+        Swal.fire('Vinculação Concluída', `${count} registros foram vinculados à sua conta.`, 'success');
+        await runCheck();
+      } catch (e: any) {
+        addLog(`Erro ao vincular: ${e.message}`, 'error');
+        Swal.fire('Erro', 'Falha ao vincular.', 'error');
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
   useEffect(() => {
     runCheck();
   }, []);
@@ -252,6 +288,13 @@ export const AdminDiagnostico: React.FC = () => {
               <Search size={14} /> Retomar Dados (CPF)
             </button>
             <button 
+              onClick={reLinkEmailData}
+              disabled={loading}
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-xl transition-all flex items-center gap-2 text-xs font-black uppercase tracking-widest shadow-lg shadow-indigo-600/20"
+            >
+              <Mail size={14} /> Retomar Dados (Email)
+            </button>
+            <button 
               onClick={syncAllUsersHistory}
               disabled={loading}
               className="px-4 py-2 bg-rose-600 hover:bg-rose-500 rounded-xl transition-all flex items-center gap-2 text-xs font-black uppercase tracking-widest shadow-lg shadow-rose-600/20"
@@ -268,6 +311,9 @@ export const AdminDiagnostico: React.FC = () => {
           </div>
         </div>
       </div>
+      
+      {/* Real-time Connection Monitor */}
+      <DiagnosticPanel />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Profile Card */}
@@ -307,6 +353,21 @@ export const AdminDiagnostico: React.FC = () => {
                 <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
                   <p className="text-[10px] font-black text-slate-400 uppercase mb-1">CPF Vinculado</p>
                   <p className="text-xs font-bold text-slate-700">{diagnostico.cpf || 'Não informado'}</p>
+                </div>
+
+                {/* Database Statistics */}
+                <div className="space-y-3 pt-2">
+                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <Database size={12} /> Estatísticas do Banco
+                  </h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    {Object.entries(counts).map(([coll, count]) => (
+                      <div key={coll} className="p-2 bg-slate-50 border border-slate-100 rounded-lg flex justify-between items-center">
+                        <span className="text-[9px] font-bold text-slate-500 uppercase">{coll}</span>
+                        <span className="text-xs font-black text-slate-900">{count}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 {diagnostico.error && (
@@ -362,6 +423,15 @@ export const AdminDiagnostico: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Data Recovery Explorer */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+      >
+        <DataRecoveryTool />
+      </motion.div>
     </div>
   );
 };

@@ -247,8 +247,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!user) return;
     const docRef = doc(db, 'usuarios', user.uid);
     try {
-      await updateDoc(docRef, data);
+      // Timeout de segurança para gravação (45s)
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Firestore update timeout (45s limit)')), 45000)
+      );
+      
+      await Promise.race([
+        updateDoc(docRef, data),
+        timeoutPromise
+      ]);
     } catch (error) {
+      console.warn("[AuthContext] Erro ou Timeout ao atualizar perfil:", error);
       handleFirestoreError(error, OperationType.UPDATE, 'usuarios/' + user.uid);
     }
     const updated = profile ? { ...profile, ...data } : null;
@@ -263,8 +272,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!user) return;
     try {
       const docRef = doc(db, 'usuarios', user.uid);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
+      let docSnap;
+      try {
+        docSnap = await getDoc(docRef);
+      } catch (e: any) {
+        console.warn("[AuthContext] Erro ao atualizar perfil (tentando cache):", e);
+        try {
+          const { getDocFromCache } = await import('firebase/firestore');
+          docSnap = await getDocFromCache(docRef);
+        } catch (cacheErr) {
+          console.warn("[AuthContext] Perfil não encontrado nem no cache durante refresh.");
+          return;
+        }
+      }
+
+      if (docSnap && docSnap.exists()) {
         const data = { uid: docSnap.id, ...docSnap.data() } as UserProfile;
         setProfile(data);
         setRealProfile(data);
@@ -306,29 +328,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
       
       try {
-        await setDoc(doc(db, 'usuarios', newUser.uid), newProfile);
+        // Timeout de segurança para criação de perfil (60s)
+        const profileTimeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Firestore profile creation timeout (60s limit)')), 60000)
+        );
+
+        await Promise.race([
+          setDoc(doc(db, 'usuarios', newUser.uid), newProfile),
+          profileTimeoutPromise
+        ]);
         
         try {
           const { vincularHistoricoPublico } = await import('../services/userService');
-          await vincularHistoricoPublico(newUser.uid, cpf);
+          // Vinculação "fire and forget" para não travar o fluxo principal
+          vincularHistoricoPublico(newUser.uid, cpf).catch(e => console.warn("Background link failed:", e));
         } catch (err) {
-          console.warn('Erro ao chamar vincularHistoricoPublico:', err);
+          console.warn('Erro ao carregar vincularHistoricoPublico:', err);
         }
         
-        const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
-        await addDoc(collection(db, 'notifications'), cleanData({
-          usuario_id: 'ADM_MASTER',
-          targetRole: 'ADM_MASTER',
-          title: '👤 Novo Cadastro Público (E-mail)',
-          message: `${newProfile.nome_completo} acabou de se cadastrar no sistema via e-mail/senha.`,
-          tipo: 'info',
-          lida: false,
-          read: false,
-          timestamp: serverTimestamp(),
-          createdAt: serverTimestamp(),
-          origem: 'publico'
-        }));
+        try {
+          const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
+          addDoc(collection(db, 'notifications'), cleanData({
+            usuario_id: 'ADM_MASTER',
+            targetRole: 'ADM_MASTER',
+            title: '👤 Novo Cadastro Público (E-mail)',
+            message: `${newProfile.nome_completo} acabou de se cadastrar no sistema via e-mail/senha.`,
+            tipo: 'info',
+            lida: false,
+            read: false,
+            timestamp: serverTimestamp(),
+            createdAt: serverTimestamp(),
+            origem: 'publico'
+          })).catch(e => console.warn("Background notification failed:", e));
+        } catch (e) {
+          console.warn("Could not send registration notification:", e);
+        }
       } catch (error) {
+        console.error("[AuthContext] Falha ao persistir perfil no Firestore:", error);
         handleFirestoreError(error, OperationType.WRITE, 'usuarios/' + newUser.uid);
       }
 
@@ -427,30 +463,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           let docSnap;
           
           try {
-            // Tenta o Firebase remoto primeiro com timeout de 12 segundos para evitar travamentos em conexões lentas
+            // Tenta o Firebase remoto primeiro com timeout de 60 segundos para evitar travamentos em conexões lentas
             const getDocPromise = getDoc(docRef);
             const timeoutPromise = new Promise<never>((_, reject) => {
-              setTimeout(() => reject(new Error('Firestore Sync timeout (12s limit reached)')), 12000);
+              setTimeout(() => reject(new Error('Firestore Sync timeout (60s limit reached)')), 60000);
             });
             docSnap = await Promise.race([getDocPromise, timeoutPromise]);
           } catch (getDocErr: any) {
             const isOfflineError = 
               getDocErr?.message?.toLowerCase().includes('offline') || 
               getDocErr?.message?.toLowerCase().includes('timeout') || 
+              getDocErr?.message?.toLowerCase().includes('limit reached') ||
               getDocErr?.code === 'unavailable' || 
-              getDocErr?.code === 'failed-precondition';
+              getDocErr?.code === 'failed-precondition' ||
+              getDocErr?.code === 'deadline-exceeded';
             
             if (isOfflineError) {
-              console.log("[AuthContext] Sincronização offline ou lenta. Buscando perfil do cache do Firestore...");
+              console.warn(`[AuthContext] Sincronização offline ou lenta (${getDocErr.message}). Buscando perfil do cache do Firestore...`);
               try {
                 const { getDocFromCache } = await import('firebase/firestore');
                 docSnap = await getDocFromCache(docRef);
               } catch (cacheErr) {
-                console.warn("[AuthContext] Perfil não localizado no cache offline do Firestore:", cacheErr);
-                throw getDocErr;
+                console.warn("[AuthContext] Perfil não localizado no cache offline do Firestore durante init.");
               }
             } else {
-              throw getDocErr;
+              console.error("[AuthContext] Erro fatal ao carregar perfil:", getDocErr);
+              // Não trava o app, permite fallbacks
             }
           }
 
@@ -460,13 +498,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setProfile(remoteData);
             setRealProfile(remoteData);
             localStorage.setItem(`profile_${currentUser.uid}`, JSON.stringify(remoteData));
+
+            // Auto-link data if profile has CPF but was missing records (optimization)
+            if (remoteData.cpf && !localStorage.getItem(`linked_${currentUser.uid}`)) {
+              try {
+                const { vincularHistoricoPublico } = await import('../services/userService');
+                await vincularHistoricoPublico(currentUser.uid, remoteData.cpf);
+                localStorage.setItem(`linked_${currentUser.uid}`, 'true');
+              } catch (e) {
+                console.warn("Auto-link failed:", e);
+              }
+            }
           } else {
             console.warn("[AuthContext] Usuário autenticado, mas sem documento de perfil no Firestore.");
             const isUserEmailAdmin = !!(currentUser.email && (
               currentUser.email === 'carlessitiago@gmail.com' ||
               currentUser.email === 'nomelimpo.gsa@gmail.com' ||
               currentUser.email === 'atende.gsa@gmail.com' ||
-              currentUser.email === 'admin@admin.com'
+              currentUser.email === 'admin@admin.com' ||
+              currentUser.email === 'gsa@gsa.com'
             ));
             const tempProfile: UserProfile = {
               uid: currentUser.uid,
@@ -501,7 +551,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               currentUser.email === 'carlessitiago@gmail.com' ||
               currentUser.email === 'nomelimpo.gsa@gmail.com' ||
               currentUser.email === 'atende.gsa@gmail.com' ||
-              currentUser.email === 'admin@admin.com'
+              currentUser.email === 'admin@admin.com' ||
+              currentUser.email === 'gsa@gsa.com'
             ));
 
             const fallbackProfile: UserProfile = {
@@ -523,7 +574,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               currentUser.email === 'carlessitiago@gmail.com' ||
               currentUser.email === 'nomelimpo.gsa@gmail.com' ||
               currentUser.email === 'atende.gsa@gmail.com' ||
-              currentUser.email === 'admin@admin.com'
+              currentUser.email === 'admin@admin.com' ||
+              currentUser.email === 'gsa@gsa.com'
             ));
             if (isUserEmailAdmin && cachedData && cachedData.nivel !== 'ADM_MASTER') {
               console.log("[AuthContext] Atualizando perfil de cache existente do admin para ADM_MASTER.");

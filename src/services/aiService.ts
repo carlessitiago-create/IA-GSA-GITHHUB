@@ -1,7 +1,7 @@
 
 
 
-const BACKEND_URL = "https://gsa-diagn-stico-recupera-o-de-cr-dito-165811949193.us-west1.run.app";
+const BACKEND_URL = "/api/v1";
 
 export interface DocumentAnalysisResult {
   documentType: 'RG' | 'CNH' | 'CPF' | 'CNPJ' | 'CONTRATO_SOCIAL' | 'OUTRO';
@@ -25,12 +25,18 @@ export interface DocumentAnalysisResult {
 
 export const analyzeDocument = async (file: File): Promise<DocumentAnalysisResult> => {
   try {
+    const { auth } = await import('../firebase');
+    const token = await auth.currentUser?.getIdToken();
+    
     const base64Data = await fileToBase64(file);
     const mimeType = file.type;
 
-    const res = await fetch(`${BACKEND_URL}/api/ai/analyzeDocument`, {
+    const res = await fetch(`${BACKEND_URL}/ai/analyzeDocument`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
       body: JSON.stringify({ base64Data: base64Data.split(',')[1], mimeType })
     });
     
@@ -64,9 +70,15 @@ export interface TriageResult {
 
 export const analyzeSmartFicha = async (leadData: any): Promise<TriageResult> => {
   try {
-    const res = await fetch(`${BACKEND_URL}/api/ai/analyzeSmartFicha`, {
+    const { auth } = await import('../firebase');
+    const token = await auth.currentUser?.getIdToken();
+
+    const res = await fetch(`${BACKEND_URL}/ai/analyzeSmartFicha`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
       body: JSON.stringify({ leadData }),
     });
 

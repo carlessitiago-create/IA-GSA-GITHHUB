@@ -247,3 +247,33 @@ export const vincularHistoricoPublico = async (uid: string, cpf: string) => {
     console.error("Erro ao vincular histórico:", error);
   }
 };
+
+export const rescueHistoryByEmail = async (uid: string, email: string) => {
+  if (!email) return 0;
+  try {
+    const batch = writeBatch(db);
+    let count = 0;
+    const collectionsToSearch = ['order_processes', 'sales', 'pendencies', 'referrals', 'wallets', 'financial_transactions'];
+    
+    for (const collName of collectionsToSearch) {
+      // Searching by 'cliente_email' (common field name if exists)
+      const q = query(collection(db, collName), where('cliente_email', '==', email), limit(100));
+      const snap = await getDocs(q);
+      snap.docs.forEach(docSnap => {
+        const data = docSnap.data();
+        if (data.cliente_id !== uid) {
+          batch.update(docSnap.ref, { cliente_id: uid });
+          count++;
+        }
+      });
+    }
+
+    if (count > 0) {
+      await batch.commit();
+    }
+    return count;
+  } catch (error) {
+    console.error("Error rescuing by email:", error);
+    return 0;
+  }
+};
