@@ -427,10 +427,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           let docSnap;
           
           try {
-            // Tenta o Firebase remoto primeiro com timeout de 4.5 segundos para evitar travamentos
+            // Tenta o Firebase remoto primeiro com timeout de 12 segundos para evitar travamentos em conexões lentas
             const getDocPromise = getDoc(docRef);
             const timeoutPromise = new Promise<never>((_, reject) => {
-              setTimeout(() => reject(new Error('Firestore Sync timeout (4.5s limit reached)')), 4500);
+              setTimeout(() => reject(new Error('Firestore Sync timeout (12s limit reached)')), 12000);
             });
             docSnap = await Promise.race([getDocPromise, timeoutPromise]);
           } catch (getDocErr: any) {
@@ -485,11 +485,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } catch (err: any) {
           const isOfflineErr = 
             err?.message?.toLowerCase().includes('offline') || 
+            err?.message?.toLowerCase().includes('timeout') || 
             err?.code === 'unavailable' || 
             err?.code === 'failed-precondition';
 
           if (isOfflineErr) {
-            console.warn("[AuthContext] Falha síncrona/background de conexão com Firestore (Offline):", err.message || err);
+            console.warn("[AuthContext] Falha de conexão ou timeout com Firestore (Offline/Slow):", err.message || err);
           } else {
             console.error("[AuthContext] Falha ao sincronizar perfil remoto:", err);
           }
