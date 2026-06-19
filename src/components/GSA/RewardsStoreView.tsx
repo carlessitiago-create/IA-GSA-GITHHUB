@@ -47,8 +47,45 @@ export const RewardsStoreView = ({ currentProfile }: RewardsStoreProps) => {
           const premiosOrdenados = filteredRewards.sort((a: any, b: any) => a.pontos - b.pontos);
           setPremios(premiosOrdenados);
         }
-      } catch (error) {
-        console.error("Erro ao carregar clube:", error);
+      } catch (error: any) {
+        console.warn("Erro ao carregar clube (rede), tentando cache:", error?.message);
+        try {
+          const { getDocFromCache } = await import('firebase/firestore');
+          
+          let saldoLocal = 0;
+          let saldoPendenteLocal = 0;
+          
+          try {
+            const cacheUser = await getDocFromCache(doc(db, 'usuarios', currentProfile.uid));
+            if (cacheUser.exists()) {
+              const uData = cacheUser.data();
+              saldoLocal = uData.saldo_pontos || 0;
+              saldoPendenteLocal = uData.saldo_pendente || 0;
+              setSaldo(saldoLocal);
+              setSaldoPendente(saldoPendenteLocal);
+            }
+          } catch(e){}
+
+          try {
+            const regrasCache = await getDocFromCache(doc(db, 'platform_config', 'points_rules'));
+            if (regrasCache.exists()) {
+              const userRole = currentProfile.nivel || 'CLIENTE';
+              const allPremios = regrasCache.data().premios || [];
+              const filteredRewards = allPremios.filter((r: any) => {
+                const target = r.publico_alvo || 'CLIENTE';
+                if (userRole.startsWith('ADM')) return true;
+                if (target === 'TODOS') return true;
+                if (target === 'ESPECIFICO') return currentProfile?.email?.toLowerCase() === r.usuario_alvo_email?.toLowerCase();
+                if (target === 'EQUIPE') return ['GESTOR', 'VENDEDOR'].includes(userRole);
+                if (target === 'CLIENTE') return userRole === 'CLIENTE';
+                return userRole === target;
+              });
+              setPremios(filteredRewards.sort((a: any, b: any) => a.pontos - b.pontos));
+            }
+          } catch(e){}
+        } catch(e: any) {
+          console.error("Erro ao carregar clube (cache fallback falhou):", e?.message);
+        }
       } finally {
         setLoading(false);
       }

@@ -1,17 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'motion/react';
-import { Shield, Lock, Mail, Search, X, Terminal } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Shield, Lock, Mail, Search, X, Terminal, User, FileText, Calendar, Phone, ArrowLeft, UserPlus } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { ConsultaPublicaView } from '../views/ConsultaPublicaView';
 
 export const LoginView: React.FC = () => {
-  const { login, loginWithEmail, simulateUser, user, profile, loading } = useAuth();
+  const { login, loginWithEmail, registerWithEmail, simulateUser, user, profile, loading } = useAuth();
   const navigate = useNavigate();
 
+  // Login states
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  
+  // Register states
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [regName, setRegName] = useState('');
+  const [regEmail, setRegEmail] = useState('');
+  const [regCpf, setRegCpf] = useState('');
+  const [regPhone, setRegPhone] = useState('');
+  const [regBirth, setRegBirth] = useState('');
+  const [regPassword, setRegPassword] = useState('');
+
   const [isLoading, setIsLoading] = useState(false);
   const [showPublicSearch, setShowPublicSearch] = useState(false);
   const [isSandbox, setIsSandbox] = useState(false);
@@ -88,6 +99,35 @@ export const LoginView: React.FC = () => {
       });
       
       console.log("[LoginView - handleEmailLogin] Disabling isLoading state back to false to unblock UI...");
+      setIsLoading(false);
+    }
+  };
+
+  const handleEmailRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!regEmail || !regPassword || !regName || !regCpf) {
+      return;
+    }
+    
+    setIsLoading(true);
+    try {
+      await registerWithEmail(regEmail, regPassword, regName, regCpf, regBirth, regPhone);
+      Swal.fire({
+        icon: 'success',
+        title: 'Conta Criada!',
+        text: 'Seu cadastro foi realizado com sucesso. Aguarde aprovação.',
+        confirmButtonColor: '#0a0a2e'
+      });
+      setIsRegistering(false);
+    } catch (err: any) {
+      console.error(err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Erro ao Criar Conta',
+        text: err?.message || 'Verifique os dados e tente novamente.',
+        confirmButtonColor: '#0a0a2e'
+      });
+    } finally {
       setIsLoading(false);
     }
   };
@@ -209,39 +249,154 @@ export const LoginView: React.FC = () => {
         <h1 className="text-3xl font-black text-[#0a0a2e] mb-2 tracking-tight">GSA PROCESSOS IA</h1>
         <p className="text-slate-500 mb-8">Núcleo de Governança e Segurança. Acesse para gerenciar sua carteira.</p>
 
-        <form onSubmit={handleEmailLogin} className="space-y-4 mb-6 text-left">
-          <div>
-            <label className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase mb-1">
-              <Mail size={12} /> E-mail
-            </label>
-            <input 
-              type="email" 
-              value={email} 
-              onChange={(e) => setEmail(e.target.value)} 
-              required 
-              className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm text-slate-900 focus:ring-2 focus:ring-[#0a0a2e]/20 shadow-sm" 
-            />
-          </div>
-          <div>
-            <label className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase mb-1">
-              <Lock size={12} /> Senha
-            </label>
-            <input 
-              type="password" 
-              value={password} 
-              onChange={(e) => setPassword(e.target.value)} 
-              required 
-              className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm text-slate-900 focus:ring-2 focus:ring-[#0a0a2e]/20 shadow-sm" 
-            />
-          </div>
-          <button 
-            type="submit" 
-            disabled={isLoading} 
-            className="w-full py-4 bg-[#0a0a2e] text-white rounded-xl font-bold hover:bg-[#151542] transition-colors disabled:opacity-70 shadow-lg shadow-[#0a0a2e]/10"
-          >
-            {isLoading ? 'Aguarde...' : 'Entrar'}
-          </button>
-        </form>
+        <AnimatePresence mode="wait">
+          {!isRegistering ? (
+            <motion.div
+              key="login"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+            >
+              <form onSubmit={handleEmailLogin} className="space-y-4 mb-6 text-left">
+                <div>
+                  <label className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase mb-1">
+                    <Mail size={12} /> E-mail
+                  </label>
+                  <input 
+                    type="email" 
+                    value={email} 
+                    onChange={(e) => setEmail(e.target.value)} 
+                    required 
+                    className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm text-slate-900 focus:ring-2 focus:ring-[#0a0a2e]/20 shadow-sm" 
+                  />
+                </div>
+                <div>
+                  <label className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase mb-1">
+                    <Lock size={12} /> Senha
+                  </label>
+                  <input 
+                    type="password" 
+                    value={password} 
+                    onChange={(e) => setPassword(e.target.value)} 
+                    required 
+                    className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm text-slate-900 focus:ring-2 focus:ring-[#0a0a2e]/20 shadow-sm" 
+                  />
+                </div>
+                <button 
+                  type="submit" 
+                  disabled={isLoading} 
+                  className="w-full py-4 bg-[#0a0a2e] text-white rounded-xl font-bold hover:bg-[#151542] transition-colors disabled:opacity-70 shadow-lg shadow-[#0a0a2e]/10"
+                >
+                  {isLoading ? 'Aguarde...' : 'Entrar'}
+                </button>
+              </form>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="register"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+            >
+              <form onSubmit={handleEmailRegister} className="space-y-4 mb-6 text-left">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="md:col-span-2">
+                    <label className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase mb-1">
+                      <User size={12} /> Nome Completo
+                    </label>
+                    <input 
+                      type="text" 
+                      value={regName} 
+                      onChange={(e) => setRegName(e.target.value)} 
+                      required 
+                      className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm text-slate-900 focus:ring-2 focus:ring-[#0a0a2e]/20 shadow-sm" 
+                    />
+                  </div>
+                  <div>
+                    <label className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase mb-1">
+                      <FileText size={12} /> CPF
+                    </label>
+                    <input 
+                      type="text" 
+                      value={regCpf} 
+                      onChange={(e) => setRegCpf(e.target.value)} 
+                      required 
+                      placeholder="000.000.000-00"
+                      className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm text-slate-900 focus:ring-2 focus:ring-[#0a0a2e]/20 shadow-sm" 
+                    />
+                  </div>
+                  <div>
+                    <label className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase mb-1">
+                      <Calendar size={12} /> Nasc. (Opcional)
+                    </label>
+                    <input 
+                      type="date" 
+                      value={regBirth} 
+                      onChange={(e) => setRegBirth(e.target.value)} 
+                      className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm text-slate-900 focus:ring-2 focus:ring-[#0a0a2e]/20 shadow-sm" 
+                    />
+                  </div>
+                  <div>
+                    <label className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase mb-1">
+                      <Phone size={12} /> Telefone
+                    </label>
+                    <input 
+                      type="text" 
+                      value={regPhone} 
+                      onChange={(e) => setRegPhone(e.target.value)} 
+                      placeholder="(00) 00000-0000"
+                      className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm text-slate-900 focus:ring-2 focus:ring-[#0a0a2e]/20 shadow-sm" 
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase mb-1">
+                      <Mail size={12} /> E-mail
+                    </label>
+                    <input 
+                      type="email" 
+                      value={regEmail} 
+                      onChange={(e) => setRegEmail(e.target.value)} 
+                      required 
+                      className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm text-slate-900 focus:ring-2 focus:ring-[#0a0a2e]/20 shadow-sm" 
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase mb-1">
+                      <Lock size={12} /> Criar Senha
+                    </label>
+                    <input 
+                      type="password" 
+                      value={regPassword} 
+                      onChange={(e) => setRegPassword(e.target.value)} 
+                      required 
+                      minLength={6}
+                      className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm text-slate-900 focus:ring-2 focus:ring-[#0a0a2e]/20 shadow-sm" 
+                    />
+                  </div>
+                </div>
+                
+                <div className="flex flex-col gap-2 pt-2">
+                  <button 
+                    type="submit" 
+                    disabled={isLoading} 
+                    className="w-full py-4 bg-[#0a0a2e] text-white rounded-xl font-bold hover:bg-[#151542] transition-colors disabled:opacity-70 shadow-lg shadow-[#0a0a2e]/10 flex items-center justify-center gap-2 mt-2"
+                  >
+                    <UserPlus size={16} />
+                    {isLoading ? 'Aguarde...' : 'Criar Conta'}
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => setIsRegistering(false)}
+                    disabled={isLoading} 
+                    className="w-full py-3 bg-transparent text-slate-500 hover:text-[#0a0a2e] rounded-xl font-bold flex items-center justify-center gap-2 transition-colors"
+                  >
+                    <ArrowLeft size={16} /> Voltar para Login
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {isSandbox && (
           <div className="mb-6 p-4 bg-amber-50 rounded-xl border border-amber-200 text-left space-y-3">
@@ -268,7 +423,17 @@ export const LoginView: React.FC = () => {
 
         {/* Google Auth button has been removed per administrator request */}
 
-        <div className="mt-8 pt-6 border-t border-slate-100 text-center">
+        <div className="mt-8 pt-6 border-t border-slate-100 text-center flex flex-col gap-4">
+          {!isRegistering && (
+            <button 
+              type="button"
+              onClick={() => setIsRegistering(true)}
+              className="text-xs font-bold text-[#0a0a2e] hover:text-blue-800 transition-colors flex items-center justify-center gap-2 mx-auto uppercase tracking-wider"
+            >
+              <UserPlus size={14} /> Cadastrar Nova Conta
+            </button>
+          )}
+
           <button 
             type="button"
             onClick={() => setShowPublicSearch(true)}

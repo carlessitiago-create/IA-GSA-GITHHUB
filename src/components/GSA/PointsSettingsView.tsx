@@ -28,8 +28,19 @@ export const PointsSettingsView = () => {
           if (data.valores) setRules(data.valores);
           if (data.premios) setPremios(data.premios);
         }
-      } catch (error) {
-        console.error("Erro ao carregar regras:", error);
+      } catch (error: any) {
+        console.warn("Erro ao carregar regras (rede), tentando cache:", error?.message);
+        try {
+          const { getDocFromCache } = await import('firebase/firestore');
+          const cacheSnap = await getDocFromCache(doc(db, 'platform_config', 'points_rules'));
+          if (cacheSnap.exists()) {
+             const data = cacheSnap.data();
+             if (data.valores) setRules(data.valores);
+             if (data.premios) setPremios(data.premios);
+          }
+        } catch (e: any) {
+          console.error("Erro ao carregar regras (cache):", e?.message);
+        }
       } finally {
         setLoading(false);
       }
