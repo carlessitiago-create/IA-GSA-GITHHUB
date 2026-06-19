@@ -385,16 +385,64 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    const isSandbox = window.location.hostname.includes('run.app') || window.location.hostname.includes('localhost');
-    
-    // Tenta recuperar sessão simulada anterior para não deslogar no HMR do preview
+    const CACHE_KEY = 'gsa_user_profile';
+    const PENDING_KEY = 'gsa_pending_profile_update';
+
+    const loadCache = (uid: string): UserProfile | null => {
+      try {
+        // Tenta a chave nova primeiro, depois a chave antiga por compatibilidade
+        const data = localStorage.getItem(CACHE_KEY) || localStorage.getItem(`profile_${uid}`);
+        if (!data) return null;
+        const parsed = JSON.parse(data) as UserProfile;
+        // Valida que o cache pertence ao usuário atual
+        if (parsed.uid !== uid) return null;
+        return parsed;
+      } catch { return null; }
+    };
+
+    const saveCache = (profile: UserProfile) => {
+      try {
+        localStorage.setItem(CACHE_KEY, JSON.stringify(profile));
+        localStorage.setItem(`profile_${profile.uid}`, JSON.stringify(profile));
+      } catch {}
+    };
+
+    const fetchProfile = async (uid: string): Promise<UserProfile | null> => {
+      try {
+        const docRef = doc(db, 'usuarios', uid);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const data = { uid: docSnap.id, ...docSnap.data() } as UserProfile;
+          saveCache(data);
+          return data;
+        }
+      } catch (err: any) {
+        console.warn("[AuthContext] fetchProfile offline ou erro:", err.message);
+        // Tenta cache interno do Firestore
+        try {
+          const { getDocFromCache } = await import('firebase/firestore');
+          const cached = await getDocFromCache(doc(db, 'usuarios', uid));
+          if (cached.exists()) {
+            const data = { uid: cached.id, ...cached.data() } as UserProfile;
+            saveCache(data);
+            return data;
+          }
+        } catch {}
+      }
+      return null;
+    };
+
+    // Restaura sessão de bypass sandbox se existir (sobrevive a HMR)
+    const isSandbox = window.location.hostname.includes('run.app') || 
+                      window.location.hostname.includes('localhost') ||
+                      window.location.hostname.includes('ais-dev');
+
     if (isSandbox) {
       const savedBypass = localStorage.getItem('gsa_sandbox_bypass_active');
       if (savedBypass) {
-        console.log("[AuthContext] Restaurando sessão de bypass ativa.");
         try {
           const parsed = JSON.parse(savedBypass);
-          if (parsed) {
+          if (parsed?.uid) {
             setUser({ uid: parsed.uid, email: parsed.email } as any);
             setProfile(parsed);
             setRealProfile(parsed);
@@ -402,35 +450,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setLoading(false);
             return;
           }
-        } catch (e) {
-          console.error("Erro ao restaurar bypass do local storage:", e);
-        }
+        } catch {}
       }
     }
 
-    // Processar resultados de signInWithRedirect (necessário após retorno de redirecionamento no celular)
     getRedirectResult(auth)
-      .then((result) => {
-        if (result) {
-          console.log("[AuthContext - useEffect] Sucesso no retorno do redirect do Google!", result.user.email);
-          setUser(result.user);
-        }
-      })
+      .then((result) => { if (result) setUser(result.user); })
       .catch((error: any) => {
-        console.error("[AuthContext - useEffect] Erro capturado no retorno do redirect Google:", error);
         if (error.code === 'auth/unauthorized-domain') {
-          Swal.fire({
-            icon: 'error',
-            title: 'Domínio Não Autorizado',
-            text: `O domínio "${window.location.hostname}" não está autorizado no seu Firebase Console para autenticação do Google.`,
-            confirmButtonColor: '#0a0a2e'
-          });
+          console.warn("[AuthContext] Domínio não autorizado no Firebase.");
         }
       });
 
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (!currentUser) {
-        console.log("[AuthContext] Nenhum usuário autenticado no Firebase.");
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (!firebaseUser) {
         setUser(null);
         setProfile(null);
         setRealProfile(null);
@@ -439,164 +472,73 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      setUser(currentUser);
-      
-      // ETAPA 1: Carrega do cache primeiro para exibição instantânea offline-first (Evita travar a UI)
-      const cachedProfile = localStorage.getItem(`profile_${currentUser.uid}`);
-      let cachedData: UserProfile | null = null;
-      if (cachedProfile) {
-        try {
-          cachedData = JSON.parse(cachedProfile);
-          console.log("[AuthContext] Perfil de cache encontrado. Desbloqueando UI imediatamente.");
-          setProfile(cachedData);
-          setRealProfile(cachedData);
-          setLoading(false);
-        } catch (e) {
-          console.error("Erro ao carregar cache do perfil:", e);
-        }
+      setUser(firebaseUser);
+
+      // ETAPA 1: cache local imediato — libera UI sem rede
+      const cached = loadCache(firebaseUser.uid);
+      if (cached) {
+        setProfile(cached);
+        setRealProfile(cached);
+        setLoading(false);
+        // Atualiza em background
+        fetchProfile(firebaseUser.uid).then(fresh => {
+          if (fresh) { setProfile(fresh); setRealProfile(fresh); }
+        });
+        return;
       }
 
-      // Função interna para buscar perfil de forma remota/cache do Firestore
-      const updateProfileAsync = async () => {
-        try {
-          const docRef = doc(db, 'usuarios', currentUser.uid);
-          let docSnap;
-          
-          try {
-            // Tenta o Firebase remoto primeiro com timeout de 60 segundos para evitar travamentos em conexões lentas
-            const getDocPromise = getDoc(docRef);
-            const timeoutPromise = new Promise<never>((_, reject) => {
-              setTimeout(() => reject(new Error('Firestore Sync timeout (60s limit reached)')), 60000);
-            });
-            docSnap = await Promise.race([getDocPromise, timeoutPromise]);
-          } catch (getDocErr: any) {
-            const isOfflineError = 
-              getDocErr?.message?.toLowerCase().includes('offline') || 
-              getDocErr?.message?.toLowerCase().includes('timeout') || 
-              getDocErr?.message?.toLowerCase().includes('limit reached') ||
-              getDocErr?.code === 'unavailable' || 
-              getDocErr?.code === 'failed-precondition' ||
-              getDocErr?.code === 'deadline-exceeded';
-            
-            if (isOfflineError) {
-              console.warn(`[AuthContext] Sincronização offline ou lenta (${getDocErr.message}). Buscando perfil do cache do Firestore...`);
-              try {
-                const { getDocFromCache } = await import('firebase/firestore');
-                docSnap = await getDocFromCache(docRef);
-              } catch (cacheErr) {
-                console.warn("[AuthContext] Perfil não localizado no cache offline do Firestore durante init.");
-              }
-            } else {
-              console.error("[AuthContext] Erro fatal ao carregar perfil:", getDocErr);
-              // Não trava o app, permite fallbacks
-            }
-          }
-
-          if (docSnap && docSnap.exists()) {
-            const remoteData = { uid: docSnap.id, ...docSnap.data() } as UserProfile;
-            console.log("[AuthContext] Sincronização em background: perfil obtido do Firestore.", remoteData);
-            setProfile(remoteData);
-            setRealProfile(remoteData);
-            localStorage.setItem(`profile_${currentUser.uid}`, JSON.stringify(remoteData));
-
-            // Auto-link data if profile has CPF but was missing records (optimization)
-            if (remoteData.cpf && !localStorage.getItem(`linked_${currentUser.uid}`)) {
-              try {
-                const { vincularHistoricoPublico } = await import('../services/userService');
-                await vincularHistoricoPublico(currentUser.uid, remoteData.cpf);
-                localStorage.setItem(`linked_${currentUser.uid}`, 'true');
-              } catch (e) {
-                console.warn("Auto-link failed:", e);
-              }
-            }
-          } else {
-            console.warn("[AuthContext] Usuário autenticado, mas sem documento de perfil no Firestore.");
-            const isUserEmailAdmin = !!(currentUser.email && (
-              currentUser.email === 'carlessitiago@gmail.com' ||
-              currentUser.email === 'nomelimpo.gsa@gmail.com' ||
-              currentUser.email === 'atende.gsa@gmail.com' ||
-              currentUser.email === 'admin@admin.com' ||
-              currentUser.email === 'gsa@gsa.com'
-            ));
-            const tempProfile: UserProfile = {
-              uid: currentUser.uid,
-              nome_completo: currentUser.displayName || 'Usuário GSA',
-              email: currentUser.email || '',
-              cpf: '',
-              data_nascimento: '',
-              nivel: isUserEmailAdmin ? 'ADM_MASTER' : 'CLIENTE',
-              status_conta: 'APROVADO',
-              tem_empresa: false
-            } as UserProfile;
-            setProfile(tempProfile);
-            setRealProfile(tempProfile);
-            localStorage.setItem(`profile_${currentUser.uid}`, JSON.stringify(tempProfile));
-          }
-        } catch (err: any) {
-          const isOfflineErr = 
-            err?.message?.toLowerCase().includes('offline') || 
-            err?.message?.toLowerCase().includes('timeout') || 
-            err?.code === 'unavailable' || 
-            err?.code === 'failed-precondition';
-
-          if (isOfflineErr) {
-            console.warn("[AuthContext] Falha de conexão ou timeout com Firestore (Offline/Slow):", err.message || err);
-          } else {
-            console.error("[AuthContext] Falha ao sincronizar perfil remoto:", err);
-          }
-          
-          // Se não houver nenhum cache carregado anteriormente, usa o fallback emergencial
-          if (!cachedData) {
-            const isUserEmailAdmin = !!(currentUser.email && (
-              currentUser.email === 'carlessitiago@gmail.com' ||
-              currentUser.email === 'nomelimpo.gsa@gmail.com' ||
-              currentUser.email === 'atende.gsa@gmail.com' ||
-              currentUser.email === 'admin@admin.com' ||
-              currentUser.email === 'gsa@gsa.com'
-            ));
-
-            const fallbackProfile: UserProfile = {
-              uid: currentUser.uid,
-              nome_completo: currentUser.displayName || 'Usuário GSA',
-              email: currentUser.email || 'user@sandbox.com',
-              nivel: isUserEmailAdmin ? 'ADM_MASTER' : (isSandbox ? 'ADM_MASTER' : 'CLIENTE'),
-              status_conta: 'APROVADO',
-              cpf: '',
-              data_nascimento: '',
-              tem_empresa: false
-            } as UserProfile;
-            console.log("[AuthContext] Criado perfil de fallback de emergência:", fallbackProfile);
-            setProfile(fallbackProfile);
-            setRealProfile(fallbackProfile);
-          } else {
-            // Se já tem cache, garante que o nível de email admin está atualizado se for o caso
-            const isUserEmailAdmin = !!(currentUser.email && (
-              currentUser.email === 'carlessitiago@gmail.com' ||
-              currentUser.email === 'nomelimpo.gsa@gmail.com' ||
-              currentUser.email === 'atende.gsa@gmail.com' ||
-              currentUser.email === 'admin@admin.com' ||
-              currentUser.email === 'gsa@gsa.com'
-            ));
-            if (isUserEmailAdmin && cachedData && cachedData.nivel !== 'ADM_MASTER') {
-              console.log("[AuthContext] Atualizando perfil de cache existente do admin para ADM_MASTER.");
-              const updatedCache = { ...cachedData, nivel: 'ADM_MASTER' as const };
-              setProfile(updatedCache);
-              setRealProfile(updatedCache);
-            }
-          }
-        } finally {
-          setLoading(false);
-        }
-      };
-
-      if (cachedData) {
-        // Se já carregamos do cache, buscamos em background de forma assíncrona, SEM prender a UI em loading=true
-        updateProfileAsync();
-      } else {
-        // Sem cache, precisamos de um loading inicial de segurança enquanto tentamos obter as informações
-        setLoading(true);
-        await updateProfileAsync();
+      // ETAPA 2: sem cache — tenta Firestore
+      setLoading(true);
+      const fetched = await fetchProfile(firebaseUser.uid);
+      if (fetched) {
+        setProfile(fetched);
+        setRealProfile(fetched);
+        setLoading(false);
+        return;
       }
+
+      // ETAPA 3: Firestore offline + sem cache → verifica update pendente
+      try {
+        const pendingRaw = localStorage.getItem(PENDING_KEY) || 
+                           localStorage.getItem('pending_profile_update');
+        if (pendingRaw) {
+          const pending = JSON.parse(pendingRaw);
+          if (pending.uid === firebaseUser.uid) {
+            const p = { ...pending, nome_completo: pending.nome_completo || pending.nome || 'Usuário' } as UserProfile;
+            setProfile(p);
+            setRealProfile(p);
+            setLoading(false);
+            return;
+          }
+        }
+      } catch {}
+
+      // ETAPA 4: último recurso — admins conhecidos recebem acesso direto
+      const ADMIN_EMAILS = [
+        "carlessitiago@gmail.com",
+        "teste@gsa.com.br",
+        "nomelimpo.gsa@gmail.com",
+        "atende.gsa@gmail.com",
+        "admin@admin.com"
+      ];
+      const isKnownAdmin = ADMIN_EMAILS.includes(firebaseUser.email || "");
+
+      const fallback: UserProfile = {
+        uid: firebaseUser.uid,
+        email: firebaseUser.email || "",
+        nome_completo: firebaseUser.displayName || "Usuário",
+        nome: firebaseUser.displayName || "Usuário",
+        nivel: isKnownAdmin ? "ADM_MASTER" : "CLIENTE",
+        status_conta: "APROVADO",
+        cpf: isKnownAdmin ? "000.000.000-00" : "",
+        tem_empresa: false,
+        data_cadastro: new Date()
+      } as any;
+
+      saveCache(fallback);
+      setProfile(fallback);
+      setRealProfile(fallback);
+      setLoading(false);
     });
 
     return () => unsubscribe();

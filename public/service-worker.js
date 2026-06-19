@@ -1,4 +1,6 @@
-const CACHE_NAME = 'gsa-diagnostico-cache-v3';
+const CACHE_NAME = 'gsa-diagnostico-cache-v4';
+const API_CACHE_NAME = 'gsa-diagnostico-api-cache-v4';
+
 const STATIC_RESOURCES = [
   '/',
   '/index.html',
@@ -7,24 +9,24 @@ const STATIC_RESOURCES = [
   '/icon-maskable.svg'
 ];
 
-// Install Event - Pre-cache core resources
+// Instalação do Service Worker - Pré-cache de recursos básicos de UI
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[Service Worker] Pre-caching static core resources');
+      console.log('[Service Worker] Pré-carregando assets estáticos essenciais');
       return cache.addAll(STATIC_RESOURCES);
     }).then(() => self.skipWaiting())
   );
 });
 
-// Activate Event - Clean up stale caches
+// Ativação - Limpeza de caches obsoletos de UI e de API
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cache) => {
-          if (cache !== CACHE_NAME) {
-            console.log('[Service Worker] Clearing old cache:', cache);
+          if (cache !== CACHE_NAME && cache !== API_CACHE_NAME) {
+            console.log('[Service Worker] Removendo cache obsoleto:', cache);
             return caches.delete(cache);
           }
         })
@@ -33,60 +35,121 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch Event - Dynamic caching & Offline fallback
+// Timeout Helper para conexões extremamente lentas ou instáveis (evita hangs infinitos)
+const networkWithTimeout = (request, timeoutMs = 3000) => {
+  return new Promise((resolve, reject) => {
+    const timeoutId = setTimeout(() => {
+      reject(new Error('Network request timed out'));
+    }, timeoutMs);
+
+    fetch(request).then((response) => {
+      clearTimeout(timeoutId);
+      resolve(response);
+    }, (error) => {
+      clearTimeout(timeoutId);
+      reject(error);
+    });
+  });
+};
+
+// Intercepção de requisições - Caching Strategies
 self.addEventListener('fetch', (event) => {
   const request = event.request;
   const url = new URL(request.url);
 
-  // Skip POST, PUT, DELETE, etc. and non-HTTP protocols (chrome-extension, etc.)
+  // Apenas otimizar requisições GET e HTTP/HTTPS para evitar conflitos de segurança
   if (request.method !== 'GET' || !url.protocol.startsWith('http')) {
     return;
   }
 
-  // Skip backend API calls and third-party integrations (Firebase / MercadoPago)
-  if (url.pathname.startsWith('/api') || 
-      url.hostname.includes('googleapis.com') || 
+  // Ignorar SDKs e integrações externas críticas de autenticação/pagamento
+  if (url.hostname.includes('googleapis.com') || 
       url.hostname.includes('firebase') ||
       url.hostname.includes('mercadopago')) {
     return;
   }
 
-  // Skip Vite development client assets, hot-reload WebSockets/pings, node_modules, and raw source modules
-  if (url.hostname === 'localhost' || 
-      url.pathname.includes('@vite') || 
-      url.pathname.includes('@id') || 
-      url.pathname.includes('__vite_ping') || 
-      url.pathname.includes('node_modules') || 
-      url.pathname.includes('/src/') ||
-      url.search.includes('import') || 
-      url.pathname.endsWith('.tsx') || 
-      url.pathname.endsWith('.ts')) {
+  // Ignorar assets do ambiente de desenvolvimento do Vite (HMR, etc.)
+  const isDevEnvironment = 
+    url.hostname === 'localhost' || 
+    url.hostname.includes('127.0.0.1') ||
+    url.hostname.includes('ais-dev') ||
+    url.pathname.includes('@vite') || 
+    url.pathname.includes('@id') || 
+    url.pathname.includes('__vite_ping') || 
+    url.pathname.includes('node_modules') || 
+    url.pathname.includes('/src/') ||
+    url.search.includes('import') || 
+    url.pathname.endsWith('.tsx') || 
+    url.pathname.endsWith('.ts');
+
+  if (isDevEnvironment) {
     return;
   }
 
-  // Handle SPA client-side routing (navigation requests)
-  if (request.mode === 'navigate') {
+  // 1. Estratégia dos Endpoints de API (/api/*)
+  // Estratégia: Network-First com cache-fallback para visualização offline instantânea
+  const isApiRoute = url.pathname.startsWith('/api') || url.pathname.includes('/api/');
+  if (isApiRoute) {
     event.respondWith(
-      fetch(request)
-        .then((response) => {
-          // Clone and cache the successful response
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put('/', responseClone);
-          });
-          return response;
+      networkWithTimeout(request, 5000)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseToCache = networkResponse.clone();
+            caches.open(API_CACHE_NAME).then((cache) => {
+              cache.put(request, responseToCache);
+            });
+          }
+          return networkResponse;
         })
         .catch(() => {
-          // If network fails (offline), serve "/" (index.html) from cache
-          console.log('[Service Worker] Serving cached SPA Shell (index.html) for navigation:', request.url);
-          return caches.match('/');
+          console.log('[Service Worker] API offline ou lenta. Servindo do cache local:', request.url);
+          return caches.match(request).then((cachedResponse) => {
+            if (cachedResponse) {
+              return cachedResponse;
+            }
+            // Retorna um JSON indicando falha offline graciosa
+            return new Response(JSON.stringify({ 
+              error: 'offline', 
+              message: 'Você está offline. Exibindo dados pré-carregados estruturados.',
+              retrievedFromCache: false
+            }), {
+              status: 503,
+              headers: { 'Content-Type': 'application/json' }
+            });
+          });
         })
     );
     return;
   }
 
-  // Cache-first (with network fallback) for static assets (JS, CSS, images, fonts)
-  const isStaticAsset = 
+  // 2. Estratégia de Navegação Geral (SPA - index.html)
+  // Network-First com Fallback de Cache para recarga offline da casca da aplicação
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      networkWithTimeout(request, 4000)
+        .then((response) => {
+          if (response.status === 200) {
+            const responseClone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put('/', responseClone);
+            });
+          }
+          return response;
+        })
+        .catch(() => {
+          console.log('[Service Worker] Falha de rede na navegação. Servindo Shell SPA do cache:', request.url);
+          return caches.match('/').then((cachedResponse) => {
+            return cachedResponse || caches.match('/index.html');
+          });
+        })
+    );
+    return;
+  }
+
+  // 3. Recursos Estáticos de Carregamento em Lote (Assets, Imagens, Fontes, Chunks JS/CSS)
+  // Estratégia: Stale-While-Revalidate (Entrega imediata via Cache + atualização silenciosa em background)
+  const isAsset = 
     url.pathname.includes('/assets/') || 
     url.pathname.endsWith('.js') || 
     url.pathname.endsWith('.css') || 
@@ -95,42 +158,52 @@ self.addEventListener('fetch', (event) => {
     url.pathname.endsWith('.jpeg') || 
     url.pathname.endsWith('.svg') || 
     url.pathname.endsWith('.woff2') || 
-    url.pathname.endsWith('.ico');
+    url.pathname.endsWith('.ico') ||
+    url.pathname.endsWith('.json'); // manifest, etc.
 
-  if (isStaticAsset) {
+  if (isAsset) {
     event.respondWith(
       caches.match(request).then((cachedResponse) => {
         if (cachedResponse) {
-          // Fetch update in background (Stale-While-Revalidate)
+          // Serve do cache imediatamente e atualiza em background
           fetch(request).then((networkResponse) => {
             if (networkResponse.status === 200) {
               caches.open(CACHE_NAME).then((cache) => {
                 cache.put(request, networkResponse);
               });
             }
-          }).catch(() => {/* Ignore background sync failures */});
-          
+          }).catch(() => {
+            // Falha silenciosa de revalidação (offline/sem cobertura)
+          });
           return cachedResponse;
         }
 
-        return fetch(request).then((networkResponse) => {
-          if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
+        // Se falhar o cache, faz fetch tradicional com timeout curto
+        return networkWithTimeout(request, 5000)
+          .then((networkResponse) => {
+            if (networkResponse.status === 200) {
+              const responseToCache = networkResponse.clone();
+              caches.open(CACHE_NAME).then((cache) => {
+                cache.put(request, responseToCache);
+              });
+            }
             return networkResponse;
-          }
-          const responseToCache = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(request, responseToCache);
+          })
+          .catch((err) => {
+            console.warn('[Service Worker] Falha ao carregar asset essencial:', request.url, err.message);
+            if (url.pathname.endsWith('.png') || url.pathname.endsWith('.jpg') || url.pathname.endsWith('.svg')) {
+              return caches.match('/icon.svg');
+            }
+            throw err;
           });
-          return networkResponse;
-        });
       })
     );
     return;
   }
 
-  // Default Network-First Strategy for all other requests
+  // 4. Estratégia Fallback genérica (Network-First com retorno do Cache)
   event.respondWith(
-    fetch(request)
+    networkWithTimeout(request, 4000)
       .then((networkResponse) => {
         if (networkResponse && networkResponse.status === 200) {
           const responseToCache = networkResponse.clone();
@@ -146,9 +219,9 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-// Push Event - Receive notification when app is closed / in background
+// Evento de Push de Notificações
 self.addEventListener('push', (event) => {
-  console.log('[Service Worker] Push Notification Received');
+  console.log('[Service Worker] Evento de Push recebido');
   
   let data = {};
   if (event.data) {
@@ -161,7 +234,7 @@ self.addEventListener('push', (event) => {
 
   const title = data.title || 'GSA Diagnóstico';
   const options = {
-    body: data.body || 'Seu processo financeiro recebeu uma nova atualização de status.',
+    body: data.body || 'Seu processo financeiro recebeu uma nova atualização.',
     icon: data.icon || '/icon.svg',
     badge: data.badge || '/icon.svg',
     vibrate: [200, 100, 200],
@@ -175,15 +248,13 @@ self.addEventListener('push', (event) => {
   );
 });
 
-// Notification Click Event - Open or focus the app window
+// Clique na Notificação Push
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  
   const targetUrl = event.notification.data?.url || '/';
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
-      // Check if there is already a window open with our app
       for (let i = 0; i < windowClients.length; i++) {
         const client = windowClients[i];
         if (client.url.includes(self.location.origin) && 'focus' in client) {
@@ -194,8 +265,6 @@ self.addEventListener('notificationclick', (event) => {
           });
         }
       }
-      
-      // If no window is open, open a new one
       if (clients.openWindow) {
         return clients.openWindow(targetUrl);
       }

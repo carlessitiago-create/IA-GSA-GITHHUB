@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { db, auth } from '../../firebase';
 import { collection, getDocs, limit, query, onSnapshot } from 'firebase/firestore';
-import { Wifi, WifiOff, Database, AlertTriangle, Activity, Terminal } from 'lucide-react';
+import { Wifi, WifiOff, Database, AlertTriangle, Activity, Terminal, Download, FileJson, FileSpreadsheet } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { exportCollectionToJSON, exportCollectionToCSV } from '../../services/maintenanceService';
 
 interface DiagnosticLog {
   id: string;
@@ -17,6 +18,7 @@ export const DiagnosticPanel: React.FC = () => {
   const [counts, setCounts] = useState<{ usuarios: number; processos: number }>({ usuarios: 0, processos: 0 });
   const [logs, setLogs] = useState<DiagnosticLog[]>([]);
   const [rescuing, setRescuing] = useState(false);
+  const [exporting, setExporting] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const addLog = (msg: string, type: DiagnosticLog['type'] = 'info') => {
@@ -27,6 +29,24 @@ export const DiagnosticPanel: React.FC = () => {
       timestamp: new Date().toLocaleTimeString()
     };
     setLogs(prev => [newLog, ...prev].slice(0, 50));
+  };
+
+  const handleExport = async (collection: string, format: 'json' | 'csv') => {
+    const key = `${collection}_${format}`;
+    setExporting(key);
+    addLog(`Exportando ${collection} para ${format.toUpperCase()}...`, 'info');
+    try {
+      if (format === 'json') {
+        await exportCollectionToJSON(collection);
+      } else {
+        await exportCollectionToCSV(collection);
+      }
+      addLog(`Exportação de ${collection} finalizada com sucesso.`, 'success');
+    } catch (e: any) {
+      addLog(`Erro ao exportar ${collection}: ${e.message}`, 'error');
+    } finally {
+      setExporting(null);
+    }
   };
 
   const rescueData = async () => {
@@ -65,6 +85,41 @@ export const DiagnosticPanel: React.FC = () => {
       addLog(`Erro no resgate: ${e.message}`, 'error');
     } finally {
       setRescuing(false);
+    }
+  };
+
+  const seedTestAdmin = async () => {
+    setLoading(true);
+    addLog('Iniciando SEED do Usuário Teste Admin...', 'info');
+    try {
+      const { doc, setDoc, getDoc } = await import('firebase/firestore');
+      const uid = "teste@gsa.com.br_uid_aqui";
+      const docRef = doc(db, 'usuarios', uid);
+      const snap = await getDoc(docRef);
+      
+      if (!snap.exists()) {
+        await setDoc(docRef, {
+          uid: uid,
+          email: "teste@gsa.com.br",
+          nome_completo: "Teste Admin",
+          nivel: "ADM_MASTER",
+          status_conta: "APROVADO",
+          cpf: "000.000.000-00",
+          data_nascimento: "1990-01-01",
+          telefone: "54999999999",
+          tem_empresa: false,
+          ativo: true,
+          data_cadastro: new Date()
+        });
+        addLog(`Usuário Teste Admin criado com UID: ${uid}`, 'success');
+      } else {
+        addLog('Usuário Teste Admin já existe no banco.', 'warn');
+      }
+      await checkConnectivity();
+    } catch (e: any) {
+      addLog(`Erro no SEED: ${e.message}`, 'error');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -137,7 +192,7 @@ export const DiagnosticPanel: React.FC = () => {
   }, []);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       {/* Network Status Card */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
         <div className="flex justify-between items-start">
@@ -206,20 +261,110 @@ export const DiagnosticPanel: React.FC = () => {
           <button 
             onClick={rescueData}
             disabled={rescuing}
-            className={`w-full py-2 rounded-xl text-[10px] font-black uppercase transition-all ${
+            className={`w-full py-2 rounded-xl text-[10px] font-black uppercase transition-all mb-2 ${
               rescuing ? 'bg-slate-100 text-slate-400' : 'bg-emerald-600 text-white hover:bg-emerald-500 shadow-lg shadow-emerald-600/20'
             }`}
           >
             {rescuing ? 'Resgatando...' : 'Tentar Resgatar Dados Perdidos'}
           </button>
+
+          <button 
+            onClick={seedTestAdmin}
+            disabled={loading}
+            className={`w-full py-2 rounded-xl text-[10px] font-black uppercase transition-all ${
+              loading ? 'bg-slate-100 text-slate-400' : 'bg-amber-600 text-white hover:bg-amber-500 shadow-lg shadow-amber-600/20'
+            }`}
+          >
+            {loading ? 'Processando...' : 'Seed: Criar Usuário Teste Admin'}
+          </button>
+        </div>
+      </div>
+
+      {/* Backup & Export Card */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="bg-slate-50 p-2 rounded-xl">
+            <Download className="text-purple-500" />
+          </div>
+          <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Backup e Exportação</h3>
+        </div>
+
+        <div className="space-y-4">
+          <div className="p-3 bg-slate-50 rounded-xl space-y-2">
+            <p className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-2">
+              <Activity size={12} /> Coleção: Usuários
+            </p>
+            <div className="flex gap-2">
+              <button 
+                onClick={() => handleExport('usuarios', 'json')}
+                disabled={exporting === 'usuarios_json'}
+                className="flex-1 bg-white border border-slate-200 py-1.5 rounded-lg text-[9px] font-black uppercase flex items-center justify-center gap-1.5 hover:bg-slate-100 transition-colors"
+                title="Exportar como JSON"
+              >
+                <FileJson size={14} className="text-purple-500" /> JSON
+              </button>
+              <button 
+                onClick={() => handleExport('usuarios', 'csv')}
+                disabled={exporting === 'usuarios_csv'}
+                className="flex-1 bg-white border border-slate-200 py-1.5 rounded-lg text-[9px] font-black uppercase flex items-center justify-center gap-1.5 hover:bg-slate-100 transition-colors"
+                title="Exportar como CSV"
+              >
+                <FileSpreadsheet size={14} className="text-emerald-600" /> CSV
+              </button>
+            </div>
+          </div>
+
+          <div className="p-3 bg-slate-50 rounded-xl space-y-2">
+            <p className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-2">
+              <Activity size={12} /> Coleção: Processos
+            </p>
+            <div className="flex gap-2">
+              <button 
+                onClick={() => handleExport('order_processes', 'json')}
+                disabled={exporting === 'order_processes_json'}
+                className="flex-1 bg-white border border-slate-200 py-1.5 rounded-lg text-[9px] font-black uppercase flex items-center justify-center gap-1.5 hover:bg-slate-100 transition-colors"
+              >
+                <FileJson size={14} className="text-purple-500" /> JSON
+              </button>
+              <button 
+                onClick={() => handleExport('order_processes', 'csv')}
+                disabled={exporting === 'order_processes_csv'}
+                className="flex-1 bg-white border border-slate-200 py-1.5 rounded-lg text-[9px] font-black uppercase flex items-center justify-center gap-1.5 hover:bg-slate-100 transition-colors"
+              >
+                <FileSpreadsheet size={14} className="text-emerald-600" /> CSV
+              </button>
+            </div>
+          </div>
+
+          <div className="p-3 bg-slate-50 rounded-xl space-y-2">
+            <p className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-2">
+              <AlertTriangle size={12} /> Logs de Erro/Audit
+            </p>
+            <div className="flex gap-2">
+              <button 
+                onClick={() => handleExport('conflict_logs', 'json')}
+                disabled={exporting === 'conflict_logs_json'}
+                className="flex-1 bg-white border border-slate-200 py-1.5 rounded-lg text-[9px] font-black uppercase flex items-center justify-center gap-1.5 hover:bg-slate-100 transition-colors"
+              >
+                JSON
+              </button>
+              <button 
+                onClick={() => handleExport('logs_erro', 'json')}
+                disabled={exporting === 'logs_erro_json'}
+                className="flex-1 bg-white border border-slate-200 py-1.5 rounded-lg text-[9px] font-black uppercase flex items-center justify-center gap-1.5 hover:bg-slate-100 transition-colors"
+              >
+                Erros
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Logs Card */}
-      <div className="bg-slate-900 rounded-2xl shadow-2xl p-6 flex flex-col h-[200px] border border-white/5">
+      <div className="bg-slate-900 rounded-2xl shadow-2xl p-6 flex flex-col h-[300px] md:h-auto border border-white/5">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-            <Terminal size={14} className="text-emerald-500" /> Log de Transações
+            <Terminal size={14} className="text-emerald-500" /> Termo-Diagnóstico
           </h3>
           <span className="text-[9px] font-mono text-white/30">{logs.length} entries</span>
         </div>
@@ -227,7 +372,7 @@ export const DiagnosticPanel: React.FC = () => {
         <div className="flex-1 overflow-y-auto space-y-2 scrollbar-thin scrollbar-thumb-white/10 pr-2">
           <AnimatePresence initial={false}>
             {logs.length === 0 ? (
-              <p className="text-white/20 text-[10px] italic">Iniciando monitoramento...</p>
+              <p className="text-white/20 text-[10px] italic">Monitorando transações...</p>
             ) : (
               logs.map((log) => (
                 <motion.div 
@@ -239,10 +384,10 @@ export const DiagnosticPanel: React.FC = () => {
                     log.type === 'warn' ? 'text-amber-400 bg-amber-400/10' :
                     log.type === 'success' ? 'text-emerald-400 bg-emerald-400/10' :
                     'text-blue-300 bg-blue-300/5'
-                  }`}
+                   }`}
                 >
                   <span className="opacity-40 shrink-0">[{log.timestamp}]</span>
-                  <span className="font-bold truncate">{log.msg}</span>
+                  <span className="font-bold">{log.msg}</span>
                 </motion.div>
               ))
             )}

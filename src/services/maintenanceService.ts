@@ -158,3 +158,90 @@ export async function runSystemIntegrityMaintenance(onProgress: MaintenanceCallb
     throw error;
   }
 }
+
+/**
+ * Exports a collection to JSON and triggers a download.
+ */
+export const exportCollectionToJSON = async (collectionName: string) => {
+  try {
+    const colRef = collection(db, collectionName);
+    const snap = await getDocs(colRef);
+    const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    // Process Timestamps for readability in JSON
+    const processedData = data.map(item => {
+      const newItem = { ...item };
+      Object.keys(newItem).forEach(key => {
+        const val = (newItem as any)[key];
+        if (val instanceof Timestamp) {
+          (newItem as any)[key] = val.toDate().toISOString();
+        }
+      });
+      return newItem;
+    });
+
+    const blob = new Blob([JSON.stringify(processedData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `backup_${collectionName}_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    return true;
+  } catch (error) {
+    console.error("Export Error:", error);
+    throw error;
+  }
+};
+
+/**
+ * Exports a collection to CSV and triggers a download.
+ */
+export const exportCollectionToCSV = async (collectionName: string) => {
+  try {
+    const colRef = collection(db, collectionName);
+    const snap = await getDocs(colRef);
+    if (snap.empty) return false;
+
+    const docs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    // Extract headers
+    const headers = Array.from(new Set(docs.flatMap(d => Object.keys(d))));
+    
+    const csvContent = [
+      headers.join(','),
+      ...docs.map(doc => {
+        return headers.map(header => {
+          let val = (doc as any)[header];
+          if (val === undefined || val === null) return '';
+          
+          if (val instanceof Timestamp) {
+            val = val.toDate().toISOString();
+          }
+
+          if (typeof val === 'object') {
+            return `"${JSON.stringify(val).replace(/"/g, '""')}"`;
+          }
+          
+          return `"${String(val).replace(/"/g, '""')}"`;
+        }).join(',');
+      })
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `backup_${collectionName}_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    return true;
+  } catch (error) {
+    console.error("CSV Export Error:", error);
+    throw error;
+  }
+};

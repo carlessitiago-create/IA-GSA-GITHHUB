@@ -1,5 +1,6 @@
 import React, { lazy, Suspense } from "react";
 import { Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
+import * as Sentry from "@sentry/react";
 import { useAuth } from "./components/AuthContext";
 import { LoadingScreen } from "./components/LoadingScreen";
 import { DashboardLayout } from "./components/DashboardLayout"; 
@@ -7,14 +8,37 @@ import { DashboardFinanceiro } from "./pages/DashboardFinanceiro";
 import { SplitCommissionSettingsView } from "./views/SplitCommissionSettingsView";
 import { GlobalErrorProvider } from "./components/GlobalErrorProvider";
 
-// Robust Promise Retry Helper
+// Robust Promise Retry Helper with Sentry Error Tracking
 const retryPromise = <T,>(fn: () => Promise<T>, retries = 3, interval = 1000): Promise<T> => {
   return fn().catch((error) => {
+    // Adiciona breadcrumb do Sentry para registrar tentativa de carregamento falha
+    Sentry.addBreadcrumb({
+      category: "chunk_loading",
+      message: `Falha temporária ao carregar módulo. Tentando novamente (${retries} tentativas restantes)`,
+      level: "warning",
+      data: {
+        error: error?.message || String(error),
+      }
+    });
+
     if (retries > 0) {
       console.warn(`Retrying import, retries left: ${retries}`);
       return new Promise<T>((resolve) => setTimeout(resolve, interval))
         .then(() => retryPromise(fn, retries - 1, interval * 2));
     }
+    
+    // Registra o erro definitivo de carregamento de chunk no Sentry
+    Sentry.captureException(error, {
+      tags: {
+        category: "chunk_loading_failure",
+        fatal: "true"
+      },
+      extra: {
+        message: "Dynamic import failed after all retries",
+        importFn: fn.toString()
+      }
+    });
+    
     throw error;
   });
 };
@@ -86,14 +110,22 @@ const ProtectedRoute: React.FC<{ children?: React.ReactNode }> = ({ children }) 
   if (loading) return <LoadingScreen />;
   if (!user) return <Navigate to="/login" replace />;
 
+  // Se não tem perfil ainda, espera (não redireciona)
+  if (!profile) return <LoadingScreen />;
+
   const isAdmin = NIVEIS_ADMIN.includes(profile?.nivel || "");
 
-  // Admins nunca vão para CompleteProfile ou telas de aprovação/bloqueio — têm acesso direto
-  if (!isAdmin) {
-    if (profile && !profile.cpf) return <CompleteProfile profile={profile} />;
-    if (profile?.status_conta === "PENDENTE") return <PendingApproval profile={profile} onLogout={logout} />;
-    if (profile?.status_conta === "RECUSADO") return <AccountRefused onLogout={logout} />;
-    if (profile?.status_conta === "SUSPENSO") return <AccountSuspended status="SUSPENSO" onLogout={logout} />;
+  // Admins NUNCA vão para CompleteProfile, PendingApproval, etc.
+  if (isAdmin) {
+    return children ? <>{children}</> : <Outlet />;
+  }
+
+  // Clientes: verifica CPF e status
+  if (!profile.cpf || profile.cpf === "") return <CompleteProfile profile={profile} />;
+  if (profile.status_conta === "PENDENTE") return <PendingApproval profile={profile} onLogout={logout} />;
+  if (profile.status_conta === "RECUSADO") return <AccountRefused onLogout={logout} />;
+  if (profile.status_conta === "SUSPENSO" || profile.status_conta === "BLOQUEADO") {
+    return <AccountSuspended status={profile.status_conta} onLogout={logout} />;
   }
 
   return children ? <>{children}</> : <Outlet />;

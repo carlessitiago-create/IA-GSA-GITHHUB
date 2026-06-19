@@ -1,5 +1,6 @@
 import { db } from "../firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import * as Sentry from "@sentry/react";
 
 export const shouldIgnoreError = (error: any): boolean => {
   const message = (error?.message || error?.reason || error || "").toString().toLowerCase();
@@ -38,6 +39,26 @@ export const logErrorToFirestore = async (errorInfo: any, additionalContext: { u
     if (shouldIgnoreError(sanitizedPayload.message || sanitizedPayload.reason)) {
       return;
     }
+
+    // Set user context in Sentry
+    if (additionalContext.uid) {
+      Sentry.setUser({ id: additionalContext.uid });
+    } else {
+      Sentry.setUser(null);
+    }
+
+    // Capture error in Sentry
+    const errorToCapture = errorInfo instanceof Error 
+      ? errorInfo 
+      : new Error(sanitizedPayload.message || sanitizedPayload.reason || "Erro do Sistema");
+      
+    Sentry.captureException(errorToCapture, {
+      extra: sanitizedPayload,
+      tags: {
+        error_type: errorInfo?.type || "unknown_error",
+        route: additionalContext.route || "unknown_route",
+      }
+    });
 
     try {
       await addDoc(collection(db, "logs_erro"), sanitizedPayload);

@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>GSA Diagnóstico</title>
     
-    <!-- PWA Primary Manifest & Meta -->
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#0a0a2e" />
     <meta name="mobile-web-app-capable" content="yes" />
@@ -16,30 +15,8 @@
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
 
     <script>
-      // Force clear local storage and caches to bypass aggressive PWA static caching
-      if (!localStorage.getItem('gsa_cache_cleared_v6')) {
-          localStorage.clear();
-          sessionStorage.clear();
-          if ('caches' in window) {
-            caches.keys().then(function(names) {
-              for (var name of names) {
-                caches.delete(name);
-              }
-            });
-          }
-          if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(function(registrations) {
-              for (var registration of registrations) {
-                registration.unregister();
-              }
-            });
-          }
-          localStorage.setItem('gsa_cache_cleared_v6', 'true');
-          console.log('Force cache/PWA wipe executed. Reloading with clean states...');
-          window.location.reload();
-      }
-
-      // Unregister service worker and clear cache in development to avoid caching dynamic Vite chunks and causing iframe crashes
+      // NUNCA limpar localStorage aqui — apaga o cache do perfil e causa loop de loading
+      // Service Worker: desregistrar apenas em dev
       const isDev = window.location.hostname === 'localhost' || 
                     window.location.hostname.includes('127.0.0.1') || 
                     window.location.hostname.includes('ais-dev');
@@ -47,29 +24,18 @@
       if (isDev) {
         if ('serviceWorker' in navigator) {
           navigator.serviceWorker.getRegistrations().then((registrations) => {
-            for (let registration of registrations) {
-              registration.unregister().then((success) => {
-                if (success) console.log('[PWA] Dev Mode: Service Worker unregistered successfully to allow raw Vite hot-reloading.');
-              });
-            }
+            for (let r of registrations) r.unregister();
           });
         }
         if ('caches' in window) {
-          caches.keys().then((keys) => {
-            keys.forEach((key) => caches.delete(key));
-          });
+          caches.keys().then((keys) => keys.forEach((k) => caches.delete(k)));
         }
       } else {
-        // Register the service worker to enable offline support and caching in production
         if ('serviceWorker' in navigator) {
           window.addEventListener('load', () => {
             navigator.serviceWorker.register('/service-worker.js')
-              .then((registration) => {
-                console.log('[PWA] Service Worker registrado com sucesso: ', registration.scope);
-              })
-              .catch((error) => {
-                console.error('[PWA] Erro ao registrar o Service Worker: ', error);
-              });
+              .then((r) => console.log('[PWA] SW registrado:', r.scope))
+              .catch((e) => console.error('[PWA] Erro SW:', e));
           });
         }
       }
