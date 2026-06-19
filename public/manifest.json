@@ -1,50 +1,24 @@
 {
-  "short_name": "GSA Diag",
-  "name": "GSA Diagnóstico",
-  "description": "Descubra o que bloqueia seu crédito com análise assistida por inteligência artificial.",
+  "short_name": "GSA Diagnóstico",
+  "name": "GSA Diagnóstico - Recuperação de Crédito",
   "icons": [
     {
       "src": "/icon.svg",
       "type": "image/svg+xml",
-      "sizes": "192x192",
-      "purpose": "any"
-    },
-    {
-      "src": "/icon.svg",
-      "type": "image/svg+xml",
-      "sizes": "512x512",
-      "purpose": "any"
-    },
-    {
-      "src": "/icon.svg",
-      "type": "image/svg+xml",
-      "sizes": "any",
-      "purpose": "any"
-    },
-    {
-      "src": "/icon-maskable.svg",
-      "type": "image/svg+xml",
-      "sizes": "192x192",
-      "purpose": "maskable"
+      "sizes": "512x512"
     },
     {
       "src": "/icon-maskable.svg",
       "type": "image/svg+xml",
       "sizes": "512x512",
-      "purpose": "maskable"
-    },
-    {
-      "src": "/icon-maskable.svg",
-      "type": "image/svg+xml",
-      "sizes": "any",
       "purpose": "maskable"
     }
   ],
-  "start_url": "/",
-  "id": "/",
+  "start_url": ".",
   "display": "standalone",
-  "background_color": "#05051a",
   "theme_color": "#0a0a2e",
-  "orientation": "portrait",
-  "categories": ["finance", "utilities"]
+  "background_color": "#0a0a2e",
+  "description": "Sistema de Gestão, Diagnóstico e Recuperação de Crédito da GSA",
+  "orientation": "portrait-primary",
+  "prefer_related_applications": false
 }

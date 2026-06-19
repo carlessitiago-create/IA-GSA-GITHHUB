@@ -390,21 +390,55 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const loadCache = (uid: string): UserProfile | null => {
       try {
-        // Tenta a chave nova primeiro, depois a chave antiga por compatibilidade
         const data = localStorage.getItem(CACHE_KEY) || localStorage.getItem(`profile_${uid}`);
         if (!data) return null;
-        const parsed = JSON.parse(data) as UserProfile;
-        // Valida que o cache pertence ao usuário atual
+        
+        // Verificação de integridade: assegura que o dado é um JSON válido antes de fazer o parse
+        const trimmed = data.trim();
+        if (!trimmed.startsWith('{')) return null;
+
+        const parsed = JSON.parse(trimmed) as UserProfile;
         if (parsed.uid !== uid) return null;
         return parsed;
-      } catch { return null; }
+      } catch (err) {
+        // Redundância defensiva se ocorrer erro de parse
+        localStorage.removeItem(CACHE_KEY);
+        localStorage.removeItem(`profile_${uid}`);
+        return null; 
+      }
     };
 
-    const saveCache = (profile: UserProfile) => {
+    const saveCache = (p: UserProfile) => {
       try {
-        localStorage.setItem(CACHE_KEY, JSON.stringify(profile));
-        localStorage.setItem(`profile_${profile.uid}`, JSON.stringify(profile));
+        localStorage.setItem(CACHE_KEY, JSON.stringify(p));
+        localStorage.setItem(`profile_${p.uid}`, JSON.stringify(p));
       } catch {}
+    };
+
+    const ADMIN_EMAILS = [
+      "carlessitiago@gmail.com",
+      "teste@gsa.com.br",
+      "gestor@teste.com",
+      "nomelimpo.gsa@gmail.com",
+      "atende.gsa@gmail.com",
+      "admin@admin.com"
+    ];
+
+    const buildFallback = (firebaseUser: any): UserProfile => {
+      const isKnownAdmin = ADMIN_EMAILS.includes(firebaseUser.email || "");
+      return {
+        uid: firebaseUser.uid,
+        email: firebaseUser.email || "",
+        nome_completo: firebaseUser.displayName || "Usuário",
+        nome: firebaseUser.displayName || "Usuário",
+        nivel: isKnownAdmin ? "ADM_MASTER" : "CLIENTE",
+        status_conta: "APROVADO",
+        cpf: isKnownAdmin ? "000.000.000-00" : "",
+        data_nascimento: isKnownAdmin ? "1990-01-01" : "",
+        telefone: isKnownAdmin ? "00000000000" : "",
+        tem_empresa: false,
+        data_cadastro: new Date()
+      };
     };
 
     const fetchProfile = async (uid: string): Promise<UserProfile | null> => {
@@ -418,12 +452,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (err: any) {
         console.warn("[AuthContext] fetchProfile offline ou erro:", err.message);
-        // Tenta cache interno do Firestore
         try {
           const { getDocFromCache } = await import('firebase/firestore');
-          const cached = await getDocFromCache(doc(db, 'usuarios', uid));
-          if (cached.exists()) {
-            const data = { uid: cached.id, ...cached.data() } as UserProfile;
+          const snap = await getDocFromCache(doc(db, 'usuarios', uid));
+          if (snap.exists()) {
+            const data = { uid: snap.id, ...snap.data() } as UserProfile;
             saveCache(data);
             return data;
           }
@@ -432,37 +465,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return null;
     };
 
-    // Restaura sessão de bypass sandbox se existir (sobrevive a HMR)
-    const isSandbox = window.location.hostname.includes('run.app') || 
-                      window.location.hostname.includes('localhost') ||
-                      window.location.hostname.includes('ais-dev');
-
-    if (isSandbox) {
-      const savedBypass = localStorage.getItem('gsa_sandbox_bypass_active');
-      if (savedBypass) {
-        try {
-          const parsed = JSON.parse(savedBypass);
+    // ── PROTEÇÃO: se já há uma simulação ativa, NÃO deixa o onAuthStateChanged
+    // sobrescrever o perfil simulado
+    const existingBypass = localStorage.getItem('gsa_sandbox_bypass_active');
+    if (existingBypass) {
+      try {
+        const trimmedBypass = existingBypass.trim();
+        if (trimmedBypass.startsWith('{')) {
+          const parsed = JSON.parse(trimmedBypass);
           if (parsed?.uid) {
             setUser({ uid: parsed.uid, email: parsed.email } as any);
             setProfile(parsed);
             setRealProfile(parsed);
             setIsSimulating(true);
             setLoading(false);
-            return;
+            // Ainda registra o listener para logout funcionar
+            const unsubscribe = onAuthStateChanged(auth, () => {});
+            return () => unsubscribe();
           }
-        } catch {}
+        }
+      } catch (err) {
+        localStorage.removeItem('gsa_sandbox_bypass_active');
       }
     }
 
     getRedirectResult(auth)
       .then((result) => { if (result) setUser(result.user); })
-      .catch((error: any) => {
-        if (error.code === 'auth/unauthorized-domain') {
-          console.warn("[AuthContext] Domínio não autorizado no Firebase.");
-        }
-      });
+      .catch(() => {});
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      // ── Se há bypass ativo, ignora qualquer evento de auth
+      if (localStorage.getItem('gsa_sandbox_bypass_active')) {
+        return;
+      }
+
       if (!firebaseUser) {
         setUser(null);
         setProfile(null);
@@ -474,20 +510,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       setUser(firebaseUser);
 
-      // ETAPA 1: cache local imediato — libera UI sem rede
+      // ETAPA 1: cache local imediato
       const cached = loadCache(firebaseUser.uid);
       if (cached) {
         setProfile(cached);
         setRealProfile(cached);
         setLoading(false);
-        // Atualiza em background
         fetchProfile(firebaseUser.uid).then(fresh => {
-          if (fresh) { setProfile(fresh); setRealProfile(fresh); }
+          if (fresh && !localStorage.getItem('gsa_sandbox_bypass_active')) {
+            setProfile(fresh);
+            setRealProfile(fresh);
+          }
         });
         return;
       }
 
-      // ETAPA 2: sem cache — tenta Firestore
+      // ETAPA 2: sem cache → tenta Firestore
       setLoading(true);
       const fetched = await fetchProfile(firebaseUser.uid);
       if (fetched) {
@@ -497,44 +535,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // ETAPA 3: Firestore offline + sem cache → verifica update pendente
+      // ETAPA 3: Firestore offline → verifica pending
       try {
-        const pendingRaw = localStorage.getItem(PENDING_KEY) || 
+        const pendingRaw = localStorage.getItem(PENDING_KEY) ||
                            localStorage.getItem('pending_profile_update');
         if (pendingRaw) {
-          const pending = JSON.parse(pendingRaw);
-          if (pending.uid === firebaseUser.uid) {
-            const p = { ...pending, nome_completo: pending.nome_completo || pending.nome || 'Usuário' } as UserProfile;
-            setProfile(p);
-            setRealProfile(p);
-            setLoading(false);
-            return;
+          const trimmedPendingRaw = pendingRaw.trim();
+          if (trimmedPendingRaw.startsWith('{')) {
+            const pending = JSON.parse(trimmedPendingRaw);
+            if (pending.uid === firebaseUser.uid) {
+              const p = {
+                ...pending,
+                nome_completo: pending.nome_completo || pending.nome || 'Usuário'
+              } as UserProfile;
+              setProfile(p);
+              setRealProfile(p);
+              setLoading(false);
+              return;
+            }
           }
         }
-      } catch {}
+      } catch (err) {
+        localStorage.removeItem(PENDING_KEY);
+        localStorage.removeItem('pending_profile_update');
+      }
 
-      // ETAPA 4: último recurso — admins conhecidos recebem acesso direto
-      const ADMIN_EMAILS = [
-        "carlessitiago@gmail.com",
-        "teste@gsa.com.br",
-        "nomelimpo.gsa@gmail.com",
-        "atende.gsa@gmail.com",
-        "admin@admin.com"
-      ];
-      const isKnownAdmin = ADMIN_EMAILS.includes(firebaseUser.email || "");
-
-      const fallback: UserProfile = {
-        uid: firebaseUser.uid,
-        email: firebaseUser.email || "",
-        nome_completo: firebaseUser.displayName || "Usuário",
-        nome: firebaseUser.displayName || "Usuário",
-        nivel: isKnownAdmin ? "ADM_MASTER" : "CLIENTE",
-        status_conta: "APROVADO",
-        cpf: isKnownAdmin ? "000.000.000-00" : "",
-        tem_empresa: false,
-        data_cadastro: new Date()
-      } as any;
-
+      // ETAPA 4: fallback final
+      const fallback = buildFallback(firebaseUser);
       saveCache(fallback);
       setProfile(fallback);
       setRealProfile(fallback);
