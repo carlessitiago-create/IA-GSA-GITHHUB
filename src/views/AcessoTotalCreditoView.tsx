@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle2, Download, Users, Phone, Building2, Calendar, ShieldCheck, ArrowRight, HelpCircle, TrendingUp, Award, ChevronDown } from 'lucide-react';
+import { CheckCircle2, Download, Users, Phone, Building2, Calendar, ShieldCheck, ArrowRight, HelpCircle, TrendingUp, Award, ChevronDown, MessageCircle } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { LeadCaptureModal } from '../components/GSA/LeadCaptureModal';
 import { salvarLeadSimples, sendThankYouEmail } from '../services/leadService';
@@ -28,6 +28,18 @@ export default function AcessoTotalCreditoView() {
   const [paymentStatus, setPaymentStatus] = useState<'PENDING' | 'PAID'>('PENDING');
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [systemWhatsApp, setSystemWhatsApp] = useState('5511999999999');
+
+  useEffect(() => {
+    import('../services/configService').then(({ getPlatformConfig }) => {
+      getPlatformConfig().then(cfg => {
+        if (cfg.whatsapp_suporte_geral) {
+          setSystemWhatsApp(cfg.whatsapp_suporte_geral.replace(/\D/g, ''));
+        }
+      }).catch(() => {});
+    });
+  }, []);
   
   // Existing state for stats and faq ... (the existing code will stay, I'll just add these)
   // [I must NOT remove existing state]
@@ -89,25 +101,20 @@ export default function AcessoTotalCreditoView() {
         telefone: formData.whatsapp,
       });
 
-      // 2. Enviar email
-      await sendThankYouEmail(formData.email, formData.nome);
-      
-      await trackLeadCapture();
-
-      const result = await Swal.fire({
-        title: 'Cadastro realizado com sucesso!',
-        html: '<p>Parabéns pela sua decisão. O próximo passo agora é agendar uma reunião com nossa equipe e gerar o diagnóstico geral sobre a empresa para descobrirmos o que está barrando a empresa de ter crédito e como podemos melhorar o perfil de crédito da empresa.</p>',
-        icon: 'success',
-        showCancelButton: true,
-        confirmButtonText: 'Agendar agora por R$ 197',
-        cancelButtonText: 'Continuar no site',
-        confirmButtonColor: '#2563eb'
+      // 2. Enviar email em segundo plano para não travar a experiência do usuário
+      sendThankYouEmail(formData.email, formData.nome).catch((emailErr) => {
+        console.warn("Background welcome email sending encountered an issue:", emailErr);
       });
-
-      if (result.isConfirmed) {
-        setSelectedPlan({ nome: 'Recuperação de Crédito', preco: 197 });
-        setIsModalOpen(true);
+      
+      // 3. Registrar pixels de rastreamento em segundo plano
+      try {
+        trackLeadCapture();
+      } catch (trackErr) {
+        console.warn("Tracking failed:", trackErr);
       }
+
+      setIsSubmitted(true);
+      setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 50);
     } catch (err) {
       console.error(err);
       Swal.fire('Erro', 'Ocorreu um erro ao processar seu cadastro.', 'error');
@@ -115,6 +122,48 @@ export default function AcessoTotalCreditoView() {
       setLoading(false);
     }
   };
+
+  if (isSubmitted) {
+    return (
+      <div className="bg-slate-950 text-slate-100 min-h-screen font-sans flex flex-col">
+        <header className="border-b border-slate-900 bg-slate-950/80 backdrop-blur sticky top-0 z-50 px-6 py-4">
+          <div className="max-w-7xl mx-auto flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <div className="bg-blue-600 p-2 rounded-lg text-white font-bold text-xl tracking-wider">GSA</div>
+              <span className="font-semibold text-lg tracking-tight hidden sm:inline">Câmara Grupo Soluções</span>
+            </div>
+            <button onClick={() => window.location.reload()} className="bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+              Página Inicial
+            </button>
+          </div>
+        </header>
+
+        <main className="flex-1 flex flex-col items-center justify-center p-6 text-center max-w-3xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
+          <div className="w-24 h-24 bg-emerald-500/10 rounded-full flex items-center justify-center mb-4">
+            <CheckCircle2 size={48} className="text-emerald-500" />
+          </div>
+          
+          <h1 className="text-4xl md:text-5xl font-black tracking-tight text-white leading-tight">
+            Seja muito bem-vindo, <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-blue-600">{formData.nome.split(' ')[0]}!</span>
+          </h1>
+          
+          <div className="space-y-4 text-slate-400 text-lg md:text-xl leading-relaxed">
+            <p>Seus dados foram recebidos com sucesso e nossa equipe de análise já está ciente da sua solicitação.</p>
+            <p>Para agilizarmos o seu atendimento e realizar a triagem completa do seu CNPJ, clique no botão abaixo e fale com um de nossos especialistas no WhatsApp agora mesmo.</p>
+          </div>
+
+          <a 
+            href={`https://wa.me/${systemWhatsApp}?text=Olá,%20acabei%20de%20me%20cadastrar%20para%20a%20pesquisa%20de%20crédito.%20Meu%20nome%20é%20${formData.nome}.`}
+            target="_blank" rel="noopener noreferrer"
+            className="mt-8 bg-[#25D366] hover:bg-[#128C7E] text-white font-bold py-5 px-10 rounded-2xl transition-all shadow-xl shadow-[#25D366]/20 flex items-center justify-center gap-3 text-lg md:text-xl transform hover:-translate-y-1"
+          >
+            <MessageCircle size={28} />
+            FALAR COM ESPECIALISTA AGORA
+          </a>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-slate-950 text-slate-100 min-h-screen font-sans selection:bg-blue-600 selection:text-white">
@@ -194,9 +243,9 @@ export default function AcessoTotalCreditoView() {
               </div>
             </div>
 
-            <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-lg transition-colors shadow-lg shadow-emerald-900/20 flex items-center justify-center gap-2 group">
-              QUERO SIMULAR MEU LIMITE POTENCIAL AGORA
-              <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+            <button type="submit" disabled={loading} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-lg transition-colors shadow-lg shadow-emerald-900/20 flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed">
+              {loading ? 'PROCESSANDO...' : 'QUERO SIMULAR MEU LIMITE POTENCIAL AGORA'}
+              {!loading && <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />}
             </button>
           </form>
 
@@ -265,65 +314,7 @@ export default function AcessoTotalCreditoView() {
         </div>
       </section>
 
-      {/* 5. A Recuperação de Crédito por R$ 397 (O Upsell) */}
-      <section className="px-6 pb-20 max-w-5xl mx-auto">
-        <div className="bg-gradient-to-b from-blue-950/40 to-slate-900 border-2 border-blue-500/30 p-8 sm:p-12 rounded-3xl text-center space-y-6 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/10 rounded-full blur-2xl pointer-events-none"></div>
-          <h2 className="text-2xl sm:text-4xl font-black text-white">CNPJ sem crédito?</h2>
-          <p className="text-slate-400 max-w-3xl mx-auto text-sm sm:text-base leading-relaxed">
-            Nós buscamos as melhores opções para sua empresa. Agende uma reunião com nossos especialistas por R$ 197 e receba um relatório de como está sua empresa e quais caminhos podemos direcionar para o alinhamento de crédito.
-          </p>
-          <div className="pt-4">
-            <button onClick={() => {
-              setSelectedPlan({ nome: 'Recuperação de Crédito', preco: 197 });
-              setIsModalOpen(true);
-            }} className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-slate-950 font-black px-8 py-4 rounded-xl transition-all shadow-xl shadow-orange-950/20 text-sm sm:text-base tracking-wide">
-              QUERO RECUPERAR MEU CRÉDITO AGORA POR R$ 197
-            </button>
-          </div>
-          <p className="text-xs text-slate-500">Garantia integral de satisfação de 7 dias protegida por contrato.</p>
-        </div>
-      </section>
 
-      {/* 6. O Agendamento com Especialista (Main Offer) */}
-      <section className="bg-slate-900/20 border-t border-slate-900 py-20 px-6">
-        <div className="max-w-7xl mx-auto space-y-16">
-          <div className="text-center space-y-3">
-            <h2 className="text-3xl font-bold text-white">Da Simulação à Liberação, Montamos o Seu Projeto com Estratégia B4B</h2>
-            <p className="text-slate-400 max-w-xl mx-auto">Acompanhe a jornada completa da sua empresa até a atração do capital estruturado de alto valor.</p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
-            {[
-              { n: '1', t: 'Diagnóstico Realizado', d: 'Mapeamento total da situação do CNPJ e identificação das barreiras fiscais.' },
-              { n: '2', t: 'Regularização Ativa', d: 'CNPJ limpo, CNDs emitidas e perfil reabilitado na praça.' },
-              { n: '3', t: 'Alinhamento Consultivo', d: 'Reunião estratégica e customizada com o consultor sênior da GSA.' },
-              { n: '4', t: 'Confecção do Projeto', d: 'Enquadramento tributário completo e escolha direcionada do banco parceiro ideal.' },
-              { n: '5', t: 'Mesa de Crédito', d: 'Protocolo assistido do projeto estruturado até o depósito em conta.' }
-            ].map((step, i) => (
-              <div key={i} className="bg-slate-900 p-6 rounded-xl border border-slate-800/60 relative space-y-3">
-                <span className="absolute -top-4 -left-2 w-8 h-8 rounded-lg bg-blue-600/10 border border-blue-500/20 flex items-center justify-center font-bold text-blue-400 text-sm">{step.n}</span>
-                <h5 className="font-bold text-white pt-2">{step.t}</h5>
-                <p className="text-xs text-slate-400 leading-relaxed">{step.d}</p>
-              </div>
-            ))}
-          </div>
-
-          <div className="max-w-xl mx-auto bg-slate-900 border border-slate-800 p-8 rounded-2xl space-y-6 text-center">
-            <div className="space-y-2">
-              <h3 className="text-xl font-bold text-white">Agende sua Reunião Estratégica</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">Dependente de análise de crédito e perfil, este projeto é a rota estratégica para acessar os melhores benefícios governamentais e capital de giro.</p>
-            </div>
-            <div className="bg-slate-950 p-6 rounded-xl border border-slate-800 text-slate-500 text-sm flex flex-col items-center justify-center gap-2 py-10">
-              <Calendar size={32} className="text-slate-600" />
-              <span>[Espaço Reservado para o Widget do Calendly / Agendador]</span>
-            </div>
-            <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-lg transition-colors">
-              QUERO AGENDAR MINHA CONSULTORIA ESTRATÉGICA
-            </button>
-          </div>
-        </div>
-      </section>
 
       {/* 7. O que é o Pronampe 2026? (FAQ/Cards) */}
       <section className="py-20 px-6 max-w-7xl mx-auto space-y-12">
@@ -349,6 +340,26 @@ export default function AcessoTotalCreditoView() {
               <p className="text-xs text-slate-400 leading-relaxed">{card.d}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* 5. A Recuperação de Crédito por R$ 197 (O Upsell) */}
+      <section className="px-6 pb-20 pt-10 max-w-5xl mx-auto">
+        <div className="bg-gradient-to-b from-blue-950/40 to-slate-900 border-2 border-blue-500/30 p-8 sm:p-12 rounded-3xl text-center space-y-6 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/10 rounded-full blur-2xl pointer-events-none"></div>
+          <h2 className="text-2xl sm:text-4xl font-black text-white">CNPJ sem crédito?</h2>
+          <p className="text-slate-400 max-w-3xl mx-auto text-sm sm:text-base leading-relaxed">
+            Nós buscamos as melhores opções para sua empresa. Agende uma reunião com nossos especialistas por R$ 197 e receba um relatório de como está sua empresa e quais caminhos podemos direcionar para o alinhamento de crédito.
+          </p>
+          <div className="pt-4">
+            <button onClick={() => {
+              setSelectedPlan({ nome: 'Recuperação de Crédito', preco: 197 });
+              setIsModalOpen(true);
+            }} className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-slate-950 font-black px-8 py-4 rounded-xl transition-all shadow-xl shadow-orange-950/20 text-sm sm:text-base tracking-wide">
+              QUERO RECUPERAR MEU CRÉDITO AGORA POR R$ 197
+            </button>
+          </div>
+          <p className="text-xs text-slate-500">Garantia integral de satisfação de 7 dias protegida por contrato.</p>
         </div>
       </section>
 

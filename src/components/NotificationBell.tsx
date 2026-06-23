@@ -16,6 +16,69 @@ export const NotificationBell: React.FC<{ currentProfile: any }> = ({ currentPro
     }
   }, []);
 
+  const urlBase64ToUint8Array = (base64String: string) => {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding)
+      .replace(/\-/g, '+')
+      .replace(/_/g, '/');
+
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+  };
+
+  const registerPushSubscription = async () => {
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+      return;
+    }
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      
+      // Busca a chave pública VAPID dinamicamente do servidor de produção
+      const pkRes = await fetch('/api/v1/push/public-key');
+      const { publicKey } = await pkRes.json();
+      
+      if (!publicKey) {
+        console.warn('[GSA Push] Chave pública VAPID não disponibilizada pelo servidor.');
+        return;
+      }
+      
+      const applicationServerKey = urlBase64ToUint8Array(publicKey);
+      
+      let sub = await reg.pushManager.getSubscription();
+      if (!sub) {
+        sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey
+        });
+      }
+      
+      // Envia a assinatura Web-Push para vincular ao UID do usuário no Firestore
+      await fetch('/api/v1/push/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subscription: sub,
+          userId: currentProfile?.uid || 'GUEST'
+        })
+      });
+      
+      console.log('[GSA Push] Assinatura push registrada com sucesso no backend!');
+    } catch (err) {
+      console.warn('[GSA Push] Falha ao registrar assinatura push:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (pushPermission === 'granted' && currentProfile?.uid) {
+      registerPushSubscription();
+    }
+  }, [pushPermission, currentProfile?.uid]);
+
   const handleRequestPushPermission = async () => {
     if (typeof window === 'undefined' || !('Notification' in window)) {
       return;

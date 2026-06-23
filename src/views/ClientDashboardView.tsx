@@ -30,6 +30,7 @@ import { useAuth } from '../components/AuthContext';
 import { SmartFicha } from '../components/GSA/SmartFicha';
 import { ClientConsultationUpsell } from '../components/ClientConsultationUpsell';
 import Swal from 'sweetalert2';
+import { enviarNotificacaoWhatsApp, listarLogsWhatsApp, WhatsappLog } from '../services/whatsappService';
 
 interface ClientDashboardViewProps {
   processes: any[];
@@ -45,6 +46,68 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({ proces
   const [showSmartFicha, setShowSmartFicha] = useState<string | null>(null);
   const [clientWallet, setClientWallet] = useState<Wallet | null>(null);
 
+  const [whatsappLogs, setWhatsappLogs] = useState<WhatsappLog[]>([]);
+  const [loadingLogs, setLoadingLogs] = useState(false);
+  const [testNumber, setTestNumber] = useState('');
+  const [sendingTest, setSendingTest] = useState(false);
+
+  const loadWhatsappLogs = async () => {
+    if (!profile) return;
+    setLoadingLogs(true);
+    try {
+      const logs = await listarLogsWhatsApp();
+      const cleanedProfilePhone = (profile.whatsapp || profile.telefone || '').replace(/\D/g, "");
+      const filteredLogs = logs.filter(log => {
+        const cleanedLogPhone = log.destinatario.replace(/\D/g, "");
+        if (!cleanedProfilePhone) return false;
+        return cleanedLogPhone === cleanedProfilePhone || cleanedLogPhone.endsWith(cleanedProfilePhone) || cleanedProfilePhone.endsWith(cleanedLogPhone);
+      });
+      setWhatsappLogs(filteredLogs);
+    } catch (e) {
+      console.error("Erro ao carregar logs do WhatsApp:", e);
+    } finally {
+      setLoadingLogs(false);
+    }
+  };
+
+  useEffect(() => {
+    if (profile) {
+      loadWhatsappLogs();
+      setTestNumber(profile.whatsapp || profile.telefone || '');
+    }
+  }, [profile]);
+
+  const handleSendTestMessage = async () => {
+    if (!testNumber) {
+      Swal.fire("Atenção", "Por favor, digite um número de WhatsApp válido.", "warning");
+      return;
+    }
+    setSendingTest(true);
+    try {
+      const msg = `Teste de Conexão GSA Soluções! 🤖 Seu canal de notificações automáticas via WhatsApp está ativo e pronto para uso.`;
+      const result = await enviarNotificacaoWhatsApp(testNumber, msg);
+      if (result.success) {
+        Swal.fire({
+          title: result.sentReal ? "Enviado!" : "Simulado!",
+          text: result.sentReal 
+            ? "Mensagem de teste enviada com sucesso no seu WhatsApp." 
+            : "Mensagem de teste gerada com sucesso! Sem credenciais de API configuradas no .env, simulamos o disparo no log local.",
+          icon: "success",
+          background: '#0a0a2e',
+          color: '#fff',
+          confirmButtonColor: '#10b981'
+        });
+        loadWhatsappLogs();
+      } else {
+        Swal.fire("Erro", result.error || "Erro ao disparar mensagem", "error");
+      }
+    } catch (e: any) {
+      Swal.fire("Erro", e.message || "Falha de comunicação", "error");
+    } finally {
+      setSendingTest(false);
+    }
+  };
+
   useEffect(() => {
     const fetchWallet = async () => {
       if (profile?.uid) {
@@ -59,7 +122,7 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({ proces
     fetchWallet();
 
     // Simular um pequeno delay para um carregamento mais "profissional"
-    const timer = setTimeout(() => setLoading(false), 800);
+    const timer = setTimeout(() => setLoading(false), 805);
     return () => clearTimeout(timer);
   }, [profile]);
 
@@ -450,6 +513,99 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({ proces
           </div>
         )}
       </div>
+
+      {/* WHATSAPP NOTIFICATION INTEGRATION MODULE */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 sm:p-8 space-y-6 relative overflow-hidden"
+      >
+        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 blur-[80px] rounded-full pointer-events-none"></div>
+        
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 pb-6 border-b border-slate-50">
+          <div className="flex items-start gap-4">
+            <div className="size-12 bg-emerald-50 text-emerald-500 rounded-2xl flex items-center justify-center border border-emerald-100 shrink-0">
+              <MessageSquare size={24} />
+            </div>
+            <div>
+              <h2 className="text-xl font-black text-slate-800 uppercase italic tracking-tight flex items-center gap-2">
+                Notificações via WhatsApp
+                <span className="bg-emerald-100 text-emerald-800 font-bold text-[9px] tracking-wider uppercase px-2 py-0.5 rounded-full">Ativo</span>
+              </h2>
+              <p className="text-slate-500 text-sm font-medium mt-1">
+                Receba avisos instantâneos e atualizações de status dos seus processos diretamente no seu celular.
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
+            <div className="relative">
+              <input 
+                type="tel" 
+                value={testNumber}
+                onChange={(e) => setTestNumber(e.target.value)}
+                placeholder="Ex: (55) 99999-9999"
+                className="w-full sm:w-48 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-800 font-bold outline-none focus:border-emerald-500 transition-colors"
+              />
+            </div>
+            <button
+              onClick={handleSendTestMessage}
+              disabled={sendingTest}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase text-[10px] tracking-widest px-6 py-3.5 rounded-xl hover:scale-[1.02] active:scale-95 transition-all text-center flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {sendingTest ? "Enviando..." : "Enviar Teste"}
+            </button>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Linha do Tempo de Disparos</h3>
+            <button 
+              onClick={loadWhatsappLogs}
+              disabled={loadingLogs}
+              className="text-emerald-600 hover:text-emerald-700 font-black uppercase text-[10px] tracking-widest flex items-center gap-1.5 transition-colors disabled:opacity-50"
+            >
+              <Clock size={12} className={loadingLogs ? "animate-spin animate-infinite" : ""} /> Atualizar Logs
+            </button>
+          </div>
+
+          <div className="bg-slate-50 rounded-2xl border border-slate-100 divide-y divide-slate-100 overflow-hidden">
+            {loadingLogs ? (
+              <div className="p-8 text-center text-slate-400 text-xs font-bold uppercase tracking-wider">
+                Carregando histórico do WhatsApp...
+              </div>
+            ) : whatsappLogs.length === 0 ? (
+              <div className="p-8 text-center text-slate-400 text-xs font-bold uppercase tracking-wider space-y-1">
+                <p>Nenhuma notificação enviada para {testNumber || "seu número"} ainda.</p>
+                <p className="text-[10px] text-slate-400 font-normal normal-case">Quando seu processo atualizar, os logs de mensagem aparecerão automaticamente aqui.</p>
+              </div>
+            ) : (
+              whatsappLogs.map((log) => (
+                <div key={log.id} className="p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:bg-white transition-all">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[10px] font-black font-mono text-slate-400">PARA: {log.destinatario}</span>
+                      <span className={`text-[8px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                        log.status === "ENVIADO" 
+                          ? "bg-emerald-100 text-emerald-800 border border-emerald-200" 
+                          : "bg-blue-100 text-blue-800 border border-blue-200"
+                      }`}>
+                        {log.status}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-700 font-semibold leading-relaxed whitespace-pre-wrap">{log.mensagem}</p>
+                  </div>
+                  
+                  <div className="text-[10px] text-slate-400 font-bold shrink-0 text-left sm:text-right">
+                    {log.timestamp?.toDate ? log.timestamp.toDate().toLocaleString('pt-BR') : 'Agora mesmo'}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </motion.div>
 
       {/* SHOWCASE LEADS (PEDIDOS DE ORÇAMENTO) */}
       {showcaseLeads.length > 0 && (

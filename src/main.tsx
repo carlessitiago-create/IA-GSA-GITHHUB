@@ -1,6 +1,12 @@
-import {StrictMode} from 'react';
+import {StrictMode, useEffect} from 'react';
 import {createRoot} from 'react-dom/client';
-import { HashRouter } from 'react-router-dom';
+import {
+  HashRouter,
+  useLocation,
+  useNavigationType,
+  createRoutesFromChildren,
+  matchRoutes,
+} from 'react-router-dom';
 import * as Sentry from '@sentry/react';
 import App from './App.tsx';
 import './index.css';
@@ -13,12 +19,19 @@ const sentryDsn = import.meta.env.VITE_SENTRY_DSN;
 Sentry.init({
   dsn: sentryDsn || "", // Sentry is active only if DSN is set, otherwise is a safe no-op
   integrations: [
-    Sentry.browserTracingIntegration(),
+    Sentry.reactRouterV6BrowserTracingIntegration({
+      useEffect,
+      useLocation,
+      useNavigationType,
+      createRoutesFromChildren,
+      matchRoutes,
+    }),
     Sentry.replayIntegration(),
   ],
   tracesSampleRate: 1.0,
   replaysSessionSampleRate: 0.1,
   replaysOnErrorSampleRate: 1.0,
+  tracePropagationTargets: ["localhost", /^\//, /^https:\/\/[\w-]+\.run\.app/],
   environment: import.meta.env.MODE || "development",
 });
 

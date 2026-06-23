@@ -72,6 +72,7 @@ export async function sendNotification(notification: Omit<AppNotification, 'id' 
     const visibilidade_uids = [notification.usuario_id];
     let toEmail = '';
     let toName = 'Usuário';
+    let toWhatsapp = '';
     
     // Fetch user profile to get hierarchy if not provided or to ensure it's complete
     const userDoc = await getDoc(doc(db, 'usuarios', notification.usuario_id));
@@ -79,6 +80,7 @@ export async function sendNotification(notification: Omit<AppNotification, 'id' 
       const userData = userDoc.data();
       toEmail = userData.email || '';
       toName = userData.nome || 'Usuário';
+      toWhatsapp = userData.whatsapp || userData.telefone || '';
       
       // If user is CLIENTE
       if (userData.nivel === 'CLIENTE') {
@@ -147,6 +149,41 @@ export async function sendNotification(notification: Omit<AppNotification, 'id' 
       } catch (err) {
         console.error('Falha ao enviar e-mail de notificação:', err);
       }
+    }
+
+    // Envios de WhatsApp: Dispara notificação automática de WhatsApp para o número cadastrado
+    if (toWhatsapp) {
+      try {
+        await fetch('/api/send-whatsapp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to: toWhatsapp,
+            message: `Olá, ${toName}! 🚀 GSA Soluções Informa:\n\n*${notification.titulo}*\n${notification.mensagem}\n\nAcompanhe os detalhes em seu Portal do Cliente.`
+          })
+        });
+      } catch (err) {
+        console.error('Falha ao enviar WhatsApp de notificação automático:', err);
+      }
+    }
+
+    // Envio de Push Notification via Web-Push do Servidor
+    try {
+      await fetch('/api/v1/push/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recipientId: notification.usuario_id,
+          title: notification.titulo,
+          body: notification.mensagem,
+          data: {
+            type: notification.tipo || 'SYSTEM',
+            url: '/'
+          }
+        })
+      });
+    } catch (err) {
+      console.warn('Falha ao acionar Push Notification via API:', err);
     }
 
   } catch (error) {

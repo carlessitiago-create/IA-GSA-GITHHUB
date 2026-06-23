@@ -5,6 +5,7 @@ import {
   HttpsError,
 } from "firebase-functions/v2/https";
 import { onRequest } from "firebase-functions/v2/https";
+import { onSchedule } from "firebase-functions/v2/scheduler";
 import * as admin from "firebase-admin";
 import { getFirestore, FieldValue, Timestamp } from "firebase-admin/firestore";
 import { MercadoPagoConfig, Payment } from "mercadopago";
@@ -1497,5 +1498,35 @@ export const metaConversions = onCall(async (request) => {
   } catch (error: any) {
     console.error("Meta CAPI Error:", error.response?.data || error.message);
     throw new HttpsError("internal", "Failed to send Meta Conversion", error.response?.data);
+  }
+});
+
+export const backupDiarioGSA = onSchedule("0 3 * * *", async (event) => {
+  console.log("[BACKUP] Iniciando rotina de backup diário (03:00)...");
+  try {
+    const bucket = admin.storage().bucket("ais-us-east1-5b22e4a04c234f7eb.firebasestorage.app");
+
+    const [leadsSnap, consultasSnap] = await Promise.all([
+      db.collection('clients').get(),
+      db.collection('consultation_requests').get()
+    ]);
+
+    const leads = leadsSnap.docs.map(d => ({id: d.id, ...d.data()}));
+    const consultas = consultasSnap.docs.map(d => ({id: d.id, ...d.data()}));
+
+    const backupData = JSON.stringify({
+      leads,
+      consultas,
+      timestamp: new Date().toISOString(),
+      geradoPor: "Firestore Cron (Auto)"
+    }, null, 2);
+
+    const fileName = `backups/backup-diario-${new Date().toISOString().split('T')[0]}.json`;
+    const file = bucket.file(fileName);
+    await file.save(backupData, { contentType: 'application/json' });
+    
+    console.log(`[BACKUP] Sucesso! Realizado backup de ${leads.length} leads e ${consultas.length} consultas. Arquivo: ${fileName}`);
+  } catch (error) {
+    console.error("[BACKUP] Erro crítico ao tentar realizar backup:", error);
   }
 });

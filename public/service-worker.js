@@ -1,7 +1,11 @@
-const CACHE_NAME = 'gsa-diagnostico-cache-v4';
-const API_CACHE_NAME = 'gsa-diagnostico-api-cache-v4';
+// Service Worker robusto para a aplicação GSA utilizando o Google Workbox CDN
+importScripts('https://storage.googleapis.com/workbox-cdn/releases/6.4.1/workbox-sw.js');
 
-const STATIC_RESOURCES = [
+const UI_CACHE_NAME = 'gsa-ui-assets-v5';
+const API_CACHE_NAME = 'gsa-api-cache-v5';
+
+// Recursos de fallback / casca estática primária para precaching inicial de UI
+const ESSENTIAL_UNDERLAY = [
   '/',
   '/index.html',
   '/manifest.json',
@@ -9,219 +13,215 @@ const STATIC_RESOURCES = [
   '/icon-maskable.svg'
 ];
 
-// Instalação do Service Worker - Pré-cache de recursos básicos de UI
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      console.log('[Service Worker] Pré-carregando assets estáticos essenciais');
-      return cache.addAll(STATIC_RESOURCES);
-    }).then(() => self.skipWaiting())
-  );
-});
+if (self.workbox) {
+  console.log('🎉 Workbox carregado com sucesso!');
 
-// Ativação - Limpeza de caches obsoletos de UI e de API
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cache) => {
-          if (cache !== CACHE_NAME && cache !== API_CACHE_NAME) {
-            console.log('[Service Worker] Removendo cache obsoleto:', cache);
-            return caches.delete(cache);
-          }
-        })
-      );
-    }).then(() => self.clients.claim())
-  );
-});
-
-// Timeout Helper para conexões extremamente lentas ou instáveis (evita hangs infinitos)
-const networkWithTimeout = (request, timeoutMs = 3000) => {
-  return new Promise((resolve, reject) => {
-    const timeoutId = setTimeout(() => {
-      reject(new Error('Network request timed out'));
-    }, timeoutMs);
-
-    fetch(request).then((response) => {
-      clearTimeout(timeoutId);
-      resolve(response);
-    }, (error) => {
-      clearTimeout(timeoutId);
-      reject(error);
-    });
+  // Configuração global do Workbox
+  workbox.setConfig({
+    debug: false
   });
-};
 
-// Intercepção de requisições - Caching Strategies
-self.addEventListener('fetch', (event) => {
-  const request = event.request;
-  const url = new URL(request.url);
+  // Limpeza de cache antigo e reivindicação de clientes de ativação rápida
+  workbox.core.clientsClaim();
 
-  // Apenas otimizar requisições GET e HTTP/HTTPS para evitar conflitos de segurança
-  if (request.method !== 'GET' || !url.protocol.startsWith('http')) {
-    return;
-  }
+  // Instalação tradicional para garantir precache manual da casca do aplicativo
+  self.addEventListener('install', (event) => {
+    event.waitUntil(
+      caches.open(UI_CACHE_NAME).then((cache) => {
+        console.log('[GSA SW] Preparando ambiente offline com assets essenciais...');
+        return cache.addAll(ESSENTIAL_UNDERLAY);
+      }).then(() => self.skipWaiting())
+    );
+  });
 
-  // Ignorar SDKs e integrações externas críticas de autenticação/pagamento
-  if (url.hostname.includes('googleapis.com') || 
-      url.hostname.includes('firebase') ||
-      url.hostname.includes('mercadopago')) {
-    return;
-  }
-
-  // Ignorar assets do ambiente de desenvolvimento do Vite (HMR, etc.)
-  const isDevEnvironment = 
-    url.hostname === 'localhost' || 
-    url.hostname.includes('127.0.0.1') ||
-    url.hostname.includes('ais-dev') ||
-    url.pathname.includes('@vite') || 
-    url.pathname.includes('@id') || 
-    url.pathname.includes('__vite_ping') || 
-    url.pathname.includes('node_modules') || 
-    url.pathname.includes('/src/') ||
-    url.search.includes('import') || 
-    url.pathname.endsWith('.tsx') || 
-    url.pathname.endsWith('.ts');
-
-  if (isDevEnvironment) {
-    return;
-  }
-
-  // 1. Estratégia dos Endpoints de API (/api/*)
-  // Estratégia: Network-First com cache-fallback para visualização offline instantânea
-  const isApiRoute = url.pathname.startsWith('/api') || url.pathname.includes('/api/');
-  if (isApiRoute) {
-    event.respondWith(
-      networkWithTimeout(request, 5000)
-        .then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            const responseToCache = networkResponse.clone();
-            caches.open(API_CACHE_NAME).then((cache) => {
-              cache.put(request, responseToCache);
-            });
-          }
-          return networkResponse;
-        })
-        .catch(() => {
-          console.log('[Service Worker] API offline ou lenta. Servindo do cache local:', request.url);
-          return caches.match(request).then((cachedResponse) => {
-            if (cachedResponse) {
-              return cachedResponse;
+  // Ativação para limpar caches obsoletos antigos
+  self.addEventListener('activate', (event) => {
+    event.waitUntil(
+      caches.keys().then((cacheNames) => {
+        const allowedCaches = [
+          UI_CACHE_NAME,
+          'gsa-static-assets-v5',
+          'gsa-images-v5',
+          'gsa-fonts-v5',
+          API_CACHE_NAME,
+          'gsa-navigation-cache-v5'
+        ];
+        return Promise.all(
+          cacheNames.map((cache) => {
+            if (!allowedCaches.includes(cache)) {
+              console.log('[GSA SW] Removendo cache legado expirado:', cache);
+              return caches.delete(cache);
             }
-            // Retorna um JSON indicando falha offline graciosa
-            return new Response(JSON.stringify({ 
-              error: 'offline', 
-              message: 'Você está offline. Exibindo dados pré-carregados estruturados.',
-              retrievedFromCache: false
-            }), {
-              status: 503,
-              headers: { 'Content-Type': 'application/json' }
-            });
-          });
-        })
+          })
+        );
+      }).then(() => self.clients.claim())
     );
-    return;
-  }
+  });
 
-  // 2. Estratégia de Navegação Geral (SPA - index.html)
-  // Network-First com Fallback de Cache para recarga offline da casca da aplicação
-  if (request.mode === 'navigate') {
-    event.respondWith(
-      networkWithTimeout(request, 4000)
-        .then((response) => {
-          if (response.status === 200) {
-            const responseClone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put('/', responseClone);
-            });
-          }
-          return response;
-        })
-        .catch(() => {
-          console.log('[Service Worker] Falha de rede na navegação. Servindo Shell SPA do cache:', request.url);
-          return caches.match('/').then((cachedResponse) => {
-            return cachedResponse || caches.match('/index.html');
-          });
-        })
-    );
-    return;
-  }
+  // 1. REGRA: Ignorar/Seguir direto para conexões do ambiente de desenvolvimento ou SDKs de terceiros
+  workbox.routing.registerRoute(
+    ({ url }) => {
+      const isExternalOrDev = 
+        url.hostname.includes('googleapis.com') || 
+        url.hostname.includes('firebase') ||
+        url.hostname.includes('mercadopago') ||
+        url.hostname === 'localhost' || 
+        url.hostname.includes('127.0.0.1') ||
+        url.hostname.includes('ais-dev') ||
+        url.pathname.includes('@vite') || 
+        url.pathname.includes('@id') || 
+        url.pathname.includes('__vite_ping') || 
+        url.pathname.includes('node_modules') || 
+        url.pathname.includes('/src/') ||
+        url.search.includes('import') || 
+        url.pathname.endsWith('.tsx') || 
+        url.pathname.endsWith('.ts');
+      return isExternalOrDev;
+    },
+    new workbox.strategies.NetworkOnly()
+  );
 
-  // 3. Recursos Estáticos de Carregamento em Lote (Assets, Imagens, Fontes, Chunks JS/CSS)
-  // Estratégia: Stale-While-Revalidate (Entrega imediata via Cache + atualização silenciosa em background)
-  const isAsset = 
-    url.pathname.includes('/assets/') || 
-    url.pathname.endsWith('.js') || 
-    url.pathname.endsWith('.css') || 
-    url.pathname.endsWith('.png') || 
-    url.pathname.endsWith('.jpg') || 
-    url.pathname.endsWith('.jpeg') || 
-    url.pathname.endsWith('.svg') || 
-    url.pathname.endsWith('.woff2') || 
-    url.pathname.endsWith('.ico') ||
-    url.pathname.endsWith('.json'); // manifest, etc.
-
-  if (isAsset) {
-    event.respondWith(
-      caches.match(request).then((cachedResponse) => {
+  // 2. REGRA: Navegação SPA (Recarrega index.html quando offline para evitar telas brancas do roteamento)
+  workbox.routing.registerRoute(
+    ({ request }) => request.mode === 'navigate',
+    async ({ event }) => {
+      try {
+        const networkResponse = await fetch(event.request);
+        const cache = await caches.open(UI_CACHE_NAME);
+        cache.put('/', networkResponse.clone());
+        cache.put('/index.html', networkResponse.clone());
+        return networkResponse;
+      } catch (e) {
+        console.log('[GSA SW] Rede indisponível para navegação. Servindo Shell SPA.');
+        const cachedResponse = await caches.match('/index.html') || await caches.match('/');
         if (cachedResponse) {
-          // Serve do cache imediatamente e atualiza em background
-          fetch(request).then((networkResponse) => {
-            if (networkResponse.status === 200) {
-              caches.open(CACHE_NAME).then((cache) => {
-                cache.put(request, networkResponse);
-              });
-            }
-          }).catch(() => {
-            // Falha silenciosa de revalidação (offline/sem cobertura)
-          });
           return cachedResponse;
         }
-
-        // Se falhar o cache, faz fetch tradicional com timeout curto
-        return networkWithTimeout(request, 5000)
-          .then((networkResponse) => {
-            if (networkResponse.status === 200) {
-              const responseToCache = networkResponse.clone();
-              caches.open(CACHE_NAME).then((cache) => {
-                cache.put(request, responseToCache);
-              });
-            }
-            return networkResponse;
-          })
-          .catch((err) => {
-            console.warn('[Service Worker] Falha ao carregar asset essencial:', request.url, err.message);
-            if (url.pathname.endsWith('.png') || url.pathname.endsWith('.jpg') || url.pathname.endsWith('.svg')) {
-              return caches.match('/icon.svg');
-            }
-            throw err;
-          });
-      })
-    );
-    return;
-  }
-
-  // 4. Estratégia Fallback genérica (Network-First com retorno do Cache)
-  event.respondWith(
-    networkWithTimeout(request, 4000)
-      .then((networkResponse) => {
-        if (networkResponse && networkResponse.status === 200) {
-          const responseToCache = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(request, responseToCache);
-          });
-        }
-        return networkResponse;
-      })
-      .catch(() => {
-        return caches.match(request);
-      })
+        return new Response(
+          '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"/><title>GSA - Sem Conexão</title><style>body { font-family: sans-serif; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; background: #07071e; color: #fff; margin: 0; padding: 20px; text-align: center; } h1 { margin-bottom: 10px; font-size: 24px; color: #ef4444; } p { color: #94a3b8; font-size: 16px; }</style></head><body><h1>Falha de Conexão</h1><p>Você está offline. O aplicativo GSA necessita de internet para esta primeira navegação.</p></body></html>',
+          {
+            headers: { 'Content-Type': 'text/html; charset=utf-8' }
+          }
+        );
+      }
+    }
   );
-});
 
-// Evento de Push de Notificações
+  // 3. REGRA: Chunks Estáticos de Script & CSS de Construção (Vite Assets)
+  // Estratégia: Stale-While-Revalidate (Carrega rápido do cache, revalida em background)
+  workbox.routing.registerRoute(
+    ({ request, url }) => {
+      return request.destination === 'script' ||
+             request.destination === 'style' ||
+             url.pathname.includes('/assets/') ||
+             url.pathname.endsWith('.js') ||
+             url.pathname.endsWith('.css');
+    },
+    new workbox.strategies.StaleWhileRevalidate({
+      cacheName: 'gsa-static-assets-v5',
+      plugins: [
+        new workbox.cacheableResponse.CacheableResponsePlugin({
+          statuses: [0, 200]
+        }),
+        new workbox.expiration.ExpirationPlugin({
+          maxEntries: 100,
+          maxAgeSeconds: 30 * 24 * 60 * 60 // 30 Dias
+        }),
+      ]
+    })
+  );
+
+  // 4. REGRA: Imagens/Logos da aplicação e mídias
+  // Estratégia: Cache-First (Performance máxima para assets gráficos estáticos)
+  workbox.routing.registerRoute(
+    ({ request, url }) => {
+      return request.destination === 'image' ||
+             url.pathname.endsWith('.png') ||
+             url.pathname.endsWith('.jpg') ||
+             url.pathname.endsWith('.jpeg') ||
+             url.pathname.endsWith('.svg') ||
+             url.pathname.endsWith('.ico');
+    },
+    new workbox.strategies.CacheFirst({
+      cacheName: 'gsa-images-v5',
+      plugins: [
+        new workbox.cacheableResponse.CacheableResponsePlugin({
+          statuses: [0, 200]
+        }),
+        new workbox.expiration.ExpirationPlugin({
+          maxEntries: 100,
+          maxAgeSeconds: 45 * 24 * 60 * 60, // 45 Dias
+          purgeOnQuotaError: true
+        }),
+      ]
+    })
+  );
+
+  // 5. REGRA: Fontes (Inter, Space Grotesk, JetBrains Mono do Google Fonts)
+  // Estratégia: Cache-First com expiração longa
+  workbox.routing.registerRoute(
+    ({ request, url }) => {
+      return request.destination === 'font' ||
+             url.pathname.includes('fonts.gstatic.com') ||
+             url.pathname.endsWith('.woff2');
+    },
+    new workbox.strategies.CacheFirst({
+      cacheName: 'gsa-fonts-v5',
+      plugins: [
+        new workbox.cacheableResponse.CacheableResponsePlugin({
+          statuses: [0, 200]
+        }),
+        new workbox.expiration.ExpirationPlugin({
+          maxEntries: 20,
+          maxAgeSeconds: 90 * 24 * 60 * 60 // 90 Dias
+        }),
+      ]
+    })
+  );
+
+  // 6. REGRA: Chamadas locais de API da aplicação (/api/*)
+  // Estratégia: Network-First estruturado com timeout de 5 segundos
+  workbox.routing.registerRoute(
+    ({ url }) => url.pathname.startsWith('/api') || url.pathname.includes('/api/'),
+    new workbox.strategies.NetworkFirst({
+      cacheName: API_CACHE_NAME,
+      networkTimeoutSeconds: 5,
+      plugins: [
+        new workbox.cacheableResponse.CacheableResponsePlugin({
+          statuses: [0, 200]
+        }),
+        new workbox.expiration.ExpirationPlugin({
+          maxEntries: 120,
+          maxAgeSeconds: 15 * 24 * 60 * 60 // 15 Dias
+        })
+      ]
+    })
+  );
+
+} else {
+  console.warn('[GSA SW] Workbox falhou no carregamento. Ativando fallback nativo legado.');
+
+  // Fallback nativo simples em caso de falha de conexão CDN ao carregar o Workbox
+  self.addEventListener('install', (event) => {
+    event.waitUntil(
+      caches.open(UI_CACHE_NAME).then((cache) => cache.addAll(ESSENTIAL_UNDERLAY)).then(() => self.skipWaiting())
+    );
+  });
+
+  self.addEventListener('fetch', (event) => {
+    if (event.request.method !== 'GET') return;
+    event.respondWith(
+      caches.match(event.request).then((cached) => cached || fetch(event.request))
+    );
+  });
+}
+
+// ============================================
+// Eventos de Push Notification (GSA Engine)
+// ============================================
+
 self.addEventListener('push', (event) => {
-  console.log('[Service Worker] Evento de Push recebido');
+  console.log('[GSA SW] Notificação Push de Servidor recebida');
   
   let data = {};
   if (event.data) {
@@ -234,7 +234,7 @@ self.addEventListener('push', (event) => {
 
   const title = data.title || 'GSA Diagnóstico';
   const options = {
-    body: data.body || 'Seu processo financeiro recebeu uma nova atualização.',
+    body: data.body || 'Seu processo corporativo recebeu uma nova atualização de triagem.',
     icon: data.icon || '/icon.svg',
     badge: data.badge || '/icon.svg',
     vibrate: [200, 100, 200],
@@ -248,7 +248,6 @@ self.addEventListener('push', (event) => {
   );
 });
 
-// Clique na Notificação Push
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const targetUrl = event.notification.data?.url || '/';

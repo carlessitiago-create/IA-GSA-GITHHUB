@@ -31,12 +31,16 @@ export const analyzeDocument = async (file: File): Promise<DocumentAnalysisResul
     const base64Data = await fileToBase64(file);
     const mimeType = file.type;
 
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json"
+    };
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
     const res = await fetch(`${BACKEND_URL}/ai/analyzeDocument`, {
       method: "POST",
-      headers: { 
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
-      },
+      headers,
       body: JSON.stringify({ base64Data: base64Data.split(',')[1], mimeType })
     });
     
@@ -73,12 +77,16 @@ export const analyzeSmartFicha = async (leadData: any): Promise<TriageResult> =>
     const { auth } = await import('../firebase');
     const token = await auth.currentUser?.getIdToken();
 
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json"
+    };
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
     const res = await fetch(`${BACKEND_URL}/ai/analyzeSmartFicha`, {
       method: "POST",
-      headers: { 
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
-      },
+      headers,
       body: JSON.stringify({ leadData }),
     });
 

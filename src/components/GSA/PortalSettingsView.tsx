@@ -51,6 +51,37 @@ export const PortalSettingsView = () => {
     setConfig({ ...config, [field]: value });
   };
 
+  const [isValidatingSmtp, setIsValidatingSmtp] = useState(false);
+  const handleValidateSmtp = async () => {
+    if (!config || !config.smtp_host || !config.smtp_port || !config.smtp_user || !config.smtp_pass) {
+      Swal.fire("Atenção", "Preencha todos os campos SMTP (Host, Porta, Usuário, Senha) antes de testar.", "warning");
+      return;
+    }
+    setIsValidatingSmtp(true);
+    try {
+      const res = await fetch("/api/validate-smtp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          host: config.smtp_host,
+          port: config.smtp_port,
+          user: config.smtp_user,
+          pass: config.smtp_pass
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        Swal.fire("Sucesso", data.message, "success");
+      } else {
+        Swal.fire("Erro", data.error || "Erro de conexão SMTP", "error");
+      }
+    } catch (e: any) {
+       Swal.fire("Erro", e.message || "Erro de conexão", "error");
+    } finally {
+       setIsValidatingSmtp(false);
+    }
+  };
+
   const handleAddService = () => {
     if (!config) return;
     const newService = {
@@ -289,6 +320,88 @@ export const PortalSettingsView = () => {
                 className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-2xl p-4 text-sm dark:text-white"
                 placeholder="https://youtube.com/..."
               />
+            </div>
+          </div>
+
+          <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">E-mail de Boas Vindas Automático</h4>
+            <div className="space-y-4">
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Assunto do E-mail</label>
+                <input 
+                  type="text"
+                  value={config.welcome_email_subject || ''}
+                  onChange={(e) => setConfig({ ...config, welcome_email_subject: e.target.value })}
+                  placeholder="Ex: Bem-vindo à GSA Soluções"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-2xl p-4 text-sm font-bold dark:text-white focus:ring-2 focus:ring-blue-600 outline-none"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Corpo do E-mail (HTML)</label>
+                <textarea 
+                  value={config.welcome_email_body || ''}
+                  onChange={(e) => setConfig({ ...config, welcome_email_body: e.target.value })}
+                  placeholder="<p>Olá {{nome_lead}}, seja bem-vindo!</p>"
+                  rows={5}
+                  className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-2xl p-4 text-sm font-bold dark:text-white focus:ring-2 focus:ring-blue-600 outline-none resize-none font-mono"
+                />
+                <p className="text-[10px] text-slate-400 mt-2 font-medium">Dica: Use {"{{nome_lead}}"} para inserir o nome do lead dinamicamente no e-mail.</p>
+              </div>
+            </div>
+            <div className="pt-4 mt-6 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Configuração do Servidor de E-mail (SMTP)</h4>
+                <button
+                  onClick={handleValidateSmtp}
+                  disabled={isValidatingSmtp}
+                  className="bg-slate-900 border border-slate-800 hover:bg-emerald-600 disabled:opacity-50 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2"
+                >
+                  {isValidatingSmtp && <Loader2 size={14} className="animate-spin" />}
+                  {isValidatingSmtp ? "Testando..." : "Testar Conexão SMTP"}
+                </button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">SMTP Host</label>
+                  <input 
+                    type="text"
+                    value={config.smtp_host || ''}
+                    onChange={(e) => setConfig({ ...config, smtp_host: e.target.value })}
+                    placeholder="smtp.seudominio.com"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-2xl p-4 text-sm font-bold dark:text-white outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">SMTP Port</label>
+                  <input 
+                    type="number"
+                    value={config.smtp_port || ''}
+                    onChange={(e) => setConfig({ ...config, smtp_port: e.target.value })}
+                    placeholder="587"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-2xl p-4 text-sm font-bold dark:text-white outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Usuário SMTP</label>
+                  <input 
+                    type="text"
+                    value={config.smtp_user || ''}
+                    onChange={(e) => setConfig({ ...config, smtp_user: e.target.value })}
+                    placeholder="contato@seudominio.com"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-2xl p-4 text-sm font-bold dark:text-white outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Senha SMTP</label>
+                  <input 
+                    type="password"
+                    value={config.smtp_pass || ''}
+                    onChange={(e) => setConfig({ ...config, smtp_pass: e.target.value })}
+                    placeholder="*********"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-2xl p-4 text-sm font-bold dark:text-white outline-none"
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>

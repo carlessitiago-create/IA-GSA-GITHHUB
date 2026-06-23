@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, getDocs, collection } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { getSaasConfig, SaasConfig, updateSaasConfig } from '../../services/configService';
 import { wipeSystemData } from '../../services/wipeSystem';
 import { getDiagnosticoOrigin } from '../../lib/urlUtils';
-import { Settings, Link, Info, Save, CheckCircle, DollarSign } from 'lucide-react';
+import { Settings, Link, Info, Save, CheckCircle, DollarSign, DownloadCloud } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import Swal from 'sweetalert2';
 
@@ -26,6 +26,112 @@ export const AdminSaasSettings: React.FC = () => {
       setLoading(false);
     });
   }, []);
+
+  const [isExporting, setIsExporting] = useState(false);
+  const [backups, setBackups] = useState<any[]>([]);
+  const [loadingBackups, setLoadingBackups] = useState(false);
+  const [generatingBackup, setGeneratingBackup] = useState(false);
+
+  const fetchBackups = async () => {
+    setLoadingBackups(true);
+    try {
+      const { auth } = await import('../../firebase');
+      const token = await auth.currentUser?.getIdToken();
+      const res = await fetch('/api/backups', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.backups) setBackups(data.backups);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingBackups(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!loading) fetchBackups();
+  }, [loading]);
+
+  const handleManualBackup = async () => {
+    setGeneratingBackup(true);
+    try {
+      const { auth } = await import('../../firebase');
+      const token = await auth.currentUser?.getIdToken();
+      const res = await fetch('/api/trigger-backup', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        Swal.fire('Sucesso', 'Backup gerado no Cloud Storage.', 'success');
+        fetchBackups();
+      } else {
+         const d = await res.json();
+         Swal.fire('Erro', d.error || 'Erro ao gerar backup', 'error');
+      }
+    } catch (e: any) {
+       Swal.fire('Erro', e.message || 'Erro de rede', 'error');
+    } finally {
+      setGeneratingBackup(false);
+    }
+  };
+
+  const handleExportAudit = async () => {
+    setIsExporting(true);
+    try {
+      const auditPayload: any = {
+        exportedAt: new Date().toISOString(),
+        financial_transactions: [],
+        consultation_requests: []
+      };
+
+      // Fetch financial transactions
+      const transactionsSnap = await getDocs(collection(db, 'financial_transactions'));
+      transactionsSnap.forEach(doc => {
+        auditPayload.financial_transactions.push({ id: doc.id, ...doc.data() });
+      });
+
+      // Fetch consultation history (if the collection doesn't exist it will just return empty)
+      try {
+        const consultationsSnap = await getDocs(collection(db, 'consultation_requests'));
+        consultationsSnap.forEach(doc => {
+          auditPayload.consultation_requests.push({ id: doc.id, ...doc.data() });
+        });
+      } catch (e) {
+        console.warn('Could not fetch consultation_requests collection:', e);
+      }
+
+      // Add status history as another form of history
+      try {
+        const historySnap = await getDocs(collection(db, 'status_history'));
+        auditPayload.status_history = [];
+        historySnap.forEach(doc => {
+          auditPayload.status_history.push({ id: doc.id, ...doc.data() });
+        });
+      } catch (e) {}
+
+      // Trigger download
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(auditPayload, null, 2));
+      const downloadAnchorNode = document.createElement('a');
+      downloadAnchorNode.setAttribute("href", dataStr);
+      downloadAnchorNode.setAttribute("download", `gsa_audit_export_${new Date().getTime()}.json`);
+      document.body.appendChild(downloadAnchorNode);
+      downloadAnchorNode.click();
+      downloadAnchorNode.remove();
+
+      Swal.fire({
+         icon: 'success',
+         title: 'Exportação Concluída',
+         text: 'O arquivo JSON foi baixado para o seu dispositivo.',
+         confirmButtonColor: '#0a0a2e'
+      });
+    } catch (err: any) {
+      console.error(err);
+      Swal.fire('Erro', 'Ocorreu um erro ao exportar os dados de auditoria.', 'error');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const handleWipe = async () => {
     const result = await Swal.fire({
@@ -477,6 +583,96 @@ export const AdminSaasSettings: React.FC = () => {
                 className="w-full bg-slate-50 border-none rounded-2xl p-4 text-sm font-bold text-[#0a0a2e] focus:ring-2 focus:ring-blue-600 outline-none resize-none"
               />
             </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="pt-4 border-t border-slate-100 space-y-4">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="size-8 bg-blue-50 rounded-xl flex items-center justify-center text-blue-500">
+            <DownloadCloud size={18} />
+          </div>
+          <h3 className="font-black text-[#0a0a2e] uppercase italic tracking-tight">Auditoria e Exportação</h3>
+        </div>
+        <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div>
+            <h4 className="font-black text-[#0a0a2e] uppercase">Exportar Logs de Transações</h4>
+            <p className="text-xs text-slate-500 mt-1 max-w-md">
+              Gera um arquivo JSON contendo o histórico estruturado de consultas e todas as transações financeiras realizadas, para fins de arquivamento legal e auditoria.
+            </p>
+          </div>
+          <button 
+            onClick={handleExportAudit}
+            disabled={isExporting}
+            className="flex-shrink-0 bg-blue-600 text-white font-black uppercase text-[10px] tracking-widest px-8 py-4 rounded-xl hover:bg-blue-700 active:scale-95 transition-all disabled:opacity-50"
+          >
+            {isExporting ? 'Exportando...' : 'Baixar JSON'}
+          </button>
+        </div>
+      </div>
+
+      <div className="pt-4 border-t border-slate-100 space-y-4">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="size-8 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-500">
+            <DownloadCloud size={18} />
+          </div>
+          <h3 className="font-black text-[#0a0a2e] uppercase italic tracking-tight">Backups (Cloud Storage)</h3>
+        </div>
+        <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-6">
+            <div>
+              <h4 className="font-black text-[#0a0a2e] uppercase">Backups Diários e Manuais</h4>
+              <p className="text-xs text-slate-500 mt-1 max-w-md">
+                Uma rotina agendada gera backups diários dos principais documentos (Leads e Consultas). Você também pode gerar um backup manual agora.
+              </p>
+            </div>
+            <button 
+              onClick={handleManualBackup}
+              disabled={generatingBackup}
+              className="flex-shrink-0 bg-emerald-600 text-white font-black uppercase text-[10px] tracking-widest px-8 py-4 rounded-xl hover:bg-emerald-700 active:scale-95 transition-all disabled:opacity-50 flex items-center gap-2"
+            >
+              {generatingBackup ? 'Gerando...' : 'Criar Backup Agora'}
+            </button>
+          </div>
+          
+          <div className="bg-white rounded-xl border border-slate-100 overflow-hidden">
+            {loadingBackups ? (
+              <div className="p-8 text-center text-slate-400 text-sm font-bold">Carregando backups do Cloud Storage...</div>
+            ) : backups.length === 0 ? (
+              <div className="p-8 text-center text-slate-400 text-sm font-bold">Nenhum backup encontrado.</div>
+            ) : (
+               <table className="w-full text-left border-collapse">
+                 <thead>
+                   <tr className="bg-slate-50 border-b border-slate-100">
+                     <th className="p-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Data / Arquivo</th>
+                     <th className="p-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Tamanho</th>
+                     <th className="p-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Ação</th>
+                   </tr>
+                 </thead>
+                 <tbody>
+                   {backups.map(b => (
+                     <tr key={b.name} className="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                       <td className="p-4">
+                         <div className="text-sm font-bold text-[#0a0a2e]">{b.name}</div>
+                         <div className="text-xs text-slate-400">{new Date(b.timeCreated).toLocaleString()}</div>
+                       </td>
+                       <td className="p-4 text-xs font-bold text-slate-500 text-center">
+                         {(Number(b.size) / 1024 / 1024).toFixed(2)} MB
+                       </td>
+                       <td className="p-4 text-right">
+                         <a 
+                           href={b.downloadUrl} 
+                           target="_blank" 
+                           className="text-blue-600 hover:text-blue-800 text-xs font-bold uppercase tracking-widest bg-blue-50 px-4 py-2 rounded-lg"
+                         >
+                           Baixar JSON
+                         </a>
+                       </td>
+                     </tr>
+                   ))}
+                 </tbody>
+               </table>
+            )}
           </div>
         </div>
       </div>

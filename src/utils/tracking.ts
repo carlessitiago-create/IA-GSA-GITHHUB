@@ -37,9 +37,9 @@ export const trackInitiateCheckout = (plano: string, preco: number) => {
 
 // Dispara evento quando o lead preenche os dados e vai para o pagamento
 export const trackLeadCapture = () => {
-  if (window.fbq) window.fbq('track', 'Lead');
-  if (window.gtag) window.gtag('event', 'generate_lead');
-  if (window.ttq) window.ttq.track('SubmitForm');
+  try { if (typeof window.fbq === 'function') window.fbq('track', 'Lead'); } catch(e){}
+  try { if (typeof window.gtag === 'function') window.gtag('event', 'generate_lead'); } catch(e){}
+  try { if (window.ttq && typeof window.ttq.track === 'function') window.ttq.track('SubmitForm'); } catch(e){}
 };
 
 // Dispara quando o pagamento é processado (ou gerado o PIX)

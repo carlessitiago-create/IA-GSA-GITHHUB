@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from "express";
 import crypto from "crypto";
-import fetch from "node-fetch";
 
 export const metaConversionsHandler = async (req: Request, res: Response, next: NextFunction) => {
     try {

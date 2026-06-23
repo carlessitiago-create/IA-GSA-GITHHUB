@@ -1,0 +1,39 @@
+name: Auto-Deploy to Hostinger
+
+on:
+  push:
+    branches:
+      - main # Dispara a publicação automatizada ao fazer push ou merge na branch principal
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Clonar repositório
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+
+      - name: 📦 Instalar dependências
+        run: npm ci
+
+      - name: 🛠️ Compilar aplicação (Vite Build)
+        run: npm run build
+        env:
+          # Permite passar parâmetros customizados de build por segredos do GitHub, se necessário
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+
+      - name: 🚀 Enviar arquivos via FTP/SFTP para a Hostinger
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          port: ${{ secrets.FTP_PORT || 21 }} # Caso queira usar SFTP, configure 22 nos Segredos
+          local-dir: ./dist/                  # Pasta gerada pelo build do Vite
+          server-dir: ${{ secrets.FTP_TARGET_DIR || '/' }} # Destino na Hostinger (ex: public_html ou subpasta)
+          state-name: .ftp-deploy-sync-state.json # Arquivo de controle para sincronias rápidas incrementais

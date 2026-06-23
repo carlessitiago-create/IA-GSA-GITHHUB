@@ -5,18 +5,64 @@ import { logErrorToFirestore } from '../utils/errorLogger';
 import ErrorBoundary from './ErrorBoundary';
 import { db } from '../firebase';
 import { collection, addDoc } from 'firebase/firestore';
+import * as Sentry from '@sentry/react';
 
 export const GlobalErrorProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user } = useAuth();
+  const { user, profile, isSimulating } = useAuth();
   const location = useLocation();
 
   const [errorNotification, setErrorNotification] = React.useState<string | null>(null);
 
   // Manter dados de rastreamento do usuário atualizados no nível global/window para os interceptadores assíncronos
   useEffect(() => {
-    (window as any).__gsa_current_user_id__ = user?.uid || null;
-    (window as any).__gsa_current_route__ = location.pathname;
-  }, [user, location]);
+    const currentUserId = user?.uid || null;
+    const currentRoute = location.pathname;
+    
+    (window as any).__gsa_current_user_id__ = currentUserId;
+    (window as any).__gsa_current_route__ = currentRoute;
+    (window as any).__gsa_current_user_profile__ = profile || null;
+    (window as any).__gsa_is_simulating__ = !!isSimulating;
+
+    // Sentry: Envia metadados específicos sobre o estado da sessão do usuário
+    if (currentUserId) {
+      Sentry.setUser({
+        id: currentUserId,
+        email: user?.email || profile?.email || undefined,
+        username: profile?.nome_completo || undefined,
+      });
+
+      Sentry.setContext("session_state", {
+        nivel: profile?.nivel || "CLIENTE",
+        status_conta: profile?.status_conta || "PENDENTE",
+        isSimulating: !!isSimulating,
+        hasCompany: !!profile?.tem_empresa,
+        companyName: profile?.nome_empresa || null,
+        saldo_carteira: profile?.saldo_carteira || 0,
+        online_status: navigator.onLine ? "online" : "offline",
+        current_route: currentRoute,
+        last_active: new Date().toISOString()
+      });
+
+      Sentry.setTags({
+        user_role: profile?.nivel || "unknown",
+        account_status: profile?.status_conta || "unknown",
+        is_simulating: String(!!isSimulating),
+        route: currentRoute
+      });
+    } else {
+      Sentry.setUser(null);
+      Sentry.setContext("session_state", {
+        isSimulating: false,
+        online_status: navigator.onLine ? "online" : "offline",
+        current_route: currentRoute,
+        last_active: new Date().toISOString()
+      });
+      Sentry.setTags({
+        user_role: "anonymous",
+        route: currentRoute
+      });
+    }
+  }, [user, profile, isSimulating, location]);
 
   useEffect(() => {
     // 1. Instalar interceptadores de API globalmente (uma única vez)

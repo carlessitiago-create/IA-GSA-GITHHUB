@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import { SplitSquareVertical, Save, Info, CheckCircle, Percent } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, handleFirestoreError, OperationType } from '../firebase';
 
 interface SplitConfig {
   vendedor: number;
@@ -26,28 +26,49 @@ export function SplitCommissionSettingsView() {
   }, []);
 
   const fetchConfig = async () => {
+    const cacheKey = 'split_commission_config_cache';
     try {
       const docRef = doc(db, 'configuracoes', 'geral_split');
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         const data = docSnap.data() as SplitConfig;
-        setSplit({
+        const fetchedSplit = {
           vendedor: data.vendedor ?? 0,
           gestor: data.gestor ?? 0,
           analista: data.analista ?? 0
-        });
+        };
+        setSplit(fetchedSplit);
+        localStorage.setItem(cacheKey, JSON.stringify(fetchedSplit));
       }
-    } catch (e) {
-      console.error('Error fetching split config', e);
+    } catch (e: any) {
+      console.warn('Error fetching split config from Firestore, attempting local fallback:', e);
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        try {
+          setSplit(JSON.parse(cached));
+        } catch (parseErr) {
+          console.error('Failed to parse cached split config', parseErr);
+        }
+      }
+      // If it is a missing/insufficient permissions or similar crucial Firestore error, handle it properly helper
+      if (e?.code === 'permission-denied') {
+        try {
+          handleFirestoreError(e, OperationType.GET, 'configuracoes/geral_split');
+        } catch (wrappedErr) {
+          console.error(wrappedErr);
+        }
+      }
     } finally {
       setFetching(false);
     }
   };
 
   const handleSave = async () => {
+    const cacheKey = 'split_commission_config_cache';
     try {
       setLoading(true);
       await setDoc(doc(db, 'configuracoes', 'geral_split'), split);
+      localStorage.setItem(cacheKey, JSON.stringify(split));
       
       Swal.fire({
         icon: 'success',
@@ -58,6 +79,11 @@ export function SplitCommissionSettingsView() {
     } catch (e) {
       console.error(e);
       Swal.fire('Erro', 'Não foi possível salvar as configurações.', 'error');
+      try {
+        handleFirestoreError(e, OperationType.UPDATE, 'configuracoes/geral_split');
+      } catch (wrappedErr) {
+        console.error(wrappedErr);
+      }
     } finally {
       setLoading(false);
     }

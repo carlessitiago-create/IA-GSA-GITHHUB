@@ -84,7 +84,7 @@ export const RewardsStoreView = ({ currentProfile }: RewardsStoreProps) => {
             }
           } catch(e){}
         } catch(e: any) {
-          console.error("Erro ao carregar clube (cache fallback falhou):", e?.message);
+          console.warn("Erro ao carregar clube (cache fallback falhou):", e?.message);
         }
       } finally {
         setLoading(false);

@@ -32,6 +32,12 @@ export interface PublicPortalConfig {
     subtitulo?: string;
     topicos?: string[];
   }[];
+  welcome_email_subject?: string;
+  welcome_email_body?: string;
+  smtp_host?: string;
+  smtp_port?: string;
+  smtp_user?: string;
+  smtp_pass?: string;
 }
 
 export interface SaasConfig {
@@ -57,6 +63,8 @@ export interface SaasConfig {
   smtp_user?: string;
   smtp_pass?: string;
   is_sandbox?: boolean;
+  welcome_email_subject?: string;
+  welcome_email_body?: string;
 }
 
 const CONFIG_COLLECTION = 'platform_config';

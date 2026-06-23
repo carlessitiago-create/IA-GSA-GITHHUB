@@ -60,22 +60,70 @@ export interface ClientData {
 
 export async function sendThankYouEmail(email: string, nome: string) {
   try {
-    await fetch('/api/send-email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    let subject = 'Bem-vindo ao nosso sistema';
+    let html = `
+      <div style="font-family: sans-serif; padding: 20px; color: #333;">
+        <h2>Olá, ${nome}</h2>
+        <p>Obrigado por se cadastrar em nosso sistema. Estamos felizes em ajudar a sua empresa a crescer e buscar os melhores recursos.</p>
+        <p>Em breve entraremos em contato.</p>
+        <p style="font-size: 12px; color: #999;">Esta é uma mensagem automática. Por favor, não responda.</p>
+      </div>
+    `;
+
+    try {
+      const { getDoc, doc } = await import('firebase/firestore');
+      const { db } = await import('../firebase');
+      const fetchPromise = getDoc(doc(db, 'platform_config', 'portal_publico'));
+      
+      const configDoc = await Promise.race([
+        fetchPromise,
+        new Promise<any>((_, reject) => setTimeout(() => reject(new Error("Timeout carregamento template")), 3000))
+      ]);
+
+      if (configDoc && configDoc.exists()) {
+        const data = configDoc.data();
+        if (data.welcome_email_subject) {
+          subject = data.welcome_email_subject;
+        }
+        if (data.welcome_email_body) {
+          html = data.welcome_email_body.replace(/{{nome}}/g, nome).replace(/{{nome_lead}}/g, nome);
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to load custom welcome email template, falling back to default:", e);
+    }
+
+    try {
+      const sendEmailPromise = fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: email,
+          subject: subject,
+          html: html
+        })
+      });
+
+      await Promise.race([
+        sendEmailPromise,
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 4000))
+      ]);
+      
+      const logWritePromise = addDoc(collection(db, 'logs_email'), {
         to: email,
-        subject: 'Bem-vindo ao nosso sistema',
-        html: `
-          <div style="font-family: sans-serif; padding: 20px; color: #333;">
-            <h2>Olá, ${nome}</h2>
-            <p>Obrigado por se cadastrar em nosso sistema. Estamos felizes em ajudar a sua empresa a crescer e buscar os melhores recursos.</p>
-            <p>Em breve entraremos em contato.</p>
-            <p style="font-size: 12px; color: #999;">Esta é uma mensagem automática. Por favor, não responda.</p>
-          </div>
-        `
-      })
-    });
+        subject: subject,
+        tipo: 'BOAS_VINDAS_LEAD',
+        status: 'ENVIADO',
+        data_envio: serverTimestamp()
+      });
+
+      await Promise.race([
+        logWritePromise,
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 2500))
+      ]);
+    } catch (fetchErr) {
+      console.error('Erro de rede ao enviar e-mail:', fetchErr);
+    }
   } catch (err) {
     console.error('Falha ao enviar e-mail de agradecimento:', err);
   }
@@ -83,16 +131,40 @@ export async function sendThankYouEmail(email: string, nome: string) {
 
 export async function salvarLeadSimples(data: { nome: string, email: string, telefone: string }) {
   try {
-    await addDoc(collection(db, 'clients'), cleanData({
+    const responsePromise = fetch('/api/leads', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    
+    const response = await Promise.race([
+      responsePromise,
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 3500))
+    ]);
+
+    if (response && response.ok) {
+      console.log('Lead salvo com sucesso via API do servidor.');
+      return;
+    }
+  } catch (apiErr) {
+    console.warn('Erro ao salvar lead via API do servidor, tentando via cliente Firestore como fallback:', apiErr);
+  }
+
+  try {
+    const firestoreWritePromise = addDoc(collection(db, 'clients'), cleanData({
       ...data,
       especialista_id: 'SaaS_GSA_IA',
       origem: 'Landing Page SaaS',
       data_entrada: serverTimestamp(),
       documento: 'N/A', // dummy
     }));
+
+    await Promise.race([
+      firestoreWritePromise,
+      new Promise<void>((_, reject) => setTimeout(() => reject(new Error('timeout ao salvar lead diretamente')), 3500))
+    ]);
   } catch (error) {
-    handleFirestoreError(error, OperationType.CREATE, 'clients');
-    throw error;
+    console.error('Falha ao salvar lead:', error);
   }
 }
 

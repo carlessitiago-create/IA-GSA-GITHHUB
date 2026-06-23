@@ -78,8 +78,17 @@ export function VendasPDVView() {
         if (splitDoc.exists()) {
           setSplitConfig(splitDoc.data());
         }
-      } catch (e) {
-        console.error('Error fetching general split config', e);
+      } catch (e: any) {
+        console.warn('Error fetching general split (network), trying cache:', e?.message);
+        try {
+          const { doc, getDocFromCache } = await import('firebase/firestore');
+          const cacheDoc = await getDocFromCache(doc(db, 'configuracoes', 'geral_split'));
+          if (cacheDoc.exists()) {
+            setSplitConfig(cacheDoc.data());
+          }
+        } catch (cacheErr: any) {
+          console.warn('General split config missing in cache, using default.', cacheErr?.message);
+        }
       }
     };
     fetchSplitConfig();

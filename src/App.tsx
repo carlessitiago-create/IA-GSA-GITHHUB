@@ -1,6 +1,8 @@
 import React, { lazy, Suspense } from "react";
 import { Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
 import * as Sentry from "@sentry/react";
+
+const SentryRoutes = Sentry.withSentryReactRouterV6Routing(Routes);
 import { useAuth } from "./components/AuthContext";
 import { LoadingScreen } from "./components/LoadingScreen";
 import { DashboardLayout } from "./components/DashboardLayout"; 
@@ -161,10 +163,10 @@ const App: React.FC = () => {
     return (
       <GlobalErrorProvider>
         <Suspense fallback={<LoadingScreen />}>
-          <Routes>
+          <SentryRoutes>
             <Route path="/login" element={<LoginView />} />
             <Route path="*" element={<Navigate to="/login" replace />} />
-          </Routes>
+          </SentryRoutes>
         </Suspense>
       </GlobalErrorProvider>
     );
@@ -181,7 +183,7 @@ const App: React.FC = () => {
   return (
     <GlobalErrorProvider>
       <Suspense fallback={<LoadingScreen />}>
-        <Routes>
+        <SentryRoutes>
           <Route path="/" element={<AppRoot />} />
           <Route path="/login" element={<LoginView />} />
           <Route path="/consulta" element={<PublicPortal />} />
@@ -248,7 +250,7 @@ const App: React.FC = () => {
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        </SentryRoutes>
       </Suspense>
     </GlobalErrorProvider>
   );

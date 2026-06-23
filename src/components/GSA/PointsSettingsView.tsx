@@ -39,7 +39,7 @@ export const PointsSettingsView = () => {
              if (data.premios) setPremios(data.premios);
           }
         } catch (e: any) {
-          console.error("Erro ao carregar regras (cache):", e?.message);
+          console.warn("Erro ao carregar regras (cache fallback):", e?.message);
         }
       } finally {
         setLoading(false);
